@@ -1,0 +1,20 @@
+FileVersion = 1
+Dependencies = {corlib = "*", SDL2 = "*"}
+
+[Project]
+Name = "Spyro Scope"
+StartupObject = "SpyroScope.Program"
+DefaultNamespace = "SpyroScope"
+
+[Configs.Debug.Win64]
+TargetDirectory = "$(WorkspaceDir)/dist"
+TargetName = "$(ProjectName)_debug"
+
+[Configs.Release.Win64]
+TargetDirectory = "$(WorkspaceDir)/dist"
+
+[Configs.Paranoid.Win64]
+TargetDirectory = "$(WorkspaceDir)/dist"
+
+[Configs.Test.Win64]
+TargetDirectory = "$(WorkspaceDir)/dist"
