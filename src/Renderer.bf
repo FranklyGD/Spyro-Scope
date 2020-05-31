@@ -198,6 +198,14 @@ namespace SpyroScope {
 			return index;
 		}
 
+		public void PushPoint(Vector position, Vector normal, Color color) {
+			positions.Set(vertexCount, position);
+			normals.Set(vertexCount, normal);
+			colors.Set(vertexCount, color);
+
+			vertexCount++;
+		}
+
 		//[Optimize]
 		public void PushTriangle(Vector p0, Vector p1, Vector p2,
 			Color c0, Color c1, Color c2) {
@@ -207,42 +215,40 @@ namespace SpyroScope {
 
 			let normal = Vector.Cross(p2 - p0, p1 - p0);
 
-			positions.Set(vertexCount, p0);
-			normals.Set(vertexCount, normal);
-			colors.Set(vertexCount++, c0);
-			positions.Set(vertexCount, p1);
-			normals.Set(vertexCount, normal);
-			colors.Set(vertexCount++, c1);
-			positions.Set(vertexCount, p2);
-			normals.Set(vertexCount, normal);
-			colors.Set(vertexCount++, c2);
+			PushPoint(p0, normal, c0);
+			PushPoint(p1, normal, c1);
+			PushPoint(p2, normal, c2);
+		}
+
+		public void SetView(Vector position, Matrix basis) {
+			view = basis * Matrix4.Translation(-position);
+			GL.glUniformMatrix4fv(uniformViewMatrixIndex, 1, GL.GL_FALSE, (float*)&view);
+		}
+
+		public void SetPerspectiveProjection(float degreesFoV, float aspect, float near, float far) {
+			projection = .Perspective(degreesFoV / 180 * 3.14f, aspect, near, far);
+			GL.glUniformMatrix4fv(uniformProjectionMatrixIndex, 1, GL.GL_FALSE, (float*)&projection);
 		}
 
 		public void Draw() {
 			// Send transform matrices
 			GL.glUniformMatrix4fv(uniformModelMatrixIndex, 1, GL.GL_FALSE, (float*)&model);
-			GL.glUniformMatrix4fv(uniformViewMatrixIndex, 1, GL.GL_FALSE, (float*)&view);
-			GL.glUniformMatrix4fv(uniformProjectionMatrixIndex, 1, GL.GL_FALSE, (float*)&projection);
-
-			//
-			//GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE);
 
 			// Flush
 			GL.glMemoryBarrier(GL.GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
 			GL.glDrawArrays(GL.GL_TRIANGLES, 0, (int32)vertexCount);
 
+			vertexCount = 0;
+		}
+
+		public void Sync() {
 			// Wait for GPU
 			let sync = GL.glFenceSync(GL.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
-			while (true) {
-				let r = GL.glClientWaitSync(sync, GL.GL_SYNC_FLUSH_COMMANDS_BIT, 10000000);
-				CheckForErrors();
-				if (r == GL.GL_ALREADY_SIGNALED || r == GL.GL_CONDITION_SATISFIED) {
-					break;
-				}
-			}				  
-
-			vertexCount = 0;
+			while (GL.glClientWaitSync(sync, GL.GL_SYNC_FLUSH_COMMANDS_BIT, 0) == GL.GL_TIMEOUT_EXPIRED) {
+				// Insert something here to do while waiting for draw to finish
+				SDL.Delay(0);
+			}	
 		}
 
 		public void Display() {

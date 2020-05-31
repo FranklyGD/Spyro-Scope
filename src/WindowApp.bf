@@ -7,8 +7,6 @@ namespace SpyroScope {
 	class WindowApp {
 		SDL.Window* window;
 		Renderer renderer;
-		//SDL.Renderer* renderer;
-		//SDL.Surface* screen;
 
 		public readonly uint32 id;
 
@@ -28,11 +26,7 @@ namespace SpyroScope {
 			window = SDL.CreateWindow("Scope", .Undefined, .Undefined, w, h,
 				.Shown | .Resizable | .InputFocus | .Utility | .OpenGL);
 			renderer = new .(window);
-
-			renderer.projection = .Perspective(55f / 180 * 3.14f, (float)w / h, 100, 1000000);
-
-			//renderer = SDL.CreateRenderer(window, -1, .Accelerated);
-			//screen = SDL.GetWindowSurface(window);
+			renderer.SetPerspectiveProjection(55f, (float)w / h, 100, 1000000);
 
 			id = SDL.GetWindowID(window);
 
@@ -43,7 +37,7 @@ namespace SpyroScope {
 			Emulator.UnbindToEmulator();
 
 			if (renderer != null)
-				delete renderer; //SDL.DestroyRenderer(renderer);
+				delete renderer;
 			if (window != null)
 				SDL.DestroyWindow(window);
 
@@ -62,10 +56,7 @@ namespace SpyroScope {
 			Emulator.FetchRAMBaseAddress();
 			Emulator.FetchImportantObjects();
 
-			
-			renderer.view = Emulator.cameraBasis.ToMatrixCorrected().Inverse();
-			//renderer.view = .Identity;
-			renderer.view = renderer.view.Translate(- Emulator.cameraPosition);
+			renderer.SetView(Emulator.cameraPosition, Emulator.cameraBasis.ToMatrixCorrected().Inverse());
 
 			renderer.PushTriangle(Emulator.spyroPosition + .(10,10,0), Emulator.spyroPosition + .(-10,-10,0), Emulator.spyroPosition + Emulator.spyroBasis.Inverse().ToMatrixCorrected().x * 1000,
 				.(255,64,64), .(255,64,64), .(255,64,64));
@@ -80,21 +71,7 @@ namespace SpyroScope {
 			renderer.PushTriangle(Emulator.spyroPosition + .(-10,-10,0), Emulator.spyroPosition + .(10,10,0), Emulator.spyroPosition + Emulator.spyroBasis.Inverse().ToMatrixCorrected().z * 1000,
 				.(64,64,255), .(64,64,255), .(64,64,255));
 
-			/*renderer.PushTriangle(Emulator.cameraPosition + .(10,10,0), Emulator.cameraPosition + .(-10,-10,0), Emulator.cameraPosition + Emulator.cameraBasis.ToMatrixCorrected().x * 3000,
-				.(255,64,64), .(255,64,64), .(255,64,64));
-			renderer.PushTriangle(Emulator.cameraPosition + .(10,10,0), Emulator.cameraPosition + .(-10,-10,0), Emulator.cameraPosition + Emulator.cameraBasis.ToMatrixCorrected().y * 3000,
-				.(64,255,64), .(64,255,64), .(64,255,64));
-			renderer.PushTriangle(Emulator.cameraPosition + .(10,10,0), Emulator.cameraPosition + .(-10,-10,0), Emulator.cameraPosition + Emulator.cameraBasis.ToMatrixCorrected().z * 3000,
-				.(64,64,255), .(64,64,255), .(64,64,255));
-			renderer.PushTriangle(Emulator.cameraPosition + .(-10,-10,0), Emulator.cameraPosition + .(10,10,0), Emulator.cameraPosition + Emulator.cameraBasis.ToMatrixCorrected().x * 3000,
-				.(255,64,64), .(255,64,64), .(255,64,64));
-			renderer.PushTriangle(Emulator.cameraPosition + .(-10,-10,0), Emulator.cameraPosition + .(10,10,0), Emulator.cameraPosition + Emulator.cameraBasis.ToMatrixCorrected().y * 3000,
-				.(64,255,64), .(64,255,64), .(64,255,64));
-			renderer.PushTriangle(Emulator.cameraPosition + .(-10,-10,0), Emulator.cameraPosition + .(10,10,0), Emulator.cameraPosition + Emulator.cameraBasis.ToMatrixCorrected().z * 3000,
-				.(64,64,255), .(64,64,255), .(64,64,255));*/
-
 			// Draw collision mesh
-			//SDL.SetRenderDrawColor(renderer, 64, 64, 64, 255);
 			for (int triangleIndex < Emulator.collisionTriangles.Count) {
 				let triangle = Emulator.collisionTriangles[triangleIndex];
 
@@ -109,11 +86,8 @@ namespace SpyroScope {
 					color, color, color
 				);
 			}
-			renderer.Draw();
 
 			// Object picker
-			SDL.Rect rect = ?;
-
 			uint32 closestObjPointer = 0;
 			VectorInt closestObjPosition = ?;
 			VectorInt closestObjDirection = ?;
@@ -126,8 +100,7 @@ namespace SpyroScope {
 			//Emulator.ReadFromRAM(objectArrayPointer - 4, &objectArrayLength, 4);
 
 			Emulator.Address objPointer = objectArrayPointer;
-
-			renderer.model = .Identity;
+			//renderer.model = .Identity;
 			for (int i < 512 /*objectArrayLength*/) {
 				Moby object = ?;
 				Emulator.ReadFromRAM(objPointer, &object, sizeof(Moby));
@@ -145,27 +118,34 @@ namespace SpyroScope {
 				}
 
 				if (object.draw) {
-					rect.w = rect.h = 6;
-
-					renderer.PushTriangle(object.position + .(200,0,0), object.position + .(-200,0,0), object.position + .(0,0,200),
-						.(255,0,255), .(255,0,255), .(255,0,255));
-					renderer.PushTriangle(object.position + .(-200,0,0), object.position + .(200,0,0), object.position + .(0,0,200),
-						.(255,0,255), .(255,0,255), .(255,0,255));
+					renderer.PushTriangle(
+						object.position + .(200,0,0), object.position + .(-200,0,0), object.position + .(0,0,200),
+						.(255,0,255), .(255,0,255), .(255,0,255)
+					);
+					renderer.PushTriangle(
+						object.position + .(-200,0,0), object.position + .(200,0,0), object.position + .(0,0,200),
+						.(255,0,255), .(255,0,255), .(255,0,255)
+					);
 				}
 
-				renderer.PushTriangle(object.position + .(100,0,0), object.position + .(-100,0,0), object.position + .(0,0,100),
-					.(0,255,255), .(0,255,255), .(0,255,255));
-				renderer.PushTriangle(object.position + .(-100,0,0), object.position + .(100,0,0), object.position + .(0,0,100),
-					.(0,255,255), .(0,255,255), .(0,255,255));
+				renderer.PushTriangle(
+					object.position + .(100,0,0), object.position + .(-100,0,0), object.position + .(0,0,100),
+					.(0,255,255), .(0,255,255), .(0,255,255)
+				);
+				renderer.PushTriangle(
+					object.position + .(-100,0,0), object.position + .(100,0,0), object.position + .(0,0,100),
+					.(0,255,255), .(0,255,255), .(0,255,255)
+				);
 
 				if (object.objectTypeID == 0x0400) { // Whirlwind
 					WhirlwindData whirlwind = ?;
 					Emulator.ReadFromRAM(object.dataPointer, &whirlwind, sizeof(WhirlwindData));
 					whirlwind.Draw(renderer, object);
 				}
-				
+
 				objPointer += 0x58;
 			}
+			renderer.Draw();
 		
 			// Use nearest object and inspect
 			if (currentObjPointer != closestObjPointer) {
@@ -198,31 +178,7 @@ namespace SpyroScope {
 				Emulator.MoveCameraTo(&Emulator.cameraPosition);
 			}
 
-			/*DrawAxis!(Vector(w, h, 0), Emulator.spyroBasis.ToMatrixCorrected());
-			DrawAxis!(cameraRelativePositionCenter, cameraBasis);
-			
-			cameraBasis.x.y = -cameraBasis.x.y;
-			cameraBasis.y.y = -cameraBasis.y.y;
-			cameraBasis.z.y = -cameraBasis.z.y;
-
-			// Draw camera frustrum
-			let clip = 1.5f;
-			let perspectiveVector = cameraBasis.x * clip;
-			Vector frustrumTopRight = (cameraBasis.z + cameraBasis.y + perspectiveVector) * 32 + cameraRelativePositionCenter;
-			Vector frustrumBottomRight = (-cameraBasis.z + cameraBasis.y + perspectiveVector) * 32 + cameraRelativePositionCenter;
-			Vector frustrumTopLeft = (cameraBasis.z - cameraBasis.y + perspectiveVector) * 32 + cameraRelativePositionCenter;
-			Vector frustrumBottomLeft = (-cameraBasis.z - cameraBasis.y + perspectiveVector) * 32 + cameraRelativePositionCenter;
-
-			SDL.SetRenderDrawColor(renderer, 255, 255, 255, 255);
-			SDL.RenderDrawLine(renderer, (.)frustrumTopLeft.x, (.)frustrumTopLeft.y, (.)frustrumTopRight.x, (.)frustrumTopRight.y);
-			SDL.RenderDrawLine(renderer, (.)frustrumBottomLeft.x, (.)frustrumBottomLeft.y, (.)frustrumBottomRight.x, (.)frustrumBottomRight.y);
-
-			SDL.RenderDrawLine(renderer, (.)cameraRelativePositionCenter.x, (.)cameraRelativePositionCenter.y, (.)frustrumTopRight.x, (.)frustrumTopRight.y);
-			SDL.RenderDrawLine(renderer, (.)cameraRelativePositionCenter.x, (.)cameraRelativePositionCenter.y, (.)frustrumBottomRight.x, (.)frustrumBottomRight.y);
-			SDL.RenderDrawLine(renderer, (.)cameraRelativePositionCenter.x, (.)cameraRelativePositionCenter.y, (.)frustrumBottomLeft.x, (.)frustrumBottomLeft.y);
-			SDL.RenderDrawLine(renderer, (.)cameraRelativePositionCenter.x, (.)cameraRelativePositionCenter.y, (.)frustrumTopLeft.x, (.)frustrumTopLeft.y);
-
-			SDL.RenderPresent(renderer);*/
+			renderer.Sync();
 			renderer.Display();
 		}
 
@@ -370,11 +326,11 @@ namespace SpyroScope {
 						}
 						case .Resized : {
 							let newWidth = event.window.data1;
-							let newHeight = event.window.data1;
-							GL.glViewport(0, 0, event.window.data1, event.window.data2);
+							let newHeight = event.window.data2;
+							GL.glViewport(0, 0, newWidth, newHeight);
 
 							let newAspect = (float)newWidth / newHeight;
-							renderer.projection = .Perspective(55f / 180 * 3.14f, newAspect, 100, 1000000);
+							renderer.SetPerspectiveProjection(55f, newAspect, 100, 1000000);
 						}
 						default : {}
 					}

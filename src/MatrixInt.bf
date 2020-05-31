@@ -2,11 +2,11 @@ using System;
 
 namespace SpyroScope {
 	struct MatrixInt {
-		public struct Row {
+		public struct Column {
 			public int16 x,y,z;
 		}
 
-		public Row x,y,z;
+		public Column x,y,z;
 
 		public MatrixInt Inverse() {
 			MatrixInt inverse = ?;

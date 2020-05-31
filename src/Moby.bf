@@ -17,7 +17,7 @@ namespace SpyroScope {
 		uint8 g; // 61
 		uint16 h; // 62
 		uint32 i; // 64
-		public VectorByte rotation; // 68
+		public VectorByte eulerRotation; // 68
 		uint8 j; // 72
 		public uint8 varientID; // 73
 		uint8[3] k; // 74

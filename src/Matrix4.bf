@@ -31,15 +31,13 @@ namespace SpyroScope {
 			);
 		}
 
-		public Matrix4 Translate(Vector translation) {
-			Matrix4 t = .(
+		public static Matrix4 Translation(Vector translation) {
+			return .(
 				.(1,0,0,0),
 				.(0,1,0,0),
 				.(0,0,1,0),
 				.(translation.x,translation.y,translation.z,1)
 			);
-
-			return this * t;
 		}
 
 		public static Matrix4 Perspective(float FoV, float aspect, float near, float far) {

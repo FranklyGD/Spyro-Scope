@@ -6,10 +6,11 @@ namespace SpyroScope {
 		public void Draw(Renderer renderer, Moby object) {
 			Vector glidePoint = object.position + .(0,0,(.)height);
 			renderer.PushTriangle(
-				glidePoint + .(-100,0,100),
-				glidePoint + .(100,0,100),
-				glidePoint + .(0,0,0),
-				.(0,255,255), .(0,255,255), .(0,255,255));
+				glidePoint + .(-300,0,0), glidePoint + .(300,0,0), glidePoint + .(0,0,300),
+				.(255,255,0), .(255,255,0), .(255,255,0));
+			renderer.PushTriangle(
+				glidePoint + .(-300,0,0), glidePoint + .(300,0,0), glidePoint + .(0,0,300),
+				.(255,255,0), .(255,255,0), .(255,255,0));
 		}
 	}
 }
