@@ -10,6 +10,10 @@ namespace SpyroScope {
 			this.z = z;
 		}
 
+		public static Vector Zero {
+			get { return .(1,0,0); }
+		}
+
 		public override void ToString(System.String strBuffer) {
 			strBuffer.AppendF("<{},{},{}>", x, y, z);
 		}

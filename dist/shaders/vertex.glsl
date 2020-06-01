@@ -8,13 +8,15 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+uniform vec3 tint;
+
 out vec3 color;
 
 void main() {
     gl_Position.xyzw = projection * view * model * vec4(vertexPosition, 1.0);
 
-    color = vec3(vertexColor) / 255.0;
+    color = vec3(vertexColor) / 255.0 * tint;
 
-    vec3 normal = normalize(vertexNormal);
-    color *= (dot(normal, vec3(0,0,1)) + 1.0) / 2.0;
+    vec4 normal = model * vec4(vertexNormal, 0.0);
+    color *= (dot(normalize(normal.xyz), vec3(0,0,1)) + 1.0) / 2.0;
 }

@@ -66,6 +66,9 @@ namespace SpyroScope {
 
 		public static bool cameraMode, pausedMode = false;
 
+		// Events
+		public static Action OnSceneChanged;
+
 		public static void BindToEmulator() {
 			// TODO: Have an option or auto detect
 			emulator = .NoCashPSX;
@@ -179,6 +182,8 @@ namespace SpyroScope {
 				let ptrFlags2 = collisionFlags2.GrowUnitialized(triangleCount);
 				Emulator.ReadFromRAM(collisionDataAddress + 28, &collisionFlagArray, 2);
 				Emulator.ReadFromRAM(collisionFlagArray, ptrFlags2, 1 * triangleCount);
+
+				OnSceneChanged();
 			}
 		}
 

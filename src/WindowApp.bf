@@ -20,6 +20,8 @@ namespace SpyroScope {
 		static Vector cameraMotion;
 		static int cameraRollRate;
 
+		StaticMesh collisionMesh ~ delete _;
+
 		public this() {
 			int32 w = 500, h = 400;
 
@@ -30,11 +32,15 @@ namespace SpyroScope {
 
 			id = SDL.GetWindowID(window);
 
+			Emulator.OnSceneChanged = new => OnSceneChanged;
+
 			Emulator.BindToEmulator();
 		}
 
 		public ~this() {
 			Emulator.UnbindToEmulator();
+			
+			delete Emulator.OnSceneChanged;
 
 			if (renderer != null)
 				delete renderer;
@@ -58,7 +64,7 @@ namespace SpyroScope {
 
 			renderer.SetView(Emulator.cameraPosition, Emulator.cameraBasis.ToMatrixCorrected().Inverse());
 
-			renderer.PushTriangle(Emulator.spyroPosition + .(10,10,0), Emulator.spyroPosition + .(-10,-10,0), Emulator.spyroPosition + Emulator.spyroBasis.Inverse().ToMatrixCorrected().x * 1000,
+			/*renderer.PushTriangle(Emulator.spyroPosition + .(10,10,0), Emulator.spyroPosition + .(-10,-10,0), Emulator.spyroPosition + Emulator.spyroBasis.Inverse().ToMatrixCorrected().x * 1000,
 				.(255,64,64), .(255,64,64), .(255,64,64));
 			renderer.PushTriangle(Emulator.spyroPosition + .(10,10,0), Emulator.spyroPosition + .(-10,-10,0), Emulator.spyroPosition + Emulator.spyroBasis.Inverse().ToMatrixCorrected().y * 1000,
 				.(64,255,64), .(64,255,64), .(64,255,64));
@@ -69,27 +75,17 @@ namespace SpyroScope {
 			renderer.PushTriangle(Emulator.spyroPosition + .(-10,-10,0), Emulator.spyroPosition + .(10,10,0), Emulator.spyroPosition + Emulator.spyroBasis.Inverse().ToMatrixCorrected().y * 1000,
 				.(64,255,64), .(64,255,64), .(64,255,64));
 			renderer.PushTriangle(Emulator.spyroPosition + .(-10,-10,0), Emulator.spyroPosition + .(10,10,0), Emulator.spyroPosition + Emulator.spyroBasis.Inverse().ToMatrixCorrected().z * 1000,
-				.(64,64,255), .(64,64,255), .(64,64,255));
+				.(64,64,255), .(64,64,255), .(64,64,255));*/
 
 			// Draw collision mesh
-			for (int triangleIndex < Emulator.collisionTriangles.Count) {
-				let triangle = Emulator.collisionTriangles[triangleIndex];
-
-				let unpackedTriangle = triangle.Unpack();
-				var color = (Emulator.specialTerrainBeginIndex > (uint)triangleIndex) ? Renderer.Color(255,64,64) : Renderer.Color(255,255,255);
-				if (Emulator.collidingTriangle == triangleIndex) {
-					color = .(64,64,255);
-				}
-
-				renderer.PushTriangle(
-					unpackedTriangle[0], unpackedTriangle[1], unpackedTriangle[2],
-					color, color, color
-				);
-			}
+			renderer.SetModel(.Zero, .Identity);
+			renderer.SetTint(.(255,255,255));
+			collisionMesh.Draw();
+			PrimitiveShape.cube.Draw();
 
 			// Object picker
 			uint32 closestObjPointer = 0;
-			VectorInt closestObjPosition = ?;
+			Moby closestObj = ?;
 			VectorInt closestObjDirection = ?;
 			float closestDistance = float.PositiveInfinity;
 			
@@ -112,60 +108,59 @@ namespace SpyroScope {
 				let distance = objDirection.Length();
 				if (distance < closestDistance && distance > 512) {
 					closestObjPointer = objPointer;
-					closestObjPosition = object.position;
+					closestObj = object;
 					closestObjDirection = objDirection;
 					closestDistance = distance;
 				}
 
+				renderer.SetModel(object.position, .Scale(200,200,200) *
+					.Euler(
+						-(float)object.eulerRotation.x / 0x80 * Math.PI_f,
+						(float)object.eulerRotation.y / 0x80 * Math.PI_f,
+						-(float)object.eulerRotation.z / 0x80 * Math.PI_f
+					)
+				);
+				renderer.SetTint(.(0,255,255));
+
 				if (object.draw) {
-					renderer.PushTriangle(
-						object.position + .(200,0,0), object.position + .(-200,0,0), object.position + .(0,0,200),
-						.(255,0,255), .(255,0,255), .(255,0,255)
+					renderer.SetModel(object.position, .Scale(300,300,300) *
+						.Euler(
+							-(float)object.eulerRotation.x / 0x80 * Math.PI_f,
+							(float)object.eulerRotation.y / 0x80 * Math.PI_f,
+							-(float)object.eulerRotation.z / 0x80 * Math.PI_f
+						)
 					);
-					renderer.PushTriangle(
-						object.position + .(-200,0,0), object.position + .(200,0,0), object.position + .(0,0,200),
-						.(255,0,255), .(255,0,255), .(255,0,255)
-					);
+					renderer.SetTint(.(255,0,255));
 				}
 
-				renderer.PushTriangle(
-					object.position + .(100,0,0), object.position + .(-100,0,0), object.position + .(0,0,100),
-					.(0,255,255), .(0,255,255), .(0,255,255)
-				);
-				renderer.PushTriangle(
-					object.position + .(-100,0,0), object.position + .(100,0,0), object.position + .(0,0,100),
-					.(0,255,255), .(0,255,255), .(0,255,255)
-				);
+				PrimitiveShape.cube.Draw();
 
-				if (object.objectTypeID == 0x0400) { // Whirlwind
+				/*if (object.objectTypeID == 0x0400) { // Whirlwind
 					WhirlwindData whirlwind = ?;
 					Emulator.ReadFromRAM(object.dataPointer, &whirlwind, sizeof(WhirlwindData));
 					whirlwind.Draw(renderer, object);
-				}
+				}*/
 
 				objPointer += 0x58;
 			}
-			renderer.Draw();
+			//renderer.Draw();
 		
 			// Use nearest object and inspect
 			if (currentObjPointer != closestObjPointer) {
 				if (currentObjPointer != 0) {
 					Emulator.WriteToRAM(currentObjPointer + 0xc, &originalPos, sizeof(VectorInt));
 				}
-				originalPos = closestObjPosition;
+				originalPos = closestObj.position;
 				currentObjPointer = closestObjPointer;
+
+				Console.WriteLine("Direction to nearest obj [{:X8}] of type {:X} is: {}", closestObjPointer, closestObj.objectTypeID, closestObjDirection);
+				/*if (Emulator.collidingTriangle != -1) {
+					Console.WriteLine("Current Triangle Flag 0x{:X2}", Emulator.collisionFlags[Emulator.collidingTriangle]);
+				}*/
 			}
 
-			closestObjPosition = originalPos + VectorInt(0, 0, (int32)(0x200 * Math.Sin((float)DateTime.Now.Millisecond / 314)));
-			Emulator.WriteToRAM(closestObjPointer + 0xc, &closestObjPosition, sizeof(VectorInt));
-
-			uint16 type = ?;
-			Emulator.ReadFromRAM(closestObjPointer + 0x36, &type, sizeof(uint16));
-
-			Console.WriteLine("Direction to nearest obj [{:X8}] of type {:X} is: {}", closestObjPointer, type, closestObjDirection);
-			/*if (Emulator.collidingTriangle != -1) {
-				Console.WriteLine("Current Triangle Flag 0x{:X2}", Emulator.collisionFlags[Emulator.collidingTriangle]);
-			}*/
+			closestObj.position = originalPos + VectorInt(0, 0, (int32)(0x200 * Math.Sin((float)DateTime.Now.Millisecond / 314)));
+			Emulator.WriteToRAM(closestObjPointer + 0xc, &closestObj.position, sizeof(VectorInt));
 
 			// Move camera
 			var cameraBasis = Emulator.cameraBasis.ToMatrixCorrected();
@@ -337,6 +332,31 @@ namespace SpyroScope {
 				}
 				default : {}
 			}
+		}
+
+		void OnSceneChanged() {
+			let vertexCount = Emulator.collisionTriangles.Count * 3;
+			Vector[] v = new .[vertexCount];
+			Vector[] n = new .[vertexCount];
+			Renderer.Color[] c = new .[vertexCount];
+
+			for (int triangleIndex < Emulator.collisionTriangles.Count) {
+				let triangle = Emulator.collisionTriangles[triangleIndex];
+
+				let unpackedTriangle = triangle.Unpack();
+				
+				let normal = Vector.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
+				var color = (Emulator.specialTerrainBeginIndex > (uint)triangleIndex) ? Renderer.Color(255,64,64) : Renderer.Color(255,255,255);
+
+				for (int vi < 3) {
+					v[triangleIndex * 3 + vi] = unpackedTriangle[vi];
+					n[triangleIndex * 3 + vi] = normal;
+					c[triangleIndex * 3 + vi] = color;
+				}
+			}
+
+			delete collisionMesh;
+			collisionMesh = new .(v, n, c);
 		}
 
 		/*mixin DrawAxis(Vector position, Matrix basis) {
