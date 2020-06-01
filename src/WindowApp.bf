@@ -64,24 +64,10 @@ namespace SpyroScope {
 
 			renderer.SetView(Emulator.cameraPosition, Emulator.cameraBasis.ToMatrixCorrected().Inverse());
 
-			/*renderer.PushTriangle(Emulator.spyroPosition + .(10,10,0), Emulator.spyroPosition + .(-10,-10,0), Emulator.spyroPosition + Emulator.spyroBasis.Inverse().ToMatrixCorrected().x * 1000,
-				.(255,64,64), .(255,64,64), .(255,64,64));
-			renderer.PushTriangle(Emulator.spyroPosition + .(10,10,0), Emulator.spyroPosition + .(-10,-10,0), Emulator.spyroPosition + Emulator.spyroBasis.Inverse().ToMatrixCorrected().y * 1000,
-				.(64,255,64), .(64,255,64), .(64,255,64));
-			renderer.PushTriangle(Emulator.spyroPosition + .(10,10,0), Emulator.spyroPosition + .(-10,-10,0), Emulator.spyroPosition + Emulator.spyroBasis.Inverse().ToMatrixCorrected().z * 1000,
-				.(64,64,255), .(64,64,255), .(64,64,255));
-			renderer.PushTriangle(Emulator.spyroPosition + .(-10,-10,0), Emulator.spyroPosition + .(10,10,0), Emulator.spyroPosition + Emulator.spyroBasis.Inverse().ToMatrixCorrected().x * 1000,
-				.(255,64,64), .(255,64,64), .(255,64,64));
-			renderer.PushTriangle(Emulator.spyroPosition + .(-10,-10,0), Emulator.spyroPosition + .(10,10,0), Emulator.spyroPosition + Emulator.spyroBasis.Inverse().ToMatrixCorrected().y * 1000,
-				.(64,255,64), .(64,255,64), .(64,255,64));
-			renderer.PushTriangle(Emulator.spyroPosition + .(-10,-10,0), Emulator.spyroPosition + .(10,10,0), Emulator.spyroPosition + Emulator.spyroBasis.Inverse().ToMatrixCorrected().z * 1000,
-				.(64,64,255), .(64,64,255), .(64,64,255));*/
-
 			// Draw collision mesh
 			renderer.SetModel(.Zero, .Identity);
 			renderer.SetTint(.(255,255,255));
 			collisionMesh.Draw();
-			PrimitiveShape.cube.Draw();
 
 			// Object picker
 			uint32 closestObjPointer = 0;
@@ -113,23 +99,18 @@ namespace SpyroScope {
 					closestDistance = distance;
 				}
 
-				renderer.SetModel(object.position, .Scale(200,200,200) *
-					.Euler(
+				let objectBasis = Matrix.Euler(
 						-(float)object.eulerRotation.x / 0x80 * Math.PI_f,
 						(float)object.eulerRotation.y / 0x80 * Math.PI_f,
 						-(float)object.eulerRotation.z / 0x80 * Math.PI_f
-					)
-				);
+					);
+
+				DrawAxis!(object.position, objectBasis * Matrix.Scale(300,300,300));
+				renderer.SetModel(object.position, objectBasis  * Matrix.Scale(50,50,50));
 				renderer.SetTint(.(0,255,255));
 
 				if (object.draw) {
-					renderer.SetModel(object.position, .Scale(300,300,300) *
-						.Euler(
-							-(float)object.eulerRotation.x / 0x80 * Math.PI_f,
-							(float)object.eulerRotation.y / 0x80 * Math.PI_f,
-							-(float)object.eulerRotation.z / 0x80 * Math.PI_f
-						)
-					);
+					renderer.SetModel(object.position, objectBasis * .Scale(60,60,60));
 					renderer.SetTint(.(255,0,255));
 				}
 
@@ -359,14 +340,18 @@ namespace SpyroScope {
 			collisionMesh = new .(v, n, c);
 		}
 
-		/*mixin DrawAxis(Vector position, Matrix basis) {
-			SDL.SetRenderDrawColor(renderer, 255,64,64,255);
-			SDL.RenderDrawLine(renderer, (.)position.x, (.)position.y, (.)(position.x + basis.x.x * 32), (.)(position.y - basis.x.y * 32));  
-			SDL.SetRenderDrawColor(renderer, 64,255,64,255);
-			SDL.RenderDrawLine(renderer, (.)position.x, (.)position.y, (.)(position.x - basis.y.x * 32), (.)(position.y + basis.y.y * 32));	  
-			SDL.SetRenderDrawColor(renderer, 64,64,255,255);
-			SDL.RenderDrawLine(renderer, (.)position.x, (.)position.y, (.)(position.x + basis.z.x * 32), (.)(position.y - basis.z.y * 32));
-		}*/
+		mixin DrawAxis(Vector position, Matrix basis) {
+			let squareAngle = Math.PI_f / 2;
+			renderer.SetModel(position + basis * Vector(0.5f,0,0), basis * .Euler(0, squareAngle, 0) * .Scale(0.1f,0.1f,1));
+			renderer.SetTint(.(255,0,0));
+			PrimitiveShape.cylinder.Draw();
+			renderer.SetModel(position + basis * Vector(0,0.5f,0), basis * .Euler(squareAngle, 0, 0) * .Scale(0.1f,0.1f,1));
+			renderer.SetTint(.(0,255,0));
+			PrimitiveShape.cylinder.Draw();
+			renderer.SetModel(position + basis * Vector(0,0,0.5f), basis * .Scale(0.1f,0.1f,1));
+			renderer.SetTint(.(0,0,255));
+			PrimitiveShape.cylinder.Draw();
+		}
 
 
 	}

@@ -1,9 +1,13 @@
+using System;
+
 namespace SpyroScope {
 	static struct PrimitiveShape {
-		public static StaticMesh cube;
+		public static StaticMesh cube ~ delete _;
+		public static StaticMesh cylinder ~ delete _;
 
 		public static void Init() {
 			GenerateCube();
+			GenerateCylinder(16);
 		}
 
 		public static void GenerateCube() {
@@ -43,24 +47,24 @@ namespace SpyroScope {
 				.(0.0f,1.0f,0.0f),
 				.(0.0f,0.0f,1.0f),
 				.(1.0f,0.0f,0.0f),
-				.(0.0f,-1.0f,0.0f), //7
+				.(0.0f,-1.0f,0.0f),
 				.(0.0f,0.0f,1.0f),
 				.(-1.0f,0.0f,0.0f),
 				.(0.0f,-1.0f,0.0f),
 				.(0.0f,0.0f,1.0f),
 				
-				.(1.0f,0.0f,0.0f), //12
+				.(1.0f,0.0f,0.0f),
 				.(0.0f,1.0f,0.0f),
 				.(0.0f,0.0f,-1.0f),
 				.(-1.0f,0.0f,0.0f),
 				.(0.0f,1.0f,0.0f),
 				.(0.0f,0.0f,-1.0f),
 				.(1.0f,0.0f,0.0f),
-				.(0.0f,-1.0f,0.0f), //19
+				.(0.0f,-1.0f,0.0f),
 				.(0.0f,0.0f,-1.0f),
 				.(-1.0f,0.0f,0.0f),
 				.(0.0f,-1.0f,0.0f),
-				.(0.0f,0.0f,-1.0f) //23
+				.(0.0f,0.0f,-1.0f)
 			);
 
 			let colors = new Renderer.Color[24];
@@ -78,6 +82,63 @@ namespace SpyroScope {
 			);
 
 			cube = new .(vertices, normals, colors, indices);
+		}
+
+		public static void GenerateCylinder(int subdivisions) {
+			let loop = scope Vector[subdivisions];
+			for (int i < subdivisions) {
+				let theta = (float)i / subdivisions * Math.PI_f * 2;
+				loop[i] = .(Math.Cos(theta) / 2, Math.Sin(theta) / 2, 0);
+			}
+
+			let vertices = new Vector[subdivisions * 4];
+			for (int i < subdivisions) {
+				vertices[i + subdivisions * 0] = vertices[i + subdivisions * 1] = loop[i];
+				vertices[i + subdivisions * 0].z = vertices[i + subdivisions * 1].z = 0.5f;
+				vertices[i + subdivisions * 2] = vertices[i + subdivisions * 3] = loop[i];
+				vertices[i + subdivisions * 2].z = vertices[i + subdivisions * 3].z = -0.5f;
+			}
+
+			let normals = new Vector[subdivisions * 4];
+			for (int i < subdivisions) {
+				normals[i + subdivisions * 0] = .(0,0,1);
+				normals[i + subdivisions * 1] = normals[i + subdivisions * 2] = loop[i] * 2;
+				normals[i + subdivisions * 3] = .(0,0,-1);
+			}
+
+			let colors = new Renderer.Color[subdivisions * 4];
+			for	(int i < subdivisions * 4) {
+				colors[i] = .(255,255,255);
+			}
+
+			let indices = new uint32[subdivisions * (2 * 3) + (subdivisions - 2) * (2 * 3)];
+
+			let otherCapStart = (uint32)subdivisions * 3;
+			let capTringles = subdivisions - 2;
+			for	(int i < capTringles) {
+				indices[i * 3 + 0] = 0;
+				indices[i * 3 + 1] = (uint32)i + 2;
+				indices[i * 3 + 2] = (uint32)i + 1;
+				
+				indices[(i + capTringles) * 3 + 0] = otherCapStart;
+				indices[(i + capTringles) * 3 + 1] = otherCapStart + (uint32)i + 1;
+				indices[(i + capTringles) * 3 + 2] = otherCapStart + (uint32)i + 2;
+			}
+
+			let loopBridgeStart = capTringles * 6;
+			for (int i = 0; i < subdivisions; i++) {
+				let index = (uint32)(i % subdivisions);
+				let indexPlusOne = (uint32)((i + 1) % subdivisions);
+				indices[loopBridgeStart + i * 6 + 0] = (uint32)subdivisions + index;
+				indices[loopBridgeStart + i * 6 + 1] = (uint32)subdivisions + indexPlusOne;
+				indices[loopBridgeStart + i * 6 + 2] = (uint32)subdivisions * 2 + index;
+				
+				indices[loopBridgeStart + i * 6 + 3] = (uint32)subdivisions + indexPlusOne;
+				indices[loopBridgeStart + i * 6 + 4] = (uint32)subdivisions * 2 + indexPlusOne;
+				indices[loopBridgeStart + i * 6 + 5] = (uint32)subdivisions * 2 + index;
+			}
+
+			cylinder = new .(vertices, normals, colors, indices);
 		}
 	}
 }
