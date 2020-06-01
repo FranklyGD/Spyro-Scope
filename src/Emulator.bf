@@ -46,6 +46,8 @@ namespace SpyroScope {
 
 		public const Address[4] collisionDataPointer = .(0, 0, 0x800673fc, 0x8006d150);
 
+		public const Address[4] fuckSparx = .(0, 0, 0x8006A248, 0x80070688);
+
 		// Game Values
 		public static VectorInt cameraPosition, spyroPosition;
 		public static MatrixInt cameraBasis, spyroBasis;

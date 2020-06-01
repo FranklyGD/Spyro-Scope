@@ -11,6 +11,7 @@ namespace SpyroScope {
 		public readonly uint32 id;
 
 		public bool closed { get; private set; }
+		public bool drawMap = true;
 
 		static uint32 currentObjPointer = 0;
 		static VectorInt originalPos;
@@ -67,7 +68,19 @@ namespace SpyroScope {
 			// Draw collision mesh
 			renderer.SetModel(.Zero, .Identity);
 			renderer.SetTint(.(255,255,255));
+
+			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL);
+			renderer.SetTint(.(255,255,255));
+
+			if (drawMap) {
+				collisionMesh.Draw();
+				renderer.SetTint(.(0,0,0));
+			}
+
+			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE);
 			collisionMesh.Draw();
+
+			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL);
 
 			// Object picker
 			uint32 closestObjPointer = 0;
@@ -207,7 +220,16 @@ namespace SpyroScope {
 						if (event.key.keysym.scancode == .P) {
 							Emulator.TogglePaused();
 						}
-
+						if (event.key.keysym.scancode == .LCtrl) {
+							cameraSpeed *= 8;
+						}
+						if (event.key.keysym.scancode == .M) {
+							drawMap = !drawMap;
+						}
+						if (event.key.keysym.scancode == .K) {
+							uint health = 0;
+							Emulator.WriteToRAM(Emulator.fuckSparx[(int)Emulator.rom], &health, 4);
+						}
 						if (event.key.keysym.scancode == .T && Emulator.cameraMode) {
 							Emulator.spyroPosition = Emulator.cameraPosition;
 							Emulator.WriteToRAM(Emulator.spyroPositionPointers[(int)Emulator.rom], &Emulator.spyroPosition, sizeof(VectorInt));
@@ -262,6 +284,10 @@ namespace SpyroScope {
 				}
 				case .KeyUp : {
 					//Console.WriteLine("Key {}", event.key.keysym.unicode);
+					if (event.key.keysym.scancode == .LCtrl) {
+						cameraSpeed /= 8;
+					}
+
 					if (cameraHijacked) {
 						if (event.key.keysym.scancode == .W) {
 							cameraMotion.z = 0;
