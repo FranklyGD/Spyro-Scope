@@ -38,6 +38,10 @@ namespace SpyroScope {
 			return Vector(v.x,v.y,v.z);
 		}
 
+		public static implicit operator Vector(Vector4 v) {
+			return Vector(v.x/v.w,v.y/v.w,v.z/v.w);
+		}
+
 		public static Vector operator -(Vector value) {
 			return .(- value.x, - value.y, - value.z);
 		}

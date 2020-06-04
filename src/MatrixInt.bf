@@ -8,22 +8,26 @@ namespace SpyroScope {
 
 		public Column x,y,z;
 
-		public MatrixInt Inverse() {
-			MatrixInt inverse = ?;
+		public static MatrixInt Euler(float x, float y, float z) {
+			return Matrix.Euler(x,y,z).ToMatrixIntCorrected();
+		}
 
-			inverse.x.x = x.x;
-			inverse.x.y = y.x;
-			inverse.x.z = z.x;
+		public MatrixInt Transpose() {
+			MatrixInt transpose = ?;
 
-			inverse.y.x = x.y;
-			inverse.y.y = y.y;
-			inverse.y.z = z.y;
+			transpose.x.x = x.x;
+			transpose.x.y = y.x;
+			transpose.x.z = z.x;
+
+			transpose.y.x = x.y;
+			transpose.y.y = y.y;
+			transpose.y.z = z.y;
 			
-			inverse.z.x = x.z;
-			inverse.z.y = y.z;
-			inverse.z.z = z.z;
+			transpose.z.x = x.z;
+			transpose.z.y = y.z;
+			transpose.z.z = z.z;
 
-			return inverse;
+			return transpose;
 		}
 
 		public Matrix ToMatrix() {

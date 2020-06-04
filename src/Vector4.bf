@@ -12,5 +12,13 @@ namespace SpyroScope {
 		public static implicit operator Vector4(Vector v) {
 			return Vector4(v.x,v.y,v.z,0);
 		}
+
+		public static Vector4 operator +(Vector4 left, Vector4 right) {
+			return .(left.x + right.x, left.y + right.y, left.z + right.z, left.w + right.w);
+		}
+
+		public static Vector4 operator *(Vector4 left, float right) {
+			return .(left.x * right, left.y * right, left.z * right, left.w * right);
+		}
 	}
 }

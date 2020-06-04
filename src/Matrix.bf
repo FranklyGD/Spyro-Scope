@@ -20,18 +20,18 @@ namespace SpyroScope {
 			}
 		}
 
-		public static Matrix Euler(float roll, float pitch, float yaw) {
-			let sinRoll = Math.Sin(roll);
-			let cosRoll = Math.Cos(roll);
-			let sinPitch = Math.Sin(pitch);
-			let cosPitch = Math.Cos(pitch);
-			let sinYaw = Math.Sin(yaw);
-			let cosYaw = Math.Cos(yaw);
+		public static Matrix Euler(float x, float y, float z) {
+			let sx = Math.Sin(x);
+			let cx = Math.Cos(x);
+			let sy = Math.Sin(y);
+			let cy = Math.Cos(y);
+			let sz = Math.Sin(z);
+			let cz = Math.Cos(z);
 
 			return .(
-				.(cosYaw * cosPitch, -cosPitch * sinYaw, sinPitch),
-				.(cosRoll * sinYaw + cosYaw * sinRoll * sinPitch, cosRoll * cosYaw - sinRoll * sinPitch * sinYaw, -cosPitch * sinRoll),
-				.(sinRoll * sinYaw - cosRoll * cosYaw * sinPitch, cosYaw * sinRoll + cosRoll * sinPitch * sinYaw, cosRoll * cosPitch)
+				.(cz * cy, -cy * sz, sy),
+				.(cx * sz + cz * sx * sy, cx * cz - sx * sy * sz, -cy * sx),
+				.(sx * sz - cx * cz * sy, cz * sx + cx * sy * sz, cx * cy)
 			);
 		}
 
@@ -43,22 +43,30 @@ namespace SpyroScope {
 			);
 		}
 
-		public Matrix Inverse() {
-			Matrix inverse = ?;
+		public static Matrix Scale(Vector scale) {
+			return .(
+				.(scale.x,0,0),
+				.(0,scale.y,0),
+				.(0,0,scale.z)
+			);
+		}
 
-			inverse.x.x = x.x;
-			inverse.x.y = y.x;
-			inverse.x.z = z.x;
+		public Matrix Transpose() {
+			Matrix transpose = ?;
 
-			inverse.y.x = x.y;
-			inverse.y.y = y.y;
-			inverse.y.z = z.y;
+			transpose.x.x = x.x;
+			transpose.x.y = y.x;
+			transpose.x.z = z.x;
+
+			transpose.y.x = x.y;
+			transpose.y.y = y.y;
+			transpose.y.z = z.y;
 			
-			inverse.z.x = x.z;
-			inverse.z.y = y.z;
-			inverse.z.z = z.z;
+			transpose.z.x = x.z;
+			transpose.z.y = y.z;
+			transpose.z.z = z.z;
 
-			return inverse;
+			return transpose;
 		}
 
 		public Matrix Orthonormalized() {
@@ -92,6 +100,30 @@ namespace SpyroScope {
 				}
 			}
 			return m;
+		}
+
+		// NOTE: Currently used for converting to camera matrix,
+		// may not be accurate or appropriate place for this
+		public MatrixInt ToMatrixIntCorrected() {
+			MatrixInt matrix = ?;
+
+			matrix.x.x = ToInt!(y.y);
+			matrix.x.y = ToInt!(y.z);
+			matrix.x.z = ToInt!(y.x);
+
+			matrix.y.x = ToInt!(z.y);
+			matrix.y.y = ToInt!(z.z);
+			matrix.y.z = ToInt!(z.x);
+
+			matrix.z.x = ToInt!(x.y);
+			matrix.z.y = ToInt!(x.z);
+			matrix.z.z = ToInt!(x.x);
+
+			return matrix;
+		}
+
+		mixin ToInt(float value) {
+			(int16)(value * 0x1000)
 		}
 	}
 }

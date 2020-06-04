@@ -4,13 +4,11 @@ namespace SpyroScope {
 		public uint32 radius;
 
 		public void Draw(Renderer renderer, Moby object) {
-			Vector glidePoint = object.position + .(0,0,(.)height);
-			renderer.PushTriangle(
-				glidePoint + .(-300,0,0), glidePoint + .(300,0,0), glidePoint + .(0,0,300),
-				.(255,255,0), .(255,255,0), .(255,255,0));
-			renderer.PushTriangle(
-				glidePoint + .(-300,0,0), glidePoint + .(300,0,0), glidePoint + .(0,0,300),
-				.(255,255,0), .(255,255,0), .(255,255,0));
+			Vector glidePoint = .(0,0,(.)height);
+
+			renderer.SetModel(object.position + glidePoint / 2, .Scale(radius / 10, radius / 10, height));
+
+			PrimitiveShape.cylinder.Draw();
 		}
 	}
 }

@@ -1,6 +1,7 @@
 using OpenGL;
 using SDL2;
 using System;
+using System.Collections;
 using System.Diagnostics;
 
 namespace SpyroScope {
@@ -17,10 +18,24 @@ namespace SpyroScope {
 			}
 		}
 
+		public struct Color4 {
+			public uint8 r,g,b,a;
+			public this(uint8 r, uint8 g, uint8 b, uint8 a) {
+				this.r = r;
+				this.g = g;
+				this.b = b;
+				this.a = a;
+			}
+		}
+
+		const uint maxGenericBufferLength = 0x6000;
 		uint vertexArrayObject;
 		Buffer<Vector> positions;
 		Buffer<Vector> normals;
 		Buffer<Color> colors;
+		DrawQueue[maxGenericBufferLength] drawQueue;
+		DrawQueue* lastDrawQueue;
+		
 		uint32 vertexCount;
 
 		uint vertexShader;
@@ -39,7 +54,8 @@ namespace SpyroScope {
 		public Matrix4 projection = .Identity;
 		public int uniformTintIndex; // Overall Tint Color
 		public float[3] tint;
-
+		public int uniformZdepthOffsetIndex; // Z-depth Offset (mainly for pushing the wireframe forward to avoid Z-fighting)
+		
 		public struct Buffer<T> {
 			public uint obj;
 			public T* map;
@@ -85,7 +101,21 @@ namespace SpyroScope {
 			}
 		}
 
+		struct DrawQueue {
+			public uint16 type;
+			public uint16 count;
+
+			public this(uint16 drawType, uint16 vertexCount) {
+				type = drawType;
+				count = vertexCount;
+			}
+		}
+
 		public this(SDL.Window* window) {
+			drawQueue[0].type = 0;
+			drawQueue[0].count = 0;
+			lastDrawQueue = &drawQueue[0];
+ 
 			SDL.GL_SetAttribute(.GL_CONTEXT_MAJOR_VERSION, (.)4);
 			SDL.GL_SetAttribute(.GL_CONTEXT_MINOR_VERSION, (.)6);
 			SDL.GL_SetAttribute(.GL_CONTEXT_FLAGS, (.)SDL.SDL_GLContextFlags.GL_CONTEXT_DEBUG_FLAG);
@@ -106,32 +136,33 @@ namespace SpyroScope {
 
 			// Create Buffers/Arrays
 
-			/*vertexArrayObject = 0;
+			vertexArrayObject = 0;
 			GL.glGenVertexArrays(1, &vertexArrayObject);
-			GL.glBindVertexArray(vertexArrayObject);*/
+			GL.glBindVertexArray(vertexArrayObject);
 
 			// Position Buffer
-			/*positions = .(0xC000);*/
+			positions = .(maxGenericBufferLength);
 			positionAttributeIndex = FindProgramAttribute(program, "vertexPosition");
-			/*GL.glVertexAttribPointer(positionAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
-			GL.glEnableVertexAttribArray(positionAttributeIndex);*/
+			GL.glVertexAttribPointer(positionAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
+			GL.glEnableVertexAttribArray(positionAttributeIndex);
 
 			// Normals Buffer
-			/*normals = .(0xC000);*/
+			normals = .(maxGenericBufferLength);
 			normalAttributeIndex = FindProgramAttribute(program, "vertexNormal");
-			/*GL.glVertexAttribPointer(normalAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
-			GL.glEnableVertexAttribArray(normalAttributeIndex);*/
+			GL.glVertexAttribPointer(normalAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
+			GL.glEnableVertexAttribArray(normalAttributeIndex);
 
 			// Color Buffer
-			/*colors = .(0xC000);*/
+			colors = .(maxGenericBufferLength);
 			colorAttributeIndex = FindProgramAttribute(program, "vertexColor");
-			/*GL.glVertexAttribIPointer(colorAttributeIndex, 3, GL.GL_UNSIGNED_BYTE, 0, null);
-			GL.glEnableVertexAttribArray(colorAttributeIndex);*/
+			GL.glVertexAttribIPointer(colorAttributeIndex, 3, GL.GL_UNSIGNED_BYTE, 0, null);
+			GL.glEnableVertexAttribArray(colorAttributeIndex);
 
 			// Get Uniforms
 			uniformModelMatrixIndex = FindProgramUniform(program, "model");
 			uniformViewMatrixIndex = FindProgramUniform(program, "view");
 			uniformProjectionMatrixIndex = FindProgramUniform(program, "projection");
+			uniformZdepthOffsetIndex = FindProgramUniform(program, "zdepthOffset");
 			
 			uniformTintIndex = FindProgramUniform(program, "tint");
 
@@ -149,14 +180,14 @@ namespace SpyroScope {
 		}
 
 		public ~this() {
-			/*GL.glDeleteVertexArrays(1, &vertexArrayObject);*/
+			GL.glDeleteVertexArrays(1, &vertexArrayObject);
 			GL.glDeleteShader(vertexShader);
 			GL.glDeleteShader(fragmentShader);
 			GL.glDeleteProgram(program);
 
-			/*positions.Dispose();
+			positions.Dispose();
 			normals.Dispose();
-			colors.Dispose();*/
+			colors.Dispose();
 		}
 
 		uint CompileShader(String sourcePath, uint shaderType) {
@@ -215,10 +246,29 @@ namespace SpyroScope {
 			vertexCount++;
 		}
 
-		//[Optimize]
-		public void PushTriangle(Vector p0, Vector p1, Vector p2,
+		public void DrawLine(Vector p0, Vector p1,
+			Color c0, Color c1) {
+			if (vertexCount + 2 > maxGenericBufferLength) {
+				Draw();
+			}
+				
+			let normal = Vector(0,0,1);
+
+			PushPoint(p0, normal, c0);
+			PushPoint(p1, normal, c1);
+
+			if (lastDrawQueue.type == GL.GL_LINES) {
+				lastDrawQueue.count += 2;
+			} else {
+				lastDrawQueue++;
+				lastDrawQueue.type = GL.GL_LINES;
+				lastDrawQueue.count = 2;
+			}
+		}
+
+		public void DrawTriangle(Vector p0, Vector p1, Vector p2,
 			Color c0, Color c1, Color c2) {
-			if (vertexCount + 3 > 0xC000) {
+			if (vertexCount + 3 > maxGenericBufferLength) {
 				Draw();
 			}
 
@@ -227,6 +277,14 @@ namespace SpyroScope {
 			PushPoint(p0, normal, c0);
 			PushPoint(p1, normal, c1);
 			PushPoint(p2, normal, c2);
+
+			if (lastDrawQueue.type == GL.GL_TRIANGLES) {
+				lastDrawQueue.count += 3;
+			} else {
+				lastDrawQueue++;
+				lastDrawQueue.type = GL.GL_TRIANGLES;
+				lastDrawQueue.count = 3;
+			}
 		}
 
 		public void SetModel(Vector position, Matrix basis) {
@@ -235,7 +293,7 @@ namespace SpyroScope {
 		}
 
 		public void SetView(Vector position, Matrix basis) {
-			view = basis * Matrix4.Translation(-position);
+			view = basis.Transpose() * Matrix4.Translation(-position);
 			GL.glUniformMatrix4fv(uniformViewMatrixIndex, 1, GL.GL_FALSE, (float*)&view);
 		}
 
@@ -249,11 +307,34 @@ namespace SpyroScope {
 			GL.glUniform3fv(uniformTintIndex, 1, &this.tint[0]);
 		}
 
+		public void BeginWireframe() {
+			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE);
+			GL.glUniform1f(uniformZdepthOffsetIndex, 0.5f); // Push the lines a little forward
+		}
+
+		public void BeginSolid() {
+			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL);
+			GL.glUniform1f(uniformZdepthOffsetIndex, 0); // Reset depth offset
+		}
+
 		public void Draw() {
+			SetModel(.Zero, .Identity);
+			SetTint(.(255,255,255));
+
+			GL.glBindVertexArray(vertexArrayObject);
+
 			// Flush
 			GL.glMemoryBarrier(GL.GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
-			GL.glDrawArrays(GL.GL_TRIANGLES, 0, (int32)vertexCount);
 
+			uint32 offset = 0;
+			DrawQueue* drawSlot = &drawQueue[0] + 1; 
+			while (drawSlot <= lastDrawQueue) {
+				GL.glDrawArrays(drawSlot.type, offset, drawSlot.count);
+				offset += drawSlot.count;
+				drawSlot++;
+			}
+
+			lastDrawQueue = &drawQueue;
 			vertexCount = 0;
 		}
 

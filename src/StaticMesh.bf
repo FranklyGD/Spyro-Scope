@@ -35,6 +35,10 @@ namespace SpyroScope {
 			Init();
 		}
 
+		public ~this() {
+			GL.glDeleteVertexArrays(1, &vertexArrayObject);
+		}
+
 		void Init() {
 			GL.glGenVertexArrays(1, &vertexArrayObject);
 			GL.glBindVertexArray(vertexArrayObject);

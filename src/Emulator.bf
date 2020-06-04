@@ -39,9 +39,7 @@ namespace SpyroScope {
 		public const Address[4] objectArrayPointers = .(0, 0, 0x80066f14, 0x8006c630);
 
 		public const Address[4] cameraPositionAddress = .(0, 0, 0x80067eac, 0x8006e100);
-		public const Address[4] cameraRotationRollAddress = .(0, 0, 0x80067ec8, 0x8006e12c);
-		public const Address[4] cameraRotationPitchAddress = .(0, 0, 0x80067eca, 0x8006e11e);
-		public const Address[4] cameraRotationYawAddress = .(0, 0, 0x80067ecc, 0x8006e120);
+		public const Address[4] cameraEulerRotationAddress = .(0, 0, 0x80067ec8, 0x8006e12c);
 		public const Address[4] cameraMatrixAddress = .(0, 0, 0x80067e98, 0x8006e0ec);
 
 		public const Address[4] collisionDataPointer = .(0, 0, 0x800673fc, 0x8006d150);
@@ -50,6 +48,7 @@ namespace SpyroScope {
 
 		// Game Values
 		public static VectorInt cameraPosition, spyroPosition;
+		public static uint16[3] cameraEulerRotation;
 		public static MatrixInt cameraBasis, spyroBasis;
 		public static int32 collidingTriangle = -1;
 		
@@ -114,6 +113,7 @@ namespace SpyroScope {
 			if (Windows.GetExitCodeProcess(processHandle, out exitCode) && exitCode != 259 /*STILL_ACTIVE*/) {
 				Console.WriteLine("Emulator was closed!");
 				emulator = .None;
+				Thread.Sleep(3000);
 			}
 		}
 
@@ -153,6 +153,7 @@ namespace SpyroScope {
 
 			ReadFromRAM(cameraPositionAddress[(int)rom], &cameraPosition, sizeof(VectorInt));
 			ReadFromRAM(cameraMatrixAddress[(int)rom], &cameraBasis, sizeof(MatrixInt));
+			ReadFromRAM(cameraEulerRotationAddress[(int)rom], &cameraEulerRotation, 6);
 
 			ReadFromRAM(0x8006a28c, &collidingTriangle, 4);
 

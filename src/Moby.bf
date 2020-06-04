@@ -25,7 +25,59 @@ namespace SpyroScope {
 		public uint8 lodDistance; // 78
 		uint8 l; // 79
 		uint32 m;
-		public uint8 colorID;
-		uint8[3] n; // 74
+		public Renderer.Color4 color;
+
+		public void Draw(Renderer renderer) {
+			let basis = Matrix.Euler(
+				-(float)eulerRotation.x / 0x80 * Math.PI_f,
+				(float)eulerRotation.y / 0x80 * Math.PI_f,
+				-(float)eulerRotation.z / 0x80 * Math.PI_f
+			);
+			DrawUtilities.Axis!(position, basis * .Scale(200,200,200), renderer);
+
+			// Is object rendering in game?
+			if (draw) {
+				renderer.SetModel(position, basis * .Scale(60,60,60));
+				renderer.SetTint(.(255,0,255));
+			} else {
+				renderer.SetModel(position, basis * .Scale(50,50,50));
+				renderer.SetTint(.(0,255,255));
+			}
+
+			PrimitiveShape.cube.Draw();
+
+			if (Emulator.rom == .RiptosRage) {
+				switch (objectTypeID) {
+					case 0x0400: { // Whirlwind
+						WhirlwindData whirlwind = ?;
+						Emulator.ReadFromRAM(dataPointer, &whirlwind, sizeof(WhirlwindData));
+						whirlwind.Draw(renderer, this);
+					}
+					case 0x01f0: {
+						Emulator.Address pathArrayPointer = ?;
+						Emulator.ReadFromRAM(dataPointer, &pathArrayPointer, 4);
+						uint16 waypointCount = ?;
+						Emulator.ReadFromRAM(pathArrayPointer, &waypointCount, 2);
+						uint8[] dataBytes = scope .[4 * 4 * waypointCount];
+						Emulator.ReadFromRAM(pathArrayPointer + 12, &dataBytes[0], 4 * 4 * waypointCount);
+						for (int i < waypointCount) {
+							let position = (VectorInt*)&dataBytes[4 * 4 * i];
+		
+							renderer.SetModel(*position, .Scale(500,500,50));
+							renderer.SetTint(.(255,255,0));
+							PrimitiveShape.cylinder.Draw();
+						}
+					} 
+				}
+			} else if (Emulator.rom == .YearOfTheDragon) {
+				switch (objectTypeID) {
+					case 0x03ff: {
+						WhirlwindData whirlwind = ?;
+						Emulator.ReadFromRAM(dataPointer, &whirlwind, sizeof(WhirlwindData));
+						whirlwind.Draw(renderer, this);
+					}
+				}
+			}
+		}
 	}
 }

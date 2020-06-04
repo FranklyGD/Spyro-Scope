@@ -11,25 +11,32 @@ namespace SpyroScope {
 		public readonly uint32 id;
 
 		public bool closed { get; private set; }
-		public bool drawMap = true;
+		public bool drawMapWireframe;
 
 		static uint32 currentObjPointer = 0;
-		static VectorInt originalPos;
 
 		static bool cameraHijacked;
 		static float cameraSpeed = 64;
 		static Vector cameraMotion;
 		static int cameraRollRate;
 
+		// Viewer Camera
+		static bool dislodgeCamera;
+		static Vector viewPosition;
+		static Vector viewEulerRotation;
+
+		// Game Camera
+		static Matrix4 gameProjection = .Perspective(55, 4f/3f, 100, 175000);
+
 		StaticMesh collisionMesh ~ delete _;
 
 		public this() {
-			int32 w = 500, h = 400;
+			int32 w = 750, h = 600;
 
 			window = SDL.CreateWindow("Scope", .Undefined, .Undefined, w, h,
 				.Shown | .Resizable | .InputFocus | .Utility | .OpenGL);
 			renderer = new .(window);
-			renderer.SetPerspectiveProjection(55f, (float)w / h, 100, 1000000);
+			renderer.SetPerspectiveProjection(55f, (float)w / h, 100, 500000);
 
 			id = SDL.GetWindowID(window);
 
@@ -63,29 +70,16 @@ namespace SpyroScope {
 			Emulator.FetchRAMBaseAddress();
 			Emulator.FetchImportantObjects();
 
-			renderer.SetView(Emulator.cameraPosition, Emulator.cameraBasis.ToMatrixCorrected().Inverse());
+			UpdateView();
 
-			// Draw collision mesh
-			renderer.SetModel(.Zero, .Identity);
-			renderer.SetTint(.(255,255,255));
-
-			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL);
-			renderer.SetTint(.(255,255,255));
-
-			if (drawMap) {
-				collisionMesh.Draw();
-				renderer.SetTint(.(0,0,0));
+			DrawCollisionMesh();
+			if (dislodgeCamera) {
+				DrawGameCameraFrustrum();
 			}
-
-			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE);
-			collisionMesh.Draw();
-
-			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL);
 
 			// Object picker
 			uint32 closestObjPointer = 0;
 			Moby closestObj = ?;
-			VectorInt closestObjDirection = ?;
 			float closestDistance = float.PositiveInfinity;
 			
 			Emulator.Address objectArrayPointer = ?;
@@ -103,70 +97,29 @@ namespace SpyroScope {
 					break;
 				}
 
+				object.Draw(renderer);
+
 				let objDirection = object.position - Emulator.cameraPosition;
 				let distance = objDirection.Length();
-				if (distance < closestDistance && distance > 512) {
+				if (distance < closestDistance) {
 					closestObjPointer = objPointer;
 					closestObj = object;
-					closestObjDirection = objDirection;
 					closestDistance = distance;
 				}
 
-				let objectBasis = Matrix.Euler(
-						-(float)object.eulerRotation.x / 0x80 * Math.PI_f,
-						(float)object.eulerRotation.y / 0x80 * Math.PI_f,
-						-(float)object.eulerRotation.z / 0x80 * Math.PI_f
-					);
-
-				DrawAxis!(object.position, objectBasis * Matrix.Scale(300,300,300));
-				renderer.SetModel(object.position, objectBasis  * Matrix.Scale(50,50,50));
-				renderer.SetTint(.(0,255,255));
-
-				if (object.draw) {
-					renderer.SetModel(object.position, objectBasis * .Scale(60,60,60));
-					renderer.SetTint(.(255,0,255));
-				}
-
-				PrimitiveShape.cube.Draw();
-
-				/*if (object.objectTypeID == 0x0400) { // Whirlwind
-					WhirlwindData whirlwind = ?;
-					Emulator.ReadFromRAM(object.dataPointer, &whirlwind, sizeof(WhirlwindData));
-					whirlwind.Draw(renderer, object);
-				}*/
-
 				objPointer += 0x58;
 			}
-			//renderer.Draw();
 		
 			// Use nearest object and inspect
 			if (currentObjPointer != closestObjPointer) {
 				if (currentObjPointer != 0) {
-					Emulator.WriteToRAM(currentObjPointer + 0xc, &originalPos, sizeof(VectorInt));
 				}
-				originalPos = closestObj.position;
 				currentObjPointer = closestObjPointer;
 
-				Console.WriteLine("Direction to nearest obj [{:X8}] of type {:X} is: {}", closestObjPointer, closestObj.objectTypeID, closestObjDirection);
-				/*if (Emulator.collidingTriangle != -1) {
-					Console.WriteLine("Current Triangle Flag 0x{:X2}", Emulator.collisionFlags[Emulator.collidingTriangle]);
-				}*/
+				Console.WriteLine("Nearest obj [{:X8}] of type {:X}", closestObjPointer, closestObj.objectTypeID);
 			}
 
-			closestObj.position = originalPos + VectorInt(0, 0, (int32)(0x200 * Math.Sin((float)DateTime.Now.Millisecond / 314)));
-			Emulator.WriteToRAM(closestObjPointer + 0xc, &closestObj.position, sizeof(VectorInt));
-
-			// Move camera
-			var cameraBasis = Emulator.cameraBasis.ToMatrixCorrected();
-
-			if (cameraHijacked) {
-				let cameraMotionDirection = cameraBasis * cameraMotion;
-				let cameraNewPosition = Emulator.cameraPosition.ToVector() + cameraMotionDirection;
-				Emulator.cameraPosition = cameraNewPosition.ToVectorInt();
-
-				Emulator.MoveCameraTo(&Emulator.cameraPosition);
-			}
-
+			renderer.Draw();
 			renderer.Sync();
 			renderer.Display();
 		}
@@ -178,27 +131,34 @@ namespace SpyroScope {
 		public void OnEvent(SDL.Event event) {
 			switch (event.type) {
 				case .MouseButtonDown : {
-					//Console.WriteLine("MB {}", event.button.button);
 					if (event.button.button == 3) {
 						SDL.SetRelativeMouseMode(true);
 						cameraHijacked = true;
-						Emulator.KillCameraUpdate();
+						if (!dislodgeCamera) {
+							Emulator.KillCameraUpdate();
+						}
 					}
 				}
 				case .MouseMotion : {
 					if (cameraHijacked) {
-						int16 cameraPitch = ?;	
-						Emulator.ReadFromRAM(Emulator.cameraRotationPitchAddress[(int)Emulator.rom], &cameraPitch, 2);
-						int16 cameraYaw = ?;	
-						Emulator.ReadFromRAM(Emulator.cameraRotationYawAddress[(int)Emulator.rom], &cameraYaw, 2);
-	
-						cameraYaw -= (.)event.motion.xrel * 2;
-						cameraPitch += (.)event.motion.yrel * 2;
+						if (dislodgeCamera) {
+							viewEulerRotation.z -= (.)event.motion.xrel * 0.001f;
+							viewEulerRotation.x += (.)event.motion.yrel * 0.001f;
+							viewEulerRotation.x = Math.Clamp(viewEulerRotation.x, -0.5f, 0.5f);
+						} else {
+							int16[3] cameraEulerRotation = ?;	
+							Emulator.ReadFromRAM(Emulator.cameraEulerRotationAddress[(int)Emulator.rom], &cameraEulerRotation, 6);
 
-						cameraPitch = Math.Clamp(cameraPitch, -0x400, 0x400);
-						
-						Emulator.WriteToRAM(Emulator.cameraRotationPitchAddress[(int)Emulator.rom], &cameraPitch, 2);
-						Emulator.WriteToRAM(Emulator.cameraRotationYawAddress[(int)Emulator.rom], &cameraYaw, 2);
+							cameraEulerRotation[2] -= (.)event.motion.xrel * 2;
+							cameraEulerRotation[1] += (.)event.motion.yrel * 2;
+							cameraEulerRotation[1] = Math.Clamp(cameraEulerRotation[1], -0x400, 0x400);
+
+							// Force camera view basis in game
+							Emulator.cameraBasis = MatrixInt.Euler(0, (float)cameraEulerRotation[1] / 0x800 * Math.PI_f, (float)cameraEulerRotation[2] / 0x800 * Math.PI_f);
+
+							Emulator.WriteToRAM(Emulator.cameraMatrixAddress[(int)Emulator.rom], &Emulator.cameraBasis, sizeof(MatrixInt));
+							Emulator.WriteToRAM(Emulator.cameraEulerRotationAddress[(int)Emulator.rom], &cameraEulerRotation, 6);
+						}
 					}
 				}
 				case .MouseButtonUp : {
@@ -215,29 +175,31 @@ namespace SpyroScope {
 					}
 				}
 				case .KeyDown : {
-					//Console.WriteLine("Key {}", event.key.keysym.unicode);
 					if (event.key.isRepeat == 0) {
 						if (event.key.keysym.scancode == .P) {
 							Emulator.TogglePaused();
 						}
 						if (event.key.keysym.scancode == .LCtrl) {
 							cameraSpeed *= 8;
+							cameraMotion *= 8;
 						}
 						if (event.key.keysym.scancode == .M) {
-							drawMap = !drawMap;
+							drawMapWireframe = !drawMapWireframe;
 						}
 						if (event.key.keysym.scancode == .K) {
 							uint health = 0;
 							Emulator.WriteToRAM(Emulator.fuckSparx[(int)Emulator.rom], &health, 4);
 						}
 						if (event.key.keysym.scancode == .T && Emulator.cameraMode) {
-							Emulator.spyroPosition = Emulator.cameraPosition;
+							Emulator.spyroPosition = viewPosition.ToVectorInt();
 							Emulator.WriteToRAM(Emulator.spyroPositionPointers[(int)Emulator.rom], &Emulator.spyroPosition, sizeof(VectorInt));
 						}
 						if (event.key.keysym.scancode == .C) {
 							Emulator.ToggleCameraMode();
 						}
-
+						if (event.key.keysym.scancode == .V) {
+							dislodgeCamera = !dislodgeCamera;
+						}
 						if (cameraHijacked) {
 							if (event.key.keysym.scancode == .W) {
 								cameraMotion.z -= cameraSpeed;
@@ -286,6 +248,7 @@ namespace SpyroScope {
 					//Console.WriteLine("Key {}", event.key.keysym.unicode);
 					if (event.key.keysym.scancode == .LCtrl) {
 						cameraSpeed /= 8;
+						cameraMotion /= 8;
 					}
 
 					if (cameraHijacked) {
@@ -366,20 +329,78 @@ namespace SpyroScope {
 			collisionMesh = new .(v, n, c);
 		}
 
-		mixin DrawAxis(Vector position, Matrix basis) {
-			let squareAngle = Math.PI_f / 2;
-			renderer.SetModel(position + basis * Vector(0.5f,0,0), basis * .Euler(0, squareAngle, 0) * .Scale(0.1f,0.1f,1));
-			renderer.SetTint(.(255,0,0));
-			PrimitiveShape.cylinder.Draw();
-			renderer.SetModel(position + basis * Vector(0,0.5f,0), basis * .Euler(squareAngle, 0, 0) * .Scale(0.1f,0.1f,1));
-			renderer.SetTint(.(0,255,0));
-			PrimitiveShape.cylinder.Draw();
-			renderer.SetModel(position + basis * Vector(0,0,0.5f), basis * .Scale(0.1f,0.1f,1));
-			renderer.SetTint(.(0,0,255));
-			PrimitiveShape.cylinder.Draw();
+		void UpdateView() {
+			if (!dislodgeCamera) {
+				viewPosition = Emulator.cameraPosition;
+				viewEulerRotation.x = (float)Emulator.cameraEulerRotation[1] / 0x800;
+				viewEulerRotation.y = (float)Emulator.cameraEulerRotation[0] / 0x800;
+				viewEulerRotation.z = (float)Emulator.cameraEulerRotation[2] / 0x800;
+			}
+
+			// Corrected view matrix for the scope
+			let cameraBasis = Matrix.Euler(
+				(viewEulerRotation.x - 0.5f) * Math.PI_f,
+				viewEulerRotation.y  * Math.PI_f,
+				(0.5f - viewEulerRotation.z) * Math.PI_f
+			);
+
+			// Move camera
+			if (cameraHijacked) {
+				let cameraMotionDirection = cameraBasis * cameraMotion;
+				
+				if (dislodgeCamera) {
+					viewPosition += cameraMotionDirection;
+				} else {
+					let cameraNewPosition = Emulator.cameraPosition.ToVector() + cameraMotionDirection;
+					Emulator.cameraPosition = cameraNewPosition.ToVectorInt();
+					Emulator.MoveCameraTo(&Emulator.cameraPosition);
+				}
+			}
+
+			renderer.SetView(viewPosition, cameraBasis);
 		}
 
+		void DrawCollisionMesh() {
+			renderer.SetModel(.Zero, .Identity);
+			renderer.SetTint(.(255,255,255));
+			renderer.BeginSolid();
 
+			if (!drawMapWireframe) {
+				collisionMesh.Draw();
+				renderer.SetTint(.(128,128,128));
+			}
+
+			renderer.BeginWireframe();
+			collisionMesh.Draw();
+
+			// Restore polygon mode to default
+			renderer.BeginSolid();
+		}
+
+		void DrawGameCameraFrustrum() {
+			let cameraBasis = Emulator.cameraBasis.ToMatrixCorrected();
+			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(500,0,0), .(0,255,0), .(0,255,0));
+			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(0,500,0), .(0,0,255), .(0,0,255));
+			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(0,0,500), .(255,0,0), .(255,0,0));
+
+			let viewMatrixInv = gameProjection.Inverse();
+			let viewProjectionMatrixInv = cameraBasis * viewMatrixInv;
+
+			let topLeft = (Vector)(viewProjectionMatrixInv * Vector4(-1,1,1,1)) + Emulator.cameraPosition.ToVector();
+			let topRight = (Vector)(viewProjectionMatrixInv * Vector4(1,1,1,1)) + Emulator.cameraPosition.ToVector();
+			let bottomLeft = (Vector)(viewProjectionMatrixInv * Vector4(-1,-1,1,1)) + Emulator.cameraPosition.ToVector();
+			let bottomRight = (Vector)(viewProjectionMatrixInv * Vector4(1,-1,1,1)) + Emulator.cameraPosition.ToVector();
+
+			renderer.DrawLine(Emulator.cameraPosition, topLeft , .(128,128,128), .(16,16,16));
+			renderer.DrawLine(Emulator.cameraPosition, topRight, .(128,128,128), .(16,16,16));
+			renderer.DrawLine(Emulator.cameraPosition, bottomLeft, .(128,128,128), .(16,16,16));
+			renderer.DrawLine(Emulator.cameraPosition, bottomRight, .(128,128,128), .(16,16,16));
+
+			renderer.DrawLine(topLeft, topRight, .(16,16,16), .(16,16,16));
+			renderer.DrawLine(bottomLeft, bottomRight, .(16,16,16), .(16,16,16));
+			renderer.DrawLine(topLeft, bottomLeft, .(16,16,16), .(16,16,16));
+			renderer.DrawLine(topRight, bottomRight, .(16,16,16), .(16,16,16));
+		}
 	}
 
 	static {
