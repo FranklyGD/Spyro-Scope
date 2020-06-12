@@ -39,7 +39,7 @@ namespace SpyroScope {
 		public const Address[4] objectArrayPointers = .(0, 0, 0x80066f14, 0x8006c630);
 
 		public const Address[4] cameraPositionAddress = .(0, 0, 0x80067eac, 0x8006e100);
-		public const Address[4] cameraEulerRotationAddress = .(0, 0, 0x80067ec8, 0x8006e12c);
+		public const Address[4] cameraEulerRotationAddress = .(0, 0, 0x80067ec8, 0x8006e11c);
 		public const Address[4] cameraMatrixAddress = .(0, 0, 0x80067e98, 0x8006e0ec);
 
 		public const Address[4] collisionDataPointer = .(0, 0, 0x800673fc, 0x8006d150);
