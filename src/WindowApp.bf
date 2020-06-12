@@ -9,34 +9,47 @@ namespace SpyroScope {
 		Renderer renderer;
 
 		public readonly uint32 id;
+		public uint width, height;
 
 		public bool closed { get; private set; }
 		public bool drawMapWireframe;
 
-		static uint32 currentObjPointer = 0;
+		static int currentObjIndex;
+		static List<Moby> objectList = new .(128) ~ delete _;
 
 		static bool cameraHijacked;
 		static float cameraSpeed = 64;
 		static Vector cameraMotion;
 		static int cameraRollRate;
 
+		Vector mousePosition;
+
 		// Viewer Camera
 		static bool dislodgeCamera;
 		static Vector viewPosition;
 		static Vector viewEulerRotation;
 
+		static Matrix4 viewerProjection;
+		static Matrix4 viewerMatrix;
+		static Matrix4 uiProjection;
+
 		// Game Camera
-		static Matrix4 gameProjection = .Perspective(55, 4f/3f, 100, 175000);
+		static Matrix4 gameProjection = .Perspective(55f / 180 * Math.PI_f, 4f/3f, 300, 175000);
 
 		StaticMesh collisionMesh ~ delete _;
 
-		public this() {
-			int32 w = 750, h = 600;
+		//List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
-			window = SDL.CreateWindow("Scope", .Undefined, .Undefined, w, h,
+		public this() {
+			width = 750;
+			height = 600;
+
+			window = SDL.CreateWindow("Scope", .Undefined, .Undefined, (.)width, (.)height,
 				.Shown | .Resizable | .InputFocus | .Utility | .OpenGL);
 			renderer = new .(window);
-			renderer.SetPerspectiveProjection(55f, (float)w / h, 100, 500000);
+
+			viewerProjection = .Perspective(55f / 180 * Math.PI_f, (float)width / height, 300, 500000);
+			uiProjection = .Orthogonal(width, height, 0, 1);
 
 			id = SDL.GetWindowID(window);
 
@@ -65,59 +78,48 @@ namespace SpyroScope {
 
 			if (Emulator.emulator == .None) {
 				Close();
+				return;
 			}
 
 			Emulator.FetchRAMBaseAddress();
 			Emulator.FetchImportantObjects();
 
 			UpdateView();
+			
+			GL.glEnable(GL.GL_DEPTH_TEST);
 
 			DrawCollisionMesh();
 			if (dislodgeCamera) {
 				DrawGameCameraFrustrum();
 			}
 
-			// Object picker
-			uint32 closestObjPointer = 0;
-			Moby closestObj = ?;
-			float closestDistance = float.PositiveInfinity;
-			
 			Emulator.Address objectArrayPointer = ?;
-			// The amount originally placed in the world
-			//uint32 objectArrayLength = 0;
 			Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
-			//Emulator.ReadFromRAM(objectArrayPointer - 4, &objectArrayLength, 4);
-
 			Emulator.Address objPointer = objectArrayPointer;
-			//renderer.model = .Identity;
-			for (int i < 512 /*objectArrayLength*/) {
+
+			objectList.Clear();
+			for (int i < 512 /* Load object limit */) {
 				Moby object = ?;
 				Emulator.ReadFromRAM(objPointer, &object, sizeof(Moby));
 				if (object.dataPointer == 0) {
 					break;
 				}
 
+				objectList.Add(object);
 				object.Draw(renderer);
-
-				let objDirection = object.position - Emulator.cameraPosition;
-				let distance = objDirection.Length();
-				if (distance < closestDistance) {
-					closestObjPointer = objPointer;
-					closestObj = object;
-					closestDistance = distance;
-				}
 
 				objPointer += 0x58;
 			}
-		
-			// Use nearest object and inspect
-			if (currentObjPointer != closestObjPointer) {
-				if (currentObjPointer != 0) {
-				}
-				currentObjPointer = closestObjPointer;
 
-				Console.WriteLine("Nearest obj [{:X8}] of type {:X}", closestObjPointer, closestObj.objectTypeID);
-			}
+			viewerMatrix = renderer.projection * renderer.view;
+
+			// Setup render view for drawing GUI and overlays
+			renderer.SetModel(.Zero, .Identity);
+			renderer.SetView(.Zero, .Identity);
+			renderer.SetProjection(uiProjection);
+			GL.glDisable(GL.GL_DEPTH_TEST);
+
+			DrawGUI();
 
 			renderer.Draw();
 			renderer.Sync();
@@ -138,6 +140,21 @@ namespace SpyroScope {
 							Emulator.KillCameraUpdate();
 						}
 					}
+					if (event.button.button == 1) {
+						var mousePosX = event.button.x - (int)width / 2;
+						var mousePosY = (int)height / 2 - event.button.y;
+
+						mousePosition = .(mousePosX, mousePosY, 0);
+
+						currentObjIndex = GetObjectIndexUnderMouse();
+
+						if (currentObjIndex != -1) {
+							Emulator.Address objectArrayPointer = ?;
+							Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
+
+							Console.WriteLine("Selected object [{:X8}] of type {:X}", objectArrayPointer + currentObjIndex * sizeof(Moby), objectList[currentObjIndex].objectTypeID);
+						}
+					}
 				}
 				case .MouseMotion : {
 					if (cameraHijacked) {
@@ -154,11 +171,16 @@ namespace SpyroScope {
 							cameraEulerRotation[1] = Math.Clamp(cameraEulerRotation[1], -0x400, 0x400);
 
 							// Force camera view basis in game
-							Emulator.cameraBasis = MatrixInt.Euler(0, (float)cameraEulerRotation[1] / 0x800 * Math.PI_f, (float)cameraEulerRotation[2] / 0x800 * Math.PI_f);
+							Emulator.cameraBasisInv = MatrixInt.Euler(0, (float)cameraEulerRotation[1] / 0x800 * Math.PI_f, (float)cameraEulerRotation[2] / 0x800 * Math.PI_f);
 
-							Emulator.WriteToRAM(Emulator.cameraMatrixAddress[(int)Emulator.rom], &Emulator.cameraBasis, sizeof(MatrixInt));
+							Emulator.WriteToRAM(Emulator.cameraMatrixAddress[(int)Emulator.rom], &Emulator.cameraBasisInv, sizeof(MatrixInt));
 							Emulator.WriteToRAM(Emulator.cameraEulerRotationAddress[(int)Emulator.rom], &cameraEulerRotation, 6);
 						}
+					} else {
+						var mousePosX = event.motion.x - (int)width / 2;
+						var mousePosY = (int)height / 2 - event.motion.y;
+
+						mousePosition = .(mousePosX, mousePosY, 0);
 					}
 				}
 				case .MouseButtonUp : {
@@ -290,12 +312,12 @@ namespace SpyroScope {
 							closed = true;
 						}
 						case .Resized : {
-							let newWidth = event.window.data1;
-							let newHeight = event.window.data2;
-							GL.glViewport(0, 0, newWidth, newHeight);
+							width = (.)event.window.data1;
+							height = (.)event.window.data2;
+							GL.glViewport(0, 0, (.)width, (.)height);
 
-							let newAspect = (float)newWidth / newHeight;
-							renderer.SetPerspectiveProjection(55f, newAspect, 100, 1000000);
+							viewerProjection = .Perspective(55f / 180 * Math.PI_f, (float)width / height, 300, 500000);
+							uiProjection = .Orthogonal(width, height, 0, 1);
 						}
 						default : {}
 					}
@@ -358,6 +380,7 @@ namespace SpyroScope {
 			}
 
 			renderer.SetView(viewPosition, cameraBasis);
+			renderer.SetProjection(viewerProjection);
 		}
 
 		void DrawCollisionMesh() {
@@ -378,28 +401,87 @@ namespace SpyroScope {
 		}
 
 		void DrawGameCameraFrustrum() {
-			let cameraBasis = Emulator.cameraBasis.ToMatrixCorrected();
-			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(500,0,0), .(0,255,0), .(0,255,0));
-			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(0,500,0), .(0,0,255), .(0,0,255));
-			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(0,0,500), .(255,0,0), .(255,0,0));
+			let cameraBasis = Emulator.cameraBasisInv.ToMatrixCorrected().Transpose();
+			let cameraBasisCorrected = Matrix(cameraBasis.y, cameraBasis.z, -cameraBasis.x);
+			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(500,0,0), .(255,0,0), .(255,0,0));
+			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(0,500,0), .(0,255,0), .(0,255,0));
+			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(0,0,500), .(0,0,255), .(0,0,255));
 
-			let viewMatrixInv = gameProjection.Inverse();
-			let viewProjectionMatrixInv = cameraBasis * viewMatrixInv;
+			let projectionMatrixInv = gameProjection.Inverse();
+			let viewProjectionMatrixInv = cameraBasisCorrected * projectionMatrixInv;
 
-			let topLeft = (Vector)(viewProjectionMatrixInv * Vector4(-1,1,1,1)) + Emulator.cameraPosition.ToVector();
-			let topRight = (Vector)(viewProjectionMatrixInv * Vector4(1,1,1,1)) + Emulator.cameraPosition.ToVector();
-			let bottomLeft = (Vector)(viewProjectionMatrixInv * Vector4(-1,-1,1,1)) + Emulator.cameraPosition.ToVector();
-			let bottomRight = (Vector)(viewProjectionMatrixInv * Vector4(1,-1,1,1)) + Emulator.cameraPosition.ToVector();
+			let farTopLeft = (Vector)(viewProjectionMatrixInv * Vector4(-1,1,1,1)) + Emulator.cameraPosition.ToVector();
+			let farTopRight = (Vector)(viewProjectionMatrixInv * Vector4(1,1,1,1)) + Emulator.cameraPosition.ToVector();
+			let farBottomLeft = (Vector)(viewProjectionMatrixInv * Vector4(-1,-1,1,1)) + Emulator.cameraPosition.ToVector();
+			let farBottomRight = (Vector)(viewProjectionMatrixInv * Vector4(1,-1,1,1)) + Emulator.cameraPosition.ToVector();
 
-			renderer.DrawLine(Emulator.cameraPosition, topLeft , .(128,128,128), .(16,16,16));
-			renderer.DrawLine(Emulator.cameraPosition, topRight, .(128,128,128), .(16,16,16));
-			renderer.DrawLine(Emulator.cameraPosition, bottomLeft, .(128,128,128), .(16,16,16));
-			renderer.DrawLine(Emulator.cameraPosition, bottomRight, .(128,128,128), .(16,16,16));
+			let nearTopLeft = (Vector)(viewProjectionMatrixInv * Vector4(-1,1,-1,1)) + Emulator.cameraPosition.ToVector();
+			let nearTopRight = (Vector)(viewProjectionMatrixInv * Vector4(1,1,-1,1)) + Emulator.cameraPosition.ToVector();
+			let nearBottomLeft = (Vector)(viewProjectionMatrixInv * Vector4(-1,-1,-1,1)) + Emulator.cameraPosition.ToVector();
+			let nearBottomRight = (Vector)(viewProjectionMatrixInv * Vector4(1,-1,-1,1)) + Emulator.cameraPosition.ToVector();
 
-			renderer.DrawLine(topLeft, topRight, .(16,16,16), .(16,16,16));
-			renderer.DrawLine(bottomLeft, bottomRight, .(16,16,16), .(16,16,16));
-			renderer.DrawLine(topLeft, bottomLeft, .(16,16,16), .(16,16,16));
-			renderer.DrawLine(topRight, bottomRight, .(16,16,16), .(16,16,16));
+			renderer.DrawLine(nearTopLeft, farTopLeft , .(16,16,16), .(16,16,16));
+			renderer.DrawLine(nearTopRight, farTopRight, .(16,16,16), .(16,16,16));
+			renderer.DrawLine(nearBottomLeft, farBottomLeft, .(16,16,16), .(16,16,16));
+			renderer.DrawLine(nearBottomRight, farBottomRight, .(16,16,16), .(16,16,16));
+			
+			renderer.DrawLine(nearTopLeft, nearTopRight, .(16,16,16), .(16,16,16));
+			renderer.DrawLine(nearBottomLeft, nearBottomRight, .(16,16,16), .(16,16,16));
+			renderer.DrawLine(nearTopLeft, nearBottomLeft, .(16,16,16), .(16,16,16));
+			renderer.DrawLine(nearTopRight, nearBottomRight, .(16,16,16), .(16,16,16));
+
+			renderer.DrawLine(farTopLeft, farTopRight, .(16,16,16), .(16,16,16));
+			renderer.DrawLine(farBottomLeft, farBottomRight, .(16,16,16), .(16,16,16));
+			renderer.DrawLine(farTopLeft, farBottomLeft, .(16,16,16), .(16,16,16));
+			renderer.DrawLine(farTopRight, farBottomRight, .(16,16,16), .(16,16,16));
+		}
+
+		void DrawGUI() {
+			if (currentObjIndex != -1) {
+				let currentObject = objectList[currentObjIndex];
+				// Begin overlays
+				let test = viewerMatrix * Vector4(currentObject.position, 1);
+				if (test.w > 0) { // Must be in front of view
+					let depth = test.w / 300; // Divide by near plane distance for correct depth
+					DrawUtilities.Circle!(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(400f/depth,400f/depth,400f/depth), Renderer.Color(16,16,16), renderer);
+				}
+			}
+
+			/*let halfWidth = (float)width / 2;
+			let halfHeight = (float)height / 2;
+			for (let element in guiElements) {
+				element.Draw(.(-halfWidth, halfWidth, -halfHeight, halfHeight), renderer);
+			}*/
+		}
+
+		/*Vector Scene2Screen(Vector worldPosition) {
+			let viewPosition = viewerMatrix * Vector4(worldPosition, 1);
+
+		}*/
+
+		int GetObjectIndexUnderMouse() {
+			var closestObjectIndex = -1;
+			var closestDepth = float.PositiveInfinity;
+
+			for (int objectIndex = 0; objectIndex < objectList.Count; objectIndex++) {
+				let object = objectList[objectIndex];
+				let viewPosition = viewerMatrix * Vector4(object.position, 1);
+
+				if (viewPosition.w < 0 || viewPosition.w > closestDepth) {
+					continue;
+				}
+
+				let screenPosition = Vector(viewPosition.x / viewPosition.w * width / 2, viewPosition.y / viewPosition.w * height / 2, 0);
+				let selectSize = 400f / viewPosition.w * 300;
+				if (mousePosition.x < screenPosition.x + selectSize && mousePosition.x > screenPosition.x - selectSize &&
+					mousePosition.y < screenPosition.y + selectSize && mousePosition.y > screenPosition.y - selectSize) {
+
+					closestObjectIndex = objectIndex;
+					closestDepth = viewPosition.w;
+				}
+			}
+
+			return closestObjectIndex;
 		}
 	}
 

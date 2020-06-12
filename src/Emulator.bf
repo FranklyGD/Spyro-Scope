@@ -49,7 +49,7 @@ namespace SpyroScope {
 		// Game Values
 		public static VectorInt cameraPosition, spyroPosition;
 		public static uint16[3] cameraEulerRotation;
-		public static MatrixInt cameraBasis, spyroBasis;
+		public static MatrixInt cameraBasisInv, spyroBasis;
 		public static int32 collidingTriangle = -1;
 		
 		public static Emulator.Address collisionDataAddress;
@@ -152,7 +152,7 @@ namespace SpyroScope {
 			ReadFromRAM(spyroMatrixPointers[(int)rom], &spyroBasis, sizeof(MatrixInt));
 
 			ReadFromRAM(cameraPositionAddress[(int)rom], &cameraPosition, sizeof(VectorInt));
-			ReadFromRAM(cameraMatrixAddress[(int)rom], &cameraBasis, sizeof(MatrixInt));
+			ReadFromRAM(cameraMatrixAddress[(int)rom], &cameraBasisInv, sizeof(MatrixInt));
 			ReadFromRAM(cameraEulerRotationAddress[(int)rom], &cameraEulerRotation, 6);
 
 			ReadFromRAM(0x8006a28c, &collidingTriangle, 4);

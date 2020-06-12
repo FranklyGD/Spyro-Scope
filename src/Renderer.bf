@@ -50,6 +50,7 @@ namespace SpyroScope {
 		public Matrix4 model = .Identity;
 		public int uniformViewMatrixIndex; // Camera Inverse Transform
 		public Matrix4 view = .Identity;
+		public Matrix viewBasis = .Identity;
 		public int uniformProjectionMatrixIndex; // Camera Perspective
 		public Matrix4 projection = .Identity;
 		public int uniformTintIndex; // Overall Tint Color
@@ -293,13 +294,14 @@ namespace SpyroScope {
 		}
 
 		public void SetView(Vector position, Matrix basis) {
+			viewBasis = basis;
 			view = basis.Transpose() * Matrix4.Translation(-position);
 			GL.glUniformMatrix4fv(uniformViewMatrixIndex, 1, GL.GL_FALSE, (float*)&view);
 		}
 
-		public void SetPerspectiveProjection(float degreesFoV, float aspect, float near, float far) {
-			projection = .Perspective(degreesFoV / 180 * 3.14f, aspect, near, far);
-			GL.glUniformMatrix4fv(uniformProjectionMatrixIndex, 1, GL.GL_FALSE, (float*)&projection);
+		public void SetProjection(Matrix4 projection) {
+			this.projection = projection;
+			GL.glUniformMatrix4fv(uniformProjectionMatrixIndex, 1, GL.GL_FALSE, (float*)&this.projection);
 		}
 
 		public void SetTint(Color tint) {
