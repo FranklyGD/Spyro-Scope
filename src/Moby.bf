@@ -27,6 +27,8 @@ namespace SpyroScope {
 		uint32 m;
 		public Renderer.Color4 color;
 
+		public bool HasModel { get { return objectTypeID < 0x300; } }
+
 		public void Draw(Renderer renderer) {
 			let basis = Matrix.Euler(
 				-(float)eulerRotation.x / 0x80 * Math.PI_f,
@@ -48,6 +50,11 @@ namespace SpyroScope {
 
 			if (Emulator.rom == .RiptosRage) {
 				switch (objectTypeID) {
+					case 0x0078: { // Sparx
+						SparxData sparx = ?;
+						Emulator.ReadFromRAM(dataPointer, &sparx, sizeof(SparxData));
+						sparx.Draw(renderer, this);
+					}
 					case 0x0400: { // Whirlwind
 						WhirlwindData whirlwind = ?;
 						Emulator.ReadFromRAM(dataPointer, &whirlwind, sizeof(WhirlwindData));
@@ -58,14 +65,16 @@ namespace SpyroScope {
 						Emulator.ReadFromRAM(dataPointer, &pathArrayPointer, 4);
 						uint16 waypointCount = ?;
 						Emulator.ReadFromRAM(pathArrayPointer, &waypointCount, 2);
-						uint8[] dataBytes = scope .[4 * 4 * waypointCount];
-						Emulator.ReadFromRAM(pathArrayPointer + 12, &dataBytes[0], 4 * 4 * waypointCount);
-						for (int i < waypointCount) {
-							let position = (VectorInt*)&dataBytes[4 * 4 * i];
-		
-							renderer.SetModel(*position, .Scale(500,500,50));
-							renderer.SetTint(.(255,255,0));
-							PrimitiveShape.cylinder.Draw();
+						if (waypointCount > 0) {
+							uint8[] dataBytes = scope .[4 * 4 * waypointCount];
+							Emulator.ReadFromRAM(pathArrayPointer + 12, &dataBytes[0], 4 * 4 * waypointCount);
+							for (int i < waypointCount) {
+								let position = (VectorInt*)&dataBytes[4 * 4 * i];
+			
+								renderer.SetModel(*position, .Scale(500,500,50));
+								renderer.SetTint(.(255,128,0));
+								PrimitiveShape.cylinder.Draw();
+							}
 						}
 					} 
 				}

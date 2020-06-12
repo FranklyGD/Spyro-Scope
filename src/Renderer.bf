@@ -34,9 +34,9 @@ namespace SpyroScope {
 		Buffer<Vector> normals;
 		Buffer<Color> colors;
 		DrawQueue[maxGenericBufferLength] drawQueue;
-		DrawQueue* lastDrawQueue;
+		DrawQueue* startDrawQueue, lastDrawQueue;
 		
-		uint32 vertexCount;
+		uint32 vertexCount, vertexOffset;
 
 		uint vertexShader;
 		uint fragmentShader;
@@ -115,7 +115,7 @@ namespace SpyroScope {
 		public this(SDL.Window* window) {
 			drawQueue[0].type = 0;
 			drawQueue[0].count = 0;
-			lastDrawQueue = &drawQueue[0];
+			startDrawQueue = lastDrawQueue = &drawQueue[0];
  
 			SDL.GL_SetAttribute(.GL_CONTEXT_MAJOR_VERSION, (.)4);
 			SDL.GL_SetAttribute(.GL_CONTEXT_MINOR_VERSION, (.)6);
@@ -319,6 +319,26 @@ namespace SpyroScope {
 			GL.glUniform1f(uniformZdepthOffsetIndex, 0); // Reset depth offset
 		}
 
+		public void DrawPartial() {
+			SetModel(.Zero, .Identity);
+			SetTint(.(255,255,255));
+
+			GL.glBindVertexArray(vertexArrayObject);
+
+			// Flush
+			GL.glMemoryBarrier(GL.GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
+
+			startDrawQueue++;
+			while (startDrawQueue <= lastDrawQueue) {
+				GL.glDrawArrays(startDrawQueue.type, vertexOffset, startDrawQueue.count);
+				vertexOffset += startDrawQueue.count;
+				startDrawQueue++;
+			}
+			startDrawQueue.count = startDrawQueue.type = 0;
+
+			lastDrawQueue = startDrawQueue;
+		}
+
 		public void Draw() {
 			SetModel(.Zero, .Identity);
 			SetTint(.(255,255,255));
@@ -328,16 +348,15 @@ namespace SpyroScope {
 			// Flush
 			GL.glMemoryBarrier(GL.GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
 
-			uint32 offset = 0;
-			DrawQueue* drawSlot = &drawQueue[0] + 1; 
-			while (drawSlot <= lastDrawQueue) {
-				GL.glDrawArrays(drawSlot.type, offset, drawSlot.count);
-				offset += drawSlot.count;
-				drawSlot++;
+			startDrawQueue++;
+			while (startDrawQueue <= lastDrawQueue) {
+				GL.glDrawArrays(startDrawQueue.type, vertexOffset, startDrawQueue.count);
+				vertexOffset += startDrawQueue.count;
+				startDrawQueue++;
 			}
 
-			lastDrawQueue = &drawQueue;
-			vertexCount = 0;
+			startDrawQueue = lastDrawQueue = &drawQueue[0];
+			vertexCount = vertexOffset = 0;
 		}
 
 		public void Sync() {

@@ -110,6 +110,8 @@ namespace SpyroScope {
 
 				objPointer += 0x58;
 			}
+			
+			renderer.DrawPartial();
 
 			viewerMatrix = renderer.projection * renderer.view;
 
