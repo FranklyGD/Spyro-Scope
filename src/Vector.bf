@@ -19,7 +19,7 @@ namespace SpyroScope {
 		}
 
 		public VectorInt ToVectorInt() {
-			return .((.)x,(.)y,(.)z);
+			return .((.)Math.Round(x),(.)Math.Round(y),(.)Math.Round(z));
 		}
 
 		public float LengthSq() {

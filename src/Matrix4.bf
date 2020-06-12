@@ -46,8 +46,18 @@ namespace SpyroScope {
 			return .(
 				.(1f / (aspect * tanFoV2),0,0,0),
 				.(0,1f / tanFoV2,0,0),
-				.(0,0,-(far + near) / space,-1),
-				.(0,0,-(2 * far * near) / space,0)
+				.(0,0,-(far) / space,-1),
+				.(0,0,-(far * near) / space,0)
+			);
+		}
+
+		public static Matrix4 Orthogonal(float width, float height, float near, float far) {
+			let space = far - near;
+			return .(
+				.(2f / width,0,0,0),
+				.(0,2f / height,0,0),
+				.(0,0,-2f / space,0),
+				.(0,0,-(far + near) / space,1)
 			);
 		}
 

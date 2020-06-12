@@ -2,11 +2,11 @@ using System;
 
 namespace SpyroScope {
 	struct MatrixInt {
-		public struct Column {
+		public struct Row {
 			public int16 x,y,z;
 		}
 
-		public Column x,y,z;
+		public Row x,y,z;
 
 		public static MatrixInt Euler(float x, float y, float z) {
 			return Matrix.Euler(x,y,z).ToMatrixIntCorrected();
@@ -50,18 +50,18 @@ namespace SpyroScope {
 
 		public Matrix ToMatrixCorrected() {
 			Matrix matrix = ?;
-
-			matrix.x.x = ToFloat!(x.z);
-			matrix.x.y = -ToFloat!(x.x);
-			matrix.x.z = -ToFloat!(x.y);
-
-			matrix.y.x = -ToFloat!(y.z);
-			matrix.y.y = ToFloat!(y.x);
-			matrix.y.z = ToFloat!(y.y);
-
-			matrix.z.x = -ToFloat!(z.z);
-			matrix.z.y = ToFloat!(z.x);
-			matrix.z.z = ToFloat!(z.y);
+			
+			matrix.x.x = ToFloat!(z.z);
+			matrix.x.y = -ToFloat!(x.z);
+			matrix.x.z = -ToFloat!(y.z);
+			
+			matrix.y.x = -ToFloat!(z.x);
+			matrix.y.y = ToFloat!(x.x);
+			matrix.y.z = ToFloat!(y.x);
+			
+			matrix.z.x = -ToFloat!(z.y);
+			matrix.z.y = ToFloat!(x.y);
+			matrix.z.z = ToFloat!(y.y);
 
 			return matrix;
 		}

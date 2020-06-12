@@ -9,6 +9,17 @@ namespace SpyroScope {
 			this.w = w;
 		}
 
+		public this(Vector v, float w) {
+			this.x = v.x;
+			this.y = v.y;
+			this.z = v.z;
+			this.w = w;
+		}
+
+		public override void ToString(System.String strBuffer) {
+			strBuffer.AppendF("<{},{},{},{}>", x, y, z, w);
+		}
+
 		public static implicit operator Vector4(Vector v) {
 			return Vector4(v.x,v.y,v.z,0);
 		}
