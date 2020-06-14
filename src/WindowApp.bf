@@ -14,7 +14,7 @@ namespace SpyroScope {
 		public bool closed { get; private set; }
 		public bool drawMapWireframe;
 
-		static int currentObjIndex;
+		static int currentObjIndex, hoveredObjIndex;
 		static List<Moby> objectList = new .(128) ~ delete _;
 
 		static bool cameraHijacked;
@@ -48,7 +48,7 @@ namespace SpyroScope {
 				.Shown | .Resizable | .InputFocus | .Utility | .OpenGL);
 			renderer = new .(window);
 
-			viewerProjection = .Perspective(55f / 180 * Math.PI_f, (float)width / height, 300, 500000);
+			viewerProjection = .Perspective(55f / 180 * Math.PI_f, (float)width / height, 100, 500000);
 			uiProjection = .Orthogonal(width, height, 0, 1);
 
 			id = SDL.GetWindowID(window);
@@ -110,13 +110,16 @@ namespace SpyroScope {
 
 				objPointer += 0x58;
 			}
+
+			DrawSpyroInformation();
 			
-			renderer.DrawPartial();
+			renderer.SetModel(.Zero, .Identity);
+			renderer.SetTint(.(255,255,255));
+			renderer.Draw();
 
 			viewerMatrix = renderer.projection * renderer.view;
 
 			// Setup render view for drawing GUI and overlays
-			renderer.SetModel(.Zero, .Identity);
 			renderer.SetView(.Zero, .Identity);
 			renderer.SetProjection(uiProjection);
 			GL.glDisable(GL.GL_DEPTH_TEST);
@@ -143,12 +146,7 @@ namespace SpyroScope {
 						}
 					}
 					if (event.button.button == 1) {
-						var mousePosX = event.button.x - (int)width / 2;
-						var mousePosY = (int)height / 2 - event.button.y;
-
-						mousePosition = .(mousePosX, mousePosY, 0);
-
-						currentObjIndex = GetObjectIndexUnderMouse();
+						currentObjIndex = hoveredObjIndex;
 
 						if (currentObjIndex != -1) {
 							Emulator.Address objectArrayPointer = ?;
@@ -183,6 +181,8 @@ namespace SpyroScope {
 						var mousePosY = (int)height / 2 - event.motion.y;
 
 						mousePosition = .(mousePosX, mousePosY, 0);
+
+						hoveredObjIndex = GetObjectIndexUnderMouse();
 					}
 				}
 				case .MouseButtonUp : {
@@ -318,7 +318,7 @@ namespace SpyroScope {
 							height = (.)event.window.data2;
 							GL.glViewport(0, 0, (.)width, (.)height);
 
-							viewerProjection = .Perspective(55f / 180 * Math.PI_f, (float)width / height, 300, 500000);
+							viewerProjection = .Perspective(55f / 180 * Math.PI_f, (float)width / height, 100, 500000);
 							uiProjection = .Orthogonal(width, height, 0, 1);
 						}
 						default : {}
@@ -329,10 +329,12 @@ namespace SpyroScope {
 		}
 
 		void OnSceneChanged() {
+			currentObjIndex = -1;
+
 			let vertexCount = Emulator.collisionTriangles.Count * 3;
-			Vector[] v = new .[vertexCount];
-			Vector[] n = new .[vertexCount];
-			Renderer.Color[] c = new .[vertexCount];
+			Vector[] vertices = new .[vertexCount];
+			Vector[] normals = new .[vertexCount];
+			Renderer.Color[] colors = new .[vertexCount];
 
 			for (int triangleIndex < Emulator.collisionTriangles.Count) {
 				let triangle = Emulator.collisionTriangles[triangleIndex];
@@ -340,17 +342,18 @@ namespace SpyroScope {
 				let unpackedTriangle = triangle.Unpack();
 				
 				let normal = Vector.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
-				var color = (Emulator.specialTerrainBeginIndex > (uint)triangleIndex) ? Renderer.Color(255,64,64) : Renderer.Color(255,255,255);
+				let color = (Emulator.specialTerrainBeginIndex > (uint)triangleIndex) ? Renderer.Color(255,64,64) : Renderer.Color(255,255,255);
 
 				for (int vi < 3) {
-					v[triangleIndex * 3 + vi] = unpackedTriangle[vi];
-					n[triangleIndex * 3 + vi] = normal;
-					c[triangleIndex * 3 + vi] = color;
+					let i = triangleIndex * 3 + vi;
+					vertices[i] = unpackedTriangle[vi];
+					normals[i] = normal;
+					colors[i] = color;
 				}
 			}
 
 			delete collisionMesh;
-			collisionMesh = new .(v, n, c);
+			collisionMesh = new .(vertices, normals, colors);
 		}
 
 		void UpdateView() {
@@ -438,6 +441,16 @@ namespace SpyroScope {
 			renderer.DrawLine(farTopRight, farBottomRight, .(16,16,16), .(16,16,16));
 		}
 
+		void DrawSpyroInformation() {
+			DrawUtilities.Arrow!(Emulator.spyroPosition, Emulator.spyroVelocity / 10, 25, Renderer.Color(255,255,0), renderer);
+			DrawUtilities.Arrow!(Emulator.spyroPosition, Emulator.spyroPhysics / 10, 50, Renderer.Color(255,128,0), renderer);
+
+			let viewerSpyroBasis = Emulator.spyroBasis.ToMatrix();
+			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + viewerSpyroBasis * Vector(500,0,0), .(255,0,0), .(255,0,0));
+			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + viewerSpyroBasis * Vector(0,500,0), .(0,255,0), .(0,255,0));
+			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + viewerSpyroBasis * Vector(0,0,500), .(0,0,255), .(0,0,255));
+		}
+
 		void DrawGUI() {
 			if (currentObjIndex != -1) {
 				let currentObject = objectList[currentObjIndex];
@@ -446,6 +459,16 @@ namespace SpyroScope {
 				if (test.w > 0) { // Must be in front of view
 					let depth = test.w / 300; // Divide by near plane distance for correct depth
 					DrawUtilities.Circle!(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(400f/depth,400f/depth,400f/depth), Renderer.Color(16,16,16), renderer);
+				}
+			}
+
+			if (hoveredObjIndex != -1) {
+				let hoveredObject = objectList[hoveredObjIndex];
+				// Begin overlays
+				let test = viewerMatrix * Vector4(hoveredObject.position, 1);
+				if (test.w > 0) { // Must be in front of view
+					let depth = test.w / 300; // Divide by near plane distance for correct depth
+					DrawUtilities.Circle!(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(350f/depth,350f/depth,350f/depth), Renderer.Color(128,64,16), renderer);
 				}
 			}
 

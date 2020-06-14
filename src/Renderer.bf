@@ -319,30 +319,7 @@ namespace SpyroScope {
 			GL.glUniform1f(uniformZdepthOffsetIndex, 0); // Reset depth offset
 		}
 
-		public void DrawPartial() {
-			SetModel(.Zero, .Identity);
-			SetTint(.(255,255,255));
-
-			GL.glBindVertexArray(vertexArrayObject);
-
-			// Flush
-			GL.glMemoryBarrier(GL.GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
-
-			startDrawQueue++;
-			while (startDrawQueue <= lastDrawQueue) {
-				GL.glDrawArrays(startDrawQueue.type, vertexOffset, startDrawQueue.count);
-				vertexOffset += startDrawQueue.count;
-				startDrawQueue++;
-			}
-			startDrawQueue.count = startDrawQueue.type = 0;
-
-			lastDrawQueue = startDrawQueue;
-		}
-
 		public void Draw() {
-			SetModel(.Zero, .Identity);
-			SetTint(.(255,255,255));
-
 			GL.glBindVertexArray(vertexArrayObject);
 
 			// Flush
@@ -354,9 +331,9 @@ namespace SpyroScope {
 				vertexOffset += startDrawQueue.count;
 				startDrawQueue++;
 			}
-
-			startDrawQueue = lastDrawQueue = &drawQueue[0];
-			vertexCount = vertexOffset = 0;
+			
+			startDrawQueue.count = startDrawQueue.type = 0;
+			lastDrawQueue = startDrawQueue;
 		}
 
 		public void Sync() {
@@ -376,6 +353,8 @@ namespace SpyroScope {
 		public void Clear() {
 			GL.glClearColor(0,0,0,1);
 			GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
+			startDrawQueue = lastDrawQueue = &drawQueue[0];
+			vertexCount = vertexOffset = 0;
 		}
 
 		public static void CheckForErrors() {

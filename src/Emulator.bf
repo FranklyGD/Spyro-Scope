@@ -34,7 +34,9 @@ namespace SpyroScope {
 		public const String[4] gameNames = .(String.Empty, "Spyro the Dragon", "Ripto's Rage", "Year of the Dragon");
 
 		public const Address[4] spyroPositionPointers = .(0, 0, 0x80069ff0, 0x80070408);
-		public const Address[4] spyroMatrixPointers = .(0, 0, 0x8006a020, 0x80070438);	
+		public const Address[4] spyroMatrixPointers = .(0, 0, 0x8006a020, 0x80070438);
+		public const Address[4] spyroVelocityPointers = .(0, 0, 0x8006a084, 0);
+		public const Address[4] spyroPhysicsPointers = .(0, 0, 0x8006a090, 0);
 
 		public const Address[4] objectArrayPointers = .(0, 0, 0x80066f14, 0x8006c630);
 
@@ -47,7 +49,7 @@ namespace SpyroScope {
 		public const Address[4] fuckSparx = .(0, 0, 0x8006A248, 0x80070688);
 
 		// Game Values
-		public static VectorInt cameraPosition, spyroPosition;
+		public static VectorInt cameraPosition, spyroPosition, spyroVelocity, spyroPhysics;
 		public static uint16[3] cameraEulerRotation;
 		public static MatrixInt cameraBasisInv, spyroBasis;
 		public static int32 collidingTriangle = -1;
@@ -150,6 +152,8 @@ namespace SpyroScope {
 		public static void FetchImportantObjects() {
 			ReadFromRAM(spyroPositionPointers[(int)rom], &spyroPosition, sizeof(VectorInt));
 			ReadFromRAM(spyroMatrixPointers[(int)rom], &spyroBasis, sizeof(MatrixInt));
+			ReadFromRAM(spyroVelocityPointers[(int)rom], &spyroVelocity, sizeof(VectorInt));
+			ReadFromRAM(spyroPhysicsPointers[(int)rom], &spyroPhysics, sizeof(VectorInt));
 
 			ReadFromRAM(cameraPositionAddress[(int)rom], &cameraPosition, sizeof(VectorInt));
 			ReadFromRAM(cameraMatrixAddress[(int)rom], &cameraBasisInv, sizeof(MatrixInt));

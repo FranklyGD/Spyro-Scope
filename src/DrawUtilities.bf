@@ -4,7 +4,7 @@ namespace SpyroScope {
 	static struct DrawUtilities {
 		public static mixin Axis(Vector position, Matrix basis, Renderer renderer) {
 			let squareAngle = Math.PI_f / 2;
-			renderer.SetModel(position + basis * Vector(0.5f,0,0), basis * .Euler(0, squareAngle, 0) * .Scale(0.1f,0.1f,1));
+			renderer.SetModel(position + basis * Vector(0.5f,0,0), basis * .Euler(0, -squareAngle, 0) * .Scale(0.1f,0.1f,1));
 			renderer.SetTint(.(255,0,0));
 			PrimitiveShape.cylinder.Draw();
 			renderer.SetModel(position + basis * Vector(0,0.5f,0), basis * .Euler(squareAngle, 0, 0) * .Scale(0.1f,0.1f,1));
@@ -22,6 +22,34 @@ namespace SpyroScope {
 				let point0 = basis * Vector(Math.Cos(theta0), Math.Sin(theta0), 0);
 				let point1 = basis * Vector(Math.Cos(theta1), Math.Sin(theta1), 0);
 				renderer.DrawLine(position + point0, position + point1, color, color);
+			}
+		}
+
+		public static mixin Arrow(Vector origin, Vector direction, float width, Renderer.Color color, Renderer renderer) {
+			if (direction != .Zero) {
+				Matrix arrowMatrix = ?;
+
+				arrowMatrix.z = direction;
+				if (arrowMatrix.z.x == 0 && arrowMatrix.z.y == 0) {
+					arrowMatrix.x = .(1,0,0);
+					arrowMatrix.y = .(0,arrowMatrix.z.z > 0 ? 1 : -1,0);
+				} else {
+					arrowMatrix.y = Vector.Cross(arrowMatrix.z, .(0,0,1)).Normalized();
+					arrowMatrix.x = Vector.Cross(arrowMatrix.y, arrowMatrix.z).Normalized();
+				}
+
+				renderer.SetTint(color);
+
+				arrowMatrix.x *= width;
+				arrowMatrix.y *= width;
+				renderer.SetModel(origin + direction / 2, arrowMatrix);
+				PrimitiveShape.cylinder.Draw();
+
+				arrowMatrix.x *= 2;
+				arrowMatrix.y *= 2;
+				arrowMatrix.z = arrowMatrix.z.Normalized() * width * 2;
+				renderer.SetModel(origin + direction, arrowMatrix);
+				PrimitiveShape.cone.Draw();
 			}
 		}
 	}
