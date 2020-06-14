@@ -445,10 +445,10 @@ namespace SpyroScope {
 			DrawUtilities.Arrow!(Emulator.spyroPosition, Emulator.spyroVelocity / 10, 25, Renderer.Color(255,255,0), renderer);
 			DrawUtilities.Arrow!(Emulator.spyroPosition, Emulator.spyroPhysics / 10, 50, Renderer.Color(255,128,0), renderer);
 
-			let viewerSpyroBasis = Emulator.spyroBasis.ToMatrix();
-			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + viewerSpyroBasis * Vector(500,0,0), .(255,0,0), .(255,0,0));
-			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + viewerSpyroBasis * Vector(0,500,0), .(0,255,0), .(0,255,0));
-			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + viewerSpyroBasis * Vector(0,0,500), .(0,0,255), .(0,0,255));
+			let viewerSpyroBasis = Emulator.spyroBasis.ToMatrixCorrected();
+			renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(500,0,0), .(255,0,0), .(255,0,0));
+			renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(0,500,0), .(0,255,0), .(0,255,0));
+			renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(0,0,500), .(0,0,255), .(0,0,255));
 		}
 
 		void DrawGUI() {
