@@ -329,12 +329,14 @@ namespace SpyroScope {
 		}
 
 		void OnSceneChanged() {
-			currentObjIndex = -1;
+			currentObjIndex = hoveredObjIndex = -1;
 
 			let vertexCount = Emulator.collisionTriangles.Count * 3;
 			Vector[] vertices = new .[vertexCount];
 			Vector[] normals = new .[vertexCount];
 			Renderer.Color[] colors = new .[vertexCount];
+			
+			let uniqueTypes = scope List<uint8>();
 
 			for (int triangleIndex < Emulator.collisionTriangles.Count) {
 				let triangle = Emulator.collisionTriangles[triangleIndex];
@@ -342,7 +344,39 @@ namespace SpyroScope {
 				let unpackedTriangle = triangle.Unpack();
 				
 				let normal = Vector.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
-				let color = (Emulator.specialTerrainBeginIndex > (uint)triangleIndex) ? Renderer.Color(255,64,64) : Renderer.Color(255,255,255);
+				Renderer.Color color = .(255,255,255);
+
+				if (triangleIndex < Emulator.specialTerrainBeginIndex) {
+					let flagIndex = Emulator.collisionFlagsIndices[triangleIndex] & 0x3f;
+					if (flagIndex != 0x3f) {
+						Emulator.Address flagPointer = Emulator.collisionFlagPointerArray[flagIndex];
+						uint8 flag = ?;
+						Emulator.ReadFromRAM(flagPointer, &flag, 1);
+						switch (flag) {
+							case 0x00: color = .(255,255,64); // Quicksand
+							case 0x01: color = .(255,64,64); // Lava
+							case 0x02: color = .(64,64,64); // Road
+							case 0x03: color = .(255,64,255); // ???
+							case 0x04: color = .(64,255,255); // Ice
+							case 0x05: color = .(128,128,255); // Barrier
+							case 0x06: color = .(64,255,64); // Portal
+							case 0x07: color = .(64,64,255); // Electric
+							case 0x08: color = .(128,92,64); // Ladder
+							case 0x09: color = .(128,255,64); // Ramp
+							case 0x0A: color = .(64,64,128); // Slip
+							default: {
+								color = .(255,0,255);
+								if (!uniqueTypes.Contains(flag)) {
+									uniqueTypes.Add(flag);
+									Console.WriteLine("Terrain has {:X2} flag unidentified", flag);
+								} 
+							}
+						}
+					} else {
+						// Terrain Deforms
+						color = .(92,128,64);
+					}
+				}
 
 				for (int vi < 3) {
 					let i = triangleIndex * 3 + vi;
@@ -452,23 +486,25 @@ namespace SpyroScope {
 		}
 
 		void DrawGUI() {
-			if (currentObjIndex != -1) {
-				let currentObject = objectList[currentObjIndex];
-				// Begin overlays
-				let test = viewerMatrix * Vector4(currentObject.position, 1);
-				if (test.w > 0) { // Must be in front of view
-					let depth = test.w / 300; // Divide by near plane distance for correct depth
-					DrawUtilities.Circle!(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(400f/depth,400f/depth,400f/depth), Renderer.Color(16,16,16), renderer);
+			if (objectList.Count > 0) {
+				if (currentObjIndex != -1) {
+					let currentObject = objectList[currentObjIndex];
+					// Begin overlays
+					let test = viewerMatrix * Vector4(currentObject.position, 1);
+					if (test.w > 0) { // Must be in front of view
+						let depth = test.w / 300; // Divide by near plane distance for correct depth
+						DrawUtilities.Circle!(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(400f/depth,400f/depth,400f/depth), Renderer.Color(16,16,16), renderer);
+					}
 				}
-			}
-
-			if (hoveredObjIndex != -1) {
-				let hoveredObject = objectList[hoveredObjIndex];
-				// Begin overlays
-				let test = viewerMatrix * Vector4(hoveredObject.position, 1);
-				if (test.w > 0) { // Must be in front of view
-					let depth = test.w / 300; // Divide by near plane distance for correct depth
-					DrawUtilities.Circle!(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(350f/depth,350f/depth,350f/depth), Renderer.Color(128,64,16), renderer);
+	
+				if (hoveredObjIndex != -1) {
+					let hoveredObject = objectList[hoveredObjIndex];
+					// Begin overlays
+					let test = viewerMatrix * Vector4(hoveredObject.position, 1);
+					if (test.w > 0) { // Must be in front of view
+						let depth = test.w / 300; // Divide by near plane distance for correct depth
+						DrawUtilities.Circle!(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(350f/depth,350f/depth,350f/depth), Renderer.Color(128,64,16), renderer);
+					}
 				}
 			}
 

@@ -55,35 +55,72 @@ namespace SpyroScope {
 						Emulator.ReadFromRAM(dataPointer, &sparx, sizeof(SparxData));
 						sparx.Draw(renderer, this);
 					}
+					case 0x01f0: { // Glimmer Blue Dino
+						DrawPath(dataPointer, renderer);
+					}
+					case 0x0189: { // Shady Oasis NPC
+						Emulator.Address pathCount = ?;
+						Emulator.ReadFromRAM(dataPointer + 0x38, &pathCount, 4);
+
+						for (let p < pathCount) {
+							DrawPath(dataPointer + 0x5c + p * 4, renderer);
+						}
+					}
+					case 0x019f: { // Fish
+						DrawPath(dataPointer + 0x4, renderer);
+					}
+					case 0x01bc: { // Hunter
+						DrawPath(dataPointer + 0x38, renderer);
+					}
 					case 0x0400: { // Whirlwind
 						WhirlwindData whirlwind = ?;
 						Emulator.ReadFromRAM(dataPointer, &whirlwind, sizeof(WhirlwindData));
 						whirlwind.Draw(renderer, this);
 					}
-					case 0x01f0: {
-						Emulator.Address pathArrayPointer = ?;
-						Emulator.ReadFromRAM(dataPointer, &pathArrayPointer, 4);
-						uint16 waypointCount = ?;
-						Emulator.ReadFromRAM(pathArrayPointer, &waypointCount, 2);
-						if (waypointCount > 0) {
-							uint8[] dataBytes = scope .[4 * 4 * waypointCount];
-							Emulator.ReadFromRAM(pathArrayPointer + 12, &dataBytes[0], 4 * 4 * waypointCount);
-							for (int i < waypointCount) {
-								let position = (VectorInt*)&dataBytes[4 * 4 * i];
-			
-								renderer.SetModel(*position, .Scale(500,500,50));
-								renderer.SetTint(.(255,128,0));
-								PrimitiveShape.cylinder.Draw();
-							}
-						}
-					} 
 				}
 			} else if (Emulator.rom == .YearOfTheDragon) {
 				switch (objectTypeID) {
+					case 0x0078: { // Sparx
+						SparxData sparx = ?;
+						Emulator.ReadFromRAM(dataPointer, &sparx, sizeof(SparxData));
+						sparx.Draw(renderer, this);
+					}
 					case 0x03ff: {
 						WhirlwindData whirlwind = ?;
 						Emulator.ReadFromRAM(dataPointer, &whirlwind, sizeof(WhirlwindData));
 						whirlwind.Draw(renderer, this);
+					}
+				}
+			}
+		}
+
+		void DrawPath(Emulator.Address pathAddress, Renderer renderer) {
+			Emulator.Address pathArrayPointer = ?;
+			Emulator.ReadFromRAM(pathAddress, &pathArrayPointer, 4);
+			uint16 waypointCount = ?;
+			Emulator.ReadFromRAM(pathArrayPointer, &waypointCount, 2);
+			if (waypointCount > 0) {
+				uint8[] dataBytes = scope .[4 * 4 * waypointCount];
+				Emulator.ReadFromRAM(pathArrayPointer + 12, &dataBytes[0], 4 * 4 * waypointCount);
+				for (let i < waypointCount) {
+					let position = (VectorInt*)&dataBytes[4 * 4 * i];
+
+					renderer.SetModel(*position, .Scale(500,500,50));
+					renderer.SetTint(.(255,128,0));
+					PrimitiveShape.cylinder.Draw();
+					
+					if (i == 0) {
+						renderer.SetModel(*position, .Scale(400,400,100));
+						renderer.SetTint(.(0,255,0));
+						PrimitiveShape.cylinder.Draw();
+					}
+
+					if (i < waypointCount - 1) {
+						let nextPosition = (VectorInt*)&dataBytes[4 * 4 * (i + 1)];
+						let direction = *nextPosition - *position;
+						let normalizedDirection = direction.ToVector().Normalized();
+
+						DrawUtilities.Arrow!(*position + normalizedDirection * 400, normalizedDirection * (direction.Length() - 800), 125, Renderer.Color(255,128,0), renderer);
 					}
 				}
 			}
