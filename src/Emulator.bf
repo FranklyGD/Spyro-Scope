@@ -35,8 +35,8 @@ namespace SpyroScope {
 
 		public const Address[4] spyroPositionPointers = .(0, 0, 0x80069ff0, 0x80070408);
 		public const Address[4] spyroMatrixPointers = .(0, 0, 0x8006a020, 0x80070438);
-		public const Address[4] spyroVelocityPointers = .(0, 0, 0x8006a084, 0);
-		public const Address[4] spyroPhysicsPointers = .(0, 0, 0x8006a090, 0);
+		public const Address[4] spyroIntendedVelocityPointers = .(0, 0, 0x8006a084, 0x80070494);
+		public const Address[4] spyroPhysicsVelocityPointers = .(0, 0, 0x8006a090, 0x800704a0);
 
 		public const Address[4] objectArrayPointers = .(0, 0, 0x80066f14, 0x8006c630);
 
@@ -45,6 +45,7 @@ namespace SpyroScope {
 		public const Address[4] cameraMatrixAddress = .(0, 0, 0x80067e98, 0x8006e0ec);
 
 		public const Address[4] collisionDataPointer = .(0, 0, 0x800673fc, 0x8006d150);
+		public const Address[4] collisionFlagsArrayPointer = .(0, 0, 0x800673e8, 0x8006d13c);
 
 		public const Address[4] fuckSparx = .(0, 0, 0x8006A248, 0x80070688);
 
@@ -58,7 +59,8 @@ namespace SpyroScope {
 		public static List<PackedTriangle> collisionTriangles = new .() ~ delete _;
 		public static uint32 specialTerrainBeginIndex;
 		public static uint32 collisionFlagsStartingPoint2;
-		public static List<uint8> collisionFlags = new .() ~ delete _;
+		public static List<uint8> collisionFlagsIndices = new .() ~ delete _;
+		public static List<uint32> collisionFlagPointerArray = new .() ~ delete _;
 		public static List<uint8> collisionFlags2 = new .() ~ delete _;
 
 		// Function Overrides
@@ -152,20 +154,20 @@ namespace SpyroScope {
 		public static void FetchImportantObjects() {
 			ReadFromRAM(spyroPositionPointers[(int)rom], &spyroPosition, sizeof(VectorInt));
 			ReadFromRAM(spyroMatrixPointers[(int)rom], &spyroBasis, sizeof(MatrixInt));
-			ReadFromRAM(spyroVelocityPointers[(int)rom], &spyroVelocity, sizeof(VectorInt));
-			ReadFromRAM(spyroPhysicsPointers[(int)rom], &spyroPhysics, sizeof(VectorInt));
+			ReadFromRAM(spyroIntendedVelocityPointers[(int)rom], &spyroVelocity, sizeof(VectorInt));
+			ReadFromRAM(spyroPhysicsVelocityPointers[(int)rom], &spyroPhysics, sizeof(VectorInt));
 
 			ReadFromRAM(cameraPositionAddress[(int)rom], &cameraPosition, sizeof(VectorInt));
 			ReadFromRAM(cameraMatrixAddress[(int)rom], &cameraBasisInv, sizeof(MatrixInt));
 			ReadFromRAM(cameraEulerRotationAddress[(int)rom], &cameraEulerRotation, 6);
 
-			ReadFromRAM(0x8006a28c, &collidingTriangle, 4);
+			//ReadFromRAM(0x8006a28c, &collidingTriangle, 4);
 
 			let collisionDataAddressOld = collisionDataAddress;
 			Emulator.ReadFromRAM(Emulator.collisionDataPointer[(int)Emulator.rom], &collisionDataAddress, 4);
 			if (collisionDataAddressOld != collisionDataAddress) {
 				// Wait for the level data to load before caching
-				Thread.Sleep(100);
+				Thread.Sleep(500);
 
 				uint32 triangleCount = ?;
 				Emulator.ReadFromRAM(collisionDataAddress, &triangleCount, 4);
@@ -180,10 +182,17 @@ namespace SpyroScope {
 				
 				Emulator.Address collisionFlagArray = ?;
 
-				collisionFlags.Clear();
-				let ptrFlags = collisionFlags.GrowUnitialized(triangleCount);
-				Emulator.ReadFromRAM(collisionDataAddress + 24, &collisionFlagArray, 2);
-				Emulator.ReadFromRAM(collisionFlagArray, ptrFlags, 1 * triangleCount);
+				collisionFlagsIndices.Clear();
+				let ptrFlagIndices = collisionFlagsIndices.GrowUnitialized(triangleCount);
+				Emulator.ReadFromRAM(collisionDataAddress + 24, &collisionFlagArray, 4);
+				Emulator.ReadFromRAM(collisionFlagArray, ptrFlagIndices, 1 * triangleCount);
+
+				collisionFlagPointerArray.Clear();
+				let ptrFlags = collisionFlagPointerArray.GrowUnitialized(0x3f);
+				Emulator.ReadFromRAM(collisionFlagsArrayPointer[(uint)rom], &collisionFlagArray, 4);
+				Emulator.ReadFromRAM(collisionFlagArray, ptrFlags, 4 * 0x3f);
+
+
 
 				collisionFlags2.Clear();
 				let ptrFlags2 = collisionFlags2.GrowUnitialized(triangleCount);
