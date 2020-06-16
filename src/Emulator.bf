@@ -31,7 +31,7 @@ namespace SpyroScope {
 		// Begin Spyro games information
 
 		public const Address[3] testAddresses = .(0, 0x80066ea8, 0x8006c490);
-		public const String[4] gameNames = .(String.Empty, "Spyro the Dragon", "Ripto's Rage", "Year of the Dragon");
+		public const String[4] gameNames = .(String.Empty, "Spyro the Dragon", "Spyro: Ripto's Rage", "Spyro: Year of the Dragon");
 
 		public const Address[4] spyroPositionPointers = .(0, 0, 0x80069ff0, 0x80070408);
 		public const Address[4] spyroMatrixPointers = .(0, 0, 0x8006a020, 0x80070438);
@@ -209,14 +209,14 @@ namespace SpyroScope {
 			uint32 v = 0;
 			WriteToRAM(updateAddresses[(int)rom], &v, 4);
 			pausedMode = true;
-			Console.WriteLine("Game Paused");
+			Console.WriteLine("Game Paused.");
 		}
 
 		public static void RestoreUpdate() {
 			uint32 v = updateJumpValue[(int)rom];
 			WriteToRAM(updateAddresses[(int)rom], &v, 4);
 			pausedMode = false;
-			Console.WriteLine("Game Resumed");
+			Console.WriteLine("Game Resumed.");
 		}
 
 		public static void TogglePaused() {
@@ -232,14 +232,14 @@ namespace SpyroScope {
 			uint32 v = 0;
 			WriteToRAM(cameraUpdateAddresses[(int)rom], &v, 4);
 			cameraMode = true;
-			Console.WriteLine("Free Camera On");
+			Console.WriteLine("Free Camera On.");
 		}
 
 		public static void RestoreCameraUpdate() {
 			uint32 v = cameraUpdateJumpValue[(int)rom];
 			WriteToRAM(cameraUpdateAddresses[(int)rom], &v, 4);
 			cameraMode = false;
-			Console.WriteLine("Free Camera Off");
+			Console.WriteLine("Free Camera Off.");
 		}
 
 		public static void ToggleCameraMode() {
@@ -248,6 +248,7 @@ namespace SpyroScope {
 			} else {
 				KillCameraUpdate();
 			}
+			Console.WriteLine("Toggled Camera Mode.");
 		}
 
 		public static void GetCameraPosition(VectorInt* position) {
