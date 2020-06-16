@@ -13,6 +13,7 @@ namespace SpyroScope {
 
 		public bool closed { get; private set; }
 		public bool drawMapWireframe;
+		public bool drawObjects;
 
 		static int currentObjIndex, hoveredObjIndex;
 		static List<Moby> objectList = new .(128) ~ delete _;
@@ -106,7 +107,9 @@ namespace SpyroScope {
 				}
 
 				objectList.Add(object);
-				object.Draw(renderer);
+				if (!drawObjects) {
+					object.Draw(renderer);
+				}
 
 				objPointer += 0x58;
 			}
@@ -209,6 +212,11 @@ namespace SpyroScope {
 						}
 						if (event.key.keysym.scancode == .M) {
 							drawMapWireframe = !drawMapWireframe;
+							Console.WriteLine("Swapped Map View.");
+						}
+						if (event.key.keysym.scancode == .O) {
+							drawObjects = !drawObjects;
+							Console.WriteLine("Swapped Object View.");
 						}
 						if (event.key.keysym.scancode == .K) {
 							uint health = 0;
@@ -217,6 +225,7 @@ namespace SpyroScope {
 						if (event.key.keysym.scancode == .T && Emulator.cameraMode) {
 							Emulator.spyroPosition = viewPosition.ToVectorInt();
 							Emulator.WriteToRAM(Emulator.spyroPositionPointers[(int)Emulator.rom], &Emulator.spyroPosition, sizeof(VectorInt));
+							Console.WriteLine("Teleported Spyro to current Camera View.");
 						}
 						if (event.key.keysym.scancode == .C) {
 							Emulator.ToggleCameraMode();
@@ -493,7 +502,9 @@ namespace SpyroScope {
 					let test = viewerMatrix * Vector4(currentObject.position, 1);
 					if (test.w > 0) { // Must be in front of view
 						let depth = test.w / 300; // Divide by near plane distance for correct depth
-						DrawUtilities.Circle!(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(400f/depth,400f/depth,400f/depth), Renderer.Color(16,16,16), renderer);
+						if (!drawObjects) {
+							DrawUtilities.Circle!(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(400f/depth,400f/depth,400f/depth), Renderer.Color(16,16,16), renderer);
+						}
 					}
 				}
 	
@@ -503,7 +514,9 @@ namespace SpyroScope {
 					let test = viewerMatrix * Vector4(hoveredObject.position, 1);
 					if (test.w > 0) { // Must be in front of view
 						let depth = test.w / 300; // Divide by near plane distance for correct depth
-						DrawUtilities.Circle!(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(350f/depth,350f/depth,350f/depth), Renderer.Color(128,64,16), renderer);
+						if (!drawObjects) {
+							DrawUtilities.Circle!(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(350f/depth,350f/depth,350f/depth), Renderer.Color(128,64,16), renderer);
+						}
 					}
 				}
 			}
