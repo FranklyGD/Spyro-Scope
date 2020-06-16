@@ -474,10 +474,10 @@ namespace SpyroScope {
 			renderer.DrawLine(farTopLeft, farBottomLeft, .(16,16,16), .(16,16,16));
 			renderer.DrawLine(farTopRight, farBottomRight, .(16,16,16), .(16,16,16));
 		}
-
+		
 		void DrawSpyroInformation() {
-			DrawUtilities.Arrow!(Emulator.spyroPosition, Emulator.spyroVelocity / 10, 25, Renderer.Color(255,255,0), renderer);
-			DrawUtilities.Arrow!(Emulator.spyroPosition, Emulator.spyroPhysics / 10, 50, Renderer.Color(255,128,0), renderer);
+			DrawUtilities.Arrow!(Emulator.spyroPosition, Emulator.spyroIntendedVelocity / 10, 25, Renderer.Color(255,255,0), renderer);
+			DrawUtilities.Arrow!(Emulator.spyroPosition, Emulator.spyroPhysicsVelocity / 10, 50, Renderer.Color(255,128,0), renderer);
 
 			let viewerSpyroBasis = Emulator.spyroBasis.ToMatrixCorrected();
 			renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(500,0,0), .(255,0,0), .(255,0,0));

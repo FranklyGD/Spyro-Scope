@@ -50,7 +50,8 @@ namespace SpyroScope {
 		public const Address[4] fuckSparx = .(0, 0, 0x8006A248, 0x80070688);
 
 		// Game Values
-		public static VectorInt cameraPosition, spyroPosition, spyroVelocity, spyroPhysics;
+		public static VectorInt cameraPosition, spyroPosition;
+		public static VectorInt spyroIntendedVelocity, spyroPhysicsVelocity;
 		public static uint16[3] cameraEulerRotation;
 		public static MatrixInt cameraBasisInv, spyroBasis;
 		public static int32 collidingTriangle = -1;
@@ -154,8 +155,8 @@ namespace SpyroScope {
 		public static void FetchImportantObjects() {
 			ReadFromRAM(spyroPositionPointers[(int)rom], &spyroPosition, sizeof(VectorInt));
 			ReadFromRAM(spyroMatrixPointers[(int)rom], &spyroBasis, sizeof(MatrixInt));
-			ReadFromRAM(spyroIntendedVelocityPointers[(int)rom], &spyroVelocity, sizeof(VectorInt));
-			ReadFromRAM(spyroPhysicsVelocityPointers[(int)rom], &spyroPhysics, sizeof(VectorInt));
+			ReadFromRAM(spyroIntendedVelocityPointers[(int)rom], &spyroIntendedVelocity, sizeof(VectorInt));
+			ReadFromRAM(spyroPhysicsVelocityPointers[(int)rom], &spyroPhysicsVelocity, sizeof(VectorInt));
 
 			ReadFromRAM(cameraPositionAddress[(int)rom], &cameraPosition, sizeof(VectorInt));
 			ReadFromRAM(cameraMatrixAddress[(int)rom], &cameraBasisInv, sizeof(MatrixInt));
