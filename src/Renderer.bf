@@ -9,6 +9,8 @@ namespace SpyroScope {
 		SDL.Window* window;
 		SDL.SDL_GLContext context;
 
+		static bool useSync;
+
 		public struct Color {
 			public uint8 r,g,b;
 			public this(uint8 r, uint8 g, uint8 b) {
@@ -116,13 +118,22 @@ namespace SpyroScope {
 			drawQueue[0].type = 0;
 			drawQueue[0].count = 0;
 			startDrawQueue = lastDrawQueue = &drawQueue[0];
- 
-			SDL.GL_SetAttribute(.GL_CONTEXT_MAJOR_VERSION, (.)4);
-			SDL.GL_SetAttribute(.GL_CONTEXT_MINOR_VERSION, (.)6);
+
+			// Initialize OpenGL
 			SDL.GL_SetAttribute(.GL_CONTEXT_FLAGS, (.)SDL.SDL_GLContextFlags.GL_CONTEXT_DEBUG_FLAG);
 
 			context = SDL.GL_CreateContext(window);
 			GL.Init(=> SdlGetProcAddress);
+
+			int32 majorVersion = ?;
+			int32 minorVersion = ?;
+			GL.glGetIntegerv(GL.GL_MAJOR_VERSION, (.)&majorVersion);
+			GL.glGetIntegerv(GL.GL_MINOR_VERSION, (.)&minorVersion);
+			Console.WriteLine("OpenGL {}.{}", majorVersion, minorVersion);
+
+			if (majorVersion > 3 || majorVersion == 3 && minorVersion > 1) {
+				useSync = true;
+			}
 
 			Clear();
 			SDL.GL_SwapWindow(window);
@@ -338,12 +349,17 @@ namespace SpyroScope {
 
 		public void Sync() {
 			// Wait for GPU
-			let sync = GL.glFenceSync(GL.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+			if (useSync) {
+				var sync = GL.glFenceSync(GL.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
-			while (GL.glClientWaitSync(sync, GL.GL_SYNC_FLUSH_COMMANDS_BIT, 0) == GL.GL_TIMEOUT_EXPIRED) {
-				// Insert something here to do while waiting for draw to finish
-				SDL.Delay(0);
-			}	
+				while (GL.glClientWaitSync(sync, GL.GL_SYNC_FLUSH_COMMANDS_BIT, 0) == GL.GL_TIMEOUT_EXPIRED) {
+					// Insert something here to do while waiting for draw to finish
+					SDL.Delay(0);
+				}
+				GL.glDeleteSync(sync);
+			} else {
+				GL.glFinish();
+			}
 		}
 
 		public void Display() {

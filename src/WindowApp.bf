@@ -38,6 +38,7 @@ namespace SpyroScope {
 		static Matrix4 gameProjection = .Perspective(55f / 180 * Math.PI_f, 4f/3f, 300, 175000);
 
 		StaticMesh collisionMesh ~ delete _;
+		List<int> deformTriangles = new .() ~ delete _;
 
 		//List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
@@ -89,6 +90,7 @@ namespace SpyroScope {
 			
 			GL.glEnable(GL.GL_DEPTH_TEST);
 
+			UpdateCollisionMesh();
 			DrawCollisionMesh();
 			if (dislodgeCamera) {
 				DrawGameCameraFrustrum();
@@ -339,6 +341,7 @@ namespace SpyroScope {
 
 		void OnSceneChanged() {
 			currentObjIndex = hoveredObjIndex = -1;
+			deformTriangles.Clear();
 
 			let vertexCount = Emulator.collisionTriangles.Count * 3;
 			Vector[] vertices = new .[vertexCount];
@@ -356,7 +359,19 @@ namespace SpyroScope {
 				Renderer.Color color = .(255,255,255);
 
 				if (triangleIndex < Emulator.specialTerrainBeginIndex) {
-					let flagIndex = Emulator.collisionFlagsIndices[triangleIndex] & 0x3f;
+					let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
+
+					if (flagInfo & 0x40 != 0) {
+						// Terrain Walk Sound
+						color = .(92,128,64);
+					}
+					if (flagInfo & 0x80 != 0) {
+						// Terrain Deforms
+						color = .(64,92,128);
+						deformTriangles.Add(triangleIndex);
+					}
+
+					let flagIndex = flagInfo & 0x3f;
 					if (flagIndex != 0x3f) {
 						Emulator.Address flagPointer = Emulator.collisionFlagPointerArray[flagIndex];
 						uint8 flag = ?;
@@ -429,6 +444,26 @@ namespace SpyroScope {
 
 			renderer.SetView(viewPosition, cameraBasis);
 			renderer.SetProjection(viewerProjection);
+		}
+
+		void UpdateCollisionMesh() {
+			for (let triangleIndex in deformTriangles) {
+				PackedTriangle triangle = ?;
+				Emulator.Address collisionTriangleArray = ?;
+				Emulator.ReadFromRAM(Emulator.collisionDataAddress + 20, &collisionTriangleArray, 4);
+				Emulator.ReadFromRAM(collisionTriangleArray + (.)triangleIndex * sizeof(PackedTriangle), &triangle, sizeof(PackedTriangle));
+
+				let unpackedTriangle = triangle.Unpack();
+				let normal = Vector.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
+
+				for (int vi < 3) {
+					let i = triangleIndex * 3 + vi;
+					collisionMesh.vertices[i] = unpackedTriangle[vi];
+					collisionMesh.normals[i] = normal;
+				}
+			}
+
+			collisionMesh.Update();
 		}
 
 		void DrawCollisionMesh() {

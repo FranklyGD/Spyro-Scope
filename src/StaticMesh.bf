@@ -2,9 +2,9 @@ using OpenGL;
 
 namespace SpyroScope {
 	class StaticMesh {
-		Vector[] vertices ~ delete _;
-		Vector[] normals ~ delete _;
-		Renderer.Color[] colors ~ delete _;
+		public Vector[] vertices ~ delete _;
+		public Vector[] normals ~ delete _;
+		public Renderer.Color[] colors ~ delete _;
 
 		uint32[] indices ~ delete _;
 
@@ -81,6 +81,25 @@ namespace SpyroScope {
 			// draw mesh
 			GL.glBindVertexArray(vertexArrayObject);
 			GL.glDrawElements(GL.GL_TRIANGLES, indices.Count, GL.GL_UNSIGNED_INT, null);
+			GL.glBindVertexArray(0);
+		}
+
+		public void Update() {
+			let vertexCount = vertices.Count;
+			GL.glBindVertexArray(vertexArrayObject);
+
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vertexBufferObject);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector), null, GL.GL_STATIC_DRAW);
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector), &vertices[0]);
+
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, normalBufferObject);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector), null, GL.GL_STATIC_DRAW); 
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector), &normals[0]);
+
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, colorBufferObject);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Renderer.Color), null, GL.GL_STATIC_DRAW);
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Renderer.Color), &colors[0]);
+
 			GL.glBindVertexArray(0);
 		}
 	}

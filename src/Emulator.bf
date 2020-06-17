@@ -59,10 +59,8 @@ namespace SpyroScope {
 		public static Emulator.Address collisionDataAddress;
 		public static List<PackedTriangle> collisionTriangles = new .() ~ delete _;
 		public static uint32 specialTerrainBeginIndex;
-		public static uint32 collisionFlagsStartingPoint2;
 		public static List<uint8> collisionFlagsIndices = new .() ~ delete _;
 		public static List<uint32> collisionFlagPointerArray = new .() ~ delete _;
-		public static List<uint8> collisionFlags2 = new .() ~ delete _;
 
 		// Function Overrides
 		public const Address[4] cameraUpdateAddresses = .(0, 0, 0x8001b110, 0x800553d0);		  
@@ -173,7 +171,6 @@ namespace SpyroScope {
 				uint32 triangleCount = ?;
 				Emulator.ReadFromRAM(collisionDataAddress, &triangleCount, 4);
 				Emulator.ReadFromRAM(collisionDataAddress + 4, &specialTerrainBeginIndex, 4);
-				Emulator.ReadFromRAM(collisionDataAddress + 8, &collisionFlagsStartingPoint2, 4);
 
 				collisionTriangles.Clear();
 				let ptrTriangles = collisionTriangles.GrowUnitialized(triangleCount);
@@ -192,13 +189,6 @@ namespace SpyroScope {
 				let ptrFlags = collisionFlagPointerArray.GrowUnitialized(0x3f);
 				Emulator.ReadFromRAM(collisionFlagsArrayPointer[(uint)rom], &collisionFlagArray, 4);
 				Emulator.ReadFromRAM(collisionFlagArray, ptrFlags, 4 * 0x3f);
-
-
-
-				collisionFlags2.Clear();
-				let ptrFlags2 = collisionFlags2.GrowUnitialized(triangleCount);
-				Emulator.ReadFromRAM(collisionDataAddress + 28, &collisionFlagArray, 2);
-				Emulator.ReadFromRAM(collisionFlagArray, ptrFlags2, 1 * triangleCount);
 
 				OnSceneChanged();
 			}
