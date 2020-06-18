@@ -52,6 +52,7 @@ namespace SpyroScope {
 		public Matrix4 model = .Identity;
 		public int uniformViewMatrixIndex; // Camera Inverse Transform
 		public Matrix4 view = .Identity;
+		public Vector viewPosition = .Zero;
 		public Matrix viewBasis = .Identity;
 		public int uniformProjectionMatrixIndex; // Camera Perspective
 		public Matrix4 projection = .Identity;
@@ -305,6 +306,7 @@ namespace SpyroScope {
 		}
 
 		public void SetView(Vector position, Matrix basis) {
+			viewPosition = position;
 			viewBasis = basis;
 			view = basis.Transpose() * Matrix4.Translation(-position);
 			GL.glUniformMatrix4fv(uniformViewMatrixIndex, 1, GL.GL_FALSE, (float*)&view);
