@@ -8,6 +8,8 @@ namespace SpyroScope {
 
 		uint32[] indices ~ delete _;
 
+		bool IsValid;
+
 		uint vertexArrayObject,
 		vertexBufferObject,
 		normalBufferObject,
@@ -40,6 +42,16 @@ namespace SpyroScope {
 		}
 
 		void Init() {
+			IsValid =
+				vertices.Count > 3 &&
+				vertices.Count == normals.Count &&
+				vertices.Count == colors.Count &&
+				indices.Count % 3 == 0;
+
+			if (!IsValid) {
+				return;
+			}
+
 			GL.glGenVertexArrays(1, &vertexArrayObject);
 			GL.glBindVertexArray(vertexArrayObject);
 			
@@ -78,6 +90,10 @@ namespace SpyroScope {
 		}
 
 		public void Draw() {
+			if (!IsValid) {
+				return;
+			}
+
 			// draw mesh
 			GL.glBindVertexArray(vertexArrayObject);
 			GL.glDrawElements(GL.GL_TRIANGLES, indices.Count, GL.GL_UNSIGNED_INT, null);
@@ -85,6 +101,16 @@ namespace SpyroScope {
 		}
 
 		public void Update() {
+			IsValid =
+				vertices.Count > 3 &&
+				vertices.Count == normals.Count &&
+				vertices.Count == colors.Count &&
+				indices.Count % 3 == 0;
+
+			if (!IsValid) {
+				return;
+			}
+
 			let vertexCount = vertices.Count;
 			GL.glBindVertexArray(vertexArrayObject);
 

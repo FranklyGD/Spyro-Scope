@@ -40,6 +40,8 @@ namespace SpyroScope {
 		StaticMesh collisionMesh ~ delete _;
 		List<int> deformTriangles = new .() ~ delete _;
 
+		Dictionary<uint16, MobyModelSet> modelSets = new .() ~ delete _;
+
 		//List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
 		public this() {
@@ -106,6 +108,27 @@ namespace SpyroScope {
 				Emulator.ReadFromRAM(objPointer, &object, sizeof(Moby));
 				if (object.dataPointer == 0) {
 					break;
+				}
+
+				if (object.HasModel) {
+					Emulator.Address modelSetAddress = ?;
+					Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
+
+					if (modelSetAddress != 0 && (int32)modelSetAddress > 0) {
+						if (!modelSets.ContainsKey(object.objectTypeID)) {
+							modelSets.Add(object.objectTypeID, new .(modelSetAddress));
+						}
+	
+						let basis = Matrix.Euler(
+							-(float)object.eulerRotation.x / 0x80 * Math.PI_f,
+							(float)object.eulerRotation.y / 0x80 * Math.PI_f,
+							-(float)object.eulerRotation.z / 0x80 * Math.PI_f
+						);
+	
+						renderer.SetModel(object.position, basis * 2);
+						renderer.SetTint(.(255,255,255));
+						modelSets[object.objectTypeID].models[object.modelID].Draw();
+					}
 				}
 
 				objectList.Add(object);
@@ -527,6 +550,10 @@ namespace SpyroScope {
 			renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(500,0,0), .(255,0,0), .(255,0,0));
 			renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(0,500,0), .(0,255,0), .(0,255,0));
 			renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(0,0,500), .(0,0,255), .(0,0,255));
+
+			let radius = 0x164;
+		
+			DrawUtilities.WireframeSphere!(Emulator.spyroPosition, viewerSpyroBasis, radius, Renderer.Color(32,32,32), renderer);
 		}
 
 		void DrawGUI() {

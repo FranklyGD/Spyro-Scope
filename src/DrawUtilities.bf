@@ -52,5 +52,32 @@ namespace SpyroScope {
 				PrimitiveShape.cone.Draw();
 			}
 		}
+
+		public static mixin WireframeSphere(Vector position, Matrix basis, float radius, Renderer.Color color, Renderer renderer) {
+			let scaledBasis = basis * radius;
+			DrawUtilities.Circle!(position, scaledBasis, color, renderer);
+			DrawUtilities.Circle!(position, Matrix(scaledBasis.y, scaledBasis.z, scaledBasis.x), color, renderer);
+			DrawUtilities.Circle!(position, Matrix(scaledBasis.z, scaledBasis.x, scaledBasis.y), color, renderer);
+
+			let positionDifference = renderer.viewPosition - position;
+			let distance = positionDifference.Length();
+
+			// Check if view is inside collision radius
+			if (distance <= radius) {
+				return;
+			}
+
+			let t = radius / distance;
+			float tanAngle = Math.Acos(t);
+			let offsetedCenter = position + positionDifference * (t * radius / distance);
+			let tangentRadius = Math.Sin(tanAngle) * radius;
+
+			Matrix tangentCircleBasis = ?;
+			tangentCircleBasis.z = positionDifference / distance;
+			tangentCircleBasis.y = Vector.Cross(positionDifference, .(0,0,1)).Normalized();
+			tangentCircleBasis.x = Vector.Cross(tangentCircleBasis.z, tangentCircleBasis.y);
+
+			DrawUtilities.Circle!(offsetedCenter, tangentCircleBasis * tangentRadius, color, renderer);
+		}
 	}
 }
