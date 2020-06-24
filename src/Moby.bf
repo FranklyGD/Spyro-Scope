@@ -107,12 +107,12 @@ namespace SpyroScope {
 
 					renderer.SetModel(*position, .Scale(500,500,50));
 					renderer.SetTint(.(255,128,0));
-					PrimitiveShape.cylinder.Draw();
+					PrimitiveShape.cylinder.QueueInstance(renderer);
 					
 					if (i == 0) {
 						renderer.SetModel(*position, .Scale(400,400,100));
 						renderer.SetTint(.(0,255,0));
-						PrimitiveShape.cylinder.Draw();
+						PrimitiveShape.cylinder.QueueInstance(renderer);
 					}
 
 					if (i < waypointCount - 1) {

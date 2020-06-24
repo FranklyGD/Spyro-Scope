@@ -8,13 +8,21 @@ namespace SpyroScope {
 
 		uint32[] indices ~ delete _;
 
+		uint16 instanceCount;
+		//Matrix4[] instanceMatrices = new .[128] ~ delete _;
+		public Matrix4[] instanceMatrices = new .[512] ~ delete _;
+		public Vector[] instanceColors = new .[512] ~ delete _;
+
 		bool IsValid;
 
 		uint vertexArrayObject,
 		vertexBufferObject,
 		normalBufferObject,
 		colorBufferObject,
-		elementBufferObject;
+		elementBufferObject,
+
+		matrixBufferObject,
+		tintBufferObject;
 
 		public this(Vector[] vertices, Vector[] normals, Renderer.Color[] colors, uint32[] indices) {
 			this.vertices = vertices;
@@ -57,6 +65,7 @@ namespace SpyroScope {
 			
 			let vertexCount = vertices.Count;
 
+			// Per Vertex
 			GL.glGenBuffers(1, &vertexBufferObject);
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vertexBufferObject);
 			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector), &vertices[0], GL.GL_STATIC_DRAW); 
@@ -80,6 +89,37 @@ namespace SpyroScope {
 			GL.glEnableVertexAttribArray(Renderer.colorAttributeIndex);	
 			GL.glVertexAttribIPointer(Renderer.colorAttributeIndex,
 				3, GL.GL_UNSIGNED_BYTE, 0, null);
+			GL.glVertexAttribDivisor(Renderer.instanceMatrixAttributeIndex, 1);
+
+			// Per Instanceunsigned int buffer;
+		    GL.glGenBuffers(1, &matrixBufferObject);
+		    GL.glBindBuffer(GL.GL_ARRAY_BUFFER, matrixBufferObject);
+		    GL.glBufferData(GL.GL_ARRAY_BUFFER, 512 * sizeof(Matrix4), &instanceMatrices[0], GL.GL_DYNAMIC_DRAW);
+
+			GL.glVertexAttribPointer(Renderer.instanceMatrixAttributeIndex+0, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4), (void*)(4*0));
+			GL.glVertexAttribPointer(Renderer.instanceMatrixAttributeIndex+1, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4), (void*)(4*4));
+			GL.glVertexAttribPointer(Renderer.instanceMatrixAttributeIndex+2, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4), (void*)(4*8));
+			GL.glVertexAttribPointer(Renderer.instanceMatrixAttributeIndex+3, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4), (void*)(4*12));
+			
+			GL.glEnableVertexAttribArray(Renderer.instanceMatrixAttributeIndex+0);
+			GL.glEnableVertexAttribArray(Renderer.instanceMatrixAttributeIndex+1);
+			GL.glEnableVertexAttribArray(Renderer.instanceMatrixAttributeIndex+2);
+			GL.glEnableVertexAttribArray(Renderer.instanceMatrixAttributeIndex+3);
+
+			GL.glVertexAttribDivisor(Renderer.instanceMatrixAttributeIndex+0, 1);
+			GL.glVertexAttribDivisor(Renderer.instanceMatrixAttributeIndex+1, 1);
+			GL.glVertexAttribDivisor(Renderer.instanceMatrixAttributeIndex+2, 1);
+			GL.glVertexAttribDivisor(Renderer.instanceMatrixAttributeIndex+3, 1);
+
+			GL.glGenBuffers(1, &tintBufferObject);
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, tintBufferObject);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, 512 * sizeof(Vector), &instanceColors[0], GL.GL_DYNAMIC_DRAW);
+
+			GL.glEnableVertexAttribArray(Renderer.instanceTintAttributeIndex);	
+			GL.glVertexAttribPointer(Renderer.instanceTintAttributeIndex,
+				3, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
+			GL.glVertexAttribDivisor(Renderer.instanceTintAttributeIndex, 1);
+
 
 			GL.glGenBuffers(1, &elementBufferObject);
 			GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
@@ -89,15 +129,49 @@ namespace SpyroScope {
 			Renderer.CheckForErrors();
 		}
 
-		public void Draw() {
+		public void Draw(Renderer renderer) {
 			if (!IsValid) {
 				return;
 			}
 
 			// draw mesh
+			QueueInstance(renderer);
+			DrawInstances();
+		}
+
+		public void QueueInstance(Renderer renderer) {
+			if (!IsValid) {
+				return;
+			}
+
+			instanceMatrices[instanceCount] = renderer.model;
+			instanceColors[instanceCount] = renderer.tint;
+
+			instanceCount++;
+			if (instanceCount >= 512) {
+				DrawInstances();
+			}
+		}
+
+		public void DrawInstances() {
+			if (instanceCount == 0) {
+				return;
+			}
+
 			GL.glBindVertexArray(vertexArrayObject);
-			GL.glDrawElements(GL.GL_TRIANGLES, indices.Count, GL.GL_UNSIGNED_INT, null);
+
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, matrixBufferObject);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, 2048 * sizeof(Matrix4), null, GL.GL_DYNAMIC_DRAW);
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, instanceCount * sizeof(Matrix4), &instanceMatrices[0]);
+
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, tintBufferObject);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, 2048 * sizeof(Vector), null, GL.GL_DYNAMIC_DRAW);
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, instanceCount * sizeof(Vector), &instanceColors[0]);
+
+			GL.glDrawElementsInstanced(GL.GL_TRIANGLES, indices.Count, GL.GL_UNSIGNED_INT, null, instanceCount);
 			GL.glBindVertexArray(0);
+
+			instanceCount = 0;
 		}
 
 		public void Update() {

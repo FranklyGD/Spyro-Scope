@@ -4,15 +4,15 @@ namespace SpyroScope {
 	static struct DrawUtilities {
 		public static mixin Axis(Vector position, Matrix basis, Renderer renderer) {
 			let squareAngle = Math.PI_f / 2;
-			renderer.SetModel(position + basis * Vector(0.5f,0,0), basis * .Euler(0, -squareAngle, 0) * .Scale(0.1f,0.1f,1));
+			renderer.SetModel(position + basis.x * 0.5f, basis * .Euler(0, -squareAngle, 0) * .Scale(0.1f,0.1f,1));
 			renderer.SetTint(.(255,0,0));
-			PrimitiveShape.cylinder.Draw();
-			renderer.SetModel(position + basis * Vector(0,0.5f,0), basis * .Euler(squareAngle, 0, 0) * .Scale(0.1f,0.1f,1));
+			PrimitiveShape.cylinder.QueueInstance(renderer);
+			renderer.SetModel(position + basis.y * 0.5f, basis * .Euler(squareAngle, 0, 0) * .Scale(0.1f,0.1f,1));
 			renderer.SetTint(.(0,255,0));
-			PrimitiveShape.cylinder.Draw();
-			renderer.SetModel(position + basis * Vector(0,0,0.5f), basis * .Scale(0.1f,0.1f,1));
+			PrimitiveShape.cylinder.QueueInstance(renderer);
+			renderer.SetModel(position + basis.z * 0.5f, basis * .Scale(0.1f,0.1f,1));
 			renderer.SetTint(.(0,0,255));
-			PrimitiveShape.cylinder.Draw();
+			PrimitiveShape.cylinder.QueueInstance(renderer);
 		}
 
 		public static mixin Circle(Vector position, Matrix basis, Renderer.Color color, Renderer renderer) {
@@ -43,13 +43,13 @@ namespace SpyroScope {
 				arrowMatrix.x *= width;
 				arrowMatrix.y *= width;
 				renderer.SetModel(origin + direction / 2, arrowMatrix);
-				PrimitiveShape.cylinder.Draw();
+				PrimitiveShape.cylinder.QueueInstance(renderer);
 
 				arrowMatrix.x *= 2;
 				arrowMatrix.y *= 2;
 				arrowMatrix.z = arrowMatrix.z.Normalized() * width * 2;
 				renderer.SetModel(origin + direction, arrowMatrix);
-				PrimitiveShape.cone.Draw();
+				PrimitiveShape.cone.QueueInstance(renderer);
 			}
 		}
 

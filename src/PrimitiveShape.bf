@@ -12,6 +12,12 @@ namespace SpyroScope {
 			GenerateCone(16);
 		}
 
+		public static void DrawInstances() {
+			cube.DrawInstances();
+			cylinder.DrawInstances();
+			cone.DrawInstances();
+		}
+
 		public static void GenerateCube() {
 			let vertices = new Vector[24](
 				.(0.5f,0.5f,0.5f),

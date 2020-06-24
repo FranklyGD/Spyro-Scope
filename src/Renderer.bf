@@ -44,11 +44,15 @@ namespace SpyroScope {
 		uint fragmentShader;
 		uint program;
 
+		// Shader Inputs
 		public static uint positionAttributeIndex;
 		public static uint normalAttributeIndex;
 		public static uint colorAttributeIndex;
+		public static uint instanceMatrixAttributeIndex;
+		public static uint instanceTintAttributeIndex;
 
-		public int uniformModelMatrixIndex; // Object Transform
+		// Shader Uniforms
+		//public int uniformModelMatrixIndex; // Object Transform
 		public Matrix4 model = .Identity;
 		public int uniformViewMatrixIndex; // Camera Inverse Transform
 		public Matrix4 view = .Identity;
@@ -56,10 +60,10 @@ namespace SpyroScope {
 		public Matrix viewBasis = .Identity;
 		public int uniformProjectionMatrixIndex; // Camera Perspective
 		public Matrix4 projection = .Identity;
-		public int uniformTintIndex; // Overall Tint Color
-		public float[3] tint;
+		//public int uniformTintIndex; // Overall Tint Color
+		public Vector tint = .(1,1,1);
 		public int uniformZdepthOffsetIndex; // Z-depth Offset (mainly for pushing the wireframe forward to avoid Z-fighting)
-		
+
 		public struct Buffer<T> {
 			public uint obj;
 			public T* map;
@@ -171,13 +175,41 @@ namespace SpyroScope {
 			GL.glVertexAttribIPointer(colorAttributeIndex, 3, GL.GL_UNSIGNED_BYTE, 0, null);
 			GL.glEnableVertexAttribArray(colorAttributeIndex);
 
+			uint tempBufferID = ?;
+			GL.glGenBuffers(1, &tempBufferID);
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, tempBufferID);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, sizeof(Matrix4), &model, GL.GL_STATIC_DRAW);
+			
+			instanceMatrixAttributeIndex = FindProgramAttribute(program, "instanceModel");
+
+			GL.glVertexAttribPointer(instanceMatrixAttributeIndex+0, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4), (void*)(4*0));
+			GL.glVertexAttribPointer(instanceMatrixAttributeIndex+1, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4), (void*)(4*4));
+			GL.glVertexAttribPointer(instanceMatrixAttributeIndex+2, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4), (void*)(4*8));
+			GL.glVertexAttribPointer(instanceMatrixAttributeIndex+3, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4), (void*)(4*12));
+
+			GL.glEnableVertexAttribArray(instanceMatrixAttributeIndex+0);
+			GL.glEnableVertexAttribArray(instanceMatrixAttributeIndex+1);
+			GL.glEnableVertexAttribArray(instanceMatrixAttributeIndex+2);
+			GL.glEnableVertexAttribArray(instanceMatrixAttributeIndex+3);
+
+			GL.glVertexAttribDivisor(instanceMatrixAttributeIndex+0, 1);
+			GL.glVertexAttribDivisor(instanceMatrixAttributeIndex+1, 1);
+			GL.glVertexAttribDivisor(instanceMatrixAttributeIndex+2, 1);
+			GL.glVertexAttribDivisor(instanceMatrixAttributeIndex+3, 1);
+
+			GL.glGenBuffers(1, &tempBufferID);
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, tempBufferID);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, sizeof(Vector), &tint, GL.GL_STATIC_DRAW);
+
+			instanceTintAttributeIndex = FindProgramAttribute(program, "instanceTint");
+			GL.glVertexAttribPointer(instanceTintAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
+			GL.glEnableVertexAttribArray(instanceTintAttributeIndex);
+			GL.glVertexAttribDivisor(instanceTintAttributeIndex, 1);
+
 			// Get Uniforms
-			uniformModelMatrixIndex = FindProgramUniform(program, "model");
 			uniformViewMatrixIndex = FindProgramUniform(program, "view");
 			uniformProjectionMatrixIndex = FindProgramUniform(program, "projection");
 			uniformZdepthOffsetIndex = FindProgramUniform(program, "zdepthOffset");
-			
-			uniformTintIndex = FindProgramUniform(program, "tint");
 
 			this.window = window;
 
@@ -302,7 +334,7 @@ namespace SpyroScope {
 
 		public void SetModel(Vector position, Matrix basis) {
 			model = Matrix4.Translation(position) * basis;
-			GL.glUniformMatrix4fv(uniformModelMatrixIndex, 1, GL.GL_FALSE, (float*)&model);
+			//GL.glUniformMatrix4fv(uniformModelMatrixIndex, 1, GL.GL_FALSE, (float*)&model);
 		}
 
 		public void SetView(Vector position, Matrix basis) {
@@ -319,7 +351,7 @@ namespace SpyroScope {
 
 		public void SetTint(Color tint) {
 			this.tint = .((float)tint.r / 255, (float)tint.g / 255, (float)tint.b / 255);
-			GL.glUniform3fv(uniformTintIndex, 1, &this.tint[0]);
+			//GL.glUniform3fv(uniformTintIndex, 1, &this.tint[0]);
 		}
 
 		public void BeginWireframe() {
@@ -334,9 +366,6 @@ namespace SpyroScope {
 
 		public void Draw() {
 			GL.glBindVertexArray(vertexArrayObject);
-
-			// Flush
-			GL.glMemoryBarrier(GL.GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
 
 			startDrawQueue++;
 			while (startDrawQueue <= lastDrawQueue) {

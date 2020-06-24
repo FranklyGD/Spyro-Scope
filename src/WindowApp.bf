@@ -40,7 +40,7 @@ namespace SpyroScope {
 		StaticMesh collisionMesh ~ delete _;
 		List<int> deformTriangles = new .() ~ delete _;
 
-		Dictionary<uint16, MobyModelSet> modelSets = new .() ~ delete _;
+		Dictionary<uint16, MobyModelSet> modelSets = new .();
 
 		//List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
@@ -64,7 +64,11 @@ namespace SpyroScope {
 
 		public ~this() {
 			Emulator.UnbindToEmulator();
-			
+
+			for (let modelSet in modelSets.Values) {
+				delete modelSet;
+			}
+			delete modelSets;
 			delete Emulator.OnSceneChanged;
 
 			if (renderer != null)
@@ -127,7 +131,7 @@ namespace SpyroScope {
 	
 						renderer.SetModel(object.position, basis * 2);
 						renderer.SetTint(.(255,255,255));
-						modelSets[object.objectTypeID].models[object.modelID].Draw();
+						modelSets[object.objectTypeID].models[object.modelID].QueueInstance(renderer);
 					}
 				}
 
@@ -140,6 +144,15 @@ namespace SpyroScope {
 			}
 
 			DrawSpyroInformation();
+
+			// Draw all queued instances
+			PrimitiveShape.DrawInstances();
+
+			for (let modelSet in modelSets.Values) {
+				for (let model in modelSet.models) {
+					model.DrawInstances();
+				}
+			}
 			
 			renderer.SetModel(.Zero, .Identity);
 			renderer.SetTint(.(255,255,255));
@@ -495,12 +508,12 @@ namespace SpyroScope {
 			renderer.BeginSolid();
 
 			if (!drawMapWireframe) {
-				collisionMesh.Draw();
+				collisionMesh.Draw(renderer);
 				renderer.SetTint(.(128,128,128));
 			}
 
 			renderer.BeginWireframe();
-			collisionMesh.Draw();
+			collisionMesh.Draw(renderer);
 
 			// Restore polygon mode to default
 			renderer.BeginSolid();
