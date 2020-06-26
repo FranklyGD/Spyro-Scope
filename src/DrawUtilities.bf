@@ -26,31 +26,33 @@ namespace SpyroScope {
 		}
 
 		public static mixin Arrow(Vector origin, Vector direction, float width, Renderer.Color color, Renderer renderer) {
-			if (direction != .Zero) {
-				Matrix arrowMatrix = ?;
-
-				arrowMatrix.z = direction;
-				if (arrowMatrix.z.x == 0 && arrowMatrix.z.y == 0) {
-					arrowMatrix.x = .(1,0,0);
-					arrowMatrix.y = .(0,arrowMatrix.z.z > 0 ? 1 : -1,0);
-				} else {
-					arrowMatrix.y = Vector.Cross(arrowMatrix.z, .(0,0,1)).Normalized();
-					arrowMatrix.x = Vector.Cross(arrowMatrix.y, arrowMatrix.z).Normalized();
-				}
-
-				renderer.SetTint(color);
-
-				arrowMatrix.x *= width;
-				arrowMatrix.y *= width;
-				renderer.SetModel(origin + direction / 2, arrowMatrix);
-				PrimitiveShape.cylinder.QueueInstance(renderer);
-
-				arrowMatrix.x *= 2;
-				arrowMatrix.y *= 2;
-				arrowMatrix.z = arrowMatrix.z.Normalized() * width * 2;
-				renderer.SetModel(origin + direction, arrowMatrix);
-				PrimitiveShape.cone.QueueInstance(renderer);
+			if (direction.x * direction.x < 1 && direction.y * direction.y < 1 && direction.z * direction.z < 1) {
+				return;
 			}
+
+			Matrix arrowMatrix = ?;
+
+			arrowMatrix.z = direction;
+			if (arrowMatrix.z.x == 0 && arrowMatrix.z.y == 0) {
+				arrowMatrix.x = .(1,0,0);
+				arrowMatrix.y = .(0,arrowMatrix.z.z > 0 ? 1 : -1,0);
+			} else {
+				arrowMatrix.y = Vector.Cross(arrowMatrix.z, .(0,0,1)).Normalized();
+				arrowMatrix.x = Vector.Cross(arrowMatrix.y, arrowMatrix.z).Normalized();
+			}
+
+			renderer.SetTint(color);
+
+			arrowMatrix.x *= width;
+			arrowMatrix.y *= width;
+			renderer.SetModel(origin + direction / 2, arrowMatrix);
+			PrimitiveShape.cylinder.QueueInstance(renderer);
+
+			arrowMatrix.x *= 2;
+			arrowMatrix.y *= 2;
+			arrowMatrix.z = arrowMatrix.z.Normalized() * width * 2;
+			renderer.SetModel(origin + direction, arrowMatrix);
+			PrimitiveShape.cone.QueueInstance(renderer);
 		}
 
 		public static mixin WireframeSphere(Vector position, Matrix basis, float radius, Renderer.Color color, Renderer renderer) {
