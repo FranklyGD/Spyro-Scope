@@ -47,6 +47,7 @@ namespace SpyroScope {
 
 		public const Address[4] collisionDataPointer = .(0, 0, 0x800673fc, 0x8006d150);
 		public const Address[4] collisionFlagsArrayPointer = .(0, 0, 0x800673e8, 0x8006d13c);
+		public const Address[4] collisionModifyingDataPointer = .(0, 0, 0x80068208, 0);
 
 		public const Address[4] fuckSparx = .(0, 0, 0x8006A248, 0x80070688);
 

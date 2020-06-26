@@ -38,7 +38,7 @@ namespace SpyroScope {
 		static Matrix4 gameProjection = .Perspective(55f / 180 * Math.PI_f, 4f/3f, 300, 175000);
 
 		StaticMesh collisionMesh ~ delete _;
-		List<int> deformTriangles = new .() ~ delete _;
+		List<uint8> collisionTypes = new .() ~ delete _;
 
 		Dictionary<uint16, MobyModelSet> modelSets = new .();
 
@@ -377,35 +377,27 @@ namespace SpyroScope {
 
 		void OnSceneChanged() {
 			currentObjIndex = hoveredObjIndex = -1;
-			deformTriangles.Clear();
 
 			let vertexCount = Emulator.collisionTriangles.Count * 3;
 			Vector[] vertices = new .[vertexCount];
 			Vector[] normals = new .[vertexCount];
 			Renderer.Color[] colors = new .[vertexCount];
 			
-			let uniqueTypes = scope List<uint8>();
-
+			collisionTypes.Clear();
 			for (int triangleIndex < Emulator.collisionTriangles.Count) {
 				let triangle = Emulator.collisionTriangles[triangleIndex];
 
-				let unpackedTriangle = triangle.Unpack();
+				let unpackedTriangle = triangle.Unpack(false);
 				
 				let normal = Vector.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
 				Renderer.Color color = .(255,255,255);
 
 				if (triangleIndex < Emulator.specialTerrainBeginIndex) {
 					let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
-
-					if (flagInfo & 0x40 != 0) {
-						// Terrain Walk Sound
-						color = .(92,128,64);
-					}
-					if (flagInfo & 0x80 != 0) {
-						// Terrain Deforms
-						color = .(64,92,128);
-						deformTriangles.Add(triangleIndex);
-					}
+					
+					// Terrain Collision Sound
+					// Derived from Spyro: Ripto's Rage [80034f50]
+					let collisionSound = flagInfo >> 6;
 
 					let flagIndex = flagInfo & 0x3f;
 					if (flagIndex != 0x3f) {
@@ -416,7 +408,7 @@ namespace SpyroScope {
 							case 0x00: color = .(255,255,64); // Quicksand
 							case 0x01: color = .(255,64,64); // Lava
 							case 0x02: color = .(64,64,64); // Road
-							case 0x03: color = .(255,64,255); // ???
+							case 0x03: color = .(255,64,255); // ??? (Special)
 							case 0x04: color = .(64,255,255); // Ice
 							case 0x05: color = .(128,128,255); // Barrier
 							case 0x06: color = .(64,255,64); // Portal
@@ -424,17 +416,12 @@ namespace SpyroScope {
 							case 0x08: color = .(128,92,64); // Ladder
 							case 0x09: color = .(128,255,64); // Ramp
 							case 0x0A: color = .(64,64,128); // Slip
-							default: {
-								color = .(255,0,255);
-								if (!uniqueTypes.Contains(flag)) {
-									uniqueTypes.Add(flag);
-									Console.WriteLine("Terrain has {:X2} flag unidentified", flag);
-								} 
-							}
+							default: color = .(255,0,255);
 						}
-					} else {
-						// Terrain Deforms
-						color = .(92,128,64);
+
+						if (!collisionTypes.Contains(flag)) {
+							collisionTypes.Add(flag);
+						} 
 					}
 				}
 
@@ -483,19 +470,63 @@ namespace SpyroScope {
 		}
 
 		void UpdateCollisionMesh() {
-			for (let triangleIndex in deformTriangles) {
-				PackedTriangle triangle = ?;
-				Emulator.Address collisionTriangleArray = ?;
-				Emulator.ReadFromRAM(Emulator.collisionDataAddress + 20, &collisionTriangleArray, 4);
-				Emulator.ReadFromRAM(collisionTriangleArray + (.)triangleIndex * sizeof(PackedTriangle), &triangle, sizeof(PackedTriangle));
+			uint32 count = ?;
+			Emulator.ReadFromRAM(Emulator.collisionModifyingDataPointer[(int)Emulator.rom] - 4, &count, 4);
+			if (count == 0) {
+				return; // Nothing to update
+			}
 
-				let unpackedTriangle = triangle.Unpack();
-				let normal = Vector.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
+			Emulator.Address collisionModifyingPointerArrayAddress = ?;
+			Emulator.ReadFromRAM(Emulator.collisionModifyingDataPointer[(int)Emulator.rom], &collisionModifyingPointerArrayAddress, 4);
+			let collisionModifyingGroupPointers = scope uint32[count];
+			Emulator.ReadFromRAM(collisionModifyingPointerArrayAddress, &collisionModifyingGroupPointers[0], 4 * count);
 
-				for (int vi < 3) {
-					let i = triangleIndex * 3 + vi;
-					collisionMesh.vertices[i] = unpackedTriangle[vi];
-					collisionMesh.normals[i] = normal;
+			for (let collisionModifyingGroupPointer in collisionModifyingGroupPointers) {
+				uint8 currentKeyframe = ?;
+				Emulator.ReadFromRAM(collisionModifyingGroupPointer + 2, &currentKeyframe, 1);
+
+				uint16 animatedTriangleCount = ?;
+				Emulator.ReadFromRAM(collisionModifyingGroupPointer + 4, &animatedTriangleCount, 2);
+				uint16 updateTriangleStartIndex = ?;
+				Emulator.ReadFromRAM(collisionModifyingGroupPointer + 6, &updateTriangleStartIndex, 2);
+
+				uint32 triangleDataOffset = ?;
+				Emulator.ReadFromRAM(collisionModifyingGroupPointer + 8, &triangleDataOffset, 4);
+
+				(uint8 flag, uint8, uint8 nextKeyframe, uint8, uint8 interpolation, uint8 fromState, uint8 toState, uint8) keyframeData = ?;
+				Emulator.ReadFromRAM(collisionModifyingGroupPointer + 12 + ((uint32)currentKeyframe) * 8, &keyframeData.flag, 8);
+
+
+
+				for (uint32 i < animatedTriangleCount) {
+					/*PackedTriangle packedTriangle = ?;
+					Emulator.ReadFromRAM(collisionModifyingGroupPointer + triangleDataOffset + (keyframeData.fromState * animatedTriangleCount + i) * 12, &packedTriangle, 12);
+
+					VectorInt[3] triangle = packedTriangle.Unpack(true);
+					renderer.DrawTriangle(triangle[0], triangle[1], triangle[2], .(255,0,0), .(255,0,0), .(255,0,0));
+
+					Emulator.ReadFromRAM(collisionModifyingGroupPointer + triangleDataOffset + (keyframeData.toState * animatedTriangleCount + i) * 12, &packedTriangle, 12);
+
+					triangle = packedTriangle.Unpack(true);
+					renderer.DrawTriangle(triangle[0], triangle[1], triangle[2], .(0,255,0), .(0,255,0), .(0,255,0));*/
+
+					PackedTriangle packedTriangle = ?;
+					Emulator.ReadFromRAM(collisionModifyingGroupPointer + triangleDataOffset + (keyframeData.fromState * animatedTriangleCount + i) * 12, &packedTriangle, 12);
+					VectorInt[3] fromTriangle = packedTriangle.Unpack(true);
+
+					Emulator.ReadFromRAM(collisionModifyingGroupPointer + triangleDataOffset + (keyframeData.toState * animatedTriangleCount + i) * 12, &packedTriangle, 12);
+					VectorInt[3] toTriangle = packedTriangle.Unpack(true);
+
+					let interpolation = (float)keyframeData.interpolation / (256);
+					Vector[3] interpolatedTriangle = ?;
+					interpolatedTriangle[0] = fromTriangle[0] + (toTriangle[0] - fromTriangle[0]).ToVector() * interpolation;
+					interpolatedTriangle[1] = fromTriangle[1] + (toTriangle[1] - fromTriangle[1]).ToVector() * interpolation;
+					interpolatedTriangle[2] = fromTriangle[2] + (toTriangle[2] - fromTriangle[2]).ToVector() * interpolation;
+
+					//renderer.DrawTriangle(interpolatedTriangle[0], interpolatedTriangle[1], interpolatedTriangle[2], .(255,255,0), .(255,255,0), .(255,255,0));
+					collisionMesh.vertices[(updateTriangleStartIndex + i) * 3] = interpolatedTriangle[0];
+					collisionMesh.vertices[(updateTriangleStartIndex + i) * 3 + 1] = interpolatedTriangle[1];
+					collisionMesh.vertices[(updateTriangleStartIndex + i) * 3 + 2] = interpolatedTriangle[2];
 				}
 			}
 
@@ -596,9 +627,38 @@ namespace SpyroScope {
 				}
 			}
 
-			/*let halfWidth = (float)width / 2;
+			// Begin window relative position UI
+			let halfWidth = (float)width / 2;
 			let halfHeight = (float)height / 2;
-			for (let element in guiElements) {
+
+			// Legend
+			for (let i < collisionTypes.Count) {
+				let flag = collisionTypes[i];
+				Renderer.Color color = ?;
+				switch (flag) {
+					case 0x00: color = .(255,255,64); // Quicksand
+					case 0x01: color = .(255,64,64); // Lava
+					case 0x02: color = .(64,64,64); // Road
+					case 0x03: color = .(255,64,255); // ???
+					case 0x04: color = .(64,255,255); // Ice
+					case 0x05: color = .(128,128,255); // Barrier
+					case 0x06: color = .(64,255,64); // Portal
+					case 0x07: color = .(64,64,255); // Electric
+					case 0x08: color = .(128,92,64); // Ladder
+					case 0x09: color = .(128,255,64); // Ramp
+					case 0x0A: color = .(64,64,128); // Slip
+					default: color = .(255,0,255);
+				}
+
+				let leftPadding = 16 - halfWidth;
+				let bottomPadding = 16 - halfHeight + 32 * i;
+				renderer.DrawTriangle(.(leftPadding, bottomPadding + 16, 0), .(leftPadding + 16, bottomPadding + 16, 0), .(leftPadding, bottomPadding, 0),
+					color, color, color);
+				renderer.DrawTriangle(.(leftPadding + 16, bottomPadding + 16, 0), .(leftPadding + 16, bottomPadding, 0), .(leftPadding, bottomPadding, 0),
+					color, color, color);
+			}
+
+			/*for (let element in guiElements) {
 				element.Draw(.(-halfWidth, halfWidth, -halfHeight, halfHeight), renderer);
 			}*/
 		}
