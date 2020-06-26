@@ -35,7 +35,7 @@ namespace SpyroScope {
 				(float)eulerRotation.y / 0x80 * Math.PI_f,
 				-(float)eulerRotation.z / 0x80 * Math.PI_f
 			);
-			DrawUtilities.Axis!(position, basis * .Scale(200,200,200), renderer);
+			DrawUtilities.Axis(position, basis * .Scale(200,200,200), renderer);
 
 			// Is object rendering in game?
 			if (draw) {
@@ -120,7 +120,7 @@ namespace SpyroScope {
 						let direction = *nextPosition - *position;
 						let normalizedDirection = direction.ToVector().Normalized();
 
-						DrawUtilities.Arrow!(*position + normalizedDirection * 400, normalizedDirection * (direction.Length() - 800), 125, Renderer.Color(255,128,0), renderer);
+						DrawUtilities.Arrow(*position + normalizedDirection * 400, normalizedDirection * (direction.Length() - 800), 125, Renderer.Color(255,128,0), renderer);
 					}
 				}
 			}

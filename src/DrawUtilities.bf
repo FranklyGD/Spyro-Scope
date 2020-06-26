@@ -2,7 +2,8 @@ using System;
 
 namespace SpyroScope {
 	static struct DrawUtilities {
-		public static mixin Axis(Vector position, Matrix basis, Renderer renderer) {
+		[Inline]
+		public static void Axis(Vector position, Matrix basis, Renderer renderer) {
 			let squareAngle = Math.PI_f / 2;
 			renderer.SetModel(position + basis.x * 0.5f, basis * .Euler(0, -squareAngle, 0) * .Scale(0.1f,0.1f,1));
 			renderer.SetTint(.(255,0,0));
@@ -25,7 +26,8 @@ namespace SpyroScope {
 			}
 		}
 
-		public static mixin Arrow(Vector origin, Vector direction, float width, Renderer.Color color, Renderer renderer) {
+		[Inline]
+		public static void Arrow(Vector origin, Vector direction, float width, Renderer.Color color, Renderer renderer) {
 			if (direction.x * direction.x < 1 && direction.y * direction.y < 1 && direction.z * direction.z < 1) {
 				return;
 			}
@@ -55,7 +57,8 @@ namespace SpyroScope {
 			PrimitiveShape.cone.QueueInstance(renderer);
 		}
 
-		public static mixin WireframeSphere(Vector position, Matrix basis, float radius, Renderer.Color color, Renderer renderer) {
+		[Inline]
+		public static void WireframeSphere(Vector position, Matrix basis, float radius, Renderer.Color color, Renderer renderer) {
 			let scaledBasis = basis * radius;
 			DrawUtilities.Circle!(position, scaledBasis, color, renderer);
 			DrawUtilities.Circle!(position, Matrix(scaledBasis.y, scaledBasis.z, scaledBasis.x), color, renderer);
@@ -76,7 +79,7 @@ namespace SpyroScope {
 
 			Matrix tangentCircleBasis = ?;
 			tangentCircleBasis.z = positionDifference / distance;
-			tangentCircleBasis.y = Vector.Cross(positionDifference, .(0,0,1)).Normalized();
+			tangentCircleBasis.y = Vector.Cross(positionDifference, renderer.viewBasis.x).Normalized();
 			tangentCircleBasis.x = Vector.Cross(tangentCircleBasis.z, tangentCircleBasis.y);
 
 			DrawUtilities.Circle!(offsetedCenter, tangentCircleBasis * tangentRadius, color, renderer);

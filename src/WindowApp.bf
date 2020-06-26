@@ -556,8 +556,8 @@ namespace SpyroScope {
 		}
 		
 		void DrawSpyroInformation() {
-			DrawUtilities.Arrow!(Emulator.spyroPosition, Emulator.spyroIntendedVelocity / 10, 25, Renderer.Color(255,255,0), renderer);
-			DrawUtilities.Arrow!(Emulator.spyroPosition, Emulator.spyroPhysicsVelocity / 10, 50, Renderer.Color(255,128,0), renderer);
+			DrawUtilities.Arrow(Emulator.spyroPosition, Emulator.spyroIntendedVelocity / 10, 25, Renderer.Color(255,255,0), renderer);
+			DrawUtilities.Arrow(Emulator.spyroPosition, Emulator.spyroPhysicsVelocity / 10, 50, Renderer.Color(255,128,0), renderer);
 
 			let viewerSpyroBasis = Emulator.spyroBasis.ToMatrixCorrected();
 			renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(500,0,0), .(255,0,0), .(255,0,0));
@@ -566,7 +566,7 @@ namespace SpyroScope {
 
 			let radius = 0x164;
 		
-			DrawUtilities.WireframeSphere!(Emulator.spyroPosition, viewerSpyroBasis, radius, Renderer.Color(32,32,32), renderer);
+			DrawUtilities.WireframeSphere(Emulator.spyroPosition, viewerSpyroBasis, radius, Renderer.Color(32,32,32), renderer);
 		}
 
 		void DrawGUI() {
