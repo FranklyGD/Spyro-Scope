@@ -46,7 +46,7 @@ namespace SpyroScope {
 				renderer.SetTint(.(0,255,255));
 			}
 
-			PrimitiveShape.cube.Draw();
+			PrimitiveShape.cube.QueueInstance(renderer);
 
 			if (Emulator.rom == .RiptosRage) {
 				switch (objectTypeID) {
