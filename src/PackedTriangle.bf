@@ -3,6 +3,7 @@ namespace SpyroScope {
 		VectorInt data;
 
 		public VectorInt[3] Unpack() {
+		// Derived from Spyro: Ripto's Rage [8001c214]
 			VectorInt[3] triangle;
 
 			let x = data.x & 0x3fff;

@@ -27,6 +27,7 @@ namespace SpyroScope {
 		uint32 m;
 		public Renderer.Color4 color;
 
+		// Derived from Spyro: Ripto's Rage [8001d068]
 		public bool HasModel { get { return objectTypeID < 0x300; } }
 
 		public void Draw(Renderer renderer) {
