@@ -35,6 +35,7 @@ namespace SpyroScope {
 		Buffer<Vector> positions;
 		Buffer<Vector> normals;
 		Buffer<Color> colors;
+		Buffer<(float,float)> uvs;
 		DrawQueue[maxGenericBufferLength] drawQueue;
 		DrawQueue* startDrawQueue, lastDrawQueue;
 		
@@ -48,11 +49,12 @@ namespace SpyroScope {
 		public static uint positionAttributeIndex;
 		public static uint normalAttributeIndex;
 		public static uint colorAttributeIndex;
+		public static uint uvAttributeIndex;
+
 		public static uint instanceMatrixAttributeIndex;
 		public static uint instanceTintAttributeIndex;
 
 		// Shader Uniforms
-		//public int uniformModelMatrixIndex; // Object Transform
 		public Matrix4 model = .Identity;
 		public int uniformViewMatrixIndex; // Camera Inverse Transform
 		public Matrix4 view = .Identity;
@@ -60,9 +62,11 @@ namespace SpyroScope {
 		public Matrix viewBasis = .Identity;
 		public int uniformProjectionMatrixIndex; // Camera Perspective
 		public Matrix4 projection = .Identity;
-		//public int uniformTintIndex; // Overall Tint Color
+
 		public Vector tint = .(1,1,1);
 		public int uniformZdepthOffsetIndex; // Z-depth Offset (mainly for pushing the wireframe forward to avoid Z-fighting)
+
+		public uint textureDefaultWhite;
 
 		public struct Buffer<T> {
 			public uint obj;
@@ -112,10 +116,12 @@ namespace SpyroScope {
 		struct DrawQueue {
 			public uint16 type;
 			public uint16 count;
+			public uint8 texture;
 
-			public this(uint16 drawType, uint16 vertexCount) {
+			public this(uint16 drawType, uint16 vertexCount, uint8 textureObject) {
 				type = drawType;
 				count = vertexCount;
+				texture = textureObject;
 			}
 		}
 
@@ -175,6 +181,12 @@ namespace SpyroScope {
 			GL.glVertexAttribIPointer(colorAttributeIndex, 3, GL.GL_UNSIGNED_BYTE, 0, null);
 			GL.glEnableVertexAttribArray(colorAttributeIndex);
 
+			// UV Buffer
+			uvs = .(maxGenericBufferLength);
+			uvAttributeIndex = FindProgramAttribute(program, "vertexTextureMapping");
+			GL.glVertexAttribPointer(uvAttributeIndex, 2, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
+			GL.glEnableVertexAttribArray(uvAttributeIndex);
+
 			uint tempBufferID = ?;
 			GL.glGenBuffers(1, &tempBufferID);
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, tempBufferID);
@@ -211,10 +223,20 @@ namespace SpyroScope {
 			uniformProjectionMatrixIndex = FindProgramUniform(program, "projection");
 			uniformZdepthOffsetIndex = FindProgramUniform(program, "zdepthOffset");
 
+			// Create Default Texture
+
+			var tempTexData = Color4[1](.(255,255,255,255));
+			GL.glGenTextures(1, &textureDefaultWhite);
+			GL.glBindTexture(GL.GL_TEXTURE_2D, textureDefaultWhite);
+			GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, 1, 1, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, &tempTexData);
+
 			this.window = window;
 
 			GL.glEnable(GL.GL_FRAMEBUFFER_SRGB); 
 			GL.glEnable(GL.GL_DEPTH_TEST);
+			GL.glEnable(GL.GL_BLEND);
+			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+
 			GL.glEnable(GL.GL_CULL_FACE);
 			GL.glCullFace(GL.GL_BACK);
 			GL.glFrontFace(GL.GL_CW);
@@ -283,10 +305,11 @@ namespace SpyroScope {
 			return index;
 		}
 
-		public void PushPoint(Vector position, Vector normal, Color color) {
+		public void PushPoint(Vector position, Vector normal, Color color, (float,float) uv) {
 			positions.Set(vertexCount, position);
 			normals.Set(vertexCount, normal);
 			colors.Set(vertexCount, color);
+			uvs.Set(vertexCount, uv);
 
 			vertexCount++;
 		}
@@ -299,8 +322,8 @@ namespace SpyroScope {
 				
 			let normal = Vector(0,0,1);
 
-			PushPoint(p0, normal, c0);
-			PushPoint(p1, normal, c1);
+			PushPoint(p0, normal, c0, (0,0));
+			PushPoint(p1, normal, c1, (0,0));
 
 			if (lastDrawQueue.type == GL.GL_LINES) {
 				lastDrawQueue.count += 2;
@@ -308,33 +331,43 @@ namespace SpyroScope {
 				lastDrawQueue++;
 				lastDrawQueue.type = GL.GL_LINES;
 				lastDrawQueue.count = 2;
+				lastDrawQueue.texture = (uint8)textureDefaultWhite;
 			}
 		}
 
 		public void DrawTriangle(Vector p0, Vector p1, Vector p2,
-			Color c0, Color c1, Color c2) {
+			Color c0, Color c1, Color c2,
+			(float,float) uv0, (float,float) uv1, (float,float) uv2, uint textureObject) {
 			if (vertexCount + 3 > maxGenericBufferLength) {
 				Draw();
 			}
 
 			let normal = Vector.Cross(p2 - p0, p1 - p0);
 
-			PushPoint(p0, normal, c0);
-			PushPoint(p1, normal, c1);
-			PushPoint(p2, normal, c2);
+			PushPoint(p0, normal, c0, uv0);
+			PushPoint(p1, normal, c1, uv1);
+			PushPoint(p2, normal, c2, uv2);
 
-			if (lastDrawQueue.type == GL.GL_TRIANGLES) {
+			if (lastDrawQueue.type == GL.GL_TRIANGLES && lastDrawQueue.texture == textureObject) {
 				lastDrawQueue.count += 3;
 			} else {
 				lastDrawQueue++;
 				lastDrawQueue.type = GL.GL_TRIANGLES;
 				lastDrawQueue.count = 3;
+				lastDrawQueue.texture = (.)textureObject;
 			}
+		}
+
+		public void DrawTriangle(Vector p0, Vector p1, Vector p2,
+			Color c0, Color c1, Color c2) {
+			DrawTriangle(p0, p1, p2, c0, c1, c2, (0,0), (0,0), (0,0), textureDefaultWhite);
 		}
 
 		public void SetModel(Vector position, Matrix basis) {
 			model = Matrix4.Translation(position) * basis;
+			var normalCorrection = model;
 			//GL.glUniformMatrix4fv(uniformModelMatrixIndex, 1, GL.GL_FALSE, (float*)&model);
+			GL.glUniformMatrix4fv(uniformModelNormalMatrixIndex, 1, GL.GL_FALSE, (float*)&normalCorrection);
 		}
 
 		public void SetView(Vector position, Matrix basis) {
@@ -369,6 +402,7 @@ namespace SpyroScope {
 
 			startDrawQueue++;
 			while (startDrawQueue <= lastDrawQueue) {
+				GL.glBindTexture(GL.GL_TEXTURE_2D, startDrawQueue.texture);
 				GL.glDrawArrays(startDrawQueue.type, vertexOffset, startDrawQueue.count);
 				vertexOffset += startDrawQueue.count;
 				startDrawQueue++;

@@ -14,6 +14,7 @@ namespace SpyroScope {
 		public bool closed { get; private set; }
 		public bool drawMapWireframe;
 		public bool drawObjects;
+		public bool drawCollsionTypeLegend;
 
 		static int currentObjIndex, hoveredObjIndex;
 		static List<Moby> objectList = new .(128) ~ delete _;
@@ -41,6 +42,7 @@ namespace SpyroScope {
 		List<uint8> collisionTypes = new .() ~ delete _;
 
 		Dictionary<uint16, MobyModelSet> modelSets = new .();
+		BitmapFont font ~ delete _;
 
 		//List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
@@ -51,6 +53,7 @@ namespace SpyroScope {
 			window = SDL.CreateWindow("Scope", .Undefined, .Undefined, (.)width, (.)height,
 				.Shown | .Resizable | .InputFocus | .Utility | .OpenGL);
 			renderer = new .(window);
+			font = new .("images/font.png", 12, 14);
 
 			viewerProjection = .Perspective(55f / 180 * Math.PI_f, (float)width / height, 100, 500000);
 			uiProjection = .Orthogonal(width, height, 0, 1);
@@ -81,6 +84,7 @@ namespace SpyroScope {
 
 		public void Run() {
 			renderer.Clear();
+			GL.glBindTexture(GL.GL_TEXTURE_2D, renderer.textureDefaultWhite);
 
 			Emulator.CheckEmulatorStatus();
 
@@ -144,7 +148,7 @@ namespace SpyroScope {
 			}
 
 			DrawSpyroInformation();
-
+			
 			// Draw all queued instances
 			PrimitiveShape.DrawInstances();
 
@@ -153,7 +157,7 @@ namespace SpyroScope {
 					model.DrawInstances();
 				}
 			}
-			
+
 			renderer.SetModel(.Zero, .Identity);
 			renderer.SetTint(.(255,255,255));
 			renderer.Draw();
@@ -255,6 +259,10 @@ namespace SpyroScope {
 						if (event.key.keysym.scancode == .O) {
 							drawObjects = !drawObjects;
 							Console.WriteLine("Swapped Object View.");
+						}
+						if (event.key.keysym.scancode == .L) {
+							drawCollsionTypeLegend = !drawCollsionTypeLegend;
+							Console.WriteLine("Toggled Legend.");
 						}
 						if (event.key.keysym.scancode == .K) {
 							uint health = 0;
@@ -404,19 +412,11 @@ namespace SpyroScope {
 						Emulator.Address flagPointer = Emulator.collisionFlagPointerArray[flagIndex];
 						uint8 flag = ?;
 						Emulator.ReadFromRAM(flagPointer, &flag, 1);
-						switch (flag) {
-							case 0x00: color = .(255,255,64); // Quicksand
-							case 0x01: color = .(255,64,64); // Lava
-							case 0x02: color = .(64,64,64); // Road
-							case 0x03: color = .(255,64,255); // ??? (Special)
-							case 0x04: color = .(64,255,255); // Ice
-							case 0x05: color = .(128,128,255); // Barrier
-							case 0x06: color = .(64,255,64); // Portal
-							case 0x07: color = .(64,64,255); // Electric
-							case 0x08: color = .(128,92,64); // Ladder
-							case 0x09: color = .(128,255,64); // Ramp
-							case 0x0A: color = .(64,64,128); // Slip
-							default: color = .(255,0,255);
+
+						if (flag < 11 /*Emulator.collisionTypes.Count*/) {
+							color = Emulator.collisionTypes[flag].color;
+						} else {
+							color = .(255, 0, 255);
 						}
 
 						if (!collisionTypes.Contains(flag)) {
@@ -496,8 +496,6 @@ namespace SpyroScope {
 				(uint8 flag, uint8, uint8 nextKeyframe, uint8, uint8 interpolation, uint8 fromState, uint8 toState, uint8) keyframeData = ?;
 				Emulator.ReadFromRAM(collisionModifyingGroupPointer + 12 + ((uint32)currentKeyframe) * 8, &keyframeData.flag, 8);
 
-
-
 				for (uint32 i < animatedTriangleCount) {
 					/*PackedTriangle packedTriangle = ?;
 					Emulator.ReadFromRAM(collisionModifyingGroupPointer + triangleDataOffset + (keyframeData.fromState * animatedTriangleCount + i) * 12, &packedTriangle, 12);
@@ -523,10 +521,15 @@ namespace SpyroScope {
 					interpolatedTriangle[1] = fromTriangle[1] + (toTriangle[1] - fromTriangle[1]).ToVector() * interpolation;
 					interpolatedTriangle[2] = fromTriangle[2] + (toTriangle[2] - fromTriangle[2]).ToVector() * interpolation;
 
-					//renderer.DrawTriangle(interpolatedTriangle[0], interpolatedTriangle[1], interpolatedTriangle[2], .(255,255,0), .(255,255,0), .(255,255,0));
 					collisionMesh.vertices[(updateTriangleStartIndex + i) * 3] = interpolatedTriangle[0];
 					collisionMesh.vertices[(updateTriangleStartIndex + i) * 3 + 1] = interpolatedTriangle[1];
 					collisionMesh.vertices[(updateTriangleStartIndex + i) * 3 + 2] = interpolatedTriangle[2];
+
+					Renderer.Color transitionColor = keyframeData.fromState == keyframeData.toState ? .(255,128,0) : .((.)((1 - interpolation) * 255), (.)(interpolation * 255), 0);
+
+					collisionMesh.colors[(updateTriangleStartIndex + i) * 3] = transitionColor;
+					collisionMesh.colors[(updateTriangleStartIndex + i) * 3 + 1] = transitionColor;
+					collisionMesh.colors[(updateTriangleStartIndex + i) * 3 + 2] = transitionColor;
 				}
 			}
 
@@ -609,7 +612,22 @@ namespace SpyroScope {
 					if (test.w > 0) { // Must be in front of view
 						let depth = test.w / 300; // Divide by near plane distance for correct depth
 						if (!drawObjects) {
-							DrawUtilities.Circle!(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(400f/depth,400f/depth,400f/depth), Renderer.Color(16,16,16), renderer);
+							var onscreenOrigin = Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0);
+							DrawUtilities.Circle!(onscreenOrigin, Matrix.Scale(400f/depth,400f/depth,400f/depth), Renderer.Color(16,16,16), renderer);
+
+							Emulator.Address objectArrayPointer = ?;
+							Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
+
+							onscreenOrigin.y += 400f / depth;
+							renderer.DrawTriangle(onscreenOrigin + .(0,font.characterHeight*2,0), onscreenOrigin + .(font.characterWidth*10,font.characterHeight*2,0), onscreenOrigin,
+								.(0,0,0), .(0,0,0), .(0,0,0));
+							renderer.DrawTriangle(onscreenOrigin + .(font.characterWidth * 10,font.characterHeight*2,0), onscreenOrigin + .(font.characterWidth * 10,0,0), onscreenOrigin,
+								.(0,0,0), .(0,0,0), .(0,0,0));
+							font.Print(scope String() .. AppendF("[{:X8}]", objectArrayPointer + currentObjIndex * sizeof(Moby)),
+								onscreenOrigin, .(255,255,255), renderer);
+
+							font.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
+								onscreenOrigin + .(0,font.characterHeight,0), .(255,255,255), renderer);
 						}
 					}
 				}
@@ -632,30 +650,39 @@ namespace SpyroScope {
 			let halfHeight = (float)height / 2;
 
 			// Legend
-			for (let i < collisionTypes.Count) {
-				let flag = collisionTypes[i];
-				Renderer.Color color = ?;
-				switch (flag) {
-					case 0x00: color = .(255,255,64); // Quicksand
-					case 0x01: color = .(255,64,64); // Lava
-					case 0x02: color = .(64,64,64); // Road
-					case 0x03: color = .(255,64,255); // ???
-					case 0x04: color = .(64,255,255); // Ice
-					case 0x05: color = .(128,128,255); // Barrier
-					case 0x06: color = .(64,255,64); // Portal
-					case 0x07: color = .(64,64,255); // Electric
-					case 0x08: color = .(128,92,64); // Ladder
-					case 0x09: color = .(128,255,64); // Ramp
-					case 0x0A: color = .(64,64,128); // Slip
-					default: color = .(255,0,255);
-				}
+			if (drawCollsionTypeLegend) {
+				let leftPaddingBG = 4 - halfWidth;
+				let bottomPaddingBG = 4 - halfHeight;
 
-				let leftPadding = 16 - halfWidth;
-				let bottomPadding = 16 - halfHeight + 32 * i;
-				renderer.DrawTriangle(.(leftPadding, bottomPadding + 16, 0), .(leftPadding + 16, bottomPadding + 16, 0), .(leftPadding, bottomPadding, 0),
-					color, color, color);
-				renderer.DrawTriangle(.(leftPadding + 16, bottomPadding + 16, 0), .(leftPadding + 16, bottomPadding, 0), .(leftPadding, bottomPadding, 0),
-					color, color, color);
+				// Background
+				renderer.DrawTriangle(.(leftPaddingBG, bottomPaddingBG + 18 * collisionTypes.Count + 6, 0), .(leftPaddingBG + 12 * 8 + 36, bottomPaddingBG + 18 * collisionTypes.Count + 6, 0), .(leftPaddingBG, bottomPaddingBG, 0),
+					.(0,0,0), .(0,0,0), .(0,0,0));
+				renderer.DrawTriangle(.(leftPaddingBG + 12 * 8 + 36, bottomPaddingBG + 18 * collisionTypes.Count + 6, 0), .(leftPaddingBG + 12 * 8 + 36, bottomPaddingBG, 0), .(leftPaddingBG, bottomPaddingBG, 0),
+					.(0,0,0), .(0,0,0), .(0,0,0));
+
+				// Content
+				for (let i < collisionTypes.Count) {
+					let flag = collisionTypes[i];
+					String label = ?;
+					Renderer.Color color = ?;
+					if (flag < 11 /*Emulator.collisionTypes.Count*/) {
+						(label, color) = Emulator.collisionTypes[flag];
+					} else {
+						label = "Unknown";
+						color = .(255, 0, 255);
+					}
+					let conversion = scope String(label);
+					conversion.ToUpper();
+	
+					let leftPadding = 8 - halfWidth;
+					let bottomPadding = 8 - halfHeight + 18 * i;
+					renderer.DrawTriangle(.(leftPadding, bottomPadding + 16, 0), .(leftPadding + 16, bottomPadding + 16, 0), .(leftPadding, bottomPadding, 0),
+						color, color, color);
+					renderer.DrawTriangle(.(leftPadding + 16, bottomPadding + 16, 0), .(leftPadding + 16, bottomPadding, 0), .(leftPadding, bottomPadding, 0),
+						color, color, color);
+	
+					font.Print(conversion, .(leftPadding + 24, bottomPadding + 1, 0), .(255,255,255), renderer);
+				}
 			}
 
 			/*for (let element in guiElements) {
