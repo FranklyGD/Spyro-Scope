@@ -365,9 +365,6 @@ namespace SpyroScope {
 
 		public void SetModel(Vector position, Matrix basis) {
 			model = Matrix4.Translation(position) * basis;
-			var normalCorrection = model;
-			//GL.glUniformMatrix4fv(uniformModelMatrixIndex, 1, GL.GL_FALSE, (float*)&model);
-			GL.glUniformMatrix4fv(uniformModelNormalMatrixIndex, 1, GL.GL_FALSE, (float*)&normalCorrection);
 		}
 
 		public void SetView(Vector position, Matrix basis) {
