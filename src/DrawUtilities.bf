@@ -84,5 +84,16 @@ namespace SpyroScope {
 
 			DrawUtilities.Circle!(offsetedCenter, tangentCircleBasis * tangentRadius, color, renderer);
 		}
+
+		[Inline]
+		public static void Rect(float bottom, float top, float left, float right,
+			float uvbottom, float uvtop, float uvleft, float uvright,
+			uint textureObject, Renderer.Color color, Renderer renderer) {
+
+			renderer.DrawTriangle(.(left,bottom,0), .(left,top,0), .(right,top,0), color, color, color,
+					(uvleft, uvbottom), (uvleft, uvtop), (uvright, uvtop), textureObject);
+			renderer.DrawTriangle(.(left,bottom,0), .(right,top,0), .(right,bottom,0), color, color, color,
+					(uvleft, uvbottom), (uvright, uvtop), (uvright, uvbottom), textureObject);
+		}
 	}
 }

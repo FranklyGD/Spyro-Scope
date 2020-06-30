@@ -56,7 +56,7 @@ namespace SpyroScope {
 			font = new .("images/font.png", 12, 14);
 
 			viewerProjection = .Perspective(55f / 180 * Math.PI_f, (float)width / height, 100, 500000);
-			uiProjection = .Orthogonal(width, height, 0, 1);
+			uiProjection = .Orthogonal(width, height, -1, 1);
 
 			id = SDL.GetWindowID(window);
 
@@ -619,10 +619,8 @@ namespace SpyroScope {
 							Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
 
 							onscreenOrigin.y += 400f / depth;
-							renderer.DrawTriangle(onscreenOrigin + .(0,font.characterHeight*2,0), onscreenOrigin + .(font.characterWidth*10,font.characterHeight*2,0), onscreenOrigin,
-								.(0,0,0), .(0,0,0), .(0,0,0));
-							renderer.DrawTriangle(onscreenOrigin + .(font.characterWidth * 10,font.characterHeight*2,0), onscreenOrigin + .(font.characterWidth * 10,0,0), onscreenOrigin,
-								.(0,0,0), .(0,0,0), .(0,0,0));
+							DrawUtilities.Rect(onscreenOrigin.y, onscreenOrigin.y + font.characterHeight * 2, onscreenOrigin.x, onscreenOrigin.x + font.characterWidth * 10,
+								0,0,0,0, renderer.textureDefaultWhite, .(0,0,0), renderer);
 							font.Print(scope String() .. AppendF("[{:X8}]", objectArrayPointer + currentObjIndex * sizeof(Moby)),
 								onscreenOrigin, .(255,255,255), renderer);
 
@@ -655,10 +653,8 @@ namespace SpyroScope {
 				let bottomPaddingBG = 4 - halfHeight;
 
 				// Background
-				renderer.DrawTriangle(.(leftPaddingBG, bottomPaddingBG + 18 * collisionTypes.Count + 6, 0), .(leftPaddingBG + 12 * 8 + 36, bottomPaddingBG + 18 * collisionTypes.Count + 6, 0), .(leftPaddingBG, bottomPaddingBG, 0),
-					.(0,0,0), .(0,0,0), .(0,0,0));
-				renderer.DrawTriangle(.(leftPaddingBG + 12 * 8 + 36, bottomPaddingBG + 18 * collisionTypes.Count + 6, 0), .(leftPaddingBG + 12 * 8 + 36, bottomPaddingBG, 0), .(leftPaddingBG, bottomPaddingBG, 0),
-					.(0,0,0), .(0,0,0), .(0,0,0));
+				DrawUtilities.Rect(bottomPaddingBG, bottomPaddingBG + 18 * collisionTypes.Count + 6, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
+					0,0,0,0, renderer.textureDefaultWhite, .(0,0,0), renderer);
 
 				// Content
 				for (let i < collisionTypes.Count) {
@@ -676,11 +672,8 @@ namespace SpyroScope {
 	
 					let leftPadding = 8 - halfWidth;
 					let bottomPadding = 8 - halfHeight + 18 * i;
-					renderer.DrawTriangle(.(leftPadding, bottomPadding + 16, 0), .(leftPadding + 16, bottomPadding + 16, 0), .(leftPadding, bottomPadding, 0),
-						color, color, color);
-					renderer.DrawTriangle(.(leftPadding + 16, bottomPadding + 16, 0), .(leftPadding + 16, bottomPadding, 0), .(leftPadding, bottomPadding, 0),
-						color, color, color);
-	
+					DrawUtilities.Rect(bottomPadding, bottomPadding + 16, leftPadding, leftPadding + 16, 0,0,0,0, renderer.textureDefaultWhite, color, renderer);
+
 					font.Print(conversion, .(leftPadding + 24, bottomPadding + 1, 0), .(255,255,255), renderer);
 				}
 			}

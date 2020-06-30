@@ -38,23 +38,13 @@ namespace SpyroScope {
 				let character = (uint8)text[i] - 32;
 				let glyphSize = ((float)characterWidth / 192, (float)characterHeight / 128);
 
-				let pos = position + .(i * width, 0, 0);
-				let postl = position + .(i * width, height, 0); 
-				let postr = position + .((i + 1) * width, height, 0); 
-				let posbr = position + .((i + 1) * width, 0, 0);
-
 				let a0 = character * glyphSize.0;
 				let d0 = a0 / 1f;
 				let r0 = d0 - (int)d0;
 
-				let uv = (r0, character / 16 * glyphSize.1);
-				let uvtl = (r0, (character / 16 + 1) * glyphSize.1);
-
-				let uvtr = (r0 + glyphSize.0, (character / 16 + 1) * glyphSize.1);
-				let uvbr = (r0 + glyphSize.0, character / 16 * glyphSize.1);
-
-				renderer.DrawTriangle(pos, postl, postr, color, color, color, uvtl, uv, uvbr, textureObject);
-				renderer.DrawTriangle(pos, postr, posbr, color, color, color, uvtl, uvbr, uvtr, textureObject);
+				DrawUtilities.Rect(position.y, position.y + height, position.x + i * width, position.x + (i + 1) * width,
+					(character / 16 + 1) * glyphSize.1, character / 16 * glyphSize.1, r0, r0 + glyphSize.0,
+					textureObject, .(255,255,255), renderer);
 			}
 		}
 
