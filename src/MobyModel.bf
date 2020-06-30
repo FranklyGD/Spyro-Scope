@@ -83,7 +83,7 @@ namespace SpyroScope {
 
 				Vector[] v = new .[vertices.Count];
 				Vector[] n = new .[vertices.Count];
-				Renderer.Color[] c = new .[vertices.Count];
+				Renderer.Color4[] c = new .[vertices.Count];
 
 				for (let i < vertices.Count) {
 					v[i] = vertices[i];

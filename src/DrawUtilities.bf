@@ -88,7 +88,7 @@ namespace SpyroScope {
 		[Inline]
 		public static void Rect(float bottom, float top, float left, float right,
 			float uvbottom, float uvtop, float uvleft, float uvright,
-			uint textureObject, Renderer.Color color, Renderer renderer) {
+			uint textureObject, Renderer.Color4 color, Renderer renderer) {
 
 			renderer.DrawTriangle(.(left,bottom,0), .(left,top,0), .(right,top,0), color, color, color,
 					(uvleft, uvbottom), (uvleft, uvtop), (uvright, uvtop), textureObject);

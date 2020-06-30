@@ -75,7 +75,7 @@ namespace SpyroScope {
 				.(0.0f,0.0f,-1.0f)
 			);
 
-			let colors = new Renderer.Color[24];
+			let colors = new Renderer.Color4[24];
 			for	(int i < 24) {
 				colors[i] = .(255,255,255);
 			}
@@ -114,7 +114,7 @@ namespace SpyroScope {
 				normals[i + subdivisions * 3] = .(0,0,-1);
 			}
 
-			let colors = new Renderer.Color[subdivisions * 4];
+			let colors = new Renderer.Color4[subdivisions * 4];
 			for	(int i < subdivisions * 4) {
 				colors[i] = .(255,255,255);
 			}
@@ -170,7 +170,7 @@ namespace SpyroScope {
 				normals[i + subdivisions * 2] = .(0,0,-1);
 			}
 
-			let colors = new Renderer.Color[subdivisions * 3];
+			let colors = new Renderer.Color4[subdivisions * 3];
 			for	(int i < subdivisions * 3) {
 				colors[i] = .(255,255,255);
 			}

@@ -29,7 +29,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public void Print(String text, float width, float height, Vector position, Renderer.Color color, Renderer renderer) {
+		public void Print(String text, float width, float height, Vector position, Renderer.Color4 color, Renderer renderer) {
 			for (let i < text.Length) {
 				if (text[i] == ' ') {
 					continue;
@@ -48,7 +48,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public void Print(String text, Vector position, Renderer.Color color, Renderer renderer) {
+		public void Print(String text, Vector position, Renderer.Color4 color, Renderer renderer) {
 			Print(text, characterWidth, characterHeight, position, color, renderer);
 		}
 	}

@@ -4,7 +4,7 @@ namespace SpyroScope {
 	class StaticMesh {
 		public Vector[] vertices ~ delete _;
 		public Vector[] normals ~ delete _;
-		public Renderer.Color[] colors ~ delete _;
+		public Renderer.Color4[] colors ~ delete _;
 		public float[][2] uvs ~ delete _;
 
 		uint32[] indices ~ delete _;
@@ -26,7 +26,7 @@ namespace SpyroScope {
 		matrixBufferObject,
 		tintBufferObject;
 
-		public this(Vector[] vertices, Vector[] normals, Renderer.Color[] colors, uint32[] indices) {
+		public this(Vector[] vertices, Vector[] normals, Renderer.Color4[] colors, uint32[] indices) {
 			this.vertices = vertices;
 			this.normals = normals;
 			this.colors = colors;
@@ -36,7 +36,7 @@ namespace SpyroScope {
 			Init();
 		}
 
-		public this(Vector[] vertices, Vector[] normals, Renderer.Color[] colors) {
+		public this(Vector[] vertices, Vector[] normals, Renderer.Color4[] colors) {
 			this.vertices = vertices;
 			this.normals = normals;
 			this.colors = colors;
@@ -88,11 +88,11 @@ namespace SpyroScope {
 
 			GL.glGenBuffers(1, &colorBufferObject);
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, colorBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Renderer.Color), &colors[0], GL.GL_STATIC_DRAW); 
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Renderer.Color4), &colors[0], GL.GL_STATIC_DRAW); 
 
 			GL.glEnableVertexAttribArray(Renderer.colorAttributeIndex);	
 			GL.glVertexAttribIPointer(Renderer.colorAttributeIndex,
-				3, GL.GL_UNSIGNED_BYTE, 0, null);
+				4, GL.GL_UNSIGNED_BYTE, 0, null);
 
 			/*GL.glGenBuffers(1, &uvBufferObject);
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, uvBufferObject);
@@ -208,8 +208,8 @@ namespace SpyroScope {
 			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector), &normals[0]);
 
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, colorBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Renderer.Color), null, GL.GL_STATIC_DRAW);
-			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Renderer.Color), &colors[0]);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Renderer.Color4), null, GL.GL_STATIC_DRAW);
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Renderer.Color4), &colors[0]);
 
 			GL.glBindVertexArray(0);
 		}

@@ -28,13 +28,24 @@ namespace SpyroScope {
 				this.b = b;
 				this.a = a;
 			}
+
+			public this(uint8 r, uint8 g, uint8 b) {
+				this.r = r;
+				this.g = g;
+				this.b = b;
+				this.a = 255;
+			}
+
+			public static implicit operator Color4(Color color) {
+				return .(color.r, color.g, color.b, 255);
+			}
 		}
 
 		const uint maxGenericBufferLength = 0x6000;
 		uint vertexArrayObject;
 		Buffer<Vector> positions;
 		Buffer<Vector> normals;
-		Buffer<Color> colors;
+		Buffer<Color4> colors;
 		Buffer<(float,float)> uvs;
 		DrawQueue[maxGenericBufferLength] drawQueue;
 		DrawQueue* startDrawQueue, lastDrawQueue;
@@ -178,7 +189,7 @@ namespace SpyroScope {
 			// Color Buffer
 			colors = .(maxGenericBufferLength);
 			colorAttributeIndex = FindProgramAttribute(program, "vertexColor");
-			GL.glVertexAttribIPointer(colorAttributeIndex, 3, GL.GL_UNSIGNED_BYTE, 0, null);
+			GL.glVertexAttribIPointer(colorAttributeIndex, 4, GL.GL_UNSIGNED_BYTE, 0, null);
 			GL.glEnableVertexAttribArray(colorAttributeIndex);
 
 			// UV Buffer
@@ -269,7 +280,17 @@ namespace SpyroScope {
 
 			int status = GL.GL_FALSE;
 			GL.glGetShaderiv(shader, GL.GL_COMPILE_STATUS, &status);
-			Debug.Assert(status == GL.GL_TRUE, "Shader compilation failed");
+			if (status == GL.GL_FALSE) {
+				int length = 0;
+				GL.glGetShaderiv(shader, GL.GL_INFO_LOG_LENGTH, &length);
+
+				String message = scope String();
+				let ptr = message.PrepareBuffer(length);
+				GL.glGetShaderInfoLog(shader, length, null, ptr);
+
+				Debug.Write(message);
+				Debug.FatalError("Shader compilation failed");
+			}
 
 			return shader;
 		}
@@ -305,7 +326,7 @@ namespace SpyroScope {
 			return index;
 		}
 
-		public void PushPoint(Vector position, Vector normal, Color color, (float,float) uv) {
+		public void PushPoint(Vector position, Vector normal, Color4 color, (float,float) uv) {
 			positions.Set(vertexCount, position);
 			normals.Set(vertexCount, normal);
 			colors.Set(vertexCount, color);
@@ -315,7 +336,7 @@ namespace SpyroScope {
 		}
 
 		public void DrawLine(Vector p0, Vector p1,
-			Color c0, Color c1) {
+			Color4 c0, Color4 c1) {
 			if (vertexCount + 2 > maxGenericBufferLength) {
 				Draw();
 			}
@@ -336,7 +357,7 @@ namespace SpyroScope {
 		}
 
 		public void DrawTriangle(Vector p0, Vector p1, Vector p2,
-			Color c0, Color c1, Color c2,
+			Color4 c0, Color4 c1, Color4 c2,
 			(float,float) uv0, (float,float) uv1, (float,float) uv2, uint textureObject) {
 			if (vertexCount + 3 > maxGenericBufferLength) {
 				Draw();
@@ -359,7 +380,7 @@ namespace SpyroScope {
 		}
 
 		public void DrawTriangle(Vector p0, Vector p1, Vector p2,
-			Color c0, Color c1, Color c2) {
+			Color4 c0, Color4 c1, Color4 c2) {
 			DrawTriangle(p0, p1, p2, c0, c1, c2, (0,0), (0,0), (0,0), textureDefaultWhite);
 		}
 

@@ -389,7 +389,7 @@ namespace SpyroScope {
 			let vertexCount = Emulator.collisionTriangles.Count * 3;
 			Vector[] vertices = new .[vertexCount];
 			Vector[] normals = new .[vertexCount];
-			Renderer.Color[] colors = new .[vertexCount];
+			Renderer.Color4[] colors = new .[vertexCount];
 			
 			collisionTypes.Clear();
 			for (int triangleIndex < Emulator.collisionTriangles.Count) {
@@ -620,7 +620,7 @@ namespace SpyroScope {
 
 							onscreenOrigin.y += 400f / depth;
 							DrawUtilities.Rect(onscreenOrigin.y, onscreenOrigin.y + font.characterHeight * 2, onscreenOrigin.x, onscreenOrigin.x + font.characterWidth * 10,
-								0,0,0,0, renderer.textureDefaultWhite, .(0,0,0), renderer);
+								0,0,0,0, renderer.textureDefaultWhite, .(0,0,0,192), renderer);
 							font.Print(scope String() .. AppendF("[{:X8}]", objectArrayPointer + currentObjIndex * sizeof(Moby)),
 								onscreenOrigin, .(255,255,255), renderer);
 
@@ -654,7 +654,7 @@ namespace SpyroScope {
 
 				// Background
 				DrawUtilities.Rect(bottomPaddingBG, bottomPaddingBG + 18 * collisionTypes.Count + 6, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
-					0,0,0,0, renderer.textureDefaultWhite, .(0,0,0), renderer);
+					0,0,0,0, renderer.textureDefaultWhite, .(0,0,0,192), renderer);
 
 				// Content
 				for (let i < collisionTypes.Count) {
