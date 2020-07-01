@@ -18,7 +18,7 @@ namespace SpyroScope {
 			let targetLocation = basis * Vector(localPosition[0], localPosition[1], localPosition[2]);
 			renderer.DrawLine(object.position, Emulator.spyroPosition + targetLocation, .(255,255,0), .(255,255,0));
 
-			DrawUtilities.Circle!(
+			DrawUtilities.Circle(
 				Emulator.spyroPosition + targetLocation,
 				Matrix.Identity * 200 * ((float)positionTimer / maxTime),
 				Renderer.Color(255,255,0),

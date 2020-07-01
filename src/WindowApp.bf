@@ -245,81 +245,62 @@ namespace SpyroScope {
 				}
 				case .KeyDown : {
 					if (event.key.isRepeat == 0) {
-						if (event.key.keysym.scancode == .P) {
-							Emulator.TogglePaused();
+						switch (event.key.keysym.scancode) {
+							case .P : {
+								Emulator.TogglePaused();
+							}
+							case .LCtrl : {
+								cameraSpeed *= 8;
+								cameraMotion *= 8;
+							}
+							case .M : {
+								drawMapWireframe = !drawMapWireframe;
+								Console.WriteLine("Swapped Map View.");
+							}
+							case .O : {
+								drawObjects = !drawObjects;
+								Console.WriteLine("Swapped Object View.");
+							}
+							case .L : {
+								drawCollsionTypeLegend = !drawCollsionTypeLegend;
+								Console.WriteLine("Toggled Legend.");
+							}
+							case .K : {
+								uint health = 0;
+								Emulator.WriteToRAM(Emulator.healthAddress[(int)Emulator.rom], &health, 4);
+							}
+							case .T : {
+								if (Emulator.cameraMode) {
+									Emulator.spyroPosition = viewPosition.ToVectorInt();
+									Emulator.WriteToRAM(Emulator.spyroPositionPointers[(int)Emulator.rom], &Emulator.spyroPosition, sizeof(VectorInt));
+									Console.WriteLine("Teleported Spyro to current Camera View.");
+								}
+							}
+							case .C : {
+								Emulator.ToggleCameraMode();
+							}
+							case .V : {
+								dislodgeCamera = !dislodgeCamera;
+							}
+							default : {}
 						}
-						if (event.key.keysym.scancode == .LCtrl) {
-							cameraSpeed *= 8;
-							cameraMotion *= 8;
-						}
-						if (event.key.keysym.scancode == .M) {
-							drawMapWireframe = !drawMapWireframe;
-							Console.WriteLine("Swapped Map View.");
-						}
-						if (event.key.keysym.scancode == .O) {
-							drawObjects = !drawObjects;
-							Console.WriteLine("Swapped Object View.");
-						}
-						if (event.key.keysym.scancode == .L) {
-							drawCollsionTypeLegend = !drawCollsionTypeLegend;
-							Console.WriteLine("Toggled Legend.");
-						}
-						if (event.key.keysym.scancode == .K) {
-							uint health = 0;
-							Emulator.WriteToRAM(Emulator.fuckSparx[(int)Emulator.rom], &health, 4);
-						}
-						if (event.key.keysym.scancode == .T && Emulator.cameraMode) {
-							Emulator.spyroPosition = viewPosition.ToVectorInt();
-							Emulator.WriteToRAM(Emulator.spyroPositionPointers[(int)Emulator.rom], &Emulator.spyroPosition, sizeof(VectorInt));
-							Console.WriteLine("Teleported Spyro to current Camera View.");
-						}
-						if (event.key.keysym.scancode == .C) {
-							Emulator.ToggleCameraMode();
-						}
-						if (event.key.keysym.scancode == .V) {
-							dislodgeCamera = !dislodgeCamera;
-						}
+
 						if (cameraHijacked) {
-							if (event.key.keysym.scancode == .W) {
-								cameraMotion.z -= cameraSpeed;
+							switch (event.key.keysym.scancode) {
+								case .W :
+									cameraMotion.z -= cameraSpeed;
+								case .S :
+									cameraMotion.z += cameraSpeed;
+								case .A :
+									cameraMotion.x -= cameraSpeed;
+								case .D :
+									cameraMotion.x += cameraSpeed;
+								case .Space :
+									cameraMotion.y += cameraSpeed;
+								case .LShift :
+									cameraMotion.y -= cameraSpeed;
+								default :
 							}
-							if (event.key.keysym.scancode == .S) {
-								cameraMotion.z += cameraSpeed;
-							}
-							if (event.key.keysym.scancode == .A) {
-								cameraMotion.x -= cameraSpeed;
-							}
-							if (event.key.keysym.scancode == .D) {
-								cameraMotion.x += cameraSpeed;
-							}
-							if (event.key.keysym.scancode == .Space) {
-								cameraMotion.y += cameraSpeed;
-							}
-							if (event.key.keysym.scancode == .LShift) {
-								cameraMotion.y -= cameraSpeed;
-							}
-
-							
-
-							//int16 cameraRoll = ?;	
-							//Emulator.ReadFromRAM(Emulator.cameraRotationRollAddress[(int)Emulator.rom], &cameraRoll, 2);
-
-							/*if (event.key.keysym.scancode == .Q) {
-								if (cameraRollRate != 0) {
-									cameraRoll = cameraRollRate = 0;
-								} else {
-									cameraRollRate = 8;
-								}
-							}
-							if (event.key.keysym.scancode == .E) {
-								if (cameraRollRate != 0) {
-									cameraRoll = cameraRollRate = 0;
-								} else {
-									cameraRollRate = -8;
-								}
-							}*/
-							
-							//Emulator.WriteToRAM(Emulator.cameraRotationRollAddress[(int)Emulator.rom], &cameraRoll, 2);
 						}
 					}
 				}
@@ -331,23 +312,20 @@ namespace SpyroScope {
 					}
 
 					if (cameraHijacked) {
-						if (event.key.keysym.scancode == .W) {
-							cameraMotion.z = 0;
-						}
-						if (event.key.keysym.scancode == .S) {
-							cameraMotion.z = 0;
-						}
-						if (event.key.keysym.scancode == .A) {
-							cameraMotion.x = 0;
-						}
-						if (event.key.keysym.scancode == .D) {
-							cameraMotion.x = 0;
-						}
-						if (event.key.keysym.scancode == .Space) {
-							cameraMotion.y = 0;
-						}
-						if (event.key.keysym.scancode == .LShift) {
-							cameraMotion.y = 0;
+						switch (event.key.keysym.scancode) {
+							case .W :
+								cameraMotion.z = 0;
+							case .S :
+								cameraMotion.z = 0;
+							case .A :
+								cameraMotion.x = 0;
+							case .D :
+								cameraMotion.x = 0;
+							case .Space :
+								cameraMotion.y = 0;
+							case .LShift :
+								cameraMotion.y = 0;
+							default :
 						}
 					}
 				}
@@ -613,7 +591,7 @@ namespace SpyroScope {
 						let depth = test.w / 300; // Divide by near plane distance for correct depth
 						if (!drawObjects) {
 							var onscreenOrigin = Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0);
-							DrawUtilities.Circle!(onscreenOrigin, Matrix.Scale(400f/depth,400f/depth,400f/depth), Renderer.Color(16,16,16), renderer);
+							DrawUtilities.Circle(onscreenOrigin, Matrix.Scale(400f/depth,400f/depth,400f/depth), Renderer.Color(16,16,16), renderer);
 
 							Emulator.Address objectArrayPointer = ?;
 							Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
@@ -637,7 +615,7 @@ namespace SpyroScope {
 					if (test.w > 0) { // Must be in front of view
 						let depth = test.w / 300; // Divide by near plane distance for correct depth
 						if (!drawObjects) {
-							DrawUtilities.Circle!(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(350f/depth,350f/depth,350f/depth), Renderer.Color(128,64,16), renderer);
+							DrawUtilities.Circle(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(350f/depth,350f/depth,350f/depth), Renderer.Color(128,64,16), renderer);
 						}
 					}
 				}

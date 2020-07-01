@@ -16,7 +16,8 @@ namespace SpyroScope {
 			PrimitiveShape.cylinder.QueueInstance(renderer);
 		}
 
-		public static mixin Circle(Vector position, Matrix basis, Renderer.Color color, Renderer renderer) {
+		[Inline]
+		public static void Circle(Vector position, Matrix basis, Renderer.Color color, Renderer renderer) {
 			for (int i < 32) {
 				let theta0 = (float)i / 16 * Math.PI_f;
 				let theta1 = (float)(i + 1) / 16 * Math.PI_f;
@@ -60,9 +61,9 @@ namespace SpyroScope {
 		[Inline]
 		public static void WireframeSphere(Vector position, Matrix basis, float radius, Renderer.Color color, Renderer renderer) {
 			let scaledBasis = basis * radius;
-			DrawUtilities.Circle!(position, scaledBasis, color, renderer);
-			DrawUtilities.Circle!(position, Matrix(scaledBasis.y, scaledBasis.z, scaledBasis.x), color, renderer);
-			DrawUtilities.Circle!(position, Matrix(scaledBasis.z, scaledBasis.x, scaledBasis.y), color, renderer);
+			DrawUtilities.Circle(position, scaledBasis, color, renderer);
+			DrawUtilities.Circle(position, Matrix(scaledBasis.y, scaledBasis.z, scaledBasis.x), color, renderer);
+			DrawUtilities.Circle(position, Matrix(scaledBasis.z, scaledBasis.x, scaledBasis.y), color, renderer);
 
 			let positionDifference = renderer.viewPosition - position;
 			let distance = positionDifference.Length();
@@ -82,7 +83,7 @@ namespace SpyroScope {
 			tangentCircleBasis.y = Vector.Cross(positionDifference, renderer.viewBasis.x).Normalized();
 			tangentCircleBasis.x = Vector.Cross(tangentCircleBasis.z, tangentCircleBasis.y);
 
-			DrawUtilities.Circle!(offsetedCenter, tangentCircleBasis * tangentRadius, color, renderer);
+			DrawUtilities.Circle(offsetedCenter, tangentCircleBasis * tangentRadius, color, renderer);
 		}
 
 		[Inline]

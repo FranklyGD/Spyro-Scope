@@ -9,8 +9,8 @@ namespace SpyroScope {
 			Vector glidePoint = .(0,0,(.)height);
 			DrawUtilities.Arrow(object.position, glidePoint, radius / 10, Renderer.Color(0,255,255), renderer);
 
-			DrawUtilities.Circle!(object.position, Matrix.Scale(radius,radius,radius), Renderer.Color(0,255,255), renderer);
-			DrawUtilities.Circle!(object.position + glidePoint, Matrix.Scale(radius,radius,radius), Renderer.Color(0,255,255), renderer);
+			DrawUtilities.Circle(object.position, Matrix.Scale(radius,radius,radius), Renderer.Color(0,255,255), renderer);
+			DrawUtilities.Circle(object.position + glidePoint, Matrix.Scale(radius,radius,radius), Renderer.Color(0,255,255), renderer);
 
 			let positionDifference = renderer.viewPosition - object.position;
 			let lateralDistance = Math.Sqrt(positionDifference.x * positionDifference.x + positionDifference.y * positionDifference.y);
