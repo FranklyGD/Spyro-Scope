@@ -1,22 +1,20 @@
 using System;
 using System.Collections;
+using System.Diagnostics;
 using System.Threading;
 
 namespace SpyroScope {
 	static struct Emulator {
 		static Windows.ProcessHandle processHandle;
 
-		const void* n = null;
-		const uint32 PEBaseAddress = 0x00400000;
-		const uint32[4] staticPointerAddresses = .( 0x0, PEBaseAddress + 0x00091E10, 0x0, 0x0 );
-
 		public enum EmulatorType {
 			None,
-			NoCashPSX
+			NoCashPSX,
+			Bizhawk,
+			ePSXe
 		}
 		public static EmulatorType emulator;
-		static uint32 emulatorRAMBaseAddress;
-		// TODO: Include other emulators
+		static uint64 emulatorRAMBaseAddress;
 
 		public enum SpyroROM {
 			None,
@@ -49,7 +47,7 @@ namespace SpyroScope {
 		public const Address[4] collisionFlagsArrayPointer = .(0, 0, 0x800673e8, 0x8006d13c);
 		public const Address[4] collisionModifyingDataPointer = .(0, 0, 0x80068208, 0x8006e464);
 
-		public const Address[4] fuckSparx = .(0, 0, 0x8006A248, 0x80070688);
+		public const Address[4] healthAddress = .(0, 0, 0x8006A248, 0x80070688);
 
 		// Game Values
 		public static VectorInt cameraPosition, spyroPosition;
@@ -91,19 +89,35 @@ namespace SpyroScope {
 		public static Action OnSceneChanged;
 
 		public static void BindToEmulator() {
-			// TODO: Have an option or auto detect
-			emulator = .NoCashPSX;
-			let windowHandle = Windows.FindWindowW(null, "No$psx Debugger".ToScopedNativeWChar!());
+			let activeProcesses = scope List<Process>();
+			switch (Process.GetProcesses(activeProcesses)) {
+				case .Err :
+				Debug.FatalError("Failed to get process list");
 
-			if (windowHandle == 0) {
-				Console.WriteLine("Window cannot be found. Closing after 10 seconds...");
-				Thread.Sleep(10000);
-				return;
+				default :
 			}
 
-			int32 processID;
-			Windows.GetWindowThreadProcessId(windowHandle, out processID);
-			processHandle = Windows.OpenProcess(Windows.PROCESS_ALL_ACCESS, false, processID);
+			Process detectedProcess = ?;
+			for (let process in activeProcesses) {
+				let processName = process.ProcessName;
+				switch (processName) {
+					case "NO$PSX.EXE":
+						emulator = .NoCashPSX;
+					case "EmuHawk.exe":
+						emulator = .Bizhawk;
+					case "ePSXe.exe":
+						emulator = .ePSXe;
+				}
+
+				if (emulator != .None) {
+					detectedProcess = process;
+					break;
+				}
+			}
+
+			processHandle = Windows.OpenProcess(Windows.PROCESS_ALL_ACCESS, false, detectedProcess.Id);
+
+			DeleteAndClearItems!(activeProcesses);
 
 			FetchRAMBaseAddress();
 			
@@ -145,23 +159,38 @@ namespace SpyroScope {
 		}
 
 		public static void FetchRAMBaseAddress() {
-			uint8* pointer = (uint8*)n + staticPointerAddresses[(int)emulator];
-			Windows.ReadProcessMemory(processHandle, pointer, &pointer, 4, null);
-			pointer -= 0x1fc; // Currently specific to no$psx
-			Windows.ReadProcessMemory(processHandle, pointer, &emulatorRAMBaseAddress, 4, null);
+			switch (emulator) {
+				case .NoCashPSX : {
+					uint8* pointer = (uint8*)null + 0x00491E10;
+					Windows.ReadProcessMemory(processHandle, pointer, &pointer, 4, null);
+					pointer -= 0x1fc;
+					Windows.ReadProcessMemory(processHandle, pointer, &emulatorRAMBaseAddress, 4, null);
+				}
+				case .Bizhawk : {
+					// Static address
+					emulatorRAMBaseAddress = 0x00007FFD'911BDF90;
+				}
+				case .ePSXe : {
+					// Static address
+					emulatorRAMBaseAddress = 0x012E2020;
+				}
+
+				default : {}
+			}
 		}
 
-		public static mixin RawAddressFromRAM(Address address) {
-			(void*)((uint8*)n + emulatorRAMBaseAddress + (address & 0x003fffff))
+		[Inline]
+		public static void* RawAddressFromRAM(Address address) {
+			return ((uint8*)null + emulatorRAMBaseAddress + (address & 0x003fffff));
 		}
 
 		public static void ReadFromRAM(Address address, void* buffer, int size) {
-			let rawAddress = RawAddressFromRAM!(address);
+			let rawAddress = RawAddressFromRAM(address);
 			Windows.ReadProcessMemory(processHandle, rawAddress, buffer, size, null);
 		}
 
 		public static void WriteToRAM(Address address, void* buffer, int size) {
-			let rawAddress = RawAddressFromRAM!(address);
+			let rawAddress = RawAddressFromRAM(address);
 			Windows.WriteProcessMemory(processHandle, rawAddress, buffer, size, null);
 		}
 
