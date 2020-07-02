@@ -57,6 +57,7 @@ namespace SpyroScope {
 		public static int32 collidingTriangle = -1;
 		
 		public static Emulator.Address collisionDataAddress;
+		public static Emulator.Address collisionModifyingPointerArrayAddress;
 		public static List<PackedTriangle> collisionTriangles = new .() ~ delete _;
 		public static uint32 specialTerrainBeginIndex;
 		public static List<uint8> collisionFlagsIndices = new .() ~ delete _;
@@ -210,10 +211,7 @@ namespace SpyroScope {
 
 			let collisionDataAddressOld = collisionDataAddress;
 			Emulator.ReadFromRAM(Emulator.collisionDataPointer[(int)Emulator.rom], &collisionDataAddress, 4);
-			if (collisionDataAddressOld != collisionDataAddress) {
-				// Wait for the level data to load before caching
-				Thread.Sleep(500);
-
+			if (collisionDataAddress != 0 && collisionDataAddressOld != collisionDataAddress) {
 				uint32 triangleCount = ?;
 				Emulator.ReadFromRAM(collisionDataAddress, &triangleCount, 4);
 				Emulator.ReadFromRAM(collisionDataAddress + 4, &specialTerrainBeginIndex, 4);

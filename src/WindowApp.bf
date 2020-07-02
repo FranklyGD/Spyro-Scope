@@ -38,8 +38,7 @@ namespace SpyroScope {
 		// Game Camera
 		static Matrix4 gameProjection = .Perspective(55f / 180 * Math.PI_f, 4f/3f, 300, 175000);
 
-		StaticMesh collisionMesh ~ delete _;
-		List<uint8> collisionTypes = new .() ~ delete _;
+		Terrain collisionTerrain = new .() ~ delete _;
 
 		Dictionary<uint16, MobyModelSet> modelSets = new .();
 		BitmapFont font ~ delete _;
@@ -100,8 +99,8 @@ namespace SpyroScope {
 			
 			GL.glEnable(GL.GL_DEPTH_TEST);
 
-			UpdateCollisionMesh();
-			DrawCollisionMesh();
+			collisionTerrain.Update();
+			collisionTerrain.Draw(renderer);
 			if (dislodgeCamera) {
 				DrawGameCameraFrustrum();
 			}
@@ -254,7 +253,7 @@ namespace SpyroScope {
 								cameraMotion *= 8;
 							}
 							case .M : {
-								drawMapWireframe = !drawMapWireframe;
+								collisionTerrain.wireframe = !collisionTerrain.wireframe;
 								Console.WriteLine("Swapped Map View.");
 							}
 							case .O : {
@@ -364,55 +363,7 @@ namespace SpyroScope {
 		void OnSceneChanged() {
 			currentObjIndex = hoveredObjIndex = -1;
 
-			let vertexCount = Emulator.collisionTriangles.Count * 3;
-			Vector[] vertices = new .[vertexCount];
-			Vector[] normals = new .[vertexCount];
-			Renderer.Color4[] colors = new .[vertexCount];
-			
-			collisionTypes.Clear();
-			for (int triangleIndex < Emulator.collisionTriangles.Count) {
-				let triangle = Emulator.collisionTriangles[triangleIndex];
-
-				let unpackedTriangle = triangle.Unpack(false);
-				
-				let normal = Vector.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
-				Renderer.Color color = .(255,255,255);
-
-				if (triangleIndex < Emulator.specialTerrainBeginIndex) {
-					let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
-					
-					// Terrain Collision Sound
-					// Derived from Spyro: Ripto's Rage [80034f50]
-					let collisionSound = flagInfo >> 6;
-
-					let flagIndex = flagInfo & 0x3f;
-					if (flagIndex != 0x3f) {
-						Emulator.Address flagPointer = Emulator.collisionFlagPointerArray[flagIndex];
-						uint8 flag = ?;
-						Emulator.ReadFromRAM(flagPointer, &flag, 1);
-
-						if (flag < 11 /*Emulator.collisionTypes.Count*/) {
-							color = Emulator.collisionTypes[flag].color;
-						} else {
-							color = .(255, 0, 255);
-						}
-
-						if (!collisionTypes.Contains(flag)) {
-							collisionTypes.Add(flag);
-						} 
-					}
-				}
-
-				for (int vi < 3) {
-					let i = triangleIndex * 3 + vi;
-					vertices[i] = unpackedTriangle[vi];
-					normals[i] = normal;
-					colors[i] = color;
-				}
-			}
-
-			delete collisionMesh;
-			collisionMesh = new .(vertices, normals, colors);
+			collisionTerrain.Reload();
 		}
 
 		void UpdateView() {
@@ -445,90 +396,6 @@ namespace SpyroScope {
 
 			renderer.SetView(viewPosition, cameraBasis);
 			renderer.SetProjection(viewerProjection);
-		}
-
-		void UpdateCollisionMesh() {
-			uint32 count = ?;
-			Emulator.ReadFromRAM(Emulator.collisionModifyingDataPointer[(int)Emulator.rom] - 4, &count, 4);
-			if (count == 0) {
-				return; // Nothing to update
-			}
-
-			Emulator.Address collisionModifyingPointerArrayAddress = ?;
-			Emulator.ReadFromRAM(Emulator.collisionModifyingDataPointer[(int)Emulator.rom], &collisionModifyingPointerArrayAddress, 4);
-			let collisionModifyingGroupPointers = scope uint32[count];
-			Emulator.ReadFromRAM(collisionModifyingPointerArrayAddress, &collisionModifyingGroupPointers[0], 4 * count);
-
-			for (let collisionModifyingGroupPointer in collisionModifyingGroupPointers) {
-				uint8 currentKeyframe = ?;
-				Emulator.ReadFromRAM(collisionModifyingGroupPointer + 2, &currentKeyframe, 1);
-
-				uint16 animatedTriangleCount = ?;
-				Emulator.ReadFromRAM(collisionModifyingGroupPointer + 4, &animatedTriangleCount, 2);
-				uint16 updateTriangleStartIndex = ?;
-				Emulator.ReadFromRAM(collisionModifyingGroupPointer + 6, &updateTriangleStartIndex, 2);
-
-				uint32 triangleDataOffset = ?;
-				Emulator.ReadFromRAM(collisionModifyingGroupPointer + 8, &triangleDataOffset, 4);
-
-				(uint8 flag, uint8, uint8 nextKeyframe, uint8, uint8 interpolation, uint8 fromState, uint8 toState, uint8) keyframeData = ?;
-				Emulator.ReadFromRAM(collisionModifyingGroupPointer + 12 + ((uint32)currentKeyframe) * 8, &keyframeData.flag, 8);
-
-				for (uint32 i < animatedTriangleCount) {
-					/*PackedTriangle packedTriangle = ?;
-					Emulator.ReadFromRAM(collisionModifyingGroupPointer + triangleDataOffset + (keyframeData.fromState * animatedTriangleCount + i) * 12, &packedTriangle, 12);
-
-					VectorInt[3] triangle = packedTriangle.Unpack(true);
-					renderer.DrawTriangle(triangle[0], triangle[1], triangle[2], .(255,0,0), .(255,0,0), .(255,0,0));
-
-					Emulator.ReadFromRAM(collisionModifyingGroupPointer + triangleDataOffset + (keyframeData.toState * animatedTriangleCount + i) * 12, &packedTriangle, 12);
-
-					triangle = packedTriangle.Unpack(true);
-					renderer.DrawTriangle(triangle[0], triangle[1], triangle[2], .(0,255,0), .(0,255,0), .(0,255,0));*/
-
-					PackedTriangle packedTriangle = ?;
-					Emulator.ReadFromRAM(collisionModifyingGroupPointer + triangleDataOffset + (keyframeData.fromState * animatedTriangleCount + i) * 12, &packedTriangle, 12);
-					VectorInt[3] fromTriangle = packedTriangle.Unpack(true);
-
-					Emulator.ReadFromRAM(collisionModifyingGroupPointer + triangleDataOffset + (keyframeData.toState * animatedTriangleCount + i) * 12, &packedTriangle, 12);
-					VectorInt[3] toTriangle = packedTriangle.Unpack(true);
-
-					let interpolation = (float)keyframeData.interpolation / (256);
-					Vector[3] interpolatedTriangle = ?;
-					interpolatedTriangle[0] = fromTriangle[0] + (toTriangle[0] - fromTriangle[0]).ToVector() * interpolation;
-					interpolatedTriangle[1] = fromTriangle[1] + (toTriangle[1] - fromTriangle[1]).ToVector() * interpolation;
-					interpolatedTriangle[2] = fromTriangle[2] + (toTriangle[2] - fromTriangle[2]).ToVector() * interpolation;
-
-					collisionMesh.vertices[(updateTriangleStartIndex + i) * 3] = interpolatedTriangle[0];
-					collisionMesh.vertices[(updateTriangleStartIndex + i) * 3 + 1] = interpolatedTriangle[1];
-					collisionMesh.vertices[(updateTriangleStartIndex + i) * 3 + 2] = interpolatedTriangle[2];
-
-					Renderer.Color transitionColor = keyframeData.fromState == keyframeData.toState ? .(255,128,0) : .((.)((1 - interpolation) * 255), (.)(interpolation * 255), 0);
-
-					collisionMesh.colors[(updateTriangleStartIndex + i) * 3] = transitionColor;
-					collisionMesh.colors[(updateTriangleStartIndex + i) * 3 + 1] = transitionColor;
-					collisionMesh.colors[(updateTriangleStartIndex + i) * 3 + 2] = transitionColor;
-				}
-			}
-
-			collisionMesh.Update();
-		}
-
-		void DrawCollisionMesh() {
-			renderer.SetModel(.Zero, .Identity);
-			renderer.SetTint(.(255,255,255));
-			renderer.BeginSolid();
-
-			if (!drawMapWireframe) {
-				collisionMesh.Draw(renderer);
-				renderer.SetTint(.(128,128,128));
-			}
-
-			renderer.BeginWireframe();
-			collisionMesh.Draw(renderer);
-
-			// Restore polygon mode to default
-			renderer.BeginSolid();
 		}
 
 		void DrawGameCameraFrustrum() {
@@ -631,12 +498,12 @@ namespace SpyroScope {
 				let bottomPaddingBG = 4 - halfHeight;
 
 				// Background
-				DrawUtilities.Rect(bottomPaddingBG, bottomPaddingBG + 18 * collisionTypes.Count + 6, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
+				DrawUtilities.Rect(bottomPaddingBG, bottomPaddingBG + 18 * collisionTerrain.collisionTypes.Count + 6, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
 					0,0,0,0, renderer.textureDefaultWhite, .(0,0,0,192), renderer);
 
 				// Content
-				for (let i < collisionTypes.Count) {
-					let flag = collisionTypes[i];
+				for (let i < collisionTerrain.collisionTypes.Count) {
+					let flag = collisionTerrain.collisionTypes[i];
 					String label = ?;
 					Renderer.Color color = ?;
 					if (flag < 11 /*Emulator.collisionTypes.Count*/) {
