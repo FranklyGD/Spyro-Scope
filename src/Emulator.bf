@@ -108,6 +108,7 @@ namespace SpyroScope {
 				}
 
 				if (emulator != .None) {
+					Console.WriteLine("{} was detected!", process.ProcessName);
 					processHandle = Windows.OpenProcess(Windows.PROCESS_ALL_ACCESS, false, process.Id);
 					break;
 				}
