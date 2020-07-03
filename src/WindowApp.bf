@@ -87,7 +87,7 @@ namespace SpyroScope {
 
 			Emulator.CheckEmulatorStatus();
 
-			if (Emulator.emulator == .None) {
+			if (Emulator.emulator == .None || Emulator.rom == .None) {
 				Close();
 				return;
 			}

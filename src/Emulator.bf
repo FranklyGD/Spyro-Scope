@@ -6,6 +6,7 @@ using System.Threading;
 namespace SpyroScope {
 	static struct Emulator {
 		static Windows.ProcessHandle processHandle;
+		static Windows.HModule moduleHandle; // Also contains the base address directly
 
 		public enum EmulatorType {
 			None,
@@ -14,7 +15,7 @@ namespace SpyroScope {
 			ePSXe
 		}
 		public static EmulatorType emulator;
-		static uint64 emulatorRAMBaseAddress;
+		static uint emulatorRAMBaseAddress;
 
 		public enum SpyroROM {
 			None,
@@ -91,17 +92,13 @@ namespace SpyroScope {
 
 		public static void BindToEmulator() {
 			let activeProcesses = scope List<Process>();
-			switch (Process.GetProcesses(activeProcesses)) {
-				case .Err :
+			if (Process.GetProcesses(activeProcesses) == .Err) {
 				Debug.FatalError("Failed to get process list");
-
-				default :
 			}
 
-			Process detectedProcess = ?;
+			Console.WriteLine("Detecting Emulator...");
 			for (let process in activeProcesses) {
-				let processName = process.ProcessName;
-				switch (processName) {
+				switch (process.ProcessName) {
 					case "NO$PSX.EXE":
 						emulator = .NoCashPSX;
 					case "EmuHawk.exe":
@@ -111,14 +108,24 @@ namespace SpyroScope {
 				}
 
 				if (emulator != .None) {
-					detectedProcess = process;
+					processHandle = Windows.OpenProcess(Windows.PROCESS_ALL_ACCESS, false, process.Id);
 					break;
 				}
 			}
-
-			processHandle = Windows.OpenProcess(Windows.PROCESS_ALL_ACCESS, false, detectedProcess.Id);
-
 			DeleteAndClearItems!(activeProcesses);
+
+			switch (emulator) {
+				case .NoCashPSX:
+					moduleHandle = GetModule(processHandle, "NO$PSX.EXE");
+				case .ePSXe:
+					moduleHandle = GetModule(processHandle, "ePSXe.exe");
+				case .Bizhawk:
+					moduleHandle = GetModule(processHandle, "octoshock.dll");
+				default:
+					Console.WriteLine("A supported emulator was not detected. Closing after 10 seconds...");
+					Thread.Sleep(10000);
+					return;
+			}
 
 			FetchRAMBaseAddress();
 			
@@ -142,6 +149,29 @@ namespace SpyroScope {
 				Console.WriteLine("{} was detected!", gameNames[(int)rom]);
 			}
 		}
+		
+		[Import("psapi.lib"),CLink, CallingConvention(.Stdcall)]
+		static extern Windows.IntBool EnumProcessModules(Windows.ProcessHandle process, Windows.HModule* module, uint16 size, uint32* sizeNeeded);
+		[Import("psapi.lib"),CLink, CallingConvention(.Stdcall)]
+		static extern Windows.IntBool GetModuleFileNameExA(Windows.ProcessHandle process, Windows.HModule module, char8* buffer, uint32 size);
+
+		static Windows.HModule GetModule(Windows.ProcessHandle process, String moduleName) {
+			Windows.HModule[512] modules = ?;
+			uint32 sizeNeeded = ?;
+
+			if (EnumProcessModules(process, &modules[0], sizeof(Windows.HModule[512]), &sizeNeeded)) {
+				for (let i < sizeNeeded / sizeof(Windows.HModule)) {
+					let module = modules[i];
+				    String modName = scope .();
+					let ptr = modName.PrepareBuffer(1024);
+				    if (GetModuleFileNameExA(process, module, ptr, 1024) && modName.Contains(moduleName)) {
+				  		return module;
+				    }
+				}
+			}
+
+			return 0;
+		}
 
 		public static void CheckEmulatorStatus() {
 			int32 exitCode;
@@ -162,21 +192,25 @@ namespace SpyroScope {
 		public static void FetchRAMBaseAddress() {
 			switch (emulator) {
 				case .NoCashPSX : {
-					uint8* pointer = (uint8*)null + 0x00491E10;
+					// uint8* pointer = (uint8*)(void*)(moduleHandle + 0x00091E10)
+					// No need to use module base address since its always loaded at 0x00400000
+					uint8* pointer = (uint8*)(void*)0x00491E10;
 					Windows.ReadProcessMemory(processHandle, pointer, &pointer, 4, null);
 					pointer -= 0x1fc;
 					Windows.ReadProcessMemory(processHandle, pointer, &emulatorRAMBaseAddress, 4, null);
 				}
 				case .Bizhawk : {
 					// Static address
-					emulatorRAMBaseAddress = 0x00007FFD'911BDF90;
+					emulatorRAMBaseAddress = (.)moduleHandle + 0x0030DF90;
 				}
 				case .ePSXe : {
 					// Static address
-					emulatorRAMBaseAddress = 0x012E2020;
+					emulatorRAMBaseAddress = (.)moduleHandle + 0x00A82020;
 				}
 
-				default : {}
+				case .None: {
+					// Can't do much if you don't have an emulator to work with
+				}
 			}
 		}
 

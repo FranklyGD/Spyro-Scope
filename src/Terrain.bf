@@ -24,8 +24,10 @@ namespace SpyroScope {
 		public List<uint8> collisionTypes = new .() ~ delete _;
 
 		public ~this() {
-			for (let item in animationGroups) {
-				item.Dispose();
+			if (animationGroups != null) {
+				for (let item in animationGroups) {
+					item.Dispose();
+				}
 			}
 			delete animationGroups;
 			delete mesh;
