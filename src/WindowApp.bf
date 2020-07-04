@@ -12,7 +12,6 @@ namespace SpyroScope {
 		public uint width, height;
 
 		public bool closed { get; private set; }
-		public bool drawMapWireframe;
 		public bool drawObjects;
 		public bool drawCollsionTypeLegend;
 
@@ -42,7 +41,7 @@ namespace SpyroScope {
 
 		Dictionary<uint16, MobyModelSet> modelSets = new .();
 		BitmapFont font ~ delete _;
-
+		List<(String message, DateTime time)> messageFeed = new .();
 		//List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
 		public this() {
@@ -72,6 +71,10 @@ namespace SpyroScope {
 			}
 			delete modelSets;
 			delete Emulator.OnSceneChanged;
+			for (let message in messageFeed) {
+				delete message.message;
+			}
+			delete messageFeed;
 
 			if (renderer != null)
 				delete renderer;
@@ -185,19 +188,13 @@ namespace SpyroScope {
 					if (event.button.button == 3) {
 						SDL.SetRelativeMouseMode(true);
 						cameraHijacked = true;
-						if (!dislodgeCamera) {
+						if (!dislodgeCamera && !Emulator.CameraMode) {
 							Emulator.KillCameraUpdate();
+							PushMessageToFeed("FREE CAMERA");
 						}
 					}
 					if (event.button.button == 1) {
 						currentObjIndex = hoveredObjIndex;
-
-						if (currentObjIndex != -1) {
-							Emulator.Address objectArrayPointer = ?;
-							Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
-
-							Console.WriteLine("Selected object [{:X8}] of type {:X}", objectArrayPointer + currentObjIndex * sizeof(Moby), objectList[currentObjIndex].objectTypeID);
-						}
 					}
 				}
 				case .MouseMotion : {
@@ -246,7 +243,13 @@ namespace SpyroScope {
 					if (event.key.isRepeat == 0) {
 						switch (event.key.keysym.scancode) {
 							case .P : {
-								Emulator.TogglePaused();
+								if (Emulator.PausedMode) {
+									Emulator.RestoreUpdate();
+									PushMessageToFeed("RESUMED GAME UPDATE");
+								} else {
+									Emulator.KillUpdate();
+									PushMessageToFeed("PAUSED GAME UPDATE");
+								}
 							}
 							case .LCtrl : {
 								cameraSpeed *= 8;
@@ -254,32 +257,43 @@ namespace SpyroScope {
 							}
 							case .M : {
 								collisionTerrain.wireframe = !collisionTerrain.wireframe;
-								Console.WriteLine("Swapped Map View.");
+								PushMessageToFeed("TOGGLED TERRAIN WIREFRAME");
 							}
 							case .O : {
 								drawObjects = !drawObjects;
-								Console.WriteLine("Swapped Object View.");
+								PushMessageToFeed("TOGGLED OBJECT ORIGINS");
 							}
 							case .L : {
 								drawCollsionTypeLegend = !drawCollsionTypeLegend;
-								Console.WriteLine("Toggled Legend.");
+								PushMessageToFeed("TOGGLED TERRAIN FLAG LEGEND");
 							}
 							case .K : {
 								uint health = 0;
 								Emulator.WriteToRAM(Emulator.healthAddress[(int)Emulator.rom], &health, 4);
 							}
 							case .T : {
-								if (Emulator.cameraMode) {
+								if (Emulator.CameraMode) {
 									Emulator.spyroPosition = viewPosition.ToVectorInt();
 									Emulator.WriteToRAM(Emulator.spyroPositionPointers[(int)Emulator.rom], &Emulator.spyroPosition, sizeof(VectorInt));
-									Console.WriteLine("Teleported Spyro to current Camera View.");
+									PushMessageToFeed("TELEPORTED SPYRO TO GAME CAMERA VIEW");
 								}
 							}
 							case .C : {
-								Emulator.ToggleCameraMode();
+								if (Emulator.CameraMode) {
+									Emulator.RestoreCameraUpdate();
+									PushMessageToFeed("GAME CAMERA");
+								} else {
+									Emulator.KillCameraUpdate();
+									PushMessageToFeed("FREE CAMERA");
+								}
 							}
 							case .V : {
 								dislodgeCamera = !dislodgeCamera;
+								if (dislodgeCamera) {
+									PushMessageToFeed("FREE VIEW");
+								} else {
+									PushMessageToFeed("GAME VIEW");
+								}
 							}
 							default : {}
 						}
@@ -304,7 +318,6 @@ namespace SpyroScope {
 					}
 				}
 				case .KeyUp : {
-					//Console.WriteLine("Key {}", event.key.keysym.unicode);
 					if (event.key.keysym.scancode == .LCtrl) {
 						cameraSpeed /= 8;
 						cameraMotion /= 8;
@@ -357,6 +370,27 @@ namespace SpyroScope {
 					}
 				}
 				default : {}
+			}
+		}
+
+		void PushMessageToFeed(String message) {
+			messageFeed.Add((message, .Now + TimeSpan(0, 0, 2)));
+		}
+
+		void DrawMessageFeed(Vector origin) {
+			let now = DateTime.Now;
+			messageFeed.RemoveAll(scope (x) => {
+				return now > x.time;
+			});
+			for (let i < messageFeed.Count) {
+				let feedItem = messageFeed[i];
+				let message = feedItem.message;
+				let age = feedItem.time - now;
+				let fade = Math.Min(age.TotalSeconds, 1);
+				let offsetOrigin = origin - .(0,(messageFeed.Count - i) * font.characterHeight,0);
+				DrawUtilities.Rect(offsetOrigin.y, offsetOrigin.y + font.characterHeight, offsetOrigin.x, offsetOrigin.x + font.characterWidth * message.Length,
+					0,0,0,0, renderer.textureDefaultWhite, .(0,0,0,(.)(192 * fade)), renderer);
+				font.Print(message, offsetOrigin, .(255,255,255,(.)(255 * fade)), renderer);
 			}
 		}
 
@@ -492,6 +526,8 @@ namespace SpyroScope {
 			let halfWidth = (float)width / 2;
 			let halfHeight = (float)height / 2;
 
+			DrawMessageFeed(.(-halfWidth, halfHeight, 0));
+
 			// Legend
 			if (drawCollsionTypeLegend) {
 				let leftPaddingBG = 4 - halfWidth;
@@ -509,7 +545,7 @@ namespace SpyroScope {
 					if (flag < 11 /*Emulator.collisionTypes.Count*/) {
 						(label, color) = Emulator.collisionTypes[flag];
 					} else {
-						label = "Unknown";
+						label = scope String() .. AppendF("Unknown {}", flag);
 						color = .(255, 0, 255);
 					}
 					let conversion = scope String(label);

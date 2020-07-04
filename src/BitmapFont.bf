@@ -44,7 +44,7 @@ namespace SpyroScope {
 
 				DrawUtilities.Rect(position.y, position.y + height, position.x + i * width, position.x + (i + 1) * width,
 					(character / 16 + 1) * glyphSize.1, character / 16 * glyphSize.1, r0, r0 + glyphSize.0,
-					textureObject, .(255,255,255), renderer);
+					textureObject, color, renderer);
 			}
 		}
 

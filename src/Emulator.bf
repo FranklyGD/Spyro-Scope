@@ -85,7 +85,17 @@ namespace SpyroScope {
 		public const Address[4] updateAddresses = .(0, 0, 0x80011af4, 0x80012038);
 		public const Address[4] updateJumpValue = .(0, 0, 0x0c006c50, 0x0c015524);
 
-		public static bool cameraMode, pausedMode = false;
+		public static bool PausedMode { get {
+			uint32 value = ?;
+			ReadFromRAM(updateAddresses[(int)rom], &value, 4);
+			return value != updateJumpValue[(int)rom];
+		} }
+
+		public static bool CameraMode { get {
+			uint32 value = ?;
+			ReadFromRAM(cameraUpdateAddresses[(int)rom], &value, 4);
+			return value != cameraUpdateJumpValue[(int)rom];
+		} }
 
 		// Events
 		public static Action OnSceneChanged;
@@ -277,47 +287,22 @@ namespace SpyroScope {
 		public static void KillUpdate() {
 			uint32 v = 0;
 			WriteToRAM(updateAddresses[(int)rom], &v, 4);
-			pausedMode = true;
-			Console.WriteLine("Game Paused.");
 		}
 
 		public static void RestoreUpdate() {
 			uint32 v = updateJumpValue[(int)rom];
 			WriteToRAM(updateAddresses[(int)rom], &v, 4);
-			pausedMode = false;
-			Console.WriteLine("Game Resumed.");
-		}
-
-		public static void TogglePaused() {
-			if (pausedMode) {
-				RestoreUpdate();
-			} else {
-				KillUpdate();
-			}
 		}
 
 		// Camera
 		public static void KillCameraUpdate() {
 			uint32 v = 0;
 			WriteToRAM(cameraUpdateAddresses[(int)rom], &v, 4);
-			cameraMode = true;
-			Console.WriteLine("Free Camera On.");
 		}
 
 		public static void RestoreCameraUpdate() {
 			uint32 v = cameraUpdateJumpValue[(int)rom];
 			WriteToRAM(cameraUpdateAddresses[(int)rom], &v, 4);
-			cameraMode = false;
-			Console.WriteLine("Free Camera Off.");
-		}
-
-		public static void ToggleCameraMode() {
-			if (cameraMode) {
-				RestoreCameraUpdate();
-			} else {
-				KillCameraUpdate();
-			}
-			Console.WriteLine("Toggled Camera Mode.");
 		}
 
 		public static void GetCameraPosition(VectorInt* position) {
