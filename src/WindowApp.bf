@@ -13,7 +13,6 @@ namespace SpyroScope {
 
 		public bool closed { get; private set; }
 		public bool drawObjects;
-		public bool drawCollsionTypeLegend;
 
 		static int currentObjIndex, hoveredObjIndex;
 		static List<Moby> objectList = new .(128) ~ delete _;
@@ -71,8 +70,10 @@ namespace SpyroScope {
 			}
 			delete modelSets;
 			delete Emulator.OnSceneChanged;
-			for (let message in messageFeed) {
-				delete message.message;
+			for (let feedItem in messageFeed) {
+				if (feedItem.message.IsDynAlloc) {
+					delete feedItem.message;
+				}
 			}
 			delete messageFeed;
 
@@ -264,8 +265,17 @@ namespace SpyroScope {
 								PushMessageToFeed("TOGGLED OBJECT ORIGINS");
 							}
 							case .L : {
-								drawCollsionTypeLegend = !drawCollsionTypeLegend;
-								PushMessageToFeed("TOGGLED TERRAIN FLAG LEGEND");
+								collisionTerrain.CycleOverlay();
+								String overlayType;
+								switch (collisionTerrain.overlay) {
+									case .None:
+										overlayType = "NONE";
+									case .Flags:
+										overlayType = "FLAGS";
+									case .Deform:
+										overlayType = "DEFORM";
+								}
+								PushMessageToFeed(new String() .. AppendF("TERRAIN OVERLAY [{}]", overlayType));
 							}
 							case .K : {
 								uint health = 0;
@@ -379,6 +389,11 @@ namespace SpyroScope {
 
 		void DrawMessageFeed(Vector origin) {
 			let now = DateTime.Now;
+			for (let feedItem in messageFeed) {
+				if (now > feedItem.time && feedItem.message.IsDynAlloc) {
+					delete feedItem.message;
+				}
+			}
 			messageFeed.RemoveAll(scope (x) => {
 				return now > x.time;
 			});
@@ -529,7 +544,7 @@ namespace SpyroScope {
 			DrawMessageFeed(.(-halfWidth, halfHeight, 0));
 
 			// Legend
-			if (drawCollsionTypeLegend) {
+			if (collisionTerrain.overlay == .Flags) {
 				let leftPaddingBG = 4 - halfWidth;
 				let bottomPaddingBG = 4 - halfHeight;
 

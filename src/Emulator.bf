@@ -60,7 +60,7 @@ namespace SpyroScope {
 		public static Emulator.Address collisionDataAddress;
 		public static Emulator.Address collisionModifyingPointerArrayAddress;
 		public static List<PackedTriangle> collisionTriangles = new .() ~ delete _;
-		public static uint32 specialTerrainBeginIndex;
+		public static uint32 specialTerrainTriangleCount;
 		public static List<uint8> collisionFlagsIndices = new .() ~ delete _;
 		public static List<uint32> collisionFlagPointerArray = new .() ~ delete _;
 
@@ -259,7 +259,7 @@ namespace SpyroScope {
 			if (collisionDataAddress != 0 && collisionDataAddressOld != collisionDataAddress) {
 				uint32 triangleCount = ?;
 				Emulator.ReadFromRAM(collisionDataAddress, &triangleCount, 4);
-				Emulator.ReadFromRAM(collisionDataAddress + 4, &specialTerrainBeginIndex, 4);
+				Emulator.ReadFromRAM(collisionDataAddress + 4, &specialTerrainTriangleCount, 4);
 
 				collisionTriangles.Clear();
 				let ptrTriangles = collisionTriangles.GrowUnitialized(triangleCount);

@@ -23,6 +23,13 @@ namespace SpyroScope {
 		public bool wireframe;
 		public List<uint8> collisionTypes = new .() ~ delete _;
 
+		public enum Overlay {
+			None,
+			Flags,
+			Deform
+		}
+		public Overlay overlay = .None;
+
 		public ~this() {
 			if (animationGroups != null) {
 				for (let item in animationGroups) {
@@ -47,7 +54,7 @@ namespace SpyroScope {
 				let normal = Vector.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
 				Renderer.Color color = .(255,255,255);
 
-				if (triangleIndex < Emulator.specialTerrainBeginIndex) {
+				if (triangleIndex < Emulator.specialTerrainTriangleCount) {
 					let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
 					
 					// Terrain Collision Sound
@@ -60,10 +67,12 @@ namespace SpyroScope {
 						uint8 flag = ?;
 						Emulator.ReadFromRAM(flagPointer, &flag, 1);
 
-						if (flag < 11 /*Emulator.collisionTypes.Count*/) {
-							color = Emulator.collisionTypes[flag].color;
-						} else {
-							color = .(255, 0, 255);
+						if (overlay == .Flags) {
+							if (flag < 11 /*Emulator.collisionTypes.Count*/) {
+								color = Emulator.collisionTypes[flag].color;
+							} else {
+								color = .(255, 0, 255);
+							}
 						}
 
 						if (!collisionTypes.Contains(flag)) {
@@ -188,7 +197,6 @@ namespace SpyroScope {
 				Emulator.ReadFromRAM(animationGroup.dataPointer + 12 + ((uint32)currentKeyframe) * 8, &keyframeData, 8);
 				
 				let interpolation = (float)keyframeData.interpolation / (256);
-				Renderer.Color transitionColor = keyframeData.fromState == keyframeData.toState ? .(255,128,0) : .((.)((1 - interpolation) * 255), (.)(interpolation * 255), 0);
 
 				if (keyframeData.fromState >= animationGroup.mesh.Count || keyframeData.toState >= animationGroup.mesh.Count) {
 					break; // Don't bother since it picked up garbage data
@@ -203,7 +211,14 @@ namespace SpyroScope {
 					let vertexIndex = animationGroup.start * 3 + i;
 					mesh.vertices[vertexIndex] = fromVertex + (toVertex - fromVertex) * interpolation;
 					mesh.normals[vertexIndex] = fromNormal + (toNormal - fromNormal) * interpolation;
-					mesh.colors[vertexIndex] = transitionColor;
+				}
+
+				if (overlay == .Deform) {
+					Renderer.Color transitionColor = keyframeData.fromState == keyframeData.toState ? .(255,128,0) : .((.)((1 - interpolation) * 255), (.)(interpolation * 255), 0);
+					for (let i < animationGroups[groupIndex].count * 3) {
+						let vertexIndex = animationGroup.start * 3 + i;
+						mesh.colors[vertexIndex] = transitionColor;
+					}
 				}
 			}
 
@@ -223,7 +238,7 @@ namespace SpyroScope {
 			renderer.BeginWireframe();
 			mesh.Draw(renderer);
 
-			if (animationGroups != null) {
+			if (overlay == .Deform && animationGroups != null) {
 				renderer.SetTint(.(255,255,0));
 				for	(let animationGroup in animationGroups) {
 					for (let mesh in animationGroup.mesh) {
@@ -234,6 +249,51 @@ namespace SpyroScope {
 
 			// Restore polygon mode to default
 			renderer.BeginSolid();
+		}
+
+		public void CycleOverlay() {
+			switch (overlay) {
+				case .None: {
+					overlay = .Flags;
+					// Apply colors based on the flag applied on the triangles
+					for (int triangleIndex < Emulator.specialTerrainTriangleCount) {
+						Renderer.Color color = .(255,255,255);
+						let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
+
+						let flagIndex = flagInfo & 0x3f;
+						if (flagIndex != 0x3f) {
+							Emulator.Address flagPointer = Emulator.collisionFlagPointerArray[flagIndex];
+							uint8 flag = ?;
+							Emulator.ReadFromRAM(flagPointer, &flag, 1);
+
+							if (flag < 11 /*Emulator.collisionTypes.Count*/) {
+								color = Emulator.collisionTypes[flag].color;
+							} else {
+								color = .(255, 0, 255);
+							}
+						}
+
+						for (let vi < 3) {
+							let i = triangleIndex * 3 + vi;
+							mesh.colors[i] = color;
+						}
+					}
+				}
+				case .Flags: {
+					overlay = .Deform;
+					// Reset colors before allowing update to overwrite it
+					for (let i < mesh.colors.Count) {
+						mesh.colors[i] = .(255, 255, 255);
+					}
+				}
+				case .Deform: {
+					overlay = .None;
+					// Reset colors
+					for (let i < mesh.colors.Count) {
+						mesh.colors[i] = .(255, 255, 255);
+					}
+				}
+			}
 		}
 	}
 }
