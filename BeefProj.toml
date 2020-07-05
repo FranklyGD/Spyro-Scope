@@ -3,6 +3,7 @@ Dependencies = {corlib = "*", SDL2 = "*"}
 
 [Project]
 Name = "Spyro Scope"
+TargetType = "BeefGUIApplication"
 StartupObject = "SpyroScope.Program"
 DefaultNamespace = "SpyroScope"
 

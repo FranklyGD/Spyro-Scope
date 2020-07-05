@@ -10,12 +10,14 @@ namespace SpyroScope {
 
 		public enum EmulatorType {
 			None,
-			NoCashPSX,
+			NocashPSX,
 			Bizhawk,
 			ePSXe
 		}
 		public static EmulatorType emulator;
 		static uint emulatorRAMBaseAddress;
+		
+		public const String[4] emulatorNames = .(String.Empty, "Nocash PSX", "Bizhawk", "ePSXe");
 
 		public enum SpyroROM {
 			None,
@@ -100,17 +102,23 @@ namespace SpyroScope {
 		// Events
 		public static Action OnSceneChanged;
 
-		public static void BindToEmulator() {
+		public static void FindEmulator() {
+			processHandle.Close();
+			processHandle = 0;
+			moduleHandle = 0;
+
+			emulator = .None;
+			rom = .None;
+
 			let activeProcesses = scope List<Process>();
 			if (Process.GetProcesses(activeProcesses) == .Err) {
 				Debug.FatalError("Failed to get process list");
 			}
 
-			Console.WriteLine("Detecting Emulator...");
 			for (let process in activeProcesses) {
 				switch (process.ProcessName) {
 					case "NO$PSX.EXE":
-						emulator = .NoCashPSX;
+						emulator = .NocashPSX;
 					case "EmuHawk.exe":
 						emulator = .Bizhawk;
 					case "ePSXe.exe":
@@ -118,7 +126,6 @@ namespace SpyroScope {
 				}
 
 				if (emulator != .None) {
-					Console.WriteLine("{} was detected!", process.ProcessName);
 					processHandle = Windows.OpenProcess(Windows.PROCESS_ALL_ACCESS, false, process.Id);
 					break;
 				}
@@ -126,21 +133,29 @@ namespace SpyroScope {
 			DeleteAndClearItems!(activeProcesses);
 
 			switch (emulator) {
-				case .NoCashPSX:
+				case .NocashPSX:
 					moduleHandle = GetModule(processHandle, "NO$PSX.EXE");
 				case .ePSXe:
 					moduleHandle = GetModule(processHandle, "ePSXe.exe");
 				case .Bizhawk:
 					moduleHandle = GetModule(processHandle, "octoshock.dll");
 				default:
-					Console.WriteLine("A supported emulator was not detected. Closing after 10 seconds...");
-					Thread.Sleep(10000);
 					return;
 			}
 
+			if (moduleHandle.IsInvalid) {
+				processHandle.Close();
+				processHandle = 0;
+				moduleHandle = 0;
+
+				emulator = .None;
+				rom = .None;
+			}
+		}
+
+		public static void FindGame() {
 			FetchRAMBaseAddress();
 			
-			Console.WriteLine("Detecting Game...");
 			for (int i < 3) {
 				let test = scope String();
 				let testPtr = test.PrepareBuffer(5);
@@ -150,14 +165,6 @@ namespace SpyroScope {
 					rom = (.)(i + 1);
 					break;
 				}
-			}
-
-			if (rom == .None) {
-				Console.WriteLine("Game cannot be detected. Closing after 10 seconds...");	
-				Thread.Sleep(10000);
-				return;
-			} else {
-				Console.WriteLine("{} was detected!", gameNames[(int)rom]);
 			}
 		}
 		
@@ -187,9 +194,8 @@ namespace SpyroScope {
 		public static void CheckEmulatorStatus() {
 			int32 exitCode;
 			if (Windows.GetExitCodeProcess(processHandle, out exitCode) && exitCode != 259 /*STILL_ACTIVE*/) {
-				Console.WriteLine("Emulator was closed!");
 				emulator = .None;
-				Thread.Sleep(3000);
+				rom = .None;
 			}
 		}
 
@@ -202,7 +208,7 @@ namespace SpyroScope {
 
 		public static void FetchRAMBaseAddress() {
 			switch (emulator) {
-				case .NoCashPSX : {
+				case .NocashPSX : {
 					// uint8* pointer = (uint8*)(void*)(moduleHandle + 0x00091E10)
 					// No need to use module base address since its always loaded at 0x00400000
 					uint8* pointer = (uint8*)(void*)0x00491E10;

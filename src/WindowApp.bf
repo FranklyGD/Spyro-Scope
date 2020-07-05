@@ -2,11 +2,14 @@ using OpenGL;
 using SDL2;
 using System;
 using System.Collections;
+using System.Diagnostics;
 
 namespace SpyroScope {
 	class WindowApp {
 		SDL.Window* window;
 		Renderer renderer;
+		Action loop ~ delete _;
+		Stopwatch stopwatch = new .() ~ delete _;
 
 		public readonly uint32 id;
 		public uint width, height;
@@ -59,7 +62,19 @@ namespace SpyroScope {
 
 			Emulator.OnSceneChanged = new => OnSceneChanged;
 
-			Emulator.BindToEmulator();
+			// Attempt to find and bind as the window is being opened
+			Emulator.FindEmulator();
+			if (Emulator.emulator != .None) {
+				Emulator.FindGame();
+				if (Emulator.rom != .None) {
+					loop = new => RunViewer;
+					return;
+				}
+			}
+
+			// If it failed, show initial setup screen
+			loop = new => RunSetup;
+			stopwatch.Start();
 		}
 
 		public ~this() {
@@ -87,12 +102,92 @@ namespace SpyroScope {
 
 		public void Run() {
 			renderer.Clear();
+
+			loop();
+
+			int32 majorVersion = ?;
+			int32 minorVersion = ?;
+			GL.glGetIntegerv(GL.GL_MAJOR_VERSION, (.)&majorVersion);
+			GL.glGetIntegerv(GL.GL_MINOR_VERSION, (.)&minorVersion);
+			
+			let halfWidth = (float)width / 2;
+			let halfHeight = (float)height / 2;
+
+			font.Print(scope String() .. AppendF("OpenGL {}.{}", majorVersion, minorVersion), .(halfWidth - font.characterWidth * 10, halfHeight - font.characterHeight, 0), .(255,255,255,8), renderer);
+			
+			renderer.Draw();
+			renderer.Sync();
+			renderer.Display();
+		}
+
+		public void RunSetup() {
+			if (Emulator.rom != .None) {
+				if (stopwatch.ElapsedMilliseconds > 3000) {
+					delete loop;
+					loop = new => RunViewer;
+					stopwatch.Stop();
+				}
+			} else if (stopwatch.ElapsedMilliseconds > 1000) {
+				if (Emulator.emulator == .None) {
+					Emulator.FindEmulator();
+				} else {
+					Emulator.CheckEmulatorStatus();
+					if (Emulator.emulator != .None) {
+						Emulator.FindGame();
+					}
+				}
+				
+				stopwatch.Restart();
+			}
+
+			renderer.SetView(.Zero, .Identity);
+			renderer.SetProjection(uiProjection);
+			GL.glDisable(GL.GL_DEPTH_TEST);
+
+			DrawSetupGUI();
+		}
+
+		public void DrawSetupGUI() {
+			String message = .Empty;
+			if (Emulator.emulator == .None) {
+				message = "WAITING FOR EMULATOR";
+			} else {
+				if (Emulator.rom == .None) {
+					message = "WAITING FOR GAME";
+				} else {
+					message = Emulator.gameNames[(int)Emulator.rom];
+				}
+				
+				let baseline = font.characterHeight;
+				let emulator = Emulator.emulatorNames[(int)Emulator.emulator];
+				let halfWidth = font.characterWidth * emulator.Length / 2;
+				font.Print(emulator, .(-halfWidth, baseline, 0), .(255,255,255), renderer);
+			}
+
+			let baseline = -font.characterHeight / 2;
+			let halfWidth = font.characterWidth * message.Length / 2;
+			font.Print(message, .(-halfWidth, baseline, 0), .(255,255,255), renderer);
+
+			if (Emulator.emulator == .None || Emulator.rom == .None) {
+				let t = (float)stopwatch.ElapsedMilliseconds / 1000 * 3.14f;
+				DrawUtilities.Rect(baseline - 2, baseline, -halfWidth * Math.Sin(t), halfWidth * Math.Sin(t),
+					0,0,0,0, renderer.textureDefaultWhite, .(255,255,255), renderer);
+			} else {
+				let t = 1f - (float)stopwatch.ElapsedMilliseconds / 3000;
+				DrawUtilities.Rect(baseline - 2, baseline, -halfWidth * t, halfWidth * t,
+					0,0,0,0, renderer.textureDefaultWhite, .(255,255,255), renderer);
+			}
+		}
+
+		public void RunViewer() {
 			GL.glBindTexture(GL.GL_TEXTURE_2D, renderer.textureDefaultWhite);
 
 			Emulator.CheckEmulatorStatus();
 
 			if (Emulator.emulator == .None || Emulator.rom == .None) {
-				Close();
+				delete loop;
+				loop = new => RunSetup;
+				stopwatch.Restart();
 				return;
 			}
 
@@ -172,11 +267,7 @@ namespace SpyroScope {
 			renderer.SetProjection(uiProjection);
 			GL.glDisable(GL.GL_DEPTH_TEST);
 
-			DrawGUI();
-
-			renderer.Draw();
-			renderer.Sync();
-			renderer.Display();
+			DrawViewerGUI();
 		}
 
 		public void Close() {
@@ -497,7 +588,7 @@ namespace SpyroScope {
 			DrawUtilities.WireframeSphere(Emulator.spyroPosition, viewerSpyroBasis, radius, Renderer.Color(32,32,32), renderer);
 		}
 
-		void DrawGUI() {
+		void DrawViewerGUI() {
 			if (objectList.Count > 0) {
 				if (currentObjIndex != -1) {
 					let currentObject = objectList[currentObjIndex];

@@ -151,7 +151,6 @@ namespace SpyroScope {
 			int32 minorVersion = ?;
 			GL.glGetIntegerv(GL.GL_MAJOR_VERSION, (.)&majorVersion);
 			GL.glGetIntegerv(GL.GL_MINOR_VERSION, (.)&minorVersion);
-			Console.WriteLine("OpenGL {}.{}", majorVersion, minorVersion);
 
 			if (majorVersion > 3 || majorVersion == 3 && minorVersion > 1) {
 				useSync = true;
