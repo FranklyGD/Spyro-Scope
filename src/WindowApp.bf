@@ -17,7 +17,8 @@ namespace SpyroScope {
 		public bool closed { get; private set; }
 		public bool drawObjects;
 
-		static int currentObjIndex, hoveredObjIndex;
+		static int currentObjIndex = -1;
+		static int hoveredObjIndex = -1;
 		static List<Moby> objectList = new .(128) ~ delete _;
 
 		static bool cameraHijacked;

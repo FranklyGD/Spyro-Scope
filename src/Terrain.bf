@@ -116,6 +116,9 @@ namespace SpyroScope {
 			for (let groupIndex < count) {
 				let animationGroup = &animationGroups[groupIndex];
 				animationGroup.dataPointer = collisionModifyingGroupPointers[groupIndex];
+				if (animationGroup.dataPointer == 0) {
+					continue;
+				}
 
 				Emulator.ReadFromRAM(animationGroup.dataPointer + 4, &animationGroup.count, 2);
 				Emulator.ReadFromRAM(animationGroup.dataPointer + 6, &animationGroup.start, 2);
@@ -178,6 +181,10 @@ namespace SpyroScope {
 		}
 
 		public void Update() {
+			if (mesh == null || mesh.vertices.Count == 0) {
+				return; // No mesh to update
+			}
+
 			let collisionModifyingPointerArrayAddressOld = Emulator.collisionModifyingPointerArrayAddress;
 			Emulator.ReadFromRAM(Emulator.collisionModifyingDataPointer[(int)Emulator.rom], &Emulator.collisionModifyingPointerArrayAddress, 4);
 			if (Emulator.collisionModifyingPointerArrayAddress != 0 && collisionModifyingPointerArrayAddressOld != Emulator.collisionModifyingPointerArrayAddress) {
@@ -198,11 +205,12 @@ namespace SpyroScope {
 				
 				let interpolation = (float)keyframeData.interpolation / (256);
 
-				if (keyframeData.fromState >= animationGroup.mesh.Count || keyframeData.toState >= animationGroup.mesh.Count) {
+				if ((animationGroup.start + animationGroup.count) * 3 > mesh.vertices.Count ||
+					keyframeData.fromState >= animationGroup.mesh.Count || keyframeData.toState >= animationGroup.mesh.Count) {
 					break; // Don't bother since it picked up garbage data
 				}
 
-				for (let i < animationGroups[groupIndex].count * 3) {
+				for (let i < animationGroup.count * 3) {
 					Vector fromVertex = animationGroup.mesh[keyframeData.fromState].vertices[i];
 					Vector toVertex = animationGroup.mesh[keyframeData.toState].vertices[i];
 					Vector fromNormal = animationGroup.mesh[keyframeData.fromState].normals[i];
@@ -215,7 +223,7 @@ namespace SpyroScope {
 
 				if (overlay == .Deform) {
 					Renderer.Color transitionColor = keyframeData.fromState == keyframeData.toState ? .(255,128,0) : .((.)((1 - interpolation) * 255), (.)(interpolation * 255), 0);
-					for (let i < animationGroups[groupIndex].count * 3) {
+					for (let i < animationGroup.count * 3) {
 						let vertexIndex = animationGroup.start * 3 + i;
 						mesh.colors[vertexIndex] = transitionColor;
 					}
@@ -226,6 +234,10 @@ namespace SpyroScope {
 		}
 
 		public void Draw(Renderer renderer) {
+			if (mesh == null) {
+				return;
+			}
+
 			renderer.SetModel(.Zero, .Identity);
 			renderer.SetTint(.(255,255,255));
 			renderer.BeginSolid();

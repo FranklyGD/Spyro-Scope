@@ -260,11 +260,17 @@ namespace SpyroScope {
 
 			//ReadFromRAM(0x8006a28c, &collidingTriangle, 4);
 
-			let collisionDataAddressOld = collisionDataAddress;
-			Emulator.ReadFromRAM(Emulator.collisionDataPointer[(int)Emulator.rom], &collisionDataAddress, 4);
-			if (collisionDataAddress != 0 && collisionDataAddressOld != collisionDataAddress) {
+			Emulator.Address newCollisionDataAddress = ?;
+			Emulator.ReadFromRAM(Emulator.collisionDataPointer[(int)Emulator.rom], &newCollisionDataAddress, 4);
+			if (newCollisionDataAddress != 0 && newCollisionDataAddress != collisionDataAddress) {
 				uint32 triangleCount = ?;
-				Emulator.ReadFromRAM(collisionDataAddress, &triangleCount, 4);
+				Emulator.ReadFromRAM(newCollisionDataAddress, &triangleCount, 4);
+
+				if (triangleCount > 0x10000) {
+					return;
+				}
+				collisionDataAddress = newCollisionDataAddress;
+
 				Emulator.ReadFromRAM(collisionDataAddress + 4, &specialTerrainTriangleCount, 4);
 
 				collisionTriangles.Clear();
