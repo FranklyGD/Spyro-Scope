@@ -18,10 +18,6 @@ namespace SpyroScope {
 
 			SDL.Init(.Video | .Events);// | .GameController);
 
-			//SDLTTF.Init();
-
-			//monofont.Load("fonts/victormsb.ttf", 14);
-
 			let mainWindow = scope WindowApp();
 
 			while (!mainWindow.closed) {
@@ -60,8 +56,6 @@ namespace SpyroScope {
 	}
 
 	static {
-		static Font monofont = new .() ~ delete _;
-
 		public static void* SdlGetProcAddress(StringView string) {
 			return SDL.SDL_GL_GetProcAddress(string.ToScopeCStr!());
 		}
