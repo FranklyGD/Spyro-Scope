@@ -7,7 +7,7 @@ namespace SpyroScope {
 		StaticMesh mesh;
 
 		struct AnimationGroup {
-			public uint32 dataPointer;
+			public Emulator.Address dataPointer;
 			public uint32 start;
 			public uint32 count;
 			public Vector center;
@@ -104,19 +104,19 @@ namespace SpyroScope {
 
 		public void ReloadAnimationGroups() {
 			uint32 count = ?;
-			Emulator.ReadFromRAM(Emulator.collisionModifyingDataPointer[(int)Emulator.rom] - 4, &count, 4);
+			Emulator.ReadFromRAM(Emulator.collisionModifyingDataPointers[(int)Emulator.rom] - 4, &count, 4);
 			if (count == 0) {
 				return;
 			}
 			animationGroups = new .[count];
 
-			let collisionModifyingGroupPointers = scope uint32[count];
+			let collisionModifyingGroupPointers = scope Emulator.Address[count];
 			Emulator.ReadFromRAM(Emulator.collisionModifyingPointerArrayAddress, &collisionModifyingGroupPointers[0], 4 * count);
 
 			for (let groupIndex < count) {
 				let animationGroup = &animationGroups[groupIndex];
 				animationGroup.dataPointer = collisionModifyingGroupPointers[groupIndex];
-				if (animationGroup.dataPointer == 0) {
+				if (animationGroup.dataPointer.IsNull) {
 					continue;
 				}
 
@@ -186,7 +186,7 @@ namespace SpyroScope {
 			}
 
 			let collisionModifyingPointerArrayAddressOld = Emulator.collisionModifyingPointerArrayAddress;
-			Emulator.ReadFromRAM(Emulator.collisionModifyingDataPointer[(int)Emulator.rom], &Emulator.collisionModifyingPointerArrayAddress, 4);
+			Emulator.ReadFromRAM(Emulator.collisionModifyingDataPointers[(int)Emulator.rom], &Emulator.collisionModifyingPointerArrayAddress, 4);
 			if (Emulator.collisionModifyingPointerArrayAddress != 0 && collisionModifyingPointerArrayAddressOld != Emulator.collisionModifyingPointerArrayAddress) {
 				ReloadAnimationGroups();
 			}

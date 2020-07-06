@@ -79,7 +79,7 @@ namespace SpyroScope {
 		}
 
 		public ~this() {
-			Emulator.UnbindToEmulator();
+			Emulator.UnbindFromEmulator();
 
 			for (let modelSet in modelSets.Values) {
 				delete modelSet;
@@ -205,15 +205,15 @@ namespace SpyroScope {
 				DrawGameCameraFrustrum();
 			}
 
-			Emulator.Address objectArrayPointer = ?;
-			Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
-			Emulator.Address objPointer = objectArrayPointer;
+			Emulator.Address objectArrayAddress = ?;
+			Emulator.objectArrayPointers[(int)Emulator.rom].Read(&objectArrayAddress);
+			Emulator.Address objPointer = objectArrayAddress;
 
 			objectList.Clear();
 			for (int i < 512 /* Load object limit */) {
 				Moby object = ?;
 				Emulator.ReadFromRAM(objPointer, &object, sizeof(Moby));
-				if (object.dataPointer == 0) {
+				if (object.dataPointer.IsNull) {
 					break;
 				}
 
@@ -298,7 +298,7 @@ namespace SpyroScope {
 							viewEulerRotation.x = Math.Clamp(viewEulerRotation.x, -0.5f, 0.5f);
 						} else {
 							int16[3] cameraEulerRotation = ?;	
-							Emulator.ReadFromRAM(Emulator.cameraEulerRotationAddress[(int)Emulator.rom], &cameraEulerRotation, 6);
+							Emulator.cameraEulerRotationAddress[(int)Emulator.rom].Read(&cameraEulerRotation);
 
 							cameraEulerRotation[2] -= (.)event.motion.xrel * 2;
 							cameraEulerRotation[1] += (.)event.motion.yrel * 2;
@@ -307,8 +307,8 @@ namespace SpyroScope {
 							// Force camera view basis in game
 							Emulator.cameraBasisInv = MatrixInt.Euler(0, (float)cameraEulerRotation[1] / 0x800 * Math.PI_f, (float)cameraEulerRotation[2] / 0x800 * Math.PI_f);
 
-							Emulator.WriteToRAM(Emulator.cameraMatrixAddress[(int)Emulator.rom], &Emulator.cameraBasisInv, sizeof(MatrixInt));
-							Emulator.WriteToRAM(Emulator.cameraEulerRotationAddress[(int)Emulator.rom], &cameraEulerRotation, 6);
+							Emulator.cameraMatrixAddress[(int)Emulator.rom].Write(&Emulator.cameraBasisInv);
+							Emulator.cameraEulerRotationAddress[(int)Emulator.rom].Write(&cameraEulerRotation);
 						}
 					} else {
 						var mousePosX = event.motion.x - (int)width / 2;
@@ -370,13 +370,13 @@ namespace SpyroScope {
 								PushMessageToFeed(new String() .. AppendF("TERRAIN OVERLAY [{}]", overlayType));
 							}
 							case .K : {
-								uint health = 0;
-								Emulator.WriteToRAM(Emulator.healthAddress[(int)Emulator.rom], &health, 4);
+								uint32 health = 0;
+								Emulator.healthAddresses[(int)Emulator.rom].Write(&health);
 							}
 							case .T : {
 								if (Emulator.CameraMode) {
 									Emulator.spyroPosition = viewPosition.ToVectorInt();
-									Emulator.WriteToRAM(Emulator.spyroPositionPointers[(int)Emulator.rom], &Emulator.spyroPosition, sizeof(VectorInt));
+									Emulator.spyroPositionAddresses[(int)Emulator.rom].Write(&Emulator.spyroPosition);
 									PushMessageToFeed("TELEPORTED SPYRO TO GAME CAMERA VIEW");
 								}
 							}
@@ -607,7 +607,7 @@ namespace SpyroScope {
 							onscreenOrigin.y += 400f / depth;
 							DrawUtilities.Rect(onscreenOrigin.y, onscreenOrigin.y + font.characterHeight * 2, onscreenOrigin.x, onscreenOrigin.x + font.characterWidth * 10,
 								0,0,0,0, renderer.textureDefaultWhite, .(0,0,0,192), renderer);
-							font.Print(scope String() .. AppendF("[{:X8}]", objectArrayPointer + currentObjIndex * sizeof(Moby)),
+							font.Print(scope String() .. AppendF("[{}]", objectArrayPointer + currentObjIndex * sizeof(Moby)),
 								onscreenOrigin, .(255,255,255), renderer);
 
 							font.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
