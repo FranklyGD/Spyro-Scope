@@ -4,6 +4,8 @@ using System;
 
 namespace SpyroScope {
 	class BitmapFont {
+		public readonly int imageWidth;
+		public readonly int imageHeight;
 		public readonly int characterWidth;
 		public readonly int characterHeight;
 
@@ -12,6 +14,9 @@ namespace SpyroScope {
 		public this(String font, int characterWidth, int characterHeight) {
 			let surface = SDLImage.Load(font);
 			if (surface != null) {
+				imageWidth = surface.w;
+				imageHeight = surface.h;
+
 				this.characterWidth = characterWidth;
 				this.characterHeight = characterHeight;
 
@@ -36,7 +41,7 @@ namespace SpyroScope {
 				}
 
 				let character = (uint8)text[i] - 32;
-				let glyphSize = ((float)characterWidth / 192, (float)characterHeight / 128);
+				let glyphSize = ((float)characterWidth / imageWidth, (float)characterHeight / imageHeight);
 
 				let a0 = character * glyphSize.0;
 				let d0 = a0 / 1f;

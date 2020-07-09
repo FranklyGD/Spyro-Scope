@@ -1,6 +1,6 @@
 namespace SpyroScope {
 	struct PackedTriangle {
-		VectorInt data;
+		public readonly VectorInt data;
 
 		// Derived from Spyro: Ripto's Rage [8001c214]
 		// Animated version from [80022e70]

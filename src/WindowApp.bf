@@ -54,7 +54,7 @@ namespace SpyroScope {
 			window = SDL.CreateWindow("Scope", .Undefined, .Undefined, (.)width, (.)height,
 				.Shown | .Resizable | .InputFocus | .Utility | .OpenGL);
 			renderer = new .(window);
-			font = new .("images/font.png", 12, 14);
+			font = new .("images/font.png", 12, 20);
 
 			viewerProjection = .Perspective(55f / 180 * Math.PI_f, (float)width / height, 100, 500000);
 			uiProjection = .Orthogonal(width, height, -1, 1);
@@ -151,10 +151,10 @@ namespace SpyroScope {
 		public void DrawSetupGUI() {
 			String message = .Empty;
 			if (Emulator.emulator == .None) {
-				message = "WAITING FOR EMULATOR";
+				message = "Waiting for Emulator";
 			} else {
 				if (Emulator.rom == .None) {
-					message = "WAITING FOR GAME";
+					message = "Waiting for Game";
 				} else {
 					message = Emulator.gameNames[(int)Emulator.rom];
 				}
@@ -283,7 +283,7 @@ namespace SpyroScope {
 						cameraHijacked = true;
 						if (!dislodgeCamera && !Emulator.CameraMode) {
 							Emulator.KillCameraUpdate();
-							PushMessageToFeed("FREE CAMERA");
+							PushMessageToFeed("Free Camera");
 						}
 					}
 					if (event.button.button == 1) {
@@ -338,10 +338,10 @@ namespace SpyroScope {
 							case .P : {
 								if (Emulator.PausedMode) {
 									Emulator.RestoreUpdate();
-									PushMessageToFeed("RESUMED GAME UPDATE");
+									PushMessageToFeed("Resumed Game Update");
 								} else {
 									Emulator.KillUpdate();
-									PushMessageToFeed("PAUSED GAME UPDATE");
+									PushMessageToFeed("Paused Game Update");
 								}
 							}
 							case .LCtrl : {
@@ -350,24 +350,26 @@ namespace SpyroScope {
 							}
 							case .M : {
 								collisionTerrain.wireframe = !collisionTerrain.wireframe;
-								PushMessageToFeed("TOGGLED TERRAIN WIREFRAME");
+								PushMessageToFeed("Toggled Terrain Wireframe");
 							}
 							case .O : {
 								drawObjects = !drawObjects;
-								PushMessageToFeed("TOGGLED OBJECT ORIGINS");
+								PushMessageToFeed("Toggled Object Origins");
 							}
 							case .L : {
 								collisionTerrain.CycleOverlay();
 								String overlayType;
 								switch (collisionTerrain.overlay) {
 									case .None:
-										overlayType = "NONE";
+										overlayType = "None";
 									case .Flags:
-										overlayType = "FLAGS";
+										overlayType = "Flags";
 									case .Deform:
-										overlayType = "DEFORM";
+										overlayType = "Deform";
+									case .Water:
+										overlayType = "Water";
 								}
-								PushMessageToFeed(new String() .. AppendF("TERRAIN OVERLAY [{}]", overlayType));
+								PushMessageToFeed(new String() .. AppendF("Terrain Overlay [{}]", overlayType));
 							}
 							case .K : {
 								uint32 health = 0;
@@ -377,24 +379,24 @@ namespace SpyroScope {
 								if (Emulator.CameraMode) {
 									Emulator.spyroPosition = viewPosition.ToVectorInt();
 									Emulator.spyroPositionAddresses[(int)Emulator.rom].Write(&Emulator.spyroPosition);
-									PushMessageToFeed("TELEPORTED SPYRO TO GAME CAMERA VIEW");
+									PushMessageToFeed("Teleported Spyro to Game Camera");
 								}
 							}
 							case .C : {
 								if (Emulator.CameraMode) {
 									Emulator.RestoreCameraUpdate();
-									PushMessageToFeed("GAME CAMERA");
+									PushMessageToFeed("Game Camera");
 								} else {
 									Emulator.KillCameraUpdate();
-									PushMessageToFeed("FREE CAMERA");
+									PushMessageToFeed("Free Camera");
 								}
 							}
 							case .V : {
 								dislodgeCamera = !dislodgeCamera;
 								if (dislodgeCamera) {
-									PushMessageToFeed("FREE VIEW");
+									PushMessageToFeed("Free View");
 								} else {
-									PushMessageToFeed("GAME VIEW");
+									PushMessageToFeed("Game View");
 								}
 							}
 							default : {}
@@ -655,14 +657,12 @@ namespace SpyroScope {
 						label = scope String() .. AppendF("Unknown {}", flag);
 						color = .(255, 0, 255);
 					}
-					let conversion = scope String(label);
-					conversion.ToUpper();
 	
 					let leftPadding = 8 - halfWidth;
 					let bottomPadding = 8 - halfHeight + 18 * i;
 					DrawUtilities.Rect(bottomPadding, bottomPadding + 16, leftPadding, leftPadding + 16, 0,0,0,0, renderer.textureDefaultWhite, color, renderer);
 
-					font.Print(conversion, .(leftPadding + 24, bottomPadding + 1, 0), .(255,255,255), renderer);
+					font.Print(label, .(leftPadding + 24, bottomPadding + 1 - 6, 0), .(255,255,255), renderer);
 				}
 			}
 

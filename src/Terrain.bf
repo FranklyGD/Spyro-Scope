@@ -21,12 +21,14 @@ namespace SpyroScope {
 		AnimationGroup[] animationGroups;
 
 		public bool wireframe;
+		public List<int> waterSurfaceTriangles = new .() ~ delete _;
 		public List<uint8> collisionTypes = new .() ~ delete _;
 
 		public enum Overlay {
 			None,
 			Flags,
-			Deform
+			Deform,
+			Water
 		}
 		public Overlay overlay = .None;
 
@@ -47,12 +49,23 @@ namespace SpyroScope {
 			Renderer.Color4[] colors = new .[vertexCount];
 
 			collisionTypes.Clear();
-			for (int triangleIndex < Emulator.collisionTriangles.Count) {
+			waterSurfaceTriangles.Clear();
+
+			for (let triangleIndex < Emulator.collisionTriangles.Count) {
 				let triangle = Emulator.collisionTriangles[triangleIndex];
 				let unpackedTriangle = triangle.Unpack(false);
 				
 				let normal = Vector.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
 				Renderer.Color color = .(255,255,255);
+
+				// Terrain as Water
+				// Derived from Spyro: Ripto's Rage [8003e694]
+				if (triangle.data.z & 0x4000 != 0) {
+					waterSurfaceTriangles.Add(triangleIndex);
+					if (overlay == .Water) {
+						color = .(64, 128, 255);
+					}
+				}
 
 				if (triangleIndex < Emulator.specialTerrainTriangleCount) {
 					let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
@@ -264,6 +277,11 @@ namespace SpyroScope {
 		}
 
 		public void CycleOverlay() {
+			// Reset colors before highlighting
+			for (let i < mesh.colors.Count) {
+				mesh.colors[i] = .(255, 255, 255);
+			}
+
 			switch (overlay) {
 				case .None: {
 					overlay = .Flags;
@@ -293,17 +311,18 @@ namespace SpyroScope {
 				}
 				case .Flags: {
 					overlay = .Deform;
-					// Reset colors before allowing update to overwrite it
-					for (let i < mesh.colors.Count) {
-						mesh.colors[i] = .(255, 255, 255);
-					}
 				}
 				case .Deform: {
-					overlay = .None;
-					// Reset colors
-					for (let i < mesh.colors.Count) {
-						mesh.colors[i] = .(255, 255, 255);
+					overlay = .Water;
+					for (let triangleIndex in waterSurfaceTriangles) {
+						for (let vi < 3) {
+							let i = triangleIndex * 3 + vi;
+							mesh.colors[i] = .(64, 128, 255);
+						}
 					}
+				}
+				case .Water: {
+					overlay = .None;
 				}
 			}
 		}
