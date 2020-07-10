@@ -178,7 +178,7 @@ namespace SpyroScope {
 				let testPtr = test.PrepareBuffer(5);
 				ReadFromRAM(testAddresses[i], testPtr, 5);
 
-				if (test == "Spyro") {
+				if (test.CompareTo("Spyro", true) == 0) {
 					rom = (.)(i + 1);
 					break;
 				}
@@ -275,11 +275,14 @@ namespace SpyroScope {
 			ReadFromRAM(cameraMatrixAddress[(int)rom], &cameraBasisInv, sizeof(MatrixInt));
 			ReadFromRAM(cameraEulerRotationAddress[(int)rom], &cameraEulerRotation, 6);
 
-			//ReadFromRAM(0x8006a28c, &collidingTriangle, 4);
+			//ReadFromRAM((.)0x8006a28c, &collidingTriangle, 4);
 
 			Address newCollisionDataAddress = ?;
 			collisionDataPointers[(int)rom].Read(&newCollisionDataAddress);
 			if (newCollisionDataAddress != 0 && newCollisionDataAddress != collisionDataAddress) {
+				Thread.Sleep(500); // This is mainly needed for when emulators load snapshots/savestates
+				// as there is a big delay when loading the large data at once
+
 				uint32 triangleCount = ?;
 				ReadFromRAM(newCollisionDataAddress, &triangleCount, 4);
 

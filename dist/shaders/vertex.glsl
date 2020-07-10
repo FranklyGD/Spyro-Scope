@@ -23,8 +23,8 @@ void main() {
     color = vec4(vertexColor) / 255.0;
     color.rgb *= instanceTint;
 
-    vec4 normal = instanceModel * vec4(vertexNormal, 0.0);
-    color.rgb *= (dot(normalize(normal.xyz), vec3(0,0,1)) + 1.0) / 2.0;
+    vec3 normal = normalize((instanceModel * vec4(vertexNormal, 0.0)).xyz);
+    color.rgb *= (dot(normal, vec3(0,0,1)) + 1.0) / 2.0;
 
     uv = vertexTextureMapping;
 }

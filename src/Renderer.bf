@@ -110,10 +110,6 @@ namespace SpyroScope {
 
 			//[Optimize]
 			public void Set(uint32 index, T value) mut {
-				if (index >= bufferLength) {
-					return;
-				}
-
 				*(map + index) = value;
 			}
 
@@ -326,6 +322,10 @@ namespace SpyroScope {
 		}
 
 		public void PushPoint(Vector position, Vector normal, Color4 color, (float,float) uv) {
+			if (vertexCount >= maxGenericBufferLength) {
+				return;
+			}
+
 			positions.Set(vertexCount, position);
 			normals.Set(vertexCount, normal);
 			colors.Set(vertexCount, color);

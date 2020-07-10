@@ -218,23 +218,23 @@ namespace SpyroScope {
 				}
 
 				if (object.HasModel) {
-					Emulator.Address modelSetAddress = ?;
-					Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
-
-					if (modelSetAddress != 0 && (int32)modelSetAddress > 0) {
-						if (!modelSets.ContainsKey(object.objectTypeID)) {
-							modelSets.Add(object.objectTypeID, new .(modelSetAddress));
-						}
-	
+					if (modelSets.ContainsKey(object.objectTypeID)) {
 						let basis = Matrix.Euler(
 							-(float)object.eulerRotation.x / 0x80 * Math.PI_f,
 							(float)object.eulerRotation.y / 0x80 * Math.PI_f,
 							-(float)object.eulerRotation.z / 0x80 * Math.PI_f
 						);
-	
+
 						renderer.SetModel(object.position, basis * 2);
 						renderer.SetTint(.(255,255,255));
 						modelSets[object.objectTypeID].models[object.modelID].QueueInstance(renderer);
+					} else {
+						Emulator.Address modelSetAddress = ?;
+						Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
+	
+						if (modelSetAddress != 0 && (int32)modelSetAddress > 0) {
+							modelSets.Add(object.objectTypeID, new .(modelSetAddress));
+						}
 					}
 				}
 
