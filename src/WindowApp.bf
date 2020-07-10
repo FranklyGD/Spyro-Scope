@@ -41,6 +41,7 @@ namespace SpyroScope {
 		static Matrix4 gameProjection = .Perspective(55f / 180 * Math.PI_f, 4f/3f, 300, 175000);
 
 		Terrain collisionTerrain = new .() ~ delete _;
+		bool drawLimits = true;
 
 		Dictionary<uint16, MobyModelSet> modelSets = new .();
 		BitmapFont font ~ delete _;
@@ -257,6 +258,30 @@ namespace SpyroScope {
 				}
 			}
 
+			if (drawLimits) {
+				uint32 currentWorldId = ?;
+				Emulator.currentWorldIdAddress[(int)Emulator.rom].Read(&currentWorldId);
+
+				uint32 deathHeight;
+				if (Emulator.rom == .YearOfTheDragon) {
+					uint32 currentSubWorldId = ?;
+					Emulator.currentSubWorldIdAddress.Read(&currentSubWorldId);
+
+					deathHeight = Emulator.deathPlaneHeights[currentWorldId * 4 + currentSubWorldId];
+				} else {
+					deathHeight = Emulator.deathPlaneHeights[currentWorldId];
+				}
+
+				if (viewPosition.z > deathHeight) {
+					DrawUtilities.Grid(.(0,0,deathHeight), .Identity, .(255,64,32), renderer);
+				}
+				
+				let flightHeight = Emulator.maxFreeflightHeights[currentWorldId];
+				if (viewPosition.z < flightHeight) {
+					DrawUtilities.Grid(.(0,0,flightHeight), .Identity, .(32,64,255), renderer);
+				}
+			}
+
 			renderer.SetModel(.Zero, .Identity);
 			renderer.SetTint(.(255,255,255));
 			renderer.Draw();
@@ -398,6 +423,10 @@ namespace SpyroScope {
 								} else {
 									PushMessageToFeed("Game View");
 								}
+							}
+							case .H : {
+								drawLimits = !drawLimits;
+								PushMessageToFeed("Toggled Height Limits");
 							}
 							default : {}
 						}

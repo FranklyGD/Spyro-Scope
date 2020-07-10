@@ -41,6 +41,10 @@ namespace SpyroScope {
 				ReadFromRAM(this, buffer, sizeof(T));
 			}
 
+			public void ReadArray(T* buffer, int count) {
+				ReadFromRAM(this, buffer, sizeof(T) * count);
+			}
+
 			public void Write(T* buffer) {
 				WriteToRAM(this, buffer, sizeof(T));
 			}
@@ -63,9 +67,15 @@ namespace SpyroScope {
 		public const Address<int16[3]>[4] cameraEulerRotationAddress = .(0, 0, (.)0x80067ec8, (.)0x8006e11c);
 		public const Address<MatrixInt>[4] cameraMatrixAddress = .(0, 0, (.)0x80067e98, (.)0x8006e0ec);
 
+		public const Address<uint32>[4] currentWorldIdAddress = .(0, 0, (.)0x80066f54, (.)0x8006c66c);
+		public const Address<uint32> currentSubWorldIdAddress = (.)0x8006c6a8; // Exclusive to Spyro: Year of the Dragon
+
 		public const Address<Address>[4] collisionDataPointers = .(0, 0, (.)0x800673fc, (.)0x8006d150);
 		public const Address<Address>[4] collisionFlagsArrayPointers = .(0, 0, (.)0x800673e8, (.)0x8006d13c);
 		public const Address<Address>[4] collisionModifyingDataPointers = .(0, 0, (.)0x80068208, (.)0x8006e464);
+		
+		public const Address<uint32>[4] deathPlaneHeightsAddresses = .(0, 0, (.)0x80060234, (.)0x800677c8);
+		public const Address<uint32>[4] maxFreeflightHeightsAddresses = .(0, 0, (.)0x800601b4, (.)0x80067728);
 
 		public const Address<uint32>[4] healthAddresses = .(0, 0, (.)0x8006A248, (.)0x80070688);
 
@@ -75,6 +85,9 @@ namespace SpyroScope {
 		public static uint16[3] cameraEulerRotation;
 		public static MatrixInt cameraBasisInv, spyroBasis;
 		public static int32 collidingTriangle = -1;
+
+		public static uint32[] deathPlaneHeights ~ delete _;
+		public static uint32[] maxFreeflightHeights ~ delete _;
 		
 		public static Emulator.Address collisionDataAddress;
 		public static Emulator.Address collisionModifyingPointerArrayAddress;
@@ -183,6 +196,10 @@ namespace SpyroScope {
 					break;
 				}
 			}
+
+			if (rom != .None) {
+				FetchStaticData();
+			}
 		}
 		
 		[Import("psapi.lib"),CLink, CallingConvention(.Stdcall)]
@@ -264,6 +281,26 @@ namespace SpyroScope {
 		}
 
 		// Spyro
+		static void FetchStaticData() {
+			switch (Emulator.rom) {
+				case .RiptosRage: {
+					// 28 worlds exists but there is space for 32 (probably a power of 2 related thing)
+					Emulator.deathPlaneHeights = new .[32];
+					Emulator.maxFreeflightHeights = new .[32];
+					
+					deathPlaneHeightsAddresses[(int)rom].ReadArray(&Emulator.deathPlaneHeights[0], 32);
+					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&Emulator.maxFreeflightHeights[0], 32);
+				}
+			case .YearOfTheDragon: {
+				Emulator.deathPlaneHeights = new .[40 * 4];
+				Emulator.maxFreeflightHeights = new .[40 * 4];
+
+				deathPlaneHeightsAddresses[(int)rom].ReadArray(&Emulator.deathPlaneHeights[0], 40 * 4);
+				maxFreeflightHeightsAddresses[(int)rom].ReadArray(&Emulator.maxFreeflightHeights[0], 40);
+			}
+				default : {}
+			}
+		}
 
 		public static void FetchImportantObjects() {
 			ReadFromRAM(spyroPositionAddresses[(int)rom], &spyroPosition, sizeof(VectorInt));
