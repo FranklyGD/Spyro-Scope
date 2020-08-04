@@ -1,3 +1,4 @@
+using FreeType;
 using OpenGL;
 using SDL2;
 using System;
@@ -17,6 +18,7 @@ namespace SpyroScope {
 			Directory.SetCurrentDirectory(exeDir);
 
 			SDL.Init(.Video | .Events);// | .GameController);
+			FT.Init();
 
 			let mainWindow = scope WindowApp();
 

@@ -44,7 +44,8 @@ namespace SpyroScope {
 		bool drawLimits = true;
 
 		Dictionary<uint16, MobyModelSet> modelSets = new .();
-		BitmapFont font ~ delete _;
+		BitmapFont bitmapFont ~ delete _;
+		SpyroScope.Font font ~ delete _;
 		List<(String message, DateTime time)> messageFeed = new .();
 		//List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
@@ -55,7 +56,8 @@ namespace SpyroScope {
 			window = SDL.CreateWindow("Scope", .Undefined, .Undefined, (.)width, (.)height,
 				.Shown | .Resizable | .InputFocus | .Utility | .OpenGL);
 			renderer = new .(window);
-			font = new .("images/font.png", 12, 20);
+			bitmapFont = new .("images/font.png", 12, 20);
+			font = new .("Roboto-Regular.ttf", 20);
 
 			viewerProjection = .Perspective(55f / 180 * Math.PI_f, (float)width / height, 100, 500000);
 			uiProjection = .Orthogonal(width, height, -1, 1);
@@ -115,7 +117,7 @@ namespace SpyroScope {
 			let halfWidth = (float)width / 2;
 			let halfHeight = (float)height / 2;
 
-			font.Print(scope String() .. AppendF("OpenGL {}.{}", majorVersion, minorVersion), .(halfWidth - font.characterWidth * 10, halfHeight - font.characterHeight, 0), .(255,255,255,8), renderer);
+			bitmapFont.Print(scope String() .. AppendF("OpenGL {}.{}", majorVersion, minorVersion), .(halfWidth - bitmapFont.characterWidth * 10, halfHeight - bitmapFont.characterHeight, 0), .(255,255,255,8), renderer);
 			
 			renderer.Draw();
 			renderer.Sync();
@@ -160,23 +162,23 @@ namespace SpyroScope {
 					message = Emulator.gameNames[(int)Emulator.rom];
 				}
 				
-				let baseline = font.characterHeight;
+				let baseline = font.height;
 				let emulator = Emulator.emulatorNames[(int)Emulator.emulator];
-				let halfWidth = font.characterWidth * emulator.Length / 2;
+				let halfWidth = font.CalculateWidth(emulator) / 2;
 				font.Print(emulator, .(-halfWidth, baseline, 0), .(255,255,255), renderer);
 			}
 
-			let baseline = -font.characterHeight / 2;
-			let halfWidth = font.characterWidth * message.Length / 2;
+			let baseline = -font.height / 2;
+			let halfWidth = font.CalculateWidth(message) / 2;
 			font.Print(message, .(-halfWidth, baseline, 0), .(255,255,255), renderer);
 
 			if (Emulator.emulator == .None || Emulator.rom == .None) {
 				let t = (float)stopwatch.ElapsedMilliseconds / 1000 * 3.14f;
-				DrawUtilities.Rect(baseline - 2, baseline, -halfWidth * Math.Sin(t), halfWidth * Math.Sin(t),
+				DrawUtilities.Rect(baseline - 4, baseline - 2, -halfWidth * Math.Sin(t), halfWidth * Math.Sin(t),
 					0,0,0,0, renderer.textureDefaultWhite, .(255,255,255), renderer);
 			} else {
 				let t = 1f - (float)stopwatch.ElapsedMilliseconds / 3000;
-				DrawUtilities.Rect(baseline - 2, baseline, -halfWidth * t, halfWidth * t,
+				DrawUtilities.Rect(baseline - 4, baseline - 2, -halfWidth * t, halfWidth * t,
 					0,0,0,0, renderer.textureDefaultWhite, .(255,255,255), renderer);
 			}
 		}
@@ -525,10 +527,10 @@ namespace SpyroScope {
 				let message = feedItem.message;
 				let age = feedItem.time - now;
 				let fade = Math.Min(age.TotalSeconds, 1);
-				let offsetOrigin = origin - .(0,(messageFeed.Count - i) * font.characterHeight,0);
-				DrawUtilities.Rect(offsetOrigin.y, offsetOrigin.y + font.characterHeight, offsetOrigin.x, offsetOrigin.x + font.characterWidth * message.Length,
+				let offsetOrigin = origin - .(0,(messageFeed.Count - i) * font.height,0);
+				DrawUtilities.Rect(offsetOrigin.y, offsetOrigin.y + font.height, offsetOrigin.x, offsetOrigin.x + font.CalculateWidth(message) + 4,
 					0,0,0,0, renderer.textureDefaultWhite, .(0,0,0,(.)(192 * fade)), renderer);
-				font.Print(message, offsetOrigin, .(255,255,255,(.)(255 * fade)), renderer);
+				font.Print(message, offsetOrigin + .(2,4,0), .(255,255,255,(.)(255 * fade)), renderer);
 			}
 		}
 
@@ -636,13 +638,13 @@ namespace SpyroScope {
 							Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
 
 							onscreenOrigin.y += 400f / depth;
-							DrawUtilities.Rect(onscreenOrigin.y, onscreenOrigin.y + font.characterHeight * 2, onscreenOrigin.x, onscreenOrigin.x + font.characterWidth * 10,
+							DrawUtilities.Rect(onscreenOrigin.y, onscreenOrigin.y + bitmapFont.characterHeight * 2 + 6, onscreenOrigin.x, onscreenOrigin.x + bitmapFont.characterWidth * 10,
 								0,0,0,0, renderer.textureDefaultWhite, .(0,0,0,192), renderer);
-							font.Print(scope String() .. AppendF("[{}]", objectArrayPointer + currentObjIndex * sizeof(Moby)),
-								onscreenOrigin, .(255,255,255), renderer);
 
-							font.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
-								onscreenOrigin + .(0,font.characterHeight,0), .(255,255,255), renderer);
+							bitmapFont.Print(scope String() .. AppendF("[{}]", objectArrayPointer + currentObjIndex * sizeof(Moby)),
+								onscreenOrigin, .(255,255,255), renderer);
+							bitmapFont.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
+								onscreenOrigin + .(0,bitmapFont.characterHeight,0), .(255,255,255), renderer);
 						}
 					}
 				}
@@ -691,7 +693,7 @@ namespace SpyroScope {
 					let bottomPadding = 8 - halfHeight + 18 * i;
 					DrawUtilities.Rect(bottomPadding, bottomPadding + 16, leftPadding, leftPadding + 16, 0,0,0,0, renderer.textureDefaultWhite, color, renderer);
 
-					font.Print(label, .(leftPadding + 24, bottomPadding + 1 - 6, 0), .(255,255,255), renderer);
+					bitmapFont.Print(label, .(leftPadding + 24, bottomPadding + 1 - 6, 0), .(255,255,255), renderer);
 				}
 			}
 

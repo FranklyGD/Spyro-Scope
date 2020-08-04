@@ -1,5 +1,5 @@
 FileVersion = 1
-Projects = {"Spyro Scope" = {Path = "."}, SDL2 = "*"}
+Projects = {"Spyro Scope" = {Path = "."}, SDL2 = "*", FreeType = "*"}
 
 [Workspace]
 StartupProject = "Spyro Scope"
