@@ -2,9 +2,9 @@ using System;
 
 namespace SpyroScope {
 	static struct PrimitiveShape {
-		public static StaticMesh cube ~ delete _;
-		public static StaticMesh cylinder ~ delete _;
-		public static StaticMesh cone ~ delete _;
+		public static Mesh cube ~ delete _;
+		public static Mesh cylinder ~ delete _;
+		public static Mesh cone ~ delete _;
 
 		public static void Init() {
 			GenerateCube();

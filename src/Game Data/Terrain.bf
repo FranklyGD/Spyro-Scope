@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace SpyroScope {
 	class Terrain {
-		StaticMesh mesh;
+		Mesh mesh;
 
 		struct AnimationGroup {
 			public Emulator.Address dataPointer;
@@ -12,7 +12,7 @@ namespace SpyroScope {
 			public uint32 count;
 			public Vector center;
 			public float radius;
-			public StaticMesh[] mesh;
+			public Mesh[] mesh;
 
 			public void Dispose() {
 				DeleteContainerAndItems!(mesh);

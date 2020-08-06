@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace SpyroScope {
 	class MobyModelSet {
-		public StaticMesh[] models ~ DeleteContainerAndItems!(_);
+		public Mesh[] models ~ DeleteContainerAndItems!(_);
 
 		[Ordered]
 		struct ModelMetadata {

@@ -86,7 +86,7 @@ namespace SpyroScope {
 						Emulator.ReadFromRAM(dataPointer, &sparx, sizeof(SparxData));
 						sparx.Draw(renderer, this);
 					}
-					case 0x03ff: {
+					case 0x03ff: { // Whirlwind
 						WhirlwindData whirlwind = ?;
 						Emulator.ReadFromRAM(dataPointer, &whirlwind, sizeof(WhirlwindData));
 						whirlwind.Draw(renderer, this);

@@ -1,7 +1,7 @@
 using OpenGL;
 
 namespace SpyroScope {
-	class StaticMesh {
+	class Mesh {
 		public Vector[] vertices ~ delete _;
 		public Vector[] normals ~ delete _;
 		public Renderer.Color4[] colors ~ delete _;
