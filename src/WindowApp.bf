@@ -32,13 +32,15 @@ namespace SpyroScope {
 		static bool dislodgeCamera;
 		static Vector viewPosition;
 		static Vector viewEulerRotation;
+		const float viewFoV = 55;
 
 		static Matrix4 viewerProjection;
 		static Matrix4 viewerMatrix;
 		static Matrix4 uiProjection;
 
 		// Game Camera
-		static Matrix4 gameProjection = .Perspective(55f / 180 * Math.PI_f, 4f/3f, 300, 175000);
+		const float gameFoV = 55;
+		static Matrix4 gameProjection = .Perspective(gameFoV * Math.PI_f / 180, 4f/3f, 300, 175000);
 
 		Terrain collisionTerrain = new .() ~ delete _;
 		bool drawLimits = true;
@@ -59,7 +61,7 @@ namespace SpyroScope {
 			bitmapFont = new .("images/font.png", 12, 20);
 			font = new .("Roboto-Regular.ttf", 20);
 
-			viewerProjection = .Perspective(55f / 180 * Math.PI_f, (float)width / height, 100, 500000);
+			viewerProjection = .Perspective(viewFoV / 180 * Math.PI_f, (float)width / height, 100, 500000);
 			uiProjection = .Orthogonal(width, height, -1, 1);
 
 			id = SDL.GetWindowID(window);
@@ -315,6 +317,11 @@ namespace SpyroScope {
 					}
 					if (event.button.button == 1) {
 						currentObjIndex = hoveredObjIndex;
+						
+						Emulator.Address objectArrayPointer = ?;
+						Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
+
+						SDL.SetClipboardText(scope String() .. AppendF("{}", objectArrayPointer + currentObjIndex * sizeof(Moby)));
 					}
 				}
 				case .MouseMotion : {
@@ -498,7 +505,7 @@ namespace SpyroScope {
 							height = (.)event.window.data2;
 							GL.glViewport(0, 0, (.)width, (.)height);
 
-							viewerProjection = .Perspective(55f / 180 * Math.PI_f, (float)width / height, 100, 500000);
+							viewerProjection = .Perspective(viewFoV / 180 * Math.PI_f, (float)width / height, 100, 500000);
 							uiProjection = .Orthogonal(width, height, 0, 1);
 						}
 						default : {}
@@ -514,14 +521,15 @@ namespace SpyroScope {
 
 		void DrawMessageFeed(Vector origin) {
 			let now = DateTime.Now;
-			for (let feedItem in messageFeed) {
-				if (now > feedItem.time && feedItem.message.IsDynAlloc) {
-					delete feedItem.message;
-				}
-			}
+
 			messageFeed.RemoveAll(scope (x) => {
+				let pendingRemove = now > x.time;
+				if (pendingRemove && x.message.IsDynAlloc) {
+					delete x.message;
+				}
 				return now > x.time;
 			});
+
 			for (let i < messageFeed.Count) {
 				let feedItem = messageFeed[i];
 				let message = feedItem.message;
@@ -547,6 +555,8 @@ namespace SpyroScope {
 				viewEulerRotation.y = (float)Emulator.cameraEulerRotation[0] / 0x800;
 				viewEulerRotation.z = (float)Emulator.cameraEulerRotation[2] / 0x800;
 			}
+
+			viewEulerRotation.z = Math.Repeat(viewEulerRotation.z + 1, 2) - 1;
 
 			// Corrected view matrix for the scope
 			let cameraBasis = Matrix.Euler(
@@ -627,36 +637,36 @@ namespace SpyroScope {
 				if (currentObjIndex != -1) {
 					let currentObject = objectList[currentObjIndex];
 					// Begin overlays
-					let test = viewerMatrix * Vector4(currentObject.position, 1);
-					if (test.w > 0) { // Must be in front of view
-						let depth = test.w / 300; // Divide by near plane distance for correct depth
-						if (!drawObjects) {
-							var onscreenOrigin = Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0);
-							DrawUtilities.Circle(onscreenOrigin, Matrix.Scale(400f/depth,400f/depth,400f/depth), Renderer.Color(16,16,16), renderer);
+					let screenPosition = SceneToScreen(currentObject.position);
+					if (!drawObjects && screenPosition.z > 0) { // Must be in front of view
+						var onscreenOrigin = screenPosition;
+						let screenSize = SceneSizeToScreenSize(200, screenPosition.z);
+						onscreenOrigin.z = 0;
+						DrawUtilities.Circle(onscreenOrigin, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(16,16,16), renderer);
 
-							Emulator.Address objectArrayPointer = ?;
-							Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
+						Emulator.Address objectArrayPointer = ?;
+						Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
 
-							onscreenOrigin.y += 400f / depth;
-							DrawUtilities.Rect(onscreenOrigin.y, onscreenOrigin.y + bitmapFont.characterHeight * 2 + 6, onscreenOrigin.x, onscreenOrigin.x + bitmapFont.characterWidth * 10,
-								0,0,0,0, renderer.textureDefaultWhite, .(0,0,0,192), renderer);
+						onscreenOrigin.y += screenSize;
+						DrawUtilities.Rect(onscreenOrigin.y, onscreenOrigin.y + bitmapFont.characterHeight * 2 + 6, onscreenOrigin.x, onscreenOrigin.x + bitmapFont.characterWidth * 10,
+							0,0,0,0, renderer.textureDefaultWhite, .(0,0,0,192), renderer);
 
-							bitmapFont.Print(scope String() .. AppendF("[{}]", objectArrayPointer + currentObjIndex * sizeof(Moby)),
-								onscreenOrigin, .(255,255,255), renderer);
-							bitmapFont.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
-								onscreenOrigin + .(0,bitmapFont.characterHeight,0), .(255,255,255), renderer);
-						}
+						bitmapFont.Print(scope String() .. AppendF("[{}]", objectArrayPointer + currentObjIndex * sizeof(Moby)),
+							onscreenOrigin, .(255,255,255), renderer);
+						bitmapFont.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
+							onscreenOrigin + .(0,bitmapFont.characterHeight,0), .(255,255,255), renderer);
 					}
 				}
 	
 				if (hoveredObjIndex != -1) {
 					let hoveredObject = objectList[hoveredObjIndex];
 					// Begin overlays
-					let test = viewerMatrix * Vector4(hoveredObject.position, 1);
-					if (test.w > 0) { // Must be in front of view
-						let depth = test.w / 300; // Divide by near plane distance for correct depth
+					var screenPosition = SceneToScreen(hoveredObject.position);
+					if (screenPosition.z > 0) { // Must be in front of view
+						let screenSize = SceneSizeToScreenSize(150, screenPosition.z);
+						screenPosition.z = 0;
 						if (!drawObjects) {
-							DrawUtilities.Circle(Vector(test.x * width / (test.w * 2), test.y * height / (test.w * 2), 0), Matrix.Scale(350f/depth,350f/depth,350f/depth), Renderer.Color(128,64,16), renderer);
+							DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(128,64,16), renderer);
 						}
 					}
 				}
@@ -702,10 +712,19 @@ namespace SpyroScope {
 			}*/
 		}
 
-		/*Vector Scene2Screen(Vector worldPosition) {
+		Vector SceneToScreen(Vector worldPosition) {
 			let viewPosition = viewerMatrix * Vector4(worldPosition, 1);
 
-		}*/
+			if (viewPosition.w < 0) {
+				return .Zero;
+			}
+
+			return Vector(viewPosition.x / viewPosition.w * width / 2, viewPosition.y / viewPosition.w * height / 2, viewPosition.w);
+		}
+
+		float SceneSizeToScreenSize(float size, float depth) {
+			return size * height / (depth * Math.Tan(viewFoV * (Math.PI_f / 180) / 2) * 2);
+		}
 
 		int GetObjectIndexUnderMouse() {
 			var closestObjectIndex = -1;
@@ -713,19 +732,19 @@ namespace SpyroScope {
 
 			for (int objectIndex = 0; objectIndex < objectList.Count; objectIndex++) {
 				let object = objectList[objectIndex];
-				let viewPosition = viewerMatrix * Vector4(object.position, 1);
+				
+				let screenPosition = SceneToScreen(object.position);
 
-				if (viewPosition.w < 0 || viewPosition.w > closestDepth) {
+				if (screenPosition.z == 0) {
 					continue;
 				}
 
-				let screenPosition = Vector(viewPosition.x / viewPosition.w * width / 2, viewPosition.y / viewPosition.w * height / 2, 0);
-				let selectSize = 400f / viewPosition.w * 300;
+				let selectSize = SceneSizeToScreenSize(200, screenPosition.z);
 				if (mousePosition.x < screenPosition.x + selectSize && mousePosition.x > screenPosition.x - selectSize &&
 					mousePosition.y < screenPosition.y + selectSize && mousePosition.y > screenPosition.y - selectSize) {
 
 					closestObjectIndex = objectIndex;
-					closestDepth = viewPosition.w;
+					closestDepth = screenPosition.z;
 				}
 			}
 

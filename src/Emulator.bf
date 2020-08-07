@@ -82,7 +82,7 @@ namespace SpyroScope {
 		// Game Values
 		public static VectorInt cameraPosition, spyroPosition;
 		public static VectorInt spyroIntendedVelocity, spyroPhysicsVelocity;
-		public static uint16[3] cameraEulerRotation;
+		public static int16[3] cameraEulerRotation;
 		public static MatrixInt cameraBasisInv, spyroBasis;
 		public static int32 collidingTriangle = -1;
 
