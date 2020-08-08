@@ -282,6 +282,9 @@ namespace SpyroScope {
 
 		// Spyro
 		static void FetchStaticData() {
+			delete Emulator.maxFreeflightHeights;
+			delete Emulator.deathPlaneHeights;
+
 			switch (Emulator.rom) {
 				case .RiptosRage: {
 					// 28 worlds exists but there is space for 32 (probably a power of 2 related thing)

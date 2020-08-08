@@ -77,7 +77,7 @@ namespace SpyroScope {
 		public Vector tint = .(1,1,1);
 		public int uniformZdepthOffsetIndex; // Z-depth Offset (mainly for pushing the wireframe forward to avoid Z-fighting)
 
-		public uint textureDefaultWhite;
+		public static uint textureDefaultWhite;
 
 		public struct Buffer<T> {
 			public uint obj;
