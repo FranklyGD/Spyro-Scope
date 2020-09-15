@@ -77,5 +77,9 @@ namespace SpyroScope {
 				left.x * right.y - left.y * right.x
 			);
 		}
+
+		public static float RayPlaneIntersect(Vector rayOrigin, Vector rayDirection, Vector planeOrigin, Vector planeNormal) {
+			return Vector.Dot(planeOrigin, rayOrigin - planeOrigin) / Vector.Dot(planeOrigin, rayDirection);
+		}
 	}
 }

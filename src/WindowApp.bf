@@ -38,7 +38,7 @@ namespace SpyroScope {
 
 			Camera.fov = 55;
 			viewerProjection = Camera.projection;
-			uiProjection = .Orthogonal(width, height, -1, 1);
+			uiProjection = .Screen(width, height);
 
 			id = SDL.GetWindowID(window);
 
@@ -80,7 +80,7 @@ namespace SpyroScope {
 
 			state.Update();
 
-			GL.glBindTexture(GL.GL_TEXTURE_2D, Renderer.textureDefaultWhite);
+			GL.glBindTexture(GL.GL_TEXTURE_2D, Renderer.whiteTexture.textureObjectID);
 			renderer.SetView(Camera.position, Camera.basis);
 			renderer.SetProjection(WindowApp.viewerProjection);
 			GL.glEnable(GL.GL_DEPTH_TEST);
@@ -95,12 +95,9 @@ namespace SpyroScope {
 			int32 minorVersion = ?;
 			GL.glGetIntegerv(GL.GL_MAJOR_VERSION, (.)&majorVersion);
 			GL.glGetIntegerv(GL.GL_MINOR_VERSION, (.)&minorVersion);
-			
-			let halfWidth = (float)width / 2;
-			let halfHeight = (float)height / 2;
 
-			bitmapFont.Print(scope String() .. AppendF("OpenGL {}.{}", majorVersion, minorVersion), .(halfWidth - bitmapFont.characterWidth * 10, halfHeight - bitmapFont.characterHeight, 0), .(255,255,255,8), renderer);
-			
+			bitmapFont.Print(scope String() .. AppendF("OpenGL {}.{}", majorVersion, minorVersion), .((.)WindowApp.width - bitmapFont.characterWidth * 10, 0, 0), .(255,255,255,8), renderer);
+
 			renderer.Draw();
 			renderer.Sync();
 			renderer.Display();
@@ -131,7 +128,7 @@ namespace SpyroScope {
 			GL.glViewport(0, 0, (.)width, (.)height);
 
 			viewerProjection = Camera.projection;
-			uiProjection = .Orthogonal(width, height, 0, 1);
+			uiProjection = .Screen(width, height);
 		}
 
 		public void OnEvent(SDL.Event event) {

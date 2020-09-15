@@ -5,8 +5,8 @@ using System.Collections;
 
 namespace SpyroScope {
 	class Font {
-		public readonly float height;
-		public readonly uint atlas;
+		public readonly uint16 height, penLine;
+		public readonly Texture atlas ~ delete _;
 
 		struct Character {
 			public FT.Vector size;
@@ -64,17 +64,21 @@ namespace SpyroScope {
 			});
 			let textureSize = (int)Math.Pow(2, Math.Ceiling(Math.Log(Math.Sqrt(area), 2)));
 
-			let blank = scope uint8[textureSize * textureSize];
-			GL.glGenTextures(1, &atlas);
-			GL.glBindTexture(GL.GL_TEXTURE_2D, atlas);
-			GL.glTexImage2D(GL.GL_TEXTURE_2D,
-				0, GL.GL_RED,
-				textureSize, textureSize,
-				0, GL.GL_RED, GL.GL_UNSIGNED_BYTE, &blank[0]
-			);
+			let blank = new uint8[textureSize * textureSize];
+			atlas = new .(textureSize, textureSize, GL.GL_RED, &blank[0]);
+			delete blank;
+
+			atlas.Bind();
 
 			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
 			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
+
+			Renderer.CheckForErrors();
+
+			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_SWIZZLE_R, GL.GL_ONE);
+			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_SWIZZLE_G, GL.GL_ONE);
+			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_SWIZZLE_B, GL.GL_ONE);
+			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_SWIZZLE_A, GL.GL_RED);
 
 			int32 tallestInRow = 0;
 			int32 offsetX = 0;
@@ -103,13 +107,17 @@ namespace SpyroScope {
 				tallestInRow = Math.Max(tallestInRow, character.size.y);
 				offsetX += character.size.x;
 			}
-
+			
+			penLine = (.)Math.Ceiling(((float)fontFace.ascender / fontFace.height) * height);
 			FT.DoneFace(fontFace);
 			this.height = height;
+
+			Texture.Unbind();
 		}
 
 		public void Print(String text, Vector position, float scale, Renderer.Color4 color, Renderer renderer) {
 			var position;
+			position.y += penLine;
 
 			for (let i < text.Length) {
 				let c = text[i];
@@ -117,12 +125,12 @@ namespace SpyroScope {
 
 				if (c != ' ') {
 					let x = position.x + character.bearing.x * scale;
-					let y = position.y - (character.size.y - character.bearing.y) * scale;
+					let y = position.y + (character.size.y - character.bearing.y) * scale;
 	
 					let width = character.size.x * scale;
 					let height = character.size.y * scale;
 	
-					DrawUtilities.Rect(y, y + height, x, x + width,
+					DrawUtilities.Rect(y - height, y, x, x + width,
 						character.atlasPosition2.y, character.atlasPosition.y, character.atlasPosition.x, character.atlasPosition2.x,
 						atlas, color, renderer);
 				}
@@ -137,15 +145,15 @@ namespace SpyroScope {
 
 		public float CalculateWidth(String text) {
 			float width = 0;
-
-			for (let i < text.Length - 1) {
+			let lastCharacterIndex = text.Length - 1;
+			for (let i < lastCharacterIndex) {
 				let c = text[i];
 				let character = characters[c];
 
 				width += character.advance >> 6;
 			}
 
-			let lastCharacter = characters[text[text.Length - 1]];
+			let lastCharacter = characters[text[lastCharacterIndex]];
 
 			return width + lastCharacter.size.x + lastCharacter.bearing.x;
 		}

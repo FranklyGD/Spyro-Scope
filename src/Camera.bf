@@ -16,7 +16,7 @@ namespace SpyroScope {
 				return .Zero;
 			}
 
-			return Vector(viewPosition.x / viewPosition.w * WindowApp.width / 2, viewPosition.y / viewPosition.w * WindowApp.height / 2, viewPosition.w);
+			return Vector((viewPosition.x / viewPosition.w + 1) * WindowApp.width / 2, (1 - viewPosition.y / viewPosition.w) * WindowApp.height / 2, viewPosition.w);
 		}
 
 		public static float SceneSizeToScreenSize(float size, float depth) {

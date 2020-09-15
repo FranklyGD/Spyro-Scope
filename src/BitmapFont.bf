@@ -4,34 +4,15 @@ using System;
 
 namespace SpyroScope {
 	class BitmapFont {
-		public readonly int imageWidth;
-		public readonly int imageHeight;
 		public readonly int characterWidth;
 		public readonly int characterHeight;
 
-		uint textureObject;
+		Texture texture ~ delete _;
 
 		public this(String font, int characterWidth, int characterHeight) {
-			let surface = SDLImage.Load(font);
-			if (surface != null) {
-				imageWidth = surface.w;
-				imageHeight = surface.h;
-
-				this.characterWidth = characterWidth;
-				this.characterHeight = characterHeight;
-
-				GL.glGenTextures(1, &textureObject);
-				GL.glBindTexture(GL.GL_TEXTURE_2D, textureObject);
-
-				GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGB, surface.w, surface.h, 0, GL.GL_RGB, GL.GL_UNSIGNED_BYTE, surface.pixels);
-				GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
-				GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-				SDL.FreeSurface(surface);
-
-				GL.glBindTexture(GL.GL_TEXTURE_2D, 0);
-
-				Renderer.CheckForErrors();
-			}
+			texture = new .(font);
+			this.characterWidth = characterWidth;
+			this.characterHeight = characterHeight;
 		}
 
 		public void Print(String text, float width, float height, Vector position, Renderer.Color4 color, Renderer renderer) {
@@ -41,7 +22,7 @@ namespace SpyroScope {
 				}
 
 				let character = (uint8)text[i] - 32;
-				let glyphSize = ((float)characterWidth / imageWidth, (float)characterHeight / imageHeight);
+				let glyphSize = ((float)characterWidth / texture.width, (float)characterHeight / texture.height);
 
 				let a0 = character * glyphSize.0;
 				let d0 = a0 / 1f;
@@ -49,7 +30,7 @@ namespace SpyroScope {
 
 				DrawUtilities.Rect(position.y, position.y + height, position.x + i * width, position.x + (i + 1) * width,
 					(character / 16 + 1) * glyphSize.1, character / 16 * glyphSize.1, r0, r0 + glyphSize.0,
-					textureObject, color, renderer);
+					texture, color, renderer);
 			}
 		}
 

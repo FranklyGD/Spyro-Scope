@@ -87,15 +87,45 @@ namespace SpyroScope {
 		}
 
 		[Inline]
-		public static void Rect(float bottom, float top, float left, float right,
+		public static void Rect(float top, float bottom, float left, float right,
 			float uvbottom, float uvtop, float uvleft, float uvright,
-			uint textureObject, Renderer.Color4 color, Renderer renderer) {
+			Texture texture, Renderer.Color4 color, Renderer renderer) {
 
 			renderer.DrawTriangle(.(left,bottom,0), .(left,top,0), .(right,top,0), color, color, color,
-					(uvleft, uvbottom), (uvleft, uvtop), (uvright, uvtop), textureObject);
+					(uvleft, uvbottom), (uvleft, uvtop), (uvright, uvtop), texture.textureObjectID);
 			renderer.DrawTriangle(.(left,bottom,0), .(right,top,0), .(right,bottom,0), color, color, color,
-					(uvleft, uvbottom), (uvright, uvtop), (uvright, uvbottom), textureObject);
+					(uvleft, uvbottom), (uvright, uvtop), (uvright, uvbottom), texture.textureObjectID);
 		}
+
+		[Inline]
+		public static void SlicedRect(float top, float bottom, float left, float right,
+			float uvbottom, float uvtop, float uvleft, float uvright,
+			float uvbottominner, float uvtopinner, float uvleftinner, float uvrightinner,
+			Texture texture, Renderer.Color4 color, Renderer renderer) {
+
+			var width = left - right;
+			var height = top - bottom;
+			var bottomBorder = texture.height * (1 - uvbottominner);
+			var leftBorder = texture.width * uvleftinner;
+			var topBorder = texture.height * uvtopinner;
+			var rightBorder = texture.width * (1 - uvrightinner);
+
+			// Preserved Corners
+			Rect(top - topBorder, top, left, left + leftBorder, uvbottom, uvbottominner, uvleft, uvleftinner, texture, color, renderer);
+			Rect(top - topBorder, top, right - rightBorder, right, uvbottom, uvbottominner, uvrightinner, uvright, texture, color, renderer);
+			Rect(bottom, bottom + bottomBorder, left, left + leftBorder, uvtopinner, uvtop, uvleft, uvleftinner, texture, color, renderer);
+			Rect(bottom, bottom + bottomBorder, right - rightBorder, right, uvtopinner, uvtop, uvrightinner, uvright, texture, color, renderer);
+
+			// Stretched Edges
+			Rect(top - topBorder, top, left + leftBorder, right - rightBorder, uvbottom, uvbottominner, uvleftinner, uvrightinner, texture, color, renderer);
+			Rect(bottom, bottom + bottomBorder, left + leftBorder, right - rightBorder, uvtopinner, uvtop, uvleftinner, uvrightinner, texture, color, renderer);
+			Rect(bottom + bottomBorder, top - topBorder, left, left + leftBorder, uvbottominner, uvtopinner, uvleft, uvleftinner, texture, color, renderer);
+			Rect(bottom + bottomBorder, top - topBorder, right - rightBorder, right, uvbottominner, uvtopinner, uvrightinner, uvright, texture, color, renderer);
+
+			// Stretched Center
+			Rect(bottom + bottomBorder, top - topBorder, left + leftBorder, right - rightBorder, uvbottominner, uvtopinner, uvleftinner, uvrightinner, texture, color, renderer);
+		}
+
 
 		[Inline]
 		public static void Grid(Vector position, Matrix basis, Renderer.Color4 color, Renderer renderer) {

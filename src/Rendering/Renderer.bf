@@ -77,7 +77,7 @@ namespace SpyroScope {
 		public Vector tint = .(1,1,1);
 		public int uniformZdepthOffsetIndex; // Z-depth Offset (mainly for pushing the wireframe forward to avoid Z-fighting)
 
-		public static uint textureDefaultWhite;
+		public static Texture whiteTexture ~ delete _;
 
 		public struct Buffer<T> {
 			public uint obj;
@@ -231,10 +231,8 @@ namespace SpyroScope {
 
 			// Create Default Texture
 
-			var tempTexData = Color4[1](.(255,255,255,255));
-			GL.glGenTextures(1, &textureDefaultWhite);
-			GL.glBindTexture(GL.GL_TEXTURE_2D, textureDefaultWhite);
-			GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, 1, 1, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, &tempTexData);
+			var whiteTextureData = Color4[1](.(255,255,255,255));
+			whiteTexture = new .(1, 1, GL.GL_RGBA, &whiteTextureData);
 
 			this.window = window;
 
@@ -351,7 +349,7 @@ namespace SpyroScope {
 				lastDrawQueue++;
 				lastDrawQueue.type = GL.GL_LINES;
 				lastDrawQueue.count = 2;
-				lastDrawQueue.texture = (uint8)textureDefaultWhite;
+				lastDrawQueue.texture = (uint8)whiteTexture.textureObjectID;
 			}
 		}
 
@@ -362,7 +360,7 @@ namespace SpyroScope {
 				Draw();
 			}
 
-			let normal = Vector.Cross(p2 - p0, p1 - p0);
+			let normal = Vector.Cross(p1 - p0, p2 - p0);
 
 			PushPoint(p0, normal, c0, uv0);
 			PushPoint(p1, normal, c1, uv1);
@@ -380,7 +378,7 @@ namespace SpyroScope {
 
 		public void DrawTriangle(Vector p0, Vector p1, Vector p2,
 			Color4 c0, Color4 c1, Color4 c2) {
-			DrawTriangle(p0, p1, p2, c0, c1, c2, (0,0), (0,0), (0,0), textureDefaultWhite);
+			DrawTriangle(p0, p1, p2, c0, c1, c2, (0,0), (0,0), (0,0), whiteTexture.textureObjectID);
 		}
 
 		public void SetModel(Vector position, Matrix basis) {

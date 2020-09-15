@@ -51,13 +51,22 @@ namespace SpyroScope {
 			);
 		}
 
-		public static Matrix4 Orthogonal(float width, float height, float near, float far) {
+		public static Matrix4 Orthographic(float width, float height, float near, float far) {
 			let space = far - near;
 			return .(
 				.(2f / width,0,0,0),
 				.(0,2f / height,0,0),
 				.(0,0,-2f / space,0),
 				.(0,0,-(far + near) / space,1)
+			);
+		}
+
+		public static Matrix4 Screen(float width, float height) {
+			return .(
+				.(2f / width,0,0,0),
+				.(0,2f / -height,0,0),
+				.(0,0,-1,0),
+				.(-1,1,0,1)
 			);
 		}
 

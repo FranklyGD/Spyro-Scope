@@ -24,9 +24,36 @@ namespace SpyroScope {
 		Vector mousePosition;
 
 		List<(String message, DateTime time)> messageFeed = new .();
-		//List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
+		List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
-		public ~this () {
+		Texture normalButtonTexture = new .("images/ui/button_normal.png") ~ delete _; 
+		Texture pressedButtonTexture = new .("images/ui/button_pressed.png") ~ delete _; 
+
+		public this() {
+			Button element = ?;
+
+			element = new .();
+			guiElements.Add(element);
+
+			element.anchor = .(0.5f, 0.5f, 0, 0);
+			element.offset = .(-16, 16, -16, 16);
+			element.offset.Shift(-16, 32);
+			element.normalTexture = normalButtonTexture;
+			element.pressedTexture = pressedButtonTexture;
+			element.OnPressed.Add(new => TogglePause);
+
+			element = new .();
+			guiElements.Add(element);
+
+			element.anchor = .(0.5f, 0.5f, 0, 0);
+			element.offset = .(-16, 16, -16, 16);
+			element.offset.Shift(16, 32);
+			element.normalTexture = normalButtonTexture;
+			element.pressedTexture = pressedButtonTexture;
+			element.OnPressed.Add(new => Emulator.Step);
+		}
+
+		public ~this() {
 			for (let modelSet in modelSets.Values) {
 				delete modelSet;
 			}
@@ -60,6 +87,10 @@ namespace SpyroScope {
 			collisionTerrain.Update();
 
 			UpdateView();
+
+			for (let element in guiElements) {
+				element.Update();
+			}
 		}
 
 		public override void DrawView(Renderer renderer) {
@@ -165,9 +196,12 @@ namespace SpyroScope {
 						Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
 
 						onscreenOrigin.y += screenSize;
-						DrawUtilities.Rect(onscreenOrigin.y, onscreenOrigin.y + WindowApp.bitmapFont.characterHeight * 2 + 6, onscreenOrigin.x, onscreenOrigin.x + WindowApp.bitmapFont.characterWidth * 10,
-							0,0,0,0, Renderer.textureDefaultWhite, .(0,0,0,192), renderer);
+						onscreenOrigin.x = Math.Floor(onscreenOrigin.x);
+						onscreenOrigin.y = Math.Floor(onscreenOrigin.y);
+						DrawUtilities.Rect(onscreenOrigin.y, onscreenOrigin.y + WindowApp.bitmapFont.characterHeight * 2, onscreenOrigin.x, onscreenOrigin.x + WindowApp.bitmapFont.characterWidth * 10,
+							0,0,0,0, Renderer.whiteTexture, .(0,0,0,192), renderer);
 
+						onscreenOrigin.y += 2;
 						WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", objectArrayPointer + currentObjIndex * sizeof(Moby)),
 							onscreenOrigin, .(255,255,255), renderer);
 						WindowApp.bitmapFont.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
@@ -190,65 +224,65 @@ namespace SpyroScope {
 			}
 
 			// Begin window relative position UI
-			let halfWidth = (float)WindowApp.width / 2;
-			let halfHeight = (float)WindowApp.height / 2;
 
-			DrawMessageFeed(.(-halfWidth, halfHeight, 0));
+			DrawMessageFeed(.(0, 0, 0));
 
 			// Legend
 			if (collisionTerrain.overlay == .Flags) {
-				let leftPaddingBG = 4 - halfWidth;
-				let bottomPaddingBG = 4 - halfHeight;
+				let leftPaddingBG = 4;
+				let bottomPaddingBG = 4;
 
 				// Background
-				DrawUtilities.Rect(bottomPaddingBG, bottomPaddingBG + 18 * collisionTerrain.collisionTypes.Count + 6, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
-					0,0,0,0, Renderer.textureDefaultWhite, .(0,0,0,192), renderer);
+				let backgroundHeight = 18 * collisionTerrain.collisionTypes.Count + 2;
+				DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
+					0,0,0,0, Renderer.whiteTexture, .(0,0,0,192), renderer);
 
 				// Content
 				for (let i < collisionTerrain.collisionTypes.Count) {
 					let flag = collisionTerrain.collisionTypes[i];
-					String label = ?;
-					Renderer.Color color = ?;
+					String label = scope String() .. AppendF("Unknown {}", flag);
+					Renderer.Color color = .(255, 0, 255);
 					if (flag < 11 /*Emulator.collisionTypes.Count*/) {
 						(label, color) = Emulator.collisionTypes[flag];
-					} else {
-						label = scope String() .. AppendF("Unknown {}", flag);
-						color = .(255, 0, 255);
 					}
 
-					let leftPadding = 8 - halfWidth;
-					let bottomPadding = 8 - halfHeight + 18 * i;
-					DrawUtilities.Rect(bottomPadding, bottomPadding + 16, leftPadding, leftPadding + 16, 0,0,0,0, Renderer.textureDefaultWhite, color, renderer);
+					let leftPadding = 8;
+					let bottomPadding = 8 + 18 * i;
+					DrawUtilities.Rect((.)WindowApp.height - (bottomPadding + 16), (.)WindowApp.height - bottomPadding, leftPadding, leftPadding + 16, 0,0,0,0, Renderer.whiteTexture, color, renderer);
 
-					WindowApp.bitmapFont.Print(label, .(leftPadding + 24, bottomPadding + 1 - 6, 0), .(255,255,255), renderer);
+					WindowApp.bitmapFont.Print(label, .(leftPadding + 24, (.)WindowApp.height - (bottomPadding + 15), 0), .(255,255,255), renderer);
 				}
 			}
 
-			/*for (let element in guiElements) {
-				element.Draw(.(-halfWidth, halfWidth, -halfHeight, halfHeight), renderer);
-			}*/
+			for (let element in guiElements) {
+				element.Draw(.(0, WindowApp.width, 0, WindowApp.height), renderer);
+			}
 		}
 
 		public override bool OnEvent(SDL2.SDL.Event event) {
 			switch (event.type) {
 				case .MouseButtonDown : {
-					if (event.button.button == 3) {
-						SDL.SetRelativeMouseMode(true);
-						cameraHijacked = true;
-						if (!dislodgeCamera && !Emulator.CameraMode) {
-							Emulator.KillCameraUpdate();
-							PushMessageToFeed("Free Camera");
+					if (GUIElement.hoveredElement != null) {
+						GUIElement.preselectedElement = .hoveredElement;
+					} else {
+						if (event.button.button == 3) {
+							SDL.SetRelativeMouseMode(true);
+							cameraHijacked = true;
+							if (!dislodgeCamera && !Emulator.CameraMode) {
+								Emulator.KillCameraUpdate();
+								PushMessageToFeed("Free Camera");
+							}
+						}
+						if (event.button.button == 1) {
+							currentObjIndex = hoveredObjIndex;
+						
+							Emulator.Address objectArrayPointer = ?;
+							Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
+		
+							SDL.SetClipboardText(scope String() .. AppendF("{}", objectArrayPointer + currentObjIndex * sizeof(Moby)));
 						}
 					}
-					if (event.button.button == 1) {
-						currentObjIndex = hoveredObjIndex;
-					
-						Emulator.Address objectArrayPointer = ?;
-						Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
-	
-						SDL.SetClipboardText(scope String() .. AppendF("{}", objectArrayPointer + currentObjIndex * sizeof(Moby)));
-					}
-					}
+				}
 				case .MouseMotion : {
 					if (cameraHijacked) {
 						if (dislodgeCamera) {
@@ -270,38 +304,40 @@ namespace SpyroScope {
 							Emulator.cameraEulerRotationAddress[(int)Emulator.rom].Write(&cameraEulerRotation);
 						}
 					} else {
-						var mousePosX = event.motion.x - (int)WindowApp.width / 2;
-						var mousePosY = (int)WindowApp.height / 2 - event.motion.y;
-	
-						mousePosition = .(mousePosX, mousePosY, 0);
-	
+						mousePosition = .(event.motion.x, event.motion.y, 0);
+
+						GUIElement.hoveredElement = null;
+						for (let element in guiElements) {
+							element.MouseUpdate(mousePosition);
+						}
 						hoveredObjIndex = GetObjectIndexUnderMouse();
 					}
-					}
+				}
 				case .MouseButtonUp : {
-					if (event.button.button == 3) {	
-						SDL.SetRelativeMouseMode(false);
-						cameraHijacked = false;
-						cameraMotion = .(0,0,0);
+					if (GUIElement.preselectedElement != null) { // Focus was on GUI
+						if (GUIElement.preselectedElement == .hoveredElement) {
+							GUIElement.preselectedElement.Pressed();
+						}
+					} else {
+						if (event.button.button == 3) {	
+							SDL.SetRelativeMouseMode(false);
+							cameraHijacked = false;
+							cameraMotion = .(0,0,0);
+						}
 					}
-					}
+					GUIElement.preselectedElement = null;
+				}
 				case .MouseWheel : {
 					cameraSpeed += (float)event.wheel.y;
 					if (cameraSpeed < 8) {
 						cameraSpeed = 8;
 					}
-					}
+				}
 				case .KeyDown : {
 					if (event.key.isRepeat == 0) {
 						switch (event.key.keysym.scancode) {
 							case .P : {
-								if (Emulator.PausedMode) {
-									Emulator.RestoreUpdate();
-									PushMessageToFeed("Resumed Game Update");
-								} else {
-									Emulator.KillUpdate();
-									PushMessageToFeed("Paused Game Update");
-								}
+								TogglePause();
 							}
 							case .LCtrl : {
 								cameraSpeed *= 8;
@@ -362,6 +398,15 @@ namespace SpyroScope {
 								drawLimits = !drawLimits;
 								PushMessageToFeed("Toggled Height Limits");
 							}
+							case .I : {
+								if (Emulator.InputMode) {
+									Emulator.RestoreInputRelay();
+									PushMessageToFeed("Emulator Input");
+								} else {
+									Emulator.KillInputRelay();
+									PushMessageToFeed("Manual Input");
+								}
+							}
 							default : {}
 						}
 	
@@ -383,7 +428,7 @@ namespace SpyroScope {
 							}
 						}
 					}
-					}
+				}
 				case .KeyUp : {
 					if (event.key.keysym.scancode == .LCtrl) {
 						cameraSpeed /= 8;
@@ -407,7 +452,7 @@ namespace SpyroScope {
 							default :
 						}
 					}
-					}
+				}
 				case .JoyDeviceAdded : {
 					Console.WriteLine("Controller Connected");
 				}
@@ -537,10 +582,10 @@ namespace SpyroScope {
 				let message = feedItem.message;
 				let age = feedItem.time - now;
 				let fade = Math.Min(age.TotalSeconds, 1);
-				let offsetOrigin = origin - .(0,(messageFeed.Count - i) * WindowApp.font.height,0);
+				let offsetOrigin = origin + .(0,(messageFeed.Count - i - 1) * WindowApp.font.height,0);
 				DrawUtilities.Rect(offsetOrigin.y, offsetOrigin.y + WindowApp.font.height, offsetOrigin.x, offsetOrigin.x + WindowApp.font.CalculateWidth(message) + 4,
-					0,0,0,0, Renderer.textureDefaultWhite, .(0,0,0,(.)(192 * fade)), WindowApp.renderer);
-				WindowApp.font.Print(message, offsetOrigin + .(2,4,0), .(255,255,255,(.)(255 * fade)),  WindowApp.renderer);
+					0,0,0,0, Renderer.whiteTexture, .(0,0,0,(.)(192 * fade)), WindowApp.renderer);
+				WindowApp.font.Print(message, offsetOrigin + .(2,0,0), .(255,255,255,(.)(255 * fade)),  WindowApp.renderer);
 			}
 		}
 
@@ -567,6 +612,16 @@ namespace SpyroScope {
 			}
 
 			return closestObjectIndex;
+		}
+
+		void TogglePause() {
+			if (Emulator.PausedMode) {
+				Emulator.RestoreUpdate();
+				PushMessageToFeed("Resumed Game Update");
+			} else {
+				Emulator.KillUpdate();
+				PushMessageToFeed("Paused Game Update");
+			}
 		}
 	}
 }

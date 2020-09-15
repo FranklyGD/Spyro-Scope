@@ -79,6 +79,9 @@ namespace SpyroScope {
 
 		public const Address<uint32>[4] healthAddresses = .(0, 0, (.)0x8006A248, (.)0x80070688);
 
+		public const Address<uint32>[4] gameInputAddress = .(0, 0, (.)0x8001291c, 0);
+		public const uint32[4] gameInputValue = .(0, 0, 0xac2283a0, 0);
+
 		// Game Values
 		public static VectorInt cameraPosition, spyroPosition;
 		public static VectorInt spyroIntendedVelocity, spyroPhysicsVelocity;
@@ -89,8 +92,8 @@ namespace SpyroScope {
 		public static uint32[] deathPlaneHeights ~ delete _;
 		public static uint32[] maxFreeflightHeights ~ delete _;
 		
-		public static Emulator.Address collisionDataAddress;
-		public static Emulator.Address collisionModifyingPointerArrayAddress;
+		public static Address collisionDataAddress;
+		public static Address collisionModifyingPointerArrayAddress;
 		public static List<PackedTriangle> collisionTriangles = new .() ~ delete _;
 		public static uint32 specialTerrainTriangleCount;
 		public static List<uint8> collisionFlagsIndices = new .() ~ delete _;
@@ -117,6 +120,30 @@ namespace SpyroScope {
 		public const Address<uint32>[4] updateAddresses = .(0, 0, (.)0x80011af4, (.)0x80012038);
 		public const uint32[4] updateJumpValue = .(0, 0, 0x0c006c50, 0x0c015524);
 
+		// Code Injections
+		public const Address<uint32> stepperAddress = (.)0x80009000;
+		public static uint32[] stepperLogic = new .(
+			0x27bdfff8, // addiu sp, -0x8
+			0xafbf0000, // sw ra, 0x0($sp)
+			0x3c028001, // lui v0, 0x8000
+			0x24429000, // addiu v0, 0x9000
+			0xafa20004, // sw v0, 0x4($sp)
+			0x8c430020, // lw v1, 0x9020(v0)
+			0x00000000, // _nop
+			0x10600003, // beq v1, z0, 0x3
+			0x00000000, // _nop
+			0x00000000, // jal ??? [set externally]
+			0x00000000, // _nop
+			0x8fa20004, // lw v0, 0x4($sp)
+			0x00000000, // _nop
+			0xac400020, // sw v1, 0x9020(v0)
+			0x8fbf0000, // lw ra, 0x0($sp)
+			0x27bd0008, // addiu sp, 0x8
+			0x03e00008, // jr ra
+			0x00000000, // _nop
+		) ~ delete _;
+		public static bool stepperInjected;
+
 		public static bool PausedMode { get {
 			uint32 value = ?;
 			ReadFromRAM(updateAddresses[(int)rom], &value, 4);
@@ -127,6 +154,12 @@ namespace SpyroScope {
 			uint32 value = ?;
 			ReadFromRAM(cameraUpdateAddresses[(int)rom], &value, 4);
 			return value != cameraUpdateJumpValue[(int)rom];
+		} }
+
+		public static bool InputMode { get {
+			uint32 value = ?;
+			ReadFromRAM(gameInputAddress[(int)rom], &value, 4);
+			return value != gameInputValue[(int)rom];
 		} }
 
 		// Events
@@ -236,6 +269,7 @@ namespace SpyroScope {
 		public static void UnbindFromEmulator() {
 			if (emulator != .None) {
 				RestoreCameraUpdate();
+				RestoreInputRelay();
 				RestoreUpdate();
 			}
 		}
@@ -357,7 +391,7 @@ namespace SpyroScope {
 
 		// Main Update
 		public static void KillUpdate() {
-			uint32 v = 0;
+			uint32 v = stepperInjected ? 0x0C002400 : 0;
 			updateAddresses[(int)rom].Write(&v);
 		}
 
@@ -383,6 +417,34 @@ namespace SpyroScope {
 
 		public static void MoveCameraTo(VectorInt* position) {
 			cameraPositionAddress[(int)rom].Write(position);
+		}
+
+		// Input
+		public static void KillInputRelay() {
+			uint32 v = 0;
+			gameInputAddress[(int)rom].Write(&v);
+		}
+
+		public static void RestoreInputRelay() {
+			uint32 v = gameInputValue[(int)rom];
+			gameInputAddress[(int)rom].Write(&v);
+		}
+
+		// Logic
+		public static void InjectStepperLogic() {
+			WriteToRAM(stepperAddress, &stepperLogic[0], 4 * stepperLogic.Count);
+			uint32 v = 0x0C002400; // (stepperAddress & 0x0fffffff) >> 2;
+			updateAddresses[(int)rom].Write(&v);
+			stepperInjected = true;
+		}
+
+		public static void Step() {
+			if (!stepperInjected) {
+				InjectStepperLogic();
+			}
+			KillUpdate();
+			uint32 v = updateJumpValue[(int)rom];
+			WriteToRAM(stepperAddress + (8 * 4), &v, 4);
 		}
 	}
 }
