@@ -60,7 +60,7 @@ namespace SpyroScope {
 						DrawPath(dataPointer, renderer);
 					}
 					case 0x0189: { // Shady Oasis NPC
-						Emulator.Address pathCount = ?;
+						uint32 pathCount = ?;
 						Emulator.ReadFromRAM(dataPointer + 0x38, &pathCount, 4);
 
 						for (let p < pathCount) {
@@ -100,6 +100,9 @@ namespace SpyroScope {
 			Emulator.ReadFromRAM(pathAddress, &pathArrayPointer, 4);
 			uint16 waypointCount = ?;
 			Emulator.ReadFromRAM(pathArrayPointer, &waypointCount, 2);
+			if (waypointCount > 256) {
+				return; // There shouldn't be this many waypoints
+			}
 			if (waypointCount > 0) {
 				uint8[] dataBytes = scope .[4 * 4 * waypointCount];
 				Emulator.ReadFromRAM(pathArrayPointer + 12, &dataBytes[0], 4 * 4 * waypointCount);
