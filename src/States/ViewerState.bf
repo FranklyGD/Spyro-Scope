@@ -14,6 +14,8 @@ namespace SpyroScope {
 
 		int currentObjIndex = -1;
 		int hoveredObjIndex = -1;
+		int currentAnimGroupIndex = -1;
+		int hoveredAnimGroupIndex = -1;
 		List<Moby> objectList = new .(128) ~ delete _;
 
 		Terrain collisionTerrain = new .() ~ delete _;
@@ -185,27 +187,26 @@ namespace SpyroScope {
 				if (currentObjIndex != -1) {
 					let currentObject = objectList[currentObjIndex];
 					// Begin overlays
-					let screenPosition = Camera.SceneToScreen(currentObject.position);
+					var screenPosition = Camera.SceneToScreen(currentObject.position);
 					if (!drawObjects && screenPosition.z > 0) { // Must be in front of view
-						var onscreenOrigin = screenPosition;
 						let screenSize = Camera.SceneSizeToScreenSize(200, screenPosition.z);
-						onscreenOrigin.z = 0;
-						DrawUtilities.Circle(onscreenOrigin, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(16,16,16), renderer);
+						screenPosition.z = 0;
+						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(16,16,16), renderer);
 
 						Emulator.Address objectArrayPointer = ?;
 						Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
 
-						onscreenOrigin.y += screenSize;
-						onscreenOrigin.x = Math.Floor(onscreenOrigin.x);
-						onscreenOrigin.y = Math.Floor(onscreenOrigin.y);
-						DrawUtilities.Rect(onscreenOrigin.y, onscreenOrigin.y + WindowApp.bitmapFont.characterHeight * 2, onscreenOrigin.x, onscreenOrigin.x + WindowApp.bitmapFont.characterWidth * 10,
+						screenPosition.y += screenSize;
+						screenPosition.x = Math.Floor(screenPosition.x);
+						screenPosition.y = Math.Floor(screenPosition.y);
+						DrawUtilities.Rect(screenPosition.y, screenPosition.y + WindowApp.bitmapFont.characterHeight * 2, screenPosition.x, screenPosition.x + WindowApp.bitmapFont.characterWidth * 10,
 							0,0,0,0, Renderer.whiteTexture, .(0,0,0,192), renderer);
 
-						onscreenOrigin.y += 2;
+						screenPosition.y += 2;
 						WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", objectArrayPointer + currentObjIndex * sizeof(Moby)),
-							onscreenOrigin, .(255,255,255), renderer);
+							screenPosition, .(255,255,255), renderer);
 						WindowApp.bitmapFont.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
-							onscreenOrigin + .(0,WindowApp.bitmapFont.characterHeight,0), .(255,255,255), renderer);
+							screenPosition + .(0,WindowApp.bitmapFont.characterHeight,0), .(255,255,255), renderer);
 					}
 				}
 
@@ -221,14 +222,27 @@ namespace SpyroScope {
 						}
 					}
 				}
+
+				if (hoveredAnimGroupIndex != -1) {
+					let hoveredAnimGroup = collisionTerrain.animationGroups[hoveredAnimGroupIndex];
+					// Begin overlays
+					var screenPosition = Camera.SceneToScreen(hoveredAnimGroup.center);
+					if (screenPosition.z > 0) { // Must be in front of view
+						let screenSize = Camera.SceneSizeToScreenSize(hoveredAnimGroup.radius - 50, screenPosition.z);
+						screenPosition.z = 0;
+						if (!drawObjects) {
+							DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(128,64,16), renderer);
+						}
+					}
+				}
 			}
 
 			// Begin window relative position UI
 
 			DrawMessageFeed(.(0, 0, 0));
 
-			// Legend
 			if (collisionTerrain.overlay == .Flags) {
+				// Legend
 				let leftPaddingBG = 4;
 				let bottomPaddingBG = 4;
 
@@ -251,6 +265,43 @@ namespace SpyroScope {
 					DrawUtilities.Rect((.)WindowApp.height - (bottomPadding + 16), (.)WindowApp.height - bottomPadding, leftPadding, leftPadding + 16, 0,0,0,0, Renderer.whiteTexture, color, renderer);
 
 					WindowApp.bitmapFont.Print(label, .(leftPadding + 24, (.)WindowApp.height - (bottomPadding + 15), 0), .(255,255,255), renderer);
+				}
+			} else if (collisionTerrain.overlay == .Deform) {
+				if (currentAnimGroupIndex != -1) {
+					let animationGroup = collisionTerrain.animationGroups[currentAnimGroupIndex];
+					var screenPosition = Camera.SceneToScreen(animationGroup.center);
+					if (screenPosition.z > 0) { // Must be in front of view
+						let screenSize = Camera.SceneSizeToScreenSize(animationGroup.radius, screenPosition.z);
+						screenPosition.z = 0;
+						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(16,16,0), renderer);
+					}
+
+					let leftPaddingBG = 4;
+					let bottomPaddingBG = 4;
+	
+					// Background
+					let backgroundHeight = 18 * 6;
+					DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 14 + 8,
+						0,0,0,0, Renderer.whiteTexture, .(0,0,0,192), renderer);
+	
+					// Content
+					let currentKeyframe = animationGroup.CurrentKeyframe;
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("Group Index {}", currentAnimGroupIndex), .(8, (.)WindowApp.height - (18 * 5 + 8 + 15), 0), .(255,255,255), renderer);
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("Keyframe {}", (uint)currentKeyframe), .(8, (.)WindowApp.height - (18 * 4 + 8 + 15), 0), .(255,255,255), renderer);
+					let keyframeData = animationGroup.GetKeyframeData(currentKeyframe);
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("Flag {}", (uint)keyframeData.flag), .(8, (.)WindowApp.height - (18 * 3 + 8 + 15), 0), .(255,255,255), renderer);
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("Interp. {}", (uint)keyframeData.interpolation), .(8, (.)WindowApp.height - (18 * 2 + 8 + 15), 0), .(255,255,255), renderer);
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("From State {}", (uint)keyframeData.fromState), .(8, (.)WindowApp.height - (18 * 1 + 8 + 15), 0), .(255,255,255), renderer);
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("To State {}", (uint)keyframeData.toState), .(8, (.)WindowApp.height - (18 * 0 + 8 + 15), 0), .(255,255,255), renderer);
+				} else {
+					for (let animationGroup in collisionTerrain.animationGroups) {
+						var screenPosition = Camera.SceneToScreen(animationGroup.center);
+						if (screenPosition.z > 0) { // Must be in front of view
+							let screenSize = Camera.SceneSizeToScreenSize(animationGroup.radius, screenPosition.z);
+							screenPosition.z = 0;
+							DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(16,16,0), renderer);
+						}
+					}
 				}
 			}
 
@@ -275,11 +326,23 @@ namespace SpyroScope {
 						}
 						if (event.button.button == 1) {
 							currentObjIndex = hoveredObjIndex;
-						
-							Emulator.Address objectArrayPointer = ?;
-							Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
-		
-							SDL.SetClipboardText(scope String() .. AppendF("{}", objectArrayPointer + currentObjIndex * sizeof(Moby)));
+
+							if (currentObjIndex != -1) {
+								Emulator.Address objectArrayPointer = ?;
+								Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
+			
+								SDL.SetClipboardText(scope String() .. AppendF("{}", objectArrayPointer + currentObjIndex * sizeof(Moby)));
+							}
+
+							if (collisionTerrain.overlay == .Deform) {
+								currentAnimGroupIndex = hoveredAnimGroupIndex;
+								if (hoveredAnimGroupIndex != -1) {
+									Emulator.Address objectArrayPointer = ?;
+									Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
+	
+									SDL.SetClipboardText(scope String() .. AppendF("{}", objectArrayPointer + currentObjIndex * sizeof(Moby)));
+								}
+							}
 						}
 					}
 				}
@@ -310,7 +373,14 @@ namespace SpyroScope {
 						for (let element in guiElements) {
 							element.MouseUpdate(mousePosition);
 						}
-						hoveredObjIndex = GetObjectIndexUnderMouse();
+						var closestDistance = float.PositiveInfinity;
+						hoveredObjIndex = GetObjectIndexUnderMouse(ref closestDistance);
+						if (collisionTerrain.overlay == .Deform) {
+							hoveredAnimGroupIndex = GetTerrainAnimationGroupIndexUnderMouse(ref closestDistance);
+							if (hoveredAnimGroupIndex != -1) {
+								hoveredObjIndex = -1;
+							}
+						}
 					}
 				}
 				case .MouseButtonUp : {
@@ -504,6 +574,7 @@ namespace SpyroScope {
 
 		void OnSceneChanged() {
 			currentObjIndex = hoveredObjIndex = -1;
+			currentAnimGroupIndex = hoveredAnimGroupIndex = -1;
 
 			collisionTerrain.Reload();
 		}
@@ -589,9 +660,8 @@ namespace SpyroScope {
 			}
 		}
 
-		int GetObjectIndexUnderMouse() {
+		int GetObjectIndexUnderMouse(ref float closestDepth) {
 			var closestObjectIndex = -1;
-			var closestDepth = float.PositiveInfinity;
 
 			for (int objectIndex = 0; objectIndex < objectList.Count; objectIndex++) {
 				let object = objectList[objectIndex];
@@ -603,7 +673,8 @@ namespace SpyroScope {
 				}
 
 				let selectSize = Camera.SceneSizeToScreenSize(200, screenPosition.z);
-				if (mousePosition.x < screenPosition.x + selectSize && mousePosition.x > screenPosition.x - selectSize &&
+				if (screenPosition.z < closestDepth &&
+					mousePosition.x < screenPosition.x + selectSize && mousePosition.x > screenPosition.x - selectSize &&
 					mousePosition.y < screenPosition.y + selectSize && mousePosition.y > screenPosition.y - selectSize) {
 
 					closestObjectIndex = objectIndex;
@@ -612,6 +683,31 @@ namespace SpyroScope {
 			}
 
 			return closestObjectIndex;
+		}
+
+		int GetTerrainAnimationGroupIndexUnderMouse(ref float closestDepth) {
+			var closestGroupIndex = -1;
+
+			for (int groupIndex = 0; groupIndex < collisionTerrain.animationGroups.Count; groupIndex++) {
+				let group = collisionTerrain.animationGroups[groupIndex];
+				
+				let screenPosition = Camera.SceneToScreen(group.center);
+
+				if (screenPosition.z == 0) {
+					continue;
+				}
+
+				let selectSize = Camera.SceneSizeToScreenSize(group.radius, screenPosition.z);
+				if (screenPosition.z < closestDepth &&
+					mousePosition.x < screenPosition.x + selectSize && mousePosition.x > screenPosition.x - selectSize &&
+					mousePosition.y < screenPosition.y + selectSize && mousePosition.y > screenPosition.y - selectSize) {
+
+					closestGroupIndex = groupIndex;
+					closestDepth = screenPosition.z;
+				}
+			}
+
+			return closestGroupIndex;
 		}
 
 		void TogglePause() {

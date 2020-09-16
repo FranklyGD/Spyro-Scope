@@ -6,7 +6,7 @@ namespace SpyroScope {
 	class Terrain {
 		Mesh mesh;
 
-		struct AnimationGroup {
+		public struct AnimationGroup {
 			public Emulator.Address dataPointer;
 			public uint32 start;
 			public uint32 count;
@@ -17,8 +17,26 @@ namespace SpyroScope {
 			public void Dispose() {
 				DeleteContainerAndItems!(mesh);
 			}
+
+			public uint8 CurrentKeyframe {
+				get {
+					uint8 currentKeyframe = ?;
+					Emulator.ReadFromRAM(dataPointer + 2, &currentKeyframe, 1);
+					return currentKeyframe;
+				}
+			}
+
+			public struct KeyframeData {
+				public uint8 flag, a, nextKeyframe, b, interpolation, fromState, toState, c;
+			}
+
+			public KeyframeData GetKeyframeData(uint8 keyframeIndex) {
+				AnimationGroup.KeyframeData keyframeData = ?;
+				Emulator.ReadFromRAM(dataPointer + 12 + ((uint32)keyframeIndex) * 8, &keyframeData, 8);
+				return keyframeData;
+			}
 		}
-		AnimationGroup[] animationGroups;
+		public AnimationGroup[] animationGroups;
 
 		public bool wireframe;
 		public List<int> waterSurfaceTriangles = new .() ~ delete _;
@@ -177,18 +195,18 @@ namespace SpyroScope {
 							colors[i] = color;
 
 							upperBound.x = Math.Max(upperBound.x, vertices[i].x);
-							upperBound.x = Math.Max(upperBound.x, vertices[i].x);
-							upperBound.x = Math.Max(upperBound.x, vertices[i].x);
+							upperBound.y = Math.Max(upperBound.y, vertices[i].y);
+							upperBound.z = Math.Max(upperBound.z, vertices[i].z);
 							
 							lowerBound.x = Math.Min(lowerBound.x, vertices[i].x);
-							lowerBound.x = Math.Min(lowerBound.x, vertices[i].x);
-							lowerBound.x = Math.Min(lowerBound.x, vertices[i].x);
+							lowerBound.y = Math.Min(lowerBound.y, vertices[i].y);
+							lowerBound.z = Math.Min(lowerBound.z, vertices[i].z);
 						}
 					}
 					
 					animationGroup.mesh[stateIndex] = new .(vertices, normals, colors);
 					animationGroup.center = (upperBound + lowerBound) / 2;
-					animationGroup.radius = (upperBound - lowerBound).Length();
+					animationGroup.radius = (upperBound - animationGroup.center).Length();
 				}
 			}
 		}
@@ -210,11 +228,9 @@ namespace SpyroScope {
 
 			for (let groupIndex < animationGroups.Count) {
 				let animationGroup = animationGroups[groupIndex];
-				uint8 currentKeyframe = ?;
-				Emulator.ReadFromRAM(animationGroup.dataPointer + 2, &currentKeyframe, 1);
+				let currentKeyframe = animationGroup.CurrentKeyframe;
 
-				(uint8 flag, uint8, uint8 nextKeyframe, uint8, uint8 interpolation, uint8 fromState, uint8 toState, uint8) keyframeData = ?;
-				Emulator.ReadFromRAM(animationGroup.dataPointer + 12 + ((uint32)currentKeyframe) * 8, &keyframeData, 8);
+				AnimationGroup.KeyframeData keyframeData = animationGroup.GetKeyframeData(currentKeyframe);
 				
 				let interpolation = (float)keyframeData.interpolation / (256);
 
