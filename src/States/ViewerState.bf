@@ -28,31 +28,38 @@ namespace SpyroScope {
 		List<(String message, DateTime time)> messageFeed = new .();
 		List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
+		Button togglePauseButton, stepButton;
+
 		Texture normalButtonTexture = new .("images/ui/button_normal.png") ~ delete _; 
-		Texture pressedButtonTexture = new .("images/ui/button_pressed.png") ~ delete _; 
+		Texture pressedButtonTexture = new .("images/ui/button_pressed.png") ~ delete _;
+
+		Texture playTexture = new .("images/ui/play.png") ~ delete _; 
+		Texture pauseTexture = new .("images/ui/pause.png") ~ delete _; 
+		Texture stepTexture = new .("images/ui/step.png") ~ delete _; 
 
 		public this() {
-			Button element = ?;
 
-			element = new .();
-			guiElements.Add(element);
+			togglePauseButton = new .();
+			guiElements.Add(togglePauseButton);
 
-			element.anchor = .(0.5f, 0.5f, 0, 0);
-			element.offset = .(-16, 16, -16, 16);
-			element.offset.Shift(-16, 32);
-			element.normalTexture = normalButtonTexture;
-			element.pressedTexture = pressedButtonTexture;
-			element.OnPressed.Add(new => TogglePause);
+			togglePauseButton.anchor = .(0.5f, 0.5f, 0, 0);
+			togglePauseButton.offset = .(-16, 16, -16, 16);
+			togglePauseButton.offset.Shift(-16, 32);
+			togglePauseButton.normalTexture = normalButtonTexture;
+			togglePauseButton.pressedTexture = pressedButtonTexture;
+			togglePauseButton.iconTexture = playTexture;
+			togglePauseButton.OnPressed.Add(new => TogglePause);
 
-			element = new .();
-			guiElements.Add(element);
+			stepButton = new .();
+			guiElements.Add(stepButton);
 
-			element.anchor = .(0.5f, 0.5f, 0, 0);
-			element.offset = .(-16, 16, -16, 16);
-			element.offset.Shift(16, 32);
-			element.normalTexture = normalButtonTexture;
-			element.pressedTexture = pressedButtonTexture;
-			element.OnPressed.Add(new => Emulator.Step);
+			stepButton.anchor = .(0.5f, 0.5f, 0, 0);
+			stepButton.offset = .(-16, 16, -16, 16);
+			stepButton.offset.Shift(16, 32);
+			stepButton.normalTexture = normalButtonTexture;
+			stepButton.pressedTexture = pressedButtonTexture;
+			stepButton.iconTexture = stepTexture;
+			stepButton.OnPressed.Add(new => Step);
 		}
 
 		public ~this() {
@@ -223,7 +230,7 @@ namespace SpyroScope {
 					}
 				}
 
-				if (hoveredAnimGroupIndex != -1) {
+				if (collisionTerrain.overlay == .Deform && hoveredAnimGroupIndex != -1) {
 					let hoveredAnimGroup = collisionTerrain.animationGroups[hoveredAnimGroupIndex];
 					// Begin overlays
 					var screenPosition = Camera.SceneToScreen(hoveredAnimGroup.center);
@@ -422,6 +429,10 @@ namespace SpyroScope {
 								PushMessageToFeed("Toggled Object Origins");
 							}
 							case .L : {
+								if (collisionTerrain.overlay == .Deform) {
+									currentAnimGroupIndex = -1;
+								}
+
 								collisionTerrain.CycleOverlay();
 								String overlayType;
 								switch (collisionTerrain.overlay) {
@@ -714,10 +725,17 @@ namespace SpyroScope {
 			if (Emulator.PausedMode) {
 				Emulator.RestoreUpdate();
 				PushMessageToFeed("Resumed Game Update");
+				togglePauseButton.iconTexture = pauseTexture;
 			} else {
 				Emulator.KillUpdate();
 				PushMessageToFeed("Paused Game Update");
+				togglePauseButton.iconTexture = playTexture;
 			}
+		}
+
+		void Step() {
+			togglePauseButton.iconTexture = playTexture;
+			Emulator.Step();
 		}
 	}
 }
