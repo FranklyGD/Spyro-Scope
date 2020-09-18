@@ -30,7 +30,7 @@ namespace SpyroScope {
 		// Derived from Spyro: Ripto's Rage [8001d068]
 		public bool HasModel { get { return objectTypeID < 0x300; } }
 
-		public void Draw(Renderer renderer) {
+		public void DrawOriginAxis(Renderer renderer) {
 			let basis = Matrix.Euler(
 				-(float)eulerRotation.x / 0x80 * Math.PI_f,
 				(float)eulerRotation.y / 0x80 * Math.PI_f,
@@ -48,7 +48,11 @@ namespace SpyroScope {
 			}
 
 			PrimitiveShape.cube.QueueInstance(renderer);
+		}
 
+		public void DrawData(Renderer renderer) {
+			// This is incomplete and possible inefficient
+			// to work with when adding new entries
 			if (Emulator.rom == .RiptosRage) {
 				switch (objectTypeID) {
 					case 0x0078: { // Sparx

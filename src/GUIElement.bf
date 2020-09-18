@@ -26,6 +26,8 @@ namespace SpyroScope {
 		public Rect offset;
 		public Rect drawn;
 
+		public bool visible = true;
+
 		public static GUIElement hoveredElement;
 		public static GUIElement preselectedElement;
 
@@ -71,7 +73,7 @@ namespace SpyroScope {
 		public virtual void Pressed() {}
 
 		public void MouseUpdate(Vector mousePosition) {
-			if (mousePosition.x > drawn.left && mousePosition.x < drawn.right && mousePosition.y > drawn.top && mousePosition.y < drawn.bottom) {
+			if (visible && mousePosition.x > drawn.left && mousePosition.x < drawn.right && mousePosition.y > drawn.top && mousePosition.y < drawn.bottom) {
 				hoveredElement = this;
 			}
 		}

@@ -25,6 +25,7 @@ namespace SpyroScope {
 
 		public static BitmapFont bitmapFont ~ delete _;
 		public static SpyroScope.Font font ~ delete _;
+		public static SpyroScope.Font fontSmall  ~ delete _;
 
 		public this() {
 			width = 750;
@@ -35,6 +36,7 @@ namespace SpyroScope {
 			renderer = new .(window);
 			bitmapFont = new .("images/font.png", 12, 20);
 			font = new .("Roboto-Regular.ttf", 20);
+			fontSmall = new .("Roboto-Regular.ttf", 14);
 
 			Camera.fov = 55;
 			viewerProjection = Camera.projection;

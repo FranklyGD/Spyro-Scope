@@ -19,7 +19,7 @@ namespace SpyroScope {
 		List<Moby> objectList = new .(128) ~ delete _;
 
 		Terrain collisionTerrain = new .() ~ delete _;
-		bool drawLimits = true;
+		bool drawLimits;
 
 		Dictionary<uint16, MobyModelSet> modelSets = new .();
 
@@ -28,17 +28,25 @@ namespace SpyroScope {
 		List<(String message, DateTime time)> messageFeed = new .();
 		List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
-		Button togglePauseButton, stepButton;
+		Button togglePauseButton, stepButton, cycleTerrainOverlayButton, teleportButton;
 
 		Texture normalButtonTexture = new .("images/ui/button_normal.png") ~ delete _; 
 		Texture pressedButtonTexture = new .("images/ui/button_pressed.png") ~ delete _;
 
 		Texture playTexture = new .("images/ui/play.png") ~ delete _; 
 		Texture pauseTexture = new .("images/ui/pause.png") ~ delete _; 
-		Texture stepTexture = new .("images/ui/step.png") ~ delete _; 
+		Texture stepTexture = new .("images/ui/step.png") ~ delete _;
+		Texture toggledTexture = new .("images/ui/toggle_enabled.png") ~ delete _;
+
+		(Toggle button, String label)[5] toggleList = .(
+			(null, "Collision Wirefra(m)e"),
+			(null, "Object (O)rigin Axis"),
+			(null, "(H)eight Limit"),
+			(null, "Game/Free (V)iew"),
+			(null, "Free (C)amera")
+		);
 
 		public this() {
-
 			togglePauseButton = new .();
 			guiElements.Add(togglePauseButton);
 
@@ -47,7 +55,6 @@ namespace SpyroScope {
 			togglePauseButton.offset.Shift(-16, 32);
 			togglePauseButton.normalTexture = normalButtonTexture;
 			togglePauseButton.pressedTexture = pressedButtonTexture;
-			togglePauseButton.iconTexture = playTexture;
 			togglePauseButton.OnPressed.Add(new => TogglePause);
 
 			stepButton = new .();
@@ -60,6 +67,44 @@ namespace SpyroScope {
 			stepButton.pressedTexture = pressedButtonTexture;
 			stepButton.iconTexture = stepTexture;
 			stepButton.OnPressed.Add(new => Step);
+
+			Toggle button;
+			for (let i < toggleList.Count) {
+				button = new .();
+				guiElements.Add(button);
+				
+				button.offset = .(16, 32, 16 + i * WindowApp.font.height, 32 + i * WindowApp.font.height);
+				button.normalTexture = normalButtonTexture;
+				button.pressedTexture = pressedButtonTexture;
+				button.toggleTexture = toggledTexture;
+
+				toggleList[i].button = button;
+			}
+
+			toggleList[0].button.OnPressed.Add(new () => {ToggleWireframe(toggleList[0].button.toggled);});
+			toggleList[1].button.OnPressed.Add(new () => {ToggleOrigins(toggleList[1].button.toggled);});
+			toggleList[2].button.OnPressed.Add(new () => {ToggleLimits(toggleList[2].button.toggled);});
+			toggleList[3].button.OnPressed.Add(new () => {ToggleView(toggleList[3].button.toggled);});
+			toggleList[4].button.OnPressed.Add(new () => {ToggleFreeCamera(toggleList[4].button.toggled);});
+
+			cycleTerrainOverlayButton = new .();
+			guiElements.Add(cycleTerrainOverlayButton);
+
+			cycleTerrainOverlayButton.offset = .(16, 180, 16 + toggleList.Count * WindowApp.font.height, 32 + toggleList.Count * WindowApp.font.height);
+			cycleTerrainOverlayButton.normalTexture = normalButtonTexture;
+			cycleTerrainOverlayButton.pressedTexture = pressedButtonTexture;
+			cycleTerrainOverlayButton.text = "Terrain Over(l)ay";
+			cycleTerrainOverlayButton.OnPressed.Add(new => CycleTerrainOverlay);
+
+			teleportButton = new .();
+			guiElements.Add(teleportButton);
+
+			teleportButton.offset = .(16, 180, 16 + (toggleList.Count + 1) * WindowApp.font.height, 32 + (toggleList.Count + 1) * WindowApp.font.height);
+			teleportButton.normalTexture = normalButtonTexture;
+			teleportButton.pressedTexture = pressedButtonTexture;
+			teleportButton.text = "(T)eleport";
+			teleportButton.OnPressed.Add(new => Teleport);
+			teleportButton.enabled = false;
 		}
 
 		public ~this() {
@@ -77,6 +122,12 @@ namespace SpyroScope {
 
 		public override void Enter() {
 			Emulator.OnSceneChanged = new => OnSceneChanged;
+			
+			togglePauseButton.iconTexture = Emulator.PausedMode ? playTexture : pauseTexture;
+			toggleList[4].button.toggled = teleportButton.enabled = Emulator.CameraMode;
+			if (Emulator.CameraMode) {
+				toggleList[4].button.iconTexture = toggleList[4].button.toggleTexture;
+			}
 		}
 
 		public override void Exit() {
@@ -143,10 +194,16 @@ namespace SpyroScope {
 
 				objectList.Add(object);
 				if (!drawObjects) {
-					object.Draw(renderer);
+					object.DrawOriginAxis(renderer);
 				}
 
 				objPointer += 0x58;
+			}
+
+			if (currentObjIndex != -1) {
+				Moby object = ?;
+				Emulator.ReadFromRAM(objectArrayAddress + 0x58 * currentObjIndex, &object, sizeof(Moby));
+				object.DrawData(renderer);
 			}
 
 			DrawSpyroInformation();
@@ -245,8 +302,11 @@ namespace SpyroScope {
 			}
 
 			// Begin window relative position UI
-
-			DrawMessageFeed(.(0, 0, 0));
+			if (!toggleList[0].button.visible) {
+				DrawMessageFeed();
+			} else {
+				DrawUtilities.Rect(0,170,0,200, 0,0,0,0, Renderer.whiteTexture, .(0,0,0,192), renderer);
+			}
 
 			if (collisionTerrain.overlay == .Flags) {
 				// Legend
@@ -313,7 +373,15 @@ namespace SpyroScope {
 			}
 
 			for (let element in guiElements) {
-				element.Draw(.(0, WindowApp.width, 0, WindowApp.height), renderer);
+				if (element.visible) {
+					element.Draw(.(0, WindowApp.width, 0, WindowApp.height), renderer);
+				}
+			}
+
+			for (let toggle in toggleList) {
+				if (toggle.button.visible) {
+					WindowApp.fontSmall.Print(toggle.label, .(toggle.button.drawn.right + 8, toggle.button.drawn.top + 1, 0), .(255,255,255), renderer);
+				}
 			}
 		}
 
@@ -327,8 +395,7 @@ namespace SpyroScope {
 							SDL.SetRelativeMouseMode(true);
 							cameraHijacked = true;
 							if (!dislodgeCamera && !Emulator.CameraMode) {
-								Emulator.KillCameraUpdate();
-								PushMessageToFeed("Free Camera");
+								toggleList[4].button.Pressed();
 							}
 						}
 						if (event.button.button == 1) {
@@ -376,6 +443,18 @@ namespace SpyroScope {
 					} else {
 						mousePosition = .(event.motion.x, event.motion.y, 0);
 
+						if (mousePosition.x < 200 && mousePosition.y < 200) {
+							for (let toggle in toggleList) {
+								toggle.button.visible = true;
+							}
+							cycleTerrainOverlayButton.visible = teleportButton.visible = true;
+						} else {
+							for (let toggle in toggleList) {
+								toggle.button.visible = false;
+							}
+							cycleTerrainOverlayButton.visible = teleportButton.visible = false;
+						}
+
 						GUIElement.hoveredElement = null;
 						for (let element in guiElements) {
 							element.MouseUpdate(mousePosition);
@@ -421,31 +500,13 @@ namespace SpyroScope {
 								cameraMotion *= 8;
 							}
 							case .M : {
-								collisionTerrain.wireframe = !collisionTerrain.wireframe;
-								PushMessageToFeed("Toggled Terrain Wireframe");
+								toggleList[0].button.Pressed();
 							}
 							case .O : {
-								drawObjects = !drawObjects;
-								PushMessageToFeed("Toggled Object Origins");
+								toggleList[1].button.Pressed();
 							}
 							case .L : {
-								if (collisionTerrain.overlay == .Deform) {
-									currentAnimGroupIndex = -1;
-								}
-
-								collisionTerrain.CycleOverlay();
-								String overlayType;
-								switch (collisionTerrain.overlay) {
-									case .None:
-										overlayType = "None";
-									case .Flags:
-										overlayType = "Flags";
-									case .Deform:
-										overlayType = "Deform";
-									case .Water:
-										overlayType = "Water";
-								}
-								PushMessageToFeed(new String() .. AppendF("Terrain Overlay [{}]", overlayType));
+								CycleTerrainOverlay();
 							}
 							case .K : {
 								uint32 health = 0;
@@ -453,33 +514,20 @@ namespace SpyroScope {
 							}
 							case .T : {
 								if (Emulator.CameraMode) {
-									Emulator.spyroPosition = Camera.position.ToVectorInt();
-									Emulator.spyroPositionAddresses[(int)Emulator.rom].Write(&Emulator.spyroPosition);
-									PushMessageToFeed("Teleported Spyro to Game Camera");
+									Teleport();
 								}
 							}
 							case .C : {
-								if (Emulator.CameraMode) {
-									Emulator.RestoreCameraUpdate();
-									PushMessageToFeed("Game Camera");
-								} else {
-									Emulator.KillCameraUpdate();
-									PushMessageToFeed("Free Camera");
-								}
+								toggleList[4].button.Pressed();
 							}
 							case .V : {
-								dislodgeCamera = !dislodgeCamera;
-								if (dislodgeCamera) {
-									PushMessageToFeed("Free View");
-								} else {
-									PushMessageToFeed("Game View");
-								}
+								toggleList[3].button.Pressed();
 							}
 							case .H : {
-								drawLimits = !drawLimits;
-								PushMessageToFeed("Toggled Height Limits");
+								toggleList[2].button.Pressed();
 							}
 							case .I : {
+								// Does not currently work as intended
 								if (Emulator.InputMode) {
 									Emulator.RestoreInputRelay();
 									PushMessageToFeed("Emulator Input");
@@ -648,7 +696,7 @@ namespace SpyroScope {
 			DrawUtilities.WireframeSphere(Emulator.spyroPosition, viewerSpyroBasis, radius, Renderer.Color(32,32,32), renderer);
 		}
 
-		void DrawMessageFeed(Vector origin) {
+		void DrawMessageFeed() {
 			let now = DateTime.Now;
 
 			messageFeed.RemoveAll(scope (x) => {
@@ -664,7 +712,7 @@ namespace SpyroScope {
 				let message = feedItem.message;
 				let age = feedItem.time - now;
 				let fade = Math.Min(age.TotalSeconds, 1);
-				let offsetOrigin = origin + .(0,(messageFeed.Count - i - 1) * WindowApp.font.height,0);
+				let offsetOrigin = Vector(0,(messageFeed.Count - i - 1) * WindowApp.font.height,0);
 				DrawUtilities.Rect(offsetOrigin.y, offsetOrigin.y + WindowApp.font.height, offsetOrigin.x, offsetOrigin.x + WindowApp.font.CalculateWidth(message) + 4,
 					0,0,0,0, Renderer.whiteTexture, .(0,0,0,(.)(192 * fade)), WindowApp.renderer);
 				WindowApp.font.Print(message, offsetOrigin + .(2,0,0), .(255,255,255,(.)(255 * fade)),  WindowApp.renderer);
@@ -736,6 +784,69 @@ namespace SpyroScope {
 		void Step() {
 			togglePauseButton.iconTexture = playTexture;
 			Emulator.Step();
+		}
+
+		void ToggleWireframe(bool toggle) {
+			collisionTerrain.wireframe = toggle;
+			PushMessageToFeed("Toggled Terrain Wireframe");
+		}
+
+		void ToggleOrigins(bool toggle) {
+			drawObjects = toggle;
+			PushMessageToFeed("Toggled Object Origins");
+		}
+
+		void ToggleView(bool toggle) {
+			dislodgeCamera = toggle;
+			if (dislodgeCamera) {
+				PushMessageToFeed("Free View");
+			} else {
+				PushMessageToFeed("Game View");
+			}
+		}
+
+		void ToggleFreeCamera(bool toggle) {
+			if (toggle) {
+				Emulator.KillCameraUpdate();
+				PushMessageToFeed("Free Camera");
+				teleportButton.enabled = true;
+			} else {
+				Emulator.RestoreCameraUpdate();
+				PushMessageToFeed("Game Camera");
+				teleportButton.enabled = false;
+			}
+		}
+
+		void ToggleLimits(bool toggle) {
+			drawLimits = toggle;
+			PushMessageToFeed("Toggled Height Limits");
+		}
+
+		void CycleTerrainOverlay() {
+			if (collisionTerrain.overlay == .Deform) {
+				currentAnimGroupIndex = -1;
+			}
+
+			collisionTerrain.CycleOverlay();
+
+			String overlayType;
+			switch (collisionTerrain.overlay) {
+				case .None:
+					overlayType = "None";
+				case .Flags:
+					overlayType = "Flags";
+				case .Deform:
+					overlayType = "Deform";
+				case .Water:
+					overlayType = "Water";
+			}
+			PushMessageToFeed(new String() .. AppendF("Terrain Overlay [{}]", overlayType));
+		}
+
+		void Teleport() {
+			Emulator.spyroPosition = Camera.position.ToVectorInt();
+			Emulator.spyroPositionAddresses[(int)Emulator.rom].Write(&Emulator.spyroPosition);
+			PushMessageToFeed("Teleported Spyro to Game Camera");
 		}
 	}
 }

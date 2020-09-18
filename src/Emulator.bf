@@ -423,6 +423,12 @@ namespace SpyroScope {
 		public static void KillInputRelay() {
 			uint32 v = 0;
 			gameInputAddress[(int)rom].Write(&v);
+
+			// Beyond the point of this function being called
+			// input should be written into RAM from the program
+
+			// Currently it still receives input elsewhere
+			// even after this is called
 		}
 
 		public static void RestoreInputRelay() {

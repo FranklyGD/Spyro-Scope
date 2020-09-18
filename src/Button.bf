@@ -10,6 +10,7 @@ namespace SpyroScope {
 		public Texture pressedTexture = Renderer.whiteTexture;
 
 		public Texture iconTexture;
+		public String text;
 
 		public bool enabled = true;
 		public Event<delegate void()> OnPressed ~ _.Dispose();
@@ -37,7 +38,16 @@ namespace SpyroScope {
 				let vcenter = (drawn.top + drawn.bottom) / 2;
 				let halfWidth = iconTexture.width / 2;
 				let halfHeight = iconTexture.height / 2;
-				DrawUtilities.Rect(vcenter - halfHeight, vcenter + halfHeight, hcenter - halfHeight, hcenter + halfHeight, 1,0,0,1, iconTexture, color, renderer);
+				DrawUtilities.Rect(vcenter - halfHeight, vcenter + halfWidth, hcenter - halfHeight, hcenter + halfHeight, 1,0,0,1, iconTexture, color, renderer);
+			}
+
+			if (text != null && !text.IsEmpty) {
+				let hcenter = (drawn.left + drawn.right) / 2;
+				let vcenter = (drawn.top + drawn.bottom) / 2;
+				let textWidth = WindowApp.fontSmall.CalculateWidth(text);
+				let halfWidth = Math.Floor(textWidth / 2);
+				let halfHeight = Math.Floor(WindowApp.fontSmall.height / 2);
+				WindowApp.fontSmall.Print(text, .(hcenter - halfWidth, vcenter - halfHeight, 0), .(0,0,0), renderer);
 			}
 		}
 
