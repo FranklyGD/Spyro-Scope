@@ -26,6 +26,12 @@ however it may mess up the program or game. You have been warned!*
 * Objects origins and their shapes (only static)
 * Teleport Spyro to the camera's current location
 
+## Usage
+`Right Mouse Hold` - Rotate View/Camera
+`Right Mouse Hold + WASD` - Move Camera
+Move mouse to top-left of window to show menu with toggles and actions with their shortcuts
+Top middle button controls the game loop, left one Play/Pause while right one Steps (runs one frame)
+
 However, there is one thing to keep in mind when using this program...
 ## *One* Major Issue
 Because this program is a separate program that reads memory at a different rate than any of the emulators that read and write to its RAM,
