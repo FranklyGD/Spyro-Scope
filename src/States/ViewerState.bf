@@ -10,13 +10,14 @@ namespace SpyroScope {
 		Vector cameraMotion;
 		Vector viewEulerRotation;
 
-		bool drawObjects;
+		bool drawObjectOrigins = true;
+		bool hideInactive = false;
 
 		int currentObjIndex = -1;
 		int hoveredObjIndex = -1;
 		int currentAnimGroupIndex = -1;
 		int hoveredAnimGroupIndex = -1;
-		List<Moby> objectList = new .(128) ~ delete _;
+		List<(Emulator.Address<Moby>, Moby)> objectList = new .(128) ~ delete _;
 
 		Terrain collisionTerrain = new .() ~ delete _;
 		bool drawLimits;
@@ -38,10 +39,11 @@ namespace SpyroScope {
 		Texture stepTexture = new .("images/ui/step.png") ~ delete _;
 		Texture toggledTexture = new .("images/ui/toggle_enabled.png") ~ delete _;
 
-		(Toggle button, String label)[5] toggleList = .(
+		(Toggle button, String label)[6] toggleList = .(
 			(null, "Collision Wirefra(m)e"),
 			(null, "Object (O)rigin Axis"),
-			(null, "(H)eight Limit"),
+			(null, "Hide (I)nactive Objects"),
+			(null, "(H)eight Limits"),
 			(null, "Game/Free (V)iew"),
 			(null, "Free (C)amera")
 		);
@@ -81,11 +83,14 @@ namespace SpyroScope {
 				toggleList[i].button = button;
 			}
 
+			toggleList[1].button.Pressed();
+
 			toggleList[0].button.OnPressed.Add(new () => {ToggleWireframe(toggleList[0].button.toggled);});
 			toggleList[1].button.OnPressed.Add(new () => {ToggleOrigins(toggleList[1].button.toggled);});
-			toggleList[2].button.OnPressed.Add(new () => {ToggleLimits(toggleList[2].button.toggled);});
-			toggleList[3].button.OnPressed.Add(new () => {ToggleView(toggleList[3].button.toggled);});
-			toggleList[4].button.OnPressed.Add(new () => {ToggleFreeCamera(toggleList[4].button.toggled);});
+			toggleList[2].button.OnPressed.Add(new () => {ToggleInactive(toggleList[2].button.toggled);});
+			toggleList[3].button.OnPressed.Add(new () => {ToggleLimits(toggleList[3].button.toggled);});
+			toggleList[4].button.OnPressed.Add(new () => {ToggleView(toggleList[4].button.toggled);});
+			toggleList[5].button.OnPressed.Add(new () => {ToggleFreeCamera(toggleList[5].button.toggled);});
 
 			cycleTerrainOverlayButton = new .();
 			guiElements.Add(cycleTerrainOverlayButton);
@@ -159,50 +164,35 @@ namespace SpyroScope {
 				DrawGameCameraFrustrum();
 			}
 
-			Emulator.Address objectArrayAddress = ?;
-			Emulator.objectArrayPointers[(int)Emulator.rom].Read(&objectArrayAddress);
-			Emulator.Address objPointer = objectArrayAddress;
-
+			Emulator.Address<Moby> objPointer = ?;
+			Emulator.objectArrayPointers[(int)Emulator.rom].Read(&objPointer);
+			
 			objectList.Clear();
-			for (int i < 512 /* Load object limit */) {
+			while (true) {
 				Moby object = ?;
-				Emulator.ReadFromRAM(objPointer, &object, sizeof(Moby));
+				objPointer.Read(&object);
+
 				if (object.dataPointer.IsNull) {
 					break;
 				}
+				
+				objPointer += sizeof(Moby);
 
-				if (object.HasModel) {
-					if (modelSets.ContainsKey(object.objectTypeID)) {
-						let basis = Matrix.Euler(
-							-(float)object.eulerRotation.x / 0x80 * Math.PI_f,
-							(float)object.eulerRotation.y / 0x80 * Math.PI_f,
-							-(float)object.eulerRotation.z / 0x80 * Math.PI_f
-						);
-
-						renderer.SetModel(object.position, basis * 2);
-						renderer.SetTint(.(255,255,255));
-						modelSets[object.objectTypeID].models[object.modelID].QueueInstance(renderer);
-					} else {
-						Emulator.Address modelSetAddress = ?;
-						Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
-
-						if (modelSetAddress != 0 && (int32)modelSetAddress > 0) {
-							modelSets.Add(object.objectTypeID, new .(modelSetAddress));
-						}
-					}
+				if (hideInactive && !object.IsActive) {
+					continue;
 				}
 
-				objectList.Add(object);
-				if (!drawObjects) {
+				objectList.Add((objPointer, object));
+
+				DrawMoby(object, renderer);
+
+				if (drawObjectOrigins) {
 					object.DrawOriginAxis(renderer);
 				}
-
-				objPointer += 0x58;
 			}
 
 			if (currentObjIndex != -1) {
-				Moby object = ?;
-				Emulator.ReadFromRAM(objectArrayAddress + 0x58 * currentObjIndex, &object, sizeof(Moby));
+				let (address, object) = objectList[currentObjIndex];
 				object.DrawData(renderer);
 			}
 
@@ -249,10 +239,10 @@ namespace SpyroScope {
 		public override void DrawGUI(Renderer renderer) {
 			if (objectList.Count > 0) {
 				if (currentObjIndex != -1) {
-					let currentObject = objectList[currentObjIndex];
+					let (address, currentObject) = objectList[currentObjIndex];
 					// Begin overlays
 					var screenPosition = Camera.SceneToScreen(currentObject.position);
-					if (!drawObjects && screenPosition.z > 0) { // Must be in front of view
+					if (drawObjectOrigins && screenPosition.z > 0) { // Must be in front of view
 						let screenSize = Camera.SceneSizeToScreenSize(200, screenPosition.z);
 						screenPosition.z = 0;
 						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(16,16,16), renderer);
@@ -267,7 +257,7 @@ namespace SpyroScope {
 							0,0,0,0, Renderer.whiteTexture, .(0,0,0,192), renderer);
 
 						screenPosition.y += 2;
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", objectArrayPointer + currentObjIndex * sizeof(Moby)),
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", address),
 							screenPosition, .(255,255,255), renderer);
 						WindowApp.bitmapFont.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
 							screenPosition + .(0,WindowApp.bitmapFont.characterHeight,0), .(255,255,255), renderer);
@@ -275,15 +265,13 @@ namespace SpyroScope {
 				}
 
 				if (hoveredObjIndex != -1) {
-					let hoveredObject = objectList[hoveredObjIndex];
+					let (address, hoveredObject) = objectList[hoveredObjIndex];
 					// Begin overlays
 					var screenPosition = Camera.SceneToScreen(hoveredObject.position);
 					if (screenPosition.z > 0) { // Must be in front of view
 						let screenSize = Camera.SceneSizeToScreenSize(150, screenPosition.z);
 						screenPosition.z = 0;
-						if (!drawObjects) {
-							DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(128,64,16), renderer);
-						}
+						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(128,64,16), renderer);
 					}
 				}
 
@@ -294,9 +282,7 @@ namespace SpyroScope {
 					if (screenPosition.z > 0) { // Must be in front of view
 						let screenSize = Camera.SceneSizeToScreenSize(hoveredAnimGroup.radius - 50, screenPosition.z);
 						screenPosition.z = 0;
-						if (!drawObjects) {
-							DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(128,64,16), renderer);
-						}
+						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(128,64,16), renderer);
 					}
 				}
 			}
@@ -305,7 +291,7 @@ namespace SpyroScope {
 			if (!toggleList[0].button.visible) {
 				DrawMessageFeed();
 			} else {
-				DrawUtilities.Rect(0,170,0,200, 0,0,0,0, Renderer.whiteTexture, .(0,0,0,192), renderer);
+				DrawUtilities.Rect(0,200,0,200, 0,0,0,0, Renderer.whiteTexture, .(0,0,0,192), renderer);
 			}
 
 			if (collisionTerrain.overlay == .Flags) {
@@ -518,23 +504,25 @@ namespace SpyroScope {
 								}
 							}
 							case .C : {
-								toggleList[4].button.Pressed();
+								toggleList[5].button.Pressed();
 							}
 							case .V : {
-								toggleList[3].button.Pressed();
+								toggleList[4].button.Pressed();
 							}
 							case .H : {
-								toggleList[2].button.Pressed();
+								toggleList[3].button.Pressed();
 							}
 							case .I : {
-								// Does not currently work as intended
+								toggleList[2].button.Pressed();
+
+								/*// Does not currently work as intended
 								if (Emulator.InputMode) {
 									Emulator.RestoreInputRelay();
 									PushMessageToFeed("Emulator Input");
 								} else {
 									Emulator.KillInputRelay();
 									PushMessageToFeed("Manual Input");
-								}
+								}*/
 							}
 							default : {}
 						}
@@ -600,6 +588,29 @@ namespace SpyroScope {
 			return true;
 		}
 
+		void DrawMoby(Moby object, Renderer renderer) {
+			if (object.HasModel) {
+				if (modelSets.ContainsKey(object.objectTypeID)) {
+					let basis = Matrix.Euler(
+						-(float)object.eulerRotation.x / 0x80 * Math.PI_f,
+						(float)object.eulerRotation.y / 0x80 * Math.PI_f,
+						-(float)object.eulerRotation.z / 0x80 * Math.PI_f
+					);
+
+					renderer.SetModel(object.position, basis * 2);
+					renderer.SetTint(object.IsActive ? .(255,255,255) : .(32,32,32));
+					modelSets[object.objectTypeID].models[object.modelID].QueueInstance(renderer);
+				} else {
+					Emulator.Address modelSetAddress = ?;
+					Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
+
+					if (modelSetAddress != 0 && (int32)modelSetAddress > 0) {
+						modelSets.Add(object.objectTypeID, new .(modelSetAddress));
+					}
+				}
+			}
+		}
+
 		void UpdateView() {
 			if (!dislodgeCamera) {
 				Camera.position = Emulator.cameraPosition;
@@ -642,7 +653,6 @@ namespace SpyroScope {
 			messageFeed.Add((message, .Now + TimeSpan(0, 0, 2)));
 		}
 
-		
 		void DrawGameCameraFrustrum() {
 			let cameraBasis = Emulator.cameraBasisInv.ToMatrixCorrected().Transpose();
 			let cameraBasisCorrected = Matrix(cameraBasis.y, cameraBasis.z, -cameraBasis.x);
@@ -723,7 +733,7 @@ namespace SpyroScope {
 			var closestObjectIndex = -1;
 
 			for (int objectIndex = 0; objectIndex < objectList.Count; objectIndex++) {
-				let object = objectList[objectIndex];
+				let (address, object) = objectList[objectIndex];
 				
 				let screenPosition = Camera.SceneToScreen(object.position);
 
@@ -792,8 +802,13 @@ namespace SpyroScope {
 		}
 
 		void ToggleOrigins(bool toggle) {
-			drawObjects = toggle;
+			drawObjectOrigins = toggle;
 			PushMessageToFeed("Toggled Object Origins");
+		}
+
+		void ToggleInactive(bool toggle) {
+			hideInactive = toggle;
+			PushMessageToFeed("Toggled Inactive Visibility");
 		}
 
 		void ToggleView(bool toggle) {

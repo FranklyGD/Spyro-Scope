@@ -18,7 +18,7 @@ namespace SpyroScope {
 		uint16 h; // 62
 		uint32 i; // 64
 		public VectorByte eulerRotation; // 68
-		uint8 j; // 72
+		public uint8 updateState; // 72
 		public uint8 varientID; // 73
 		uint8[3] k; // 74
 		public bool draw; // 77
@@ -29,6 +29,8 @@ namespace SpyroScope {
 
 		// Derived from Spyro: Ripto's Rage [8001d068]
 		public bool HasModel { get { return objectTypeID < 0x300; } }
+		// Derived from Spyro: Year of the Dragon [80030410]
+		public bool IsActive { get { return updateState < 0x80; } }
 
 		public void DrawOriginAxis(Renderer renderer) {
 			let basis = Matrix.Euler(
@@ -44,7 +46,7 @@ namespace SpyroScope {
 				renderer.SetTint(.(255,0,255));
 			} else {
 				renderer.SetModel(position, basis * .Scale(50,50,50));
-				renderer.SetTint(.(0,255,255));
+				renderer.SetTint(IsActive ? .(0,255,255) : .(32,32,32));
 			}
 
 			PrimitiveShape.cube.QueueInstance(renderer);

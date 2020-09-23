@@ -37,6 +37,10 @@ namespace SpyroScope {
 			} }
 		}
 		public struct Address<T> : Address {
+			public override void ToString(String strBuffer) {
+				base.ToString(strBuffer);
+			}
+
 			public void Read(T* buffer) {
 				ReadFromRAM(this, buffer, sizeof(T));
 			}
