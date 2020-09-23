@@ -131,7 +131,7 @@ namespace SpyroScope {
 					let height = character.size.y * scale;
 	
 					DrawUtilities.Rect(y - height, y, x, x + width,
-						character.atlasPosition2.y, character.atlasPosition.y, character.atlasPosition.x, character.atlasPosition2.x,
+						character.atlasPosition.y, character.atlasPosition2.y, character.atlasPosition.x, character.atlasPosition2.x,
 						atlas, color, renderer);
 				}
 

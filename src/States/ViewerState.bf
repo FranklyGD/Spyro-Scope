@@ -254,7 +254,7 @@ namespace SpyroScope {
 						screenPosition.x = Math.Floor(screenPosition.x);
 						screenPosition.y = Math.Floor(screenPosition.y);
 						DrawUtilities.Rect(screenPosition.y, screenPosition.y + WindowApp.bitmapFont.characterHeight * 2, screenPosition.x, screenPosition.x + WindowApp.bitmapFont.characterWidth * 10,
-							0,0,0,0, Renderer.whiteTexture, .(0,0,0,192), renderer);
+							.(0,0,0,192), renderer);
 
 						screenPosition.y += 2;
 						WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", address),
@@ -291,7 +291,7 @@ namespace SpyroScope {
 			if (!toggleList[0].button.visible) {
 				DrawMessageFeed();
 			} else {
-				DrawUtilities.Rect(0,200,0,200, 0,0,0,0, Renderer.whiteTexture, .(0,0,0,192), renderer);
+				DrawUtilities.Rect(0,200,0,200, .(0,0,0,192), renderer);
 			}
 
 			if (collisionTerrain.overlay == .Flags) {
@@ -302,7 +302,7 @@ namespace SpyroScope {
 				// Background
 				let backgroundHeight = 18 * collisionTerrain.collisionTypes.Count + 2;
 				DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
-					0,0,0,0, Renderer.whiteTexture, .(0,0,0,192), renderer);
+					.(0,0,0,192), renderer);
 
 				// Content
 				for (let i < collisionTerrain.collisionTypes.Count) {
@@ -315,7 +315,7 @@ namespace SpyroScope {
 
 					let leftPadding = 8;
 					let bottomPadding = 8 + 18 * i;
-					DrawUtilities.Rect((.)WindowApp.height - (bottomPadding + 16), (.)WindowApp.height - bottomPadding, leftPadding, leftPadding + 16, 0,0,0,0, Renderer.whiteTexture, color, renderer);
+					DrawUtilities.Rect((.)WindowApp.height - (bottomPadding + 16), (.)WindowApp.height - bottomPadding, leftPadding, leftPadding + 16, color, renderer);
 
 					WindowApp.bitmapFont.Print(label, .(leftPadding + 24, (.)WindowApp.height - (bottomPadding + 15), 0), .(255,255,255), renderer);
 				}
@@ -335,7 +335,7 @@ namespace SpyroScope {
 					// Background
 					let backgroundHeight = 18 * 6;
 					DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 14 + 8,
-						0,0,0,0, Renderer.whiteTexture, .(0,0,0,192), renderer);
+						.(0,0,0,192), renderer);
 	
 					// Content
 					let currentKeyframe = animationGroup.CurrentKeyframe;
@@ -724,7 +724,7 @@ namespace SpyroScope {
 				let fade = Math.Min(age.TotalSeconds, 1);
 				let offsetOrigin = Vector(0,(messageFeed.Count - i - 1) * WindowApp.font.height,0);
 				DrawUtilities.Rect(offsetOrigin.y, offsetOrigin.y + WindowApp.font.height, offsetOrigin.x, offsetOrigin.x + WindowApp.font.CalculateWidth(message) + 4,
-					0,0,0,0, Renderer.whiteTexture, .(0,0,0,(.)(192 * fade)), WindowApp.renderer);
+					.(0,0,0,(.)(192 * fade)), WindowApp.renderer);
 				WindowApp.font.Print(message, offsetOrigin + .(2,0,0), .(255,255,255,(.)(255 * fade)),  WindowApp.renderer);
 			}
 		}

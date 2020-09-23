@@ -59,11 +59,11 @@ namespace SpyroScope {
 			if (Emulator.emulator == .None || Emulator.rom == .None) {
 				let t = (float)stopwatch.ElapsedMilliseconds / 1000 * 3.14f;
 				DrawUtilities.Rect(baseline + 2, baseline + 4, middleWindow - halfWidth * Math.Sin(t), middleWindow + halfWidth * Math.Sin(t),
-					0,0,0,0, Renderer.whiteTexture, .(255,255,255), renderer);
+					.(255,255,255), renderer);
 			} else {
 				let t = 1f - (float)stopwatch.ElapsedMilliseconds / 3000;
 				DrawUtilities.Rect(baseline + 2, baseline + 4, middleWindow - halfWidth * t, middleWindow + halfWidth * t,
-					0,0,0,0, Renderer.whiteTexture, .(255,255,255), renderer);
+					.(255,255,255), renderer);
 			}
 		}
 	}

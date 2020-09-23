@@ -31,14 +31,14 @@ namespace SpyroScope {
 					}
 				}
 			}
-			DrawUtilities.SlicedRect(drawn.bottom, drawn.top, drawn.left, drawn.right, 1,0,0,1, 0.7f,0.3f,0.3f,0.7f, texture, color, renderer);
+			DrawUtilities.SlicedRect(drawn.bottom, drawn.top, drawn.left, drawn.right, 0,1,0,1, 0.3f,0.7f,0.3f,0.7f, texture, color, renderer);
 
 			if (iconTexture != null) {
 				let hcenter = (drawn.left + drawn.right) / 2;
 				let vcenter = (drawn.top + drawn.bottom) / 2;
 				let halfWidth = iconTexture.width / 2;
 				let halfHeight = iconTexture.height / 2;
-				DrawUtilities.Rect(vcenter - halfHeight, vcenter + halfWidth, hcenter - halfHeight, hcenter + halfHeight, 1,0,0,1, iconTexture, color, renderer);
+				DrawUtilities.Rect(vcenter - halfHeight, vcenter + halfWidth, hcenter - halfHeight, hcenter + halfHeight, 0,1,0,1, iconTexture, color, renderer);
 			}
 
 			if (text != null && !text.IsEmpty) {
