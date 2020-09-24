@@ -354,10 +354,11 @@ namespace SpyroScope {
 			}
 
 			if (hoveredObjects.Count > 0) {
-				DrawUtilities.Rect(mousePosition.y, mousePosition.y + WindowApp.bitmapFont.characterHeight * hoveredObjects.Count, mousePosition.x, mousePosition.x + WindowApp.bitmapFont.characterWidth * 16, .(0,0,0,16), renderer);
+				DrawUtilities.Rect(mousePosition.y + 16, mousePosition.y + 16 + WindowApp.bitmapFont.characterHeight * hoveredObjects.Count, mousePosition.x + 16, mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(0,0,0,192), renderer);
 			}
 			for	(let i < hoveredObjects.Count) {
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]: {:X4}", objectList[i].0, (objectList[i].1).objectTypeID), mousePosition + .(0,i * WindowApp.bitmapFont.characterHeight,0), .(255,255,255), renderer);
+				let objectIndex = hoveredObjects[i];
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]: {:X4}", objectList[objectIndex].0, (objectList[objectIndex].1).objectTypeID), mousePosition + .(16, 18 + i * WindowApp.bitmapFont.characterHeight,0), .(255,255,255), renderer);
 			}
 
 			// Begin window relative position UI
