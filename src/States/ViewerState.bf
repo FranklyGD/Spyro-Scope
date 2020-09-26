@@ -4,27 +4,35 @@ using System.Collections;
 
 namespace SpyroScope {
 	class ViewerState : WindowState {
+		// View
 		bool dislodgeCamera;
 		bool cameraHijacked;
 		float cameraSpeed = 64;
 		Vector cameraMotion;
 		Vector viewEulerRotation;
 
+		// Options
 		bool drawObjectOrigins = true;
 		bool hideInactive = false;
+		bool displayIcons = false;
 
+		// Selection
 		int currentObjIndex = -1;
 		int hoveredObjIndex = -1;
 		int currentAnimGroupIndex = -1;
 		int hoveredAnimGroupIndex = -1;
 		List<(Emulator.Address<Moby>, Moby)> objectList = new .(128) ~ delete _;
-		List<int> hoveredObjects = new .() ~ delete _;
+		List<(float distance, int index)> hoveredObjects = new .() ~ delete _;
+		List<(float distance, int index)> lastHoveredObjects = new .() ~ delete _;
 
+		// Scene
 		Terrain collisionTerrain = new .() ~ delete _;
 		bool drawLimits;
 
+		// Objects
 		Dictionary<uint16, MobyModelSet> modelSets = new .();
 
+		// UI
 		Vector mousePosition;
 
 		List<(String message, DateTime time)> messageFeed = new .();
@@ -46,13 +54,14 @@ namespace SpyroScope {
 		Texture vaseIconTexture = new .("images/ui/icon_vase.png") ~ delete _;
 		Texture bottleIconTexture = new .("images/ui/icon_bottle.png") ~ delete _;
 
-		(Toggle button, String label)[6] toggleList = .(
+		(Toggle button, String label)[7] toggleList = .(
 			(null, "Collision Wirefra(m)e"),
 			(null, "Object (O)rigin Axis"),
 			(null, "Hide (I)nactive Objects"),
 			(null, "(H)eight Limits"),
 			(null, "Game/Free (V)iew"),
-			(null, "Free (C)amera")
+			(null, "Free (C)amera"),
+			(null, "Display Icons")
 		);
 
 		public this() {
@@ -98,6 +107,7 @@ namespace SpyroScope {
 			toggleList[3].button.OnPressed.Add(new () => {ToggleLimits(toggleList[3].button.toggled);});
 			toggleList[4].button.OnPressed.Add(new () => {ToggleView(toggleList[4].button.toggled);});
 			toggleList[5].button.OnPressed.Add(new () => {ToggleFreeCamera(toggleList[5].button.toggled);});
+			toggleList[6].button.OnPressed.Add(new () => {displayIcons = toggleList[6].button.toggled;});
 
 			cycleTerrainOverlayButton = new .();
 			guiElements.Add(cycleTerrainOverlayButton);
@@ -184,12 +194,12 @@ namespace SpyroScope {
 				}
 				
 				objPointer += sizeof(Moby);
+				
+				objectList.Add((objPointer, object));
 
 				if (hideInactive && !object.IsActive) {
 					continue;
 				}
-
-				objectList.Add((objPointer, object));
 
 				DrawMoby(object, renderer);
 
@@ -199,8 +209,12 @@ namespace SpyroScope {
 			}
 
 			if (currentObjIndex != -1) {
-				let (address, object) = objectList[currentObjIndex];
-				object.DrawData(renderer);
+				if (currentObjIndex < objectList.Count) {
+					let (address, object) = objectList[currentObjIndex];
+					object.DrawData(renderer);
+				} else {
+					currentObjIndex = -1;
+				}
 			}
 
 			DrawSpyroInformation();
@@ -244,62 +258,20 @@ namespace SpyroScope {
 		}
 
 		public override void DrawGUI(Renderer renderer) {
-			for	(let (address, object) in objectList) {
-				switch ((uint8)object.m) {
-					case 1: case 2: case 5: case 10: case 25: // Allow any of these values to pass
-					default: continue; // If the data does not contain a valid gem value, skip drawing an icon
-				}
-
-				var offsettedPosition = object.position;
-				if (object.objectTypeID != 1) {
-					offsettedPosition.z += 0x100;
-				}
-
-				var screenPosition = Camera.SceneToScreen(offsettedPosition);
-				if (screenPosition.z > 10000) { // Must be in front of view
-					//let screenSize = Camera.SceneSizeToScreenSize(200, screenPosition.z);
-					
-					Texture containerIcon = object.objectTypeID == 1 ? null : gemHolderIconTexture;
-					Renderer.Color iconTint = .(64,64,64);
-					switch (object.objectTypeID) {
-						case 0xc8:
-							iconTint = .(192,64,32);
-							containerIcon = basketIconTexture;
-						case 0xc9:
-							iconTint = .(32,64,192);
-							containerIcon = vaseIconTexture;
-						case 0xd1:
-							iconTint = .(16,192,0);
-							containerIcon = bottleIconTexture;
+			if (displayIcons) {
+				for	(let (address, object) in objectList) {
+					if (hideInactive && !object.IsActive) {
+						continue;
 					}
-
-					if (containerIcon != null) {
-						let halfWidth = vaseIconTexture.width / 2;
-						let halfHeight = vaseIconTexture.height / 2;
-						DrawUtilities.Rect(screenPosition.y - halfHeight, screenPosition.y + halfHeight, screenPosition.x - halfWidth, screenPosition.x + halfWidth, 0,1,0,1, containerIcon, iconTint, renderer);
+	
+					var offsettedPosition = object.position;
+					if (object.objectTypeID != 1) {
+						offsettedPosition.z += 0x100;
 					}
-
-					if (true) {
-						
-						//screenPosition.z = 0;
-						var halfWidth = (float)gemIconTexture.width / 2;
-						var halfHeight = (float)gemIconTexture.height / 2;
-
-						if (containerIcon != null) {
-							halfWidth *= 0.75f;
-							halfHeight *= 0.75f;
-						}
-						
-						Renderer.Color color = .(255,255,255);
-						switch ((uint8)object.m) {
-							case 1: color = .(255,0,0);
-							case 2: color = .(0,255,0);
-							case 5: color = .(32,16,255);
-							case 10: color = .(255,128,0);
-							case 25: color = .(255,32,255);
-						}
-
-						DrawUtilities.Rect(screenPosition.y - halfHeight, screenPosition.y + halfHeight, screenPosition.x - halfWidth, screenPosition.x + halfWidth, 0,1,0,1, gemIconTexture, color, renderer);
+	
+					var screenPosition = Camera.SceneToScreen(offsettedPosition);
+					if (screenPosition.z > 10000) { // Must be in front of view
+						DrawMobyIcon(object, screenPosition, 1, renderer);
 					}
 				}
 			}
@@ -330,7 +302,7 @@ namespace SpyroScope {
 					}
 				}
 
-				if (hoveredObjIndex != -1) {
+				if (hoveredObjects.Count > 0) {
 					let (address, hoveredObject) = objectList[hoveredObjIndex];
 					// Begin overlays
 					var screenPosition = Camera.SceneToScreen(hoveredObject.position);
@@ -353,12 +325,19 @@ namespace SpyroScope {
 				}
 			}
 
+			// Print list of objects currently under the cursor
 			if (hoveredObjects.Count > 0) {
 				DrawUtilities.Rect(mousePosition.y + 16, mousePosition.y + 16 + WindowApp.bitmapFont.characterHeight * hoveredObjects.Count, mousePosition.x + 16, mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(0,0,0,192), renderer);
 			}
 			for	(let i < hoveredObjects.Count) {
-				let objectIndex = hoveredObjects[i];
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]: {:X4}", objectList[objectIndex].0, (objectList[objectIndex].1).objectTypeID), mousePosition + .(16, 18 + i * WindowApp.bitmapFont.characterHeight,0), .(255,255,255), renderer);
+				let hoveredObject = hoveredObjects[i];
+				Renderer.Color textColor = .(255,255,255);
+				if (hoveredObject.index == currentObjIndex) {
+					textColor = .(0,0,0);
+					DrawUtilities.Rect(mousePosition.y + 16 + i * WindowApp.bitmapFont.characterHeight, mousePosition.y + 16 + (i + 1) * WindowApp.bitmapFont.characterHeight, mousePosition.x + 16, mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(255,255,255,192), renderer);
+				}
+				DrawMobyIcon(objectList[hoveredObject.index].1, .(mousePosition.x + 28 + WindowApp.bitmapFont.characterWidth * 16, mousePosition.y + 16 + WindowApp.bitmapFont.characterHeight * (0.5f + i), 0), 0.75f, renderer);
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]: {:X4}", objectList[hoveredObject.index].0, (objectList[hoveredObject.index].1).objectTypeID), mousePosition + .(16, 18 + i * WindowApp.bitmapFont.characterHeight,0), textColor, renderer);
 			}
 
 			// Begin window relative position UI
@@ -462,21 +441,16 @@ namespace SpyroScope {
 							currentObjIndex = hoveredObjIndex;
 
 							if (currentObjIndex != -1) {
-								Emulator.Address objectArrayPointer = ?;
-								Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
-			
-								SDL.SetClipboardText(scope String() .. AppendF("{}", objectArrayPointer + currentObjIndex * sizeof(Moby)));
+								SDL.SetClipboardText(scope String() .. AppendF("{:X8}", objectList[currentObjIndex].0));
 							}
 
 							if (collisionTerrain.overlay == .Deform) {
 								currentAnimGroupIndex = hoveredAnimGroupIndex;
-								if (hoveredAnimGroupIndex != -1) {
-									Emulator.Address objectArrayPointer = ?;
-									Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
-	
-									SDL.SetClipboardText(scope String() .. AppendF("{}", objectArrayPointer + currentObjIndex * sizeof(Moby)));
-								}
 							}
+
+							// Re-evaluate anything being hovered
+							var distance = float.PositiveInfinity;
+							hoveredObjIndex = GetObjectIndexUnderMouse(ref distance);
 						}
 					}
 				}
@@ -685,6 +659,57 @@ namespace SpyroScope {
 			}
 		}
 
+		void DrawMobyIcon(Moby object, Vector screenPosition, float scale, Renderer renderer) {
+			switch (object.objectTypeID) {
+				case 0xca:
+				case 0xcb:
+				default:
+					switch (object.heldGemValue) {
+						case 1: case 2: case 5: case 10: case 25: // Allow any of these values to pass
+						default: return; // If the data does not contain a valid gem value, skip drawing an icon
+					}
+		
+					Texture containerIcon = object.objectTypeID == 1 ? null : gemHolderIconTexture;
+					Renderer.Color iconTint = .(64,64,64);
+					switch (object.objectTypeID) {
+						case 0xc8:
+							iconTint = .(192,64,32);
+							containerIcon = basketIconTexture;
+						case 0xc9:
+							iconTint = .(32,64,192);
+							containerIcon = vaseIconTexture;
+						case 0xd1:
+							iconTint = .(16,192,0);
+							containerIcon = bottleIconTexture;
+					}
+		
+					if (containerIcon != null) {
+						let halfWidth = vaseIconTexture.width / 2 * scale;
+						let halfHeight = vaseIconTexture.height / 2 * scale;
+						DrawUtilities.Rect(screenPosition.y - halfHeight, screenPosition.y + halfHeight, screenPosition.x - halfWidth, screenPosition.x + halfWidth, 0,1,0,1, containerIcon, iconTint, renderer);
+					}
+		
+					var halfWidth = (float)gemIconTexture.width / 2 * scale;
+					var halfHeight = (float)gemIconTexture.height / 2 * scale;
+		
+					if (containerIcon != null) {
+						halfWidth *= 0.75f;
+						halfHeight *= 0.75f;
+					}
+		
+					Renderer.Color color = .(255,255,255);
+					switch (object.heldGemValue) {
+						case 1: color = .(255,0,0);
+						case 2: color = .(0,255,0);
+						case 5: color = .(32,16,255);
+						case 10: color = .(255,128,0);
+						case 25: color = .(255,32,255);
+					}
+		
+					DrawUtilities.Rect(screenPosition.y - halfHeight, screenPosition.y + halfHeight, screenPosition.x - halfWidth, screenPosition.x + halfWidth, 0,1,0,1, gemIconTexture, color, renderer);
+			}
+		}
+
 		void UpdateView() {
 			if (!dislodgeCamera) {
 				Camera.position = Emulator.cameraPosition;
@@ -804,12 +829,16 @@ namespace SpyroScope {
 		}
 
 		int GetObjectIndexUnderMouse(ref float closestDepth) {
-			var closestObjectIndex = -1;
+			//var closestObjectIndex = -1;
 
 			hoveredObjects.Clear();
 			for (int objectIndex = 0; objectIndex < objectList.Count; objectIndex++) {
 				let (address, object) = objectList[objectIndex];
-				
+
+				if (!object.IsActive && hideInactive) {
+					continue;
+				}
+
 				let screenPosition = Camera.SceneToScreen(object.position);
 
 				if (screenPosition.z == 0) {
@@ -820,16 +849,39 @@ namespace SpyroScope {
 				if (mousePosition.x < screenPosition.x + selectSize && mousePosition.x > screenPosition.x - selectSize &&
 					mousePosition.y < screenPosition.y + selectSize && mousePosition.y > screenPosition.y - selectSize) {
 
-					hoveredObjects.Add(objectIndex);
 
 					if (screenPosition.z < closestDepth) {
-						closestObjectIndex = objectIndex;
-						closestDepth = screenPosition.z;
+						hoveredObjects.Add((screenPosition.z, objectIndex));
 					}
 				}
 			}
+			hoveredObjects.Sort(scope (x,y) => x.distance <=> y.distance);
 
-			return closestObjectIndex;
+
+			// Make sure that all the objects under the cursor are the same
+			int overlapIndex = -1;
+			if (hoveredObjects.Count > 0) {
+				if (hoveredObjects.Count == lastHoveredObjects.Count) {
+					for	(let i < hoveredObjects.Count) {
+						if (hoveredObjects[i].index != lastHoveredObjects[i].index) {
+							hoveredObjects.CopyTo(lastHoveredObjects); //
+							break;
+						}
+						if (hoveredObjects[i].index == currentObjIndex) {
+							overlapIndex = i;
+						}
+					}
+				} else {
+					hoveredObjects.CopyTo(lastHoveredObjects); //
+				}
+			} else {
+				return -1;
+			}
+
+			overlapIndex++;
+			overlapIndex %= hoveredObjects.Count;
+			closestDepth = hoveredObjects[overlapIndex].distance;
+			return hoveredObjects[overlapIndex].index;
 		}
 
 		int GetTerrainAnimationGroupIndexUnderMouse(ref float closestDepth) {
@@ -924,14 +976,11 @@ namespace SpyroScope {
 
 			String overlayType;
 			switch (collisionTerrain.overlay) {
-				case .None:
-					overlayType = "None";
-				case .Flags:
-					overlayType = "Flags";
-				case .Deform:
-					overlayType = "Deform";
-				case .Water:
-					overlayType = "Water";
+				case .None: overlayType = "None";
+				case .Flags: overlayType = "Flags";
+				case .Deform: overlayType = "Deform";
+				case .Water: overlayType = "Water";
+				case .Sound: overlayType = "Sound";
 			}
 			PushMessageToFeed(new String() .. AppendF("Terrain Overlay [{}]", overlayType));
 		}

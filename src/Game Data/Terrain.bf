@@ -46,7 +46,8 @@ namespace SpyroScope {
 			None,
 			Flags,
 			Deform,
-			Water
+			Water,
+			Sound
 		}
 		public Overlay overlay = .None;
 
@@ -87,10 +88,18 @@ namespace SpyroScope {
 
 				if (triangleIndex < Emulator.specialTerrainTriangleCount) {
 					let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
-					
-					// Terrain Collision Sound
-					// Derived from Spyro: Ripto's Rage [80034f50]
-					let collisionSound = flagInfo >> 6;
+
+					if (overlay == .Sound) {
+						// Terrain Collision Sound
+						// Derived from Spyro: Ripto's Rage [80034f50]
+						let collisionSound = flagInfo >> 6;
+
+						switch (collisionSound) {
+							case 1: color = .(255,128,128);
+							case 2: color = .(128,255,128);
+							case 3: color = .(128,128,255);
+						}
+					}
 
 					let flagIndex = flagInfo & 0x3f;
 					if (flagIndex != 0x3f) {
@@ -338,6 +347,26 @@ namespace SpyroScope {
 					}
 				}
 				case .Water: {
+					overlay = .Sound;
+					for (int triangleIndex < Emulator.specialTerrainTriangleCount) {
+						Renderer.Color color = .(255,255,255);
+						let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
+
+						let collisionSound = flagInfo >> 6;
+
+						switch (collisionSound) {
+							case 1: color = .(255,128,128);
+							case 2: color = .(128,255,128);
+							case 3: color = .(128,128,255);
+						}
+
+						for (let vi < 3) {
+							let i = triangleIndex * 3 + vi;
+							mesh.colors[i] = color;
+						}
+					}
+				}
+				case .Sound: {
 					overlay = .None;
 				}
 			}

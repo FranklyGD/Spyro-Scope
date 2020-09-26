@@ -24,7 +24,10 @@ namespace SpyroScope {
 		public bool draw; // 77
 		public uint8 lodDistance; // 78
 		uint8 l; // 79
-		uint32 m;
+		public uint8 heldGemValue; // 80
+		uint8 m; // 81
+		uint8 n; // 82
+		uint8 o; // 83
 		public Renderer.Color4 color;
 
 		// Derived from Spyro: Ripto's Rage [8001d068]
