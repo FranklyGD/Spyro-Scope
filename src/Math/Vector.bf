@@ -11,7 +11,7 @@ namespace SpyroScope {
 		}
 
 		public static Vector Zero {
-			get { return .(1,0,0); }
+			get { return .(0,0,0); }
 		}
 
 		public override void ToString(System.String strBuffer) {

@@ -18,7 +18,7 @@ out vec2 uv;
 
 void main() {
     gl_Position.xyzw = projection * view * instanceModel * vec4(vertexPosition, 1.0);
-    gl_Position.w += zdepthOffset;
+    gl_Position.z += zdepthOffset;
 
     color = vec4(vertexColor) / 255.0;
     color.rgb *= instanceTint;

@@ -5,11 +5,18 @@ using System.Collections;
 namespace SpyroScope {
 	class ViewerState : WindowState {
 		// View
-		bool dislodgeCamera;
+		enum ViewMode {
+			Game,
+			Free,
+			Map
+		}
+
+		ViewMode viewMode = .Game;
 		bool cameraHijacked;
 		float cameraSpeed = 64;
 		Vector cameraMotion;
 		Vector viewEulerRotation;
+		bool mapMode;
 
 		// Options
 		bool drawObjectOrigins = true;
@@ -54,15 +61,15 @@ namespace SpyroScope {
 		Texture vaseIconTexture = new .("images/ui/icon_vase.png") ~ delete _;
 		Texture bottleIconTexture = new .("images/ui/icon_bottle.png") ~ delete _;
 
-		(Toggle button, String label)[7] toggleList = .(
+		(Toggle button, String label)[6] toggleList = .(
 			(null, "Collision Wirefra(m)e"),
 			(null, "Object (O)rigin Axis"),
 			(null, "Hide (I)nactive Objects"),
 			(null, "(H)eight Limits"),
-			(null, "Game/Free (V)iew"),
 			(null, "Free (C)amera"),
 			(null, "Display Icons")
 		);
+		List<GUIElement> cornerMenuGroup = new .() ~ delete _;
 
 		public this() {
 			togglePauseButton = new .();
@@ -86,12 +93,51 @@ namespace SpyroScope {
 			stepButton.iconTexture = stepTexture;
 			stepButton.OnPressed.Add(new => Step);
 
+			Button viewButton1 = new .();
+			Button viewButton2 = new .();
+			Button viewButton3 = new .();
+			guiElements.Add(viewButton1);
+			guiElements.Add(viewButton2);
+			guiElements.Add(viewButton3);
+			cornerMenuGroup.Add(viewButton1);
+			cornerMenuGroup.Add(viewButton2);
+			cornerMenuGroup.Add(viewButton3);
+
+			viewButton1.offset = .(16,72,16,32);
+			viewButton2.offset = .(72,128,16,32);
+			viewButton3.offset = .(128,184,16,32);
+			viewButton1.normalTexture = viewButton2.normalTexture = viewButton3.normalTexture = normalButtonTexture;
+			viewButton1.pressedTexture = viewButton2.pressedTexture = viewButton3.pressedTexture = pressedButtonTexture;
+
+			viewButton1.text = "Game";
+			viewButton2.text = "Free";
+			viewButton3.text = "Map";
+
+			viewButton1.enabled = false;
+
+			viewButton1.OnPressed.Add(new () => {
+				viewButton1.enabled = false;
+				viewButton2.enabled = viewButton3.enabled = true;
+				ToggleView(.Game);
+			});
+			viewButton2.OnPressed.Add(new () => {
+				viewButton2.enabled = false;
+				viewButton1.enabled = viewButton3.enabled = true;
+				ToggleView(.Free);
+			});
+			viewButton3.OnPressed.Add(new () => {
+				viewButton3.enabled = false;
+				viewButton2.enabled = viewButton1.enabled = true;
+				ToggleView(.Map);
+			});
+
 			Toggle button;
 			for (let i < toggleList.Count) {
 				button = new .();
 				guiElements.Add(button);
+				cornerMenuGroup.Add(button);
 				
-				button.offset = .(16, 32, 16 + i * WindowApp.font.height, 32 + i * WindowApp.font.height);
+				button.offset = .(16, 32, 16 + (i + 1) * WindowApp.font.height, 32 + (i + 1) * WindowApp.font.height);
 				button.normalTexture = normalButtonTexture;
 				button.pressedTexture = pressedButtonTexture;
 				button.toggleTexture = toggledTexture;
@@ -105,14 +151,14 @@ namespace SpyroScope {
 			toggleList[1].button.OnPressed.Add(new () => {ToggleOrigins(toggleList[1].button.toggled);});
 			toggleList[2].button.OnPressed.Add(new () => {ToggleInactive(toggleList[2].button.toggled);});
 			toggleList[3].button.OnPressed.Add(new () => {ToggleLimits(toggleList[3].button.toggled);});
-			toggleList[4].button.OnPressed.Add(new () => {ToggleView(toggleList[4].button.toggled);});
-			toggleList[5].button.OnPressed.Add(new () => {ToggleFreeCamera(toggleList[5].button.toggled);});
-			toggleList[6].button.OnPressed.Add(new () => {displayIcons = toggleList[6].button.toggled;});
+			toggleList[4].button.OnPressed.Add(new () => {ToggleFreeCamera(toggleList[4].button.toggled);});
+			toggleList[5].button.OnPressed.Add(new () => {displayIcons = toggleList[5].button.toggled;});
 
 			cycleTerrainOverlayButton = new .();
 			guiElements.Add(cycleTerrainOverlayButton);
+			cornerMenuGroup.Add(cycleTerrainOverlayButton);
 
-			cycleTerrainOverlayButton.offset = .(16, 180, 16 + toggleList.Count * WindowApp.font.height, 32 + toggleList.Count * WindowApp.font.height);
+			cycleTerrainOverlayButton.offset = .(16, 180, 16 + (toggleList.Count + 1) * WindowApp.font.height, 32 + (toggleList.Count + 1) * WindowApp.font.height);
 			cycleTerrainOverlayButton.normalTexture = normalButtonTexture;
 			cycleTerrainOverlayButton.pressedTexture = pressedButtonTexture;
 			cycleTerrainOverlayButton.text = "Terrain Over(l)ay";
@@ -120,8 +166,9 @@ namespace SpyroScope {
 
 			teleportButton = new .();
 			guiElements.Add(teleportButton);
+			cornerMenuGroup.Add(teleportButton);
 
-			teleportButton.offset = .(16, 180, 16 + (toggleList.Count + 1) * WindowApp.font.height, 32 + (toggleList.Count + 1) * WindowApp.font.height);
+			teleportButton.offset = .(16, 180, 16 + (toggleList.Count + 2) * WindowApp.font.height, 32 + (toggleList.Count + 2) * WindowApp.font.height);
 			teleportButton.normalTexture = normalButtonTexture;
 			teleportButton.pressedTexture = pressedButtonTexture;
 			teleportButton.text = "(T)eleport";
@@ -177,10 +224,10 @@ namespace SpyroScope {
 
 		public override void DrawView(Renderer renderer) {
 			collisionTerrain.Draw(renderer);
-			if (dislodgeCamera) {
+			if (viewMode != .Game) {
 				DrawGameCameraFrustrum();
 			}
-
+			
 			Emulator.Address<Moby> objPointer = ?;
 			Emulator.objectArrayPointers[(int)Emulator.rom].Read(&objPointer);
 			
@@ -283,6 +330,7 @@ namespace SpyroScope {
 					var screenPosition = Camera.SceneToScreen(currentObject.position);
 					if (drawObjectOrigins && screenPosition.z > 0) { // Must be in front of view
 						let screenSize = Camera.SceneSizeToScreenSize(200, screenPosition.z);
+						screenPosition.z = 0;
 						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(16,16,16), renderer);
 
 						Emulator.Address objectArrayPointer = ?;
@@ -431,9 +479,9 @@ namespace SpyroScope {
 						GUIElement.preselectedElement = .hoveredElement;
 					} else {
 						if (event.button.button == 3) {
-							SDL.SetRelativeMouseMode(true);
+							SDL.SetRelativeMouseMode(viewMode != .Map);
 							cameraHijacked = true;
-							if (!dislodgeCamera && !Emulator.CameraMode) {
+							if (viewMode == .Game && !Emulator.CameraMode) {
 								toggleList[4].button.Pressed();
 							}
 						}
@@ -456,37 +504,40 @@ namespace SpyroScope {
 				}
 				case .MouseMotion : {
 					if (cameraHijacked) {
-						if (dislodgeCamera) {
-							viewEulerRotation.z -= (.)event.motion.xrel * 0.001f;
-							viewEulerRotation.x += (.)event.motion.yrel * 0.001f;
-							viewEulerRotation.x = Math.Clamp(viewEulerRotation.x, -0.5f, 0.5f);
-						} else {
-							int16[3] cameraEulerRotation = ?;	
-							Emulator.cameraEulerRotationAddress[(int)Emulator.rom].Read(&cameraEulerRotation);
-	
-							cameraEulerRotation[2] -= (.)event.motion.xrel * 2;
-							cameraEulerRotation[1] += (.)event.motion.yrel * 2;
-							cameraEulerRotation[1] = Math.Clamp(cameraEulerRotation[1], -0x400, 0x400);
-	
-							// Force camera view basis in game
-							Emulator.cameraBasisInv = MatrixInt.Euler(0, (float)cameraEulerRotation[1] / 0x800 * Math.PI_f, (float)cameraEulerRotation[2] / 0x800 * Math.PI_f);
-	
-							Emulator.cameraMatrixAddress[(int)Emulator.rom].Write(&Emulator.cameraBasisInv);
-							Emulator.cameraEulerRotationAddress[(int)Emulator.rom].Write(&cameraEulerRotation);
+						switch (viewMode) {
+							case .Free: {
+								viewEulerRotation.z -= (.)event.motion.xrel * 0.001f;
+								viewEulerRotation.x += (.)event.motion.yrel * 0.001f;
+								viewEulerRotation.x = Math.Clamp(viewEulerRotation.x, -0.5f, 0.5f);
+							}
+							case .Game: {
+								int16[3] cameraEulerRotation = ?;	
+								Emulator.cameraEulerRotationAddress[(int)Emulator.rom].Read(&cameraEulerRotation);
+		
+								cameraEulerRotation[2] -= (.)event.motion.xrel * 2;
+								cameraEulerRotation[1] += (.)event.motion.yrel * 2;
+								cameraEulerRotation[1] = Math.Clamp(cameraEulerRotation[1], -0x400, 0x400);
+		
+								// Force camera view basis in game
+								Emulator.cameraBasisInv = MatrixInt.Euler(0, (float)cameraEulerRotation[1] / 0x800 * Math.PI_f, (float)cameraEulerRotation[2] / 0x800 * Math.PI_f);
+		
+								Emulator.cameraMatrixAddress[(int)Emulator.rom].Write(&Emulator.cameraBasisInv);
+								Emulator.cameraEulerRotationAddress[(int)Emulator.rom].Write(&cameraEulerRotation);
+							}
+							case .Map: {
+								var translationX = -Camera.size * event.motion.xrel / WindowApp.height;
+								var translationY = Camera.size * event.motion.yrel / WindowApp.height;
+
+								Camera.position.x += translationX;
+								Camera.position.y += translationY;
+							}
 						}
 					} else {
 						mousePosition = .(event.motion.x, event.motion.y, 0);
 
-						if (mousePosition.x < 200 && mousePosition.y < 200) {
-							for (let toggle in toggleList) {
-								toggle.button.visible = true;
-							}
-							cycleTerrainOverlayButton.visible = teleportButton.visible = true;
-						} else {
-							for (let toggle in toggleList) {
-								toggle.button.visible = false;
-							}
-							cycleTerrainOverlayButton.visible = teleportButton.visible = false;
+						let menuVisible = mousePosition.x < 200 && mousePosition.y < 200;
+						for (let guiElement in cornerMenuGroup) {
+							guiElement.visible = menuVisible;
 						}
 
 						GUIElement.hoveredElement = null;
@@ -518,9 +569,15 @@ namespace SpyroScope {
 					GUIElement.preselectedElement = null;
 				}
 				case .MouseWheel : {
-					cameraSpeed += (float)event.wheel.y;
-					if (cameraSpeed < 8) {
-						cameraSpeed = 8;
+					if (viewMode == .Map) {
+						Camera.size -= Camera.size / 8 * (.)event.wheel.y;
+
+						WindowApp.viewerProjection = Camera.projection;
+					} else {
+						cameraSpeed += (.)event.wheel.y;
+						if (cameraSpeed < 8) {
+							cameraSpeed = 8;
+						}
 					}
 				}
 				case .KeyDown : {
@@ -552,9 +609,6 @@ namespace SpyroScope {
 								}
 							}
 							case .C : {
-								toggleList[5].button.Pressed();
-							}
-							case .V : {
 								toggleList[4].button.Pressed();
 							}
 							case .H : {
@@ -575,22 +629,20 @@ namespace SpyroScope {
 							default : {}
 						}
 	
-						if (cameraHijacked) {
-							switch (event.key.keysym.scancode) {
-								case .W :
-									cameraMotion.z -= cameraSpeed;
-								case .S :
-									cameraMotion.z += cameraSpeed;
-								case .A :
-									cameraMotion.x -= cameraSpeed;
-								case .D :
-									cameraMotion.x += cameraSpeed;
-								case .Space :
-									cameraMotion.y += cameraSpeed;
-								case .LShift :
-									cameraMotion.y -= cameraSpeed;
-								default :
-							}
+						switch (event.key.keysym.scancode) {
+							case .W :
+								cameraMotion.z -= cameraSpeed;
+							case .S :
+								cameraMotion.z += cameraSpeed;
+							case .A :
+								cameraMotion.x -= cameraSpeed;
+							case .D :
+								cameraMotion.x += cameraSpeed;
+							case .Space :
+								cameraMotion.y += cameraSpeed;
+							case .LShift :
+								cameraMotion.y -= cameraSpeed;
+							default :
 						}
 					}
 				}
@@ -599,23 +651,21 @@ namespace SpyroScope {
 						cameraSpeed /= 8;
 						cameraMotion /= 8;
 					}
-	
-					if (cameraHijacked) {
-						switch (event.key.keysym.scancode) {
-							case .W :
-								cameraMotion.z = 0;
-							case .S :
-								cameraMotion.z = 0;
-							case .A :
-								cameraMotion.x = 0;
-							case .D :
-								cameraMotion.x = 0;
-							case .Space :
-								cameraMotion.y = 0;
-							case .LShift :
-								cameraMotion.y = 0;
-							default :
-						}
+
+					switch (event.key.keysym.scancode) {
+						case .W :
+							cameraMotion.z = 0;
+						case .S :
+							cameraMotion.z = 0;
+						case .A :
+							cameraMotion.x = 0;
+						case .D :
+							cameraMotion.x = 0;
+						case .Space :
+							cameraMotion.y = 0;
+						case .LShift :
+							cameraMotion.y = 0;
+						default :
 					}
 				}
 				case .JoyDeviceAdded : {
@@ -711,7 +761,7 @@ namespace SpyroScope {
 		}
 
 		void UpdateView() {
-			if (!dislodgeCamera) {
+			if (viewMode == .Game) {
 				Camera.position = Emulator.cameraPosition;
 				viewEulerRotation.x = (float)Emulator.cameraEulerRotation[1] / 0x800;
 				viewEulerRotation.y = (float)Emulator.cameraEulerRotation[0] / 0x800;
@@ -728,10 +778,13 @@ namespace SpyroScope {
 			);
 
 			// Move camera
-			if (cameraHijacked) {
-				let cameraMotionDirection = Camera.basis  * cameraMotion;
+			if (viewMode == .Map) {
+				Camera.position.x += Camera.size / 0x1000 * cameraMotion.x;
+				Camera.position.y -= Camera.size / 0x1000 * cameraMotion.z;
+			} else if (cameraHijacked) {
+				let cameraMotionDirection = Camera.basis * cameraMotion;
 				
-				if (dislodgeCamera) {
+				if (viewMode == .Free) {
 					Camera.position += cameraMotionDirection;
 				} else {
 					let cameraNewPosition = Emulator.cameraPosition.ToVector() + cameraMotionDirection;
@@ -941,12 +994,41 @@ namespace SpyroScope {
 			PushMessageToFeed("Toggled Inactive Visibility");
 		}
 
-		void ToggleView(bool toggle) {
-			dislodgeCamera = toggle;
-			if (dislodgeCamera) {
-				PushMessageToFeed("Free View");
-			} else {
-				PushMessageToFeed("Game View");
+		void ToggleView(ViewMode mode) {
+			if (viewMode == .Map && mode != .Map) {
+				Camera.orthographic = false;
+
+				Camera.position = Emulator.cameraPosition;
+				viewEulerRotation.x = (float)Emulator.cameraEulerRotation[1] / 0x800;
+				viewEulerRotation.y = (float)Emulator.cameraEulerRotation[0] / 0x800;
+				viewEulerRotation.z = (float)Emulator.cameraEulerRotation[2] / 0x800;
+
+				WindowApp.viewerProjection = Camera.projection;
+			} else if (viewMode != .Map && mode == .Map)  {
+				Camera.orthographic = true;
+
+				Camera.position.x = (collisionTerrain.upperBound.x + collisionTerrain.lowerBound.x) / 2;
+				Camera.position.y = (collisionTerrain.upperBound.y + collisionTerrain.lowerBound.y) / 2;
+				Camera.position.z = 500000;
+
+				let mapSize = collisionTerrain.upperBound - collisionTerrain.lowerBound;
+				let aspect = (float)WindowApp.width / WindowApp.height;
+				if (mapSize.x / mapSize.y > aspect) {
+					Camera.size = mapSize.x / aspect;
+				} else {
+					Camera.size = mapSize.y;
+				}
+
+				viewEulerRotation = .(0.5f,0,0.5f);
+				WindowApp.viewerProjection = Camera.projection;
+			}
+
+			viewMode = mode;
+
+			switch (viewMode) {
+				case .Free: PushMessageToFeed("Free View");
+				case .Game: PushMessageToFeed("Game View");
+				case .Map: PushMessageToFeed("Map View");
 			}
 		}
 

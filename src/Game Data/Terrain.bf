@@ -5,6 +5,8 @@ using System.Threading;
 namespace SpyroScope {
 	class Terrain {
 		Mesh mesh;
+		public Vector upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
+		public Vector lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
 
 		public struct AnimationGroup {
 			public Emulator.Address dataPointer;
@@ -126,6 +128,14 @@ namespace SpyroScope {
 					vertices[i] = unpackedTriangle[vi];
 					normals[i] = normal;
 					colors[i] = color;
+
+					upperBound.x = Math.Max(upperBound.x, vertices[i].x);
+					upperBound.y = Math.Max(upperBound.y, vertices[i].y);
+					upperBound.z = Math.Max(upperBound.z, vertices[i].z);
+
+					lowerBound.x = Math.Min(lowerBound.x, vertices[i].x);
+					lowerBound.y = Math.Min(lowerBound.y, vertices[i].y);
+					lowerBound.z = Math.Min(lowerBound.z, vertices[i].z);
 				}
 			}
 
