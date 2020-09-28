@@ -31,7 +31,7 @@ namespace SpyroScope {
 		public static GUIElement hoveredElement;
 		public static GUIElement preselectedElement;
 
-		public virtual void Draw(Rect parentRect, Renderer renderer) {
+		public virtual void Draw(Rect parentRect) {
 			CalculateDrawingRect(parentRect);
 
 			if (!debug) {
@@ -40,28 +40,28 @@ namespace SpyroScope {
 
 			Renderer.Color debugColor = hoveredElement == this ? .(128,128,16) : .(16,16,16);
 
-			renderer.DrawLine(
+			Renderer.DrawLine(
 				.(drawn.left, drawn.bottom, 0),
 				.(drawn.right, drawn.bottom,0),
 				debugColor,
 				debugColor
 			);
 
-			renderer.DrawLine(
+			Renderer.DrawLine(
 				.(drawn.left, drawn.top, 0),
 				.(drawn.right, drawn.top,0),
 				debugColor,
 				debugColor
 			);
 
-			renderer.DrawLine(
+			Renderer.DrawLine(
 				.(drawn.left, drawn.top, 0),
 				.(drawn.left, drawn.bottom,0),
 				debugColor,
 				debugColor
 			);
 
-			renderer.DrawLine(
+			Renderer.DrawLine(
 				.(drawn.right, drawn.top, 0),
 				.(drawn.right, drawn.bottom,0),
 				debugColor,

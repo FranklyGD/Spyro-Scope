@@ -5,9 +5,9 @@ using System.Collections;
 using System.Diagnostics;
 
 namespace SpyroScope {
-	class Renderer {
-		SDL.Window* window;
-		SDL.SDL_GLContext context;
+	static class Renderer {
+		static SDL.Window* window;
+		static SDL.SDL_GLContext context;
 
 		static bool useSync;
 
@@ -42,19 +42,19 @@ namespace SpyroScope {
 		}
 
 		const uint maxGenericBufferLength = 0x6000;
-		uint vertexArrayObject;
-		Buffer<Vector> positions;
-		Buffer<Vector> normals;
-		Buffer<Color4> colors;
-		Buffer<(float,float)> uvs;
-		DrawQueue[maxGenericBufferLength] drawQueue;
-		DrawQueue* startDrawQueue, lastDrawQueue;
+		static uint vertexArrayObject;
+		static Buffer<Vector> positions;
+		static Buffer<Vector> normals;
+		static Buffer<Color4> colors;
+		static Buffer<(float,float)> uvs;
+		static DrawQueue[maxGenericBufferLength] drawQueue;
+		static DrawQueue* startDrawQueue, lastDrawQueue;
 		
-		uint32 vertexCount, vertexOffset;
+		static uint32 vertexCount, vertexOffset;
 
-		uint vertexShader;
-		uint fragmentShader;
-		uint program;
+		static uint vertexShader;
+		static uint fragmentShader;
+		static uint program;
 
 		// Shader Inputs
 		public static uint positionAttributeIndex;
@@ -66,16 +66,16 @@ namespace SpyroScope {
 		public static uint instanceTintAttributeIndex;
 
 		// Shader Uniforms
-		public Matrix4 model = .Identity;
-		public int uniformViewMatrixIndex; // Camera Inverse Transform
-		public Matrix4 view = .Identity;
-		public Vector viewPosition = .Zero;
-		public Matrix viewBasis = .Identity;
-		public int uniformProjectionMatrixIndex; // Camera Perspective
-		public Matrix4 projection = .Identity;
+		public static Matrix4 model = .Identity;
+		public static int uniformViewMatrixIndex; // Camera Inverse Transform
+		public static Matrix4 view = .Identity;
+		public static Vector viewPosition = .Zero;
+		public static Matrix viewBasis = .Identity;
+		public static int uniformProjectionMatrixIndex; // Camera Perspective
+		public static Matrix4 projection = .Identity;
 
-		public Vector tint = .(1,1,1);
-		public int uniformZdepthOffsetIndex; // Z-depth Offset (mainly for pushing the wireframe forward to avoid Z-fighting)
+		public static Vector tint = .(1,1,1);
+		public static int uniformZdepthOffsetIndex; // Z-depth Offset (mainly for pushing the wireframe forward to avoid Z-fighting)
 
 		public static Texture whiteTexture ~ delete _;
 
@@ -132,7 +132,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public this(SDL.Window* window) {
+		public static void Init(SDL.Window* window) {
 			drawQueue[0].type = 0;
 			drawQueue[0].count = 0;
 			startDrawQueue = lastDrawQueue = &drawQueue[0];
@@ -234,7 +234,7 @@ namespace SpyroScope {
 			var whiteTextureData = Color4[1](.(255,255,255,255));
 			whiteTexture = new .(1, 1, GL.GL_RGBA, &whiteTextureData);
 
-			this.window = window;
+			Renderer.window = window;
 
 			GL.glEnable(GL.GL_FRAMEBUFFER_SRGB); 
 			GL.glEnable(GL.GL_DEPTH_TEST);
@@ -250,7 +250,7 @@ namespace SpyroScope {
 			PrimitiveShape.Init();
 		}
 
-		public ~this() {
+		public static void Unload() {
 			GL.glDeleteVertexArrays(1, &vertexArrayObject);
 			GL.glDeleteShader(vertexShader);
 			GL.glDeleteShader(fragmentShader);
@@ -261,7 +261,7 @@ namespace SpyroScope {
 			colors.Dispose();
 		}
 
-		uint CompileShader(String sourcePath, uint shaderType) {
+		static uint CompileShader(String sourcePath, uint shaderType) {
 			let shader = GL.glCreateShader(shaderType);
 
 			String source = scope .();
@@ -288,7 +288,7 @@ namespace SpyroScope {
 			return shader;
 		}
 
-		uint LinkProgram(uint vertex, uint fragment) {
+		static uint LinkProgram(uint vertex, uint fragment) {
 			let program = GL.glCreateProgram();
 
 			GL.glAttachShader(program, vertex);
@@ -303,7 +303,7 @@ namespace SpyroScope {
 			return program;
 		}
 
-		uint FindProgramAttribute(uint program, String attribute) {
+		static uint FindProgramAttribute(uint program, String attribute) {
 			let index = GL.glGetAttribLocation(program, attribute.Ptr);
 
 			Debug.Assert(index >= 0, "Attribute not found");
@@ -311,7 +311,7 @@ namespace SpyroScope {
 			return (uint)index;
 		}
 
-		int FindProgramUniform(uint program, String attribute) {
+		static int FindProgramUniform(uint program, String attribute) {
 			let index = GL.glGetUniformLocation(program, attribute.Ptr);
 
 			Debug.Assert(index >= 0, "Uniform not found");
@@ -319,7 +319,7 @@ namespace SpyroScope {
 			return index;
 		}
 
-		public void PushPoint(Vector position, Vector normal, Color4 color, (float,float) uv) {
+		public static void PushPoint(Vector position, Vector normal, Color4 color, (float,float) uv) {
 			if (vertexCount >= maxGenericBufferLength) {
 				return;
 			}
@@ -332,7 +332,7 @@ namespace SpyroScope {
 			vertexCount++;
 		}
 
-		public void DrawLine(Vector p0, Vector p1,
+		public static void DrawLine(Vector p0, Vector p1,
 			Color4 c0, Color4 c1) {
 			if (vertexCount + 2 > maxGenericBufferLength) {
 				Draw();
@@ -353,7 +353,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public void DrawTriangle(Vector p0, Vector p1, Vector p2,
+		public static void DrawTriangle(Vector p0, Vector p1, Vector p2,
 			Color4 c0, Color4 c1, Color4 c2,
 			(float,float) uv0, (float,float) uv1, (float,float) uv2, uint textureObject) {
 			if (vertexCount + 3 > maxGenericBufferLength) {
@@ -376,43 +376,43 @@ namespace SpyroScope {
 			}
 		}
 
-		public void DrawTriangle(Vector p0, Vector p1, Vector p2,
+		public static void DrawTriangle(Vector p0, Vector p1, Vector p2,
 			Color4 c0, Color4 c1, Color4 c2) {
 			DrawTriangle(p0, p1, p2, c0, c1, c2, (0,0), (0,0), (0,0), whiteTexture.textureObjectID);
 		}
 
-		public void SetModel(Vector position, Matrix basis) {
+		public static void SetModel(Vector position, Matrix basis) {
 			model = Matrix4.Translation(position) * basis;
 		}
 
-		public void SetView(Vector position, Matrix basis) {
+		public static void SetView(Vector position, Matrix basis) {
 			viewPosition = position;
 			viewBasis = basis;
 			view = basis.Transpose() * Matrix4.Translation(-position);
 			GL.glUniformMatrix4fv(uniformViewMatrixIndex, 1, GL.GL_FALSE, (float*)&view);
 		}
 
-		public void SetProjection(Matrix4 projection) {
-			this.projection = projection;
-			GL.glUniformMatrix4fv(uniformProjectionMatrixIndex, 1, GL.GL_FALSE, (float*)&this.projection);
+		public static void SetProjection(Matrix4 projection) {
+			Renderer.projection = projection;
+			GL.glUniformMatrix4fv(uniformProjectionMatrixIndex, 1, GL.GL_FALSE, (float*)&Renderer.projection);
 		}
 
-		public void SetTint(Color tint) {
-			this.tint = .((float)tint.r / 255, (float)tint.g / 255, (float)tint.b / 255);
+		public static void SetTint(Color tint) {
+			Renderer.tint = .((float)tint.r / 255, (float)tint.g / 255, (float)tint.b / 255);
 			//GL.glUniform3fv(uniformTintIndex, 1, &this.tint[0]);
 		}
 
-		public void BeginWireframe() {
+		public static void BeginWireframe() {
 			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE);
 			GL.glUniform1f(uniformZdepthOffsetIndex, -1f); // Push the lines a little forward
 		}
 
-		public void BeginSolid() {
+		public static void BeginSolid() {
 			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL);
 			GL.glUniform1f(uniformZdepthOffsetIndex, 0); // Reset depth offset
 		}
 
-		public void Draw() {
+		public static void Draw() {
 			GL.glBindVertexArray(vertexArrayObject);
 
 			startDrawQueue++;
@@ -427,7 +427,7 @@ namespace SpyroScope {
 			lastDrawQueue = startDrawQueue;
 		}
 
-		public void Sync() {
+		public static void Sync() {
 			// Wait for GPU
 			if (useSync) {
 				var sync = GL.glFenceSync(GL.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -442,11 +442,11 @@ namespace SpyroScope {
 			}
 		}
 
-		public void Display() {
+		public static void Display() {
 			SDL.GL_SwapWindow(window);
 		}
 
-		public void Clear() {
+		public static void Clear() {
 			GL.glClearColor(0,0,0,1);
 			GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 			startDrawQueue = lastDrawQueue = &drawQueue[0];

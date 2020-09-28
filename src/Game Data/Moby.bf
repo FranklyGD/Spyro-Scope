@@ -35,27 +35,27 @@ namespace SpyroScope {
 		// Derived from Spyro: Year of the Dragon [80030410]
 		public bool IsActive { get { return updateState < 0x80; } }
 
-		public void DrawOriginAxis(Renderer renderer) {
+		public void DrawOriginAxis() {
 			let basis = Matrix.Euler(
 				-(float)eulerRotation.x / 0x80 * Math.PI_f,
 				(float)eulerRotation.y / 0x80 * Math.PI_f,
 				-(float)eulerRotation.z / 0x80 * Math.PI_f
 			);
-			DrawUtilities.Axis(position, basis * .Scale(200,200,200), renderer);
+			DrawUtilities.Axis(position, basis * .Scale(200,200,200));
 
 			// Is object rendering in game?
 			if (draw) {
-				renderer.SetModel(position, basis * .Scale(60,60,60));
-				renderer.SetTint(.(255,0,255));
+				Renderer.SetModel(position, basis * .Scale(60,60,60));
+				Renderer.SetTint(.(255,0,255));
 			} else {
-				renderer.SetModel(position, basis * .Scale(50,50,50));
-				renderer.SetTint(IsActive ? .(0,255,255) : .(32,32,32));
+				Renderer.SetModel(position, basis * .Scale(50,50,50));
+				Renderer.SetTint(IsActive ? .(0,255,255) : .(32,32,32));
 			}
 
-			PrimitiveShape.cube.QueueInstance(renderer);
+			PrimitiveShape.cube.QueueInstance();
 		}
 
-		public void DrawData(Renderer renderer) {
+		public void DrawData() {
 			// This is incomplete and possible inefficient
 			// to work with when adding new entries
 			if (Emulator.rom == .RiptosRage) {
@@ -63,29 +63,29 @@ namespace SpyroScope {
 					case 0x0078: { // Sparx
 						SparxData sparx = ?;
 						Emulator.ReadFromRAM(dataPointer, &sparx, sizeof(SparxData));
-						sparx.Draw(renderer, this);
+						sparx.Draw(this);
 					}
 					case 0x01f0: { // Glimmer Blue Dino
-						DrawPath(dataPointer, renderer);
+						DrawPath(dataPointer);
 					}
 					case 0x0189: { // Shady Oasis NPC
 						uint32 pathCount = ?;
 						Emulator.ReadFromRAM(dataPointer + 0x38, &pathCount, 4);
 
 						for (let p < pathCount) {
-							DrawPath(dataPointer + 0x5c + p * 4, renderer);
+							DrawPath(dataPointer + 0x5c + p * 4);
 						}
 					}
 					case 0x019f: { // Fish
-						DrawPath(dataPointer + 0x4, renderer);
+						DrawPath(dataPointer + 0x4);
 					}
 					case 0x01bc: { // Hunter
-						DrawPath(dataPointer + 0x38, renderer);
+						DrawPath(dataPointer + 0x38);
 					}
 					case 0x0400: { // Whirlwind
 						WhirlwindData whirlwind = ?;
 						Emulator.ReadFromRAM(dataPointer, &whirlwind, sizeof(WhirlwindData));
-						whirlwind.Draw(renderer, this);
+						whirlwind.Draw(this);
 					}
 				}
 			} else if (Emulator.rom == .YearOfTheDragon) {
@@ -93,18 +93,18 @@ namespace SpyroScope {
 					case 0x0078: { // Sparx
 						SparxData sparx = ?;
 						Emulator.ReadFromRAM(dataPointer, &sparx, sizeof(SparxData));
-						sparx.Draw(renderer, this);
+						sparx.Draw(this);
 					}
 					case 0x03ff: { // Whirlwind
 						WhirlwindData whirlwind = ?;
 						Emulator.ReadFromRAM(dataPointer, &whirlwind, sizeof(WhirlwindData));
-						whirlwind.Draw(renderer, this);
+						whirlwind.Draw(this);
 					}
 				}
 			}
 		}
 
-		void DrawPath(Emulator.Address pathAddress, Renderer renderer) {
+		void DrawPath(Emulator.Address pathAddress) {
 			Emulator.Address pathArrayPointer = ?;
 			Emulator.ReadFromRAM(pathAddress, &pathArrayPointer, 4);
 			uint16 waypointCount = ?;
@@ -118,14 +118,14 @@ namespace SpyroScope {
 				for (let i < waypointCount) {
 					let position = (VectorInt*)&dataBytes[4 * 4 * i];
 
-					renderer.SetModel(*position, .Scale(500,500,50));
-					renderer.SetTint(.(255,128,0));
-					PrimitiveShape.cylinder.QueueInstance(renderer);
+					Renderer.SetModel(*position, .Scale(500,500,50));
+					Renderer.SetTint(.(255,128,0));
+					PrimitiveShape.cylinder.QueueInstance();
 					
 					if (i == 0) {
-						renderer.SetModel(*position, .Scale(400,400,100));
-						renderer.SetTint(.(0,255,0));
-						PrimitiveShape.cylinder.QueueInstance(renderer);
+						Renderer.SetModel(*position, .Scale(400,400,100));
+						Renderer.SetTint(.(0,255,0));
+						PrimitiveShape.cylinder.QueueInstance();
 					}
 
 					if (i < waypointCount - 1) {
@@ -133,7 +133,7 @@ namespace SpyroScope {
 						let direction = *nextPosition - *position;
 						let normalizedDirection = direction.ToVector().Normalized();
 
-						DrawUtilities.Arrow(*position + normalizedDirection * 400, normalizedDirection * (direction.Length() - 800), 125, Renderer.Color(255,128,0), renderer);
+						DrawUtilities.Arrow(*position + normalizedDirection * 400, normalizedDirection * (direction.Length() - 800), 125, .(255,128,0));
 					}
 				}
 			}

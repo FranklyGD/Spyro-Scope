@@ -7,7 +7,6 @@ using System.Diagnostics;
 namespace SpyroScope {
 	class WindowApp {
 		SDL.Window* window;
-		public static Renderer renderer;
 		WindowState state;
 		List<WindowState> states = new .();
 
@@ -33,7 +32,7 @@ namespace SpyroScope {
 
 			window = SDL.CreateWindow("Scope", .Undefined, .Undefined, (.)width, (.)height,
 				.Shown | .Resizable | .InputFocus | .Utility | .OpenGL);
-			renderer = new .(window);
+			Renderer.Init(window);
 			bitmapFont = new .("images/ui/font.png", 12, 20);
 			font = new .("fonts/Roboto-Regular.ttf", 20);
 			fontSmall = new .("fonts/Roboto-Regular.ttf", 14);
@@ -69,8 +68,7 @@ namespace SpyroScope {
 
 			DeleteContainerAndItems!(states);
 
-			if (renderer != null)
-				delete renderer;
+			Renderer.Unload();
 			if (window != null)
 				SDL.DestroyWindow(window);
 
@@ -78,31 +76,31 @@ namespace SpyroScope {
 		}
 
 		public void Run() {
-			renderer.Clear();
+			Renderer.Clear();
 
 			state.Update();
 
 			GL.glBindTexture(GL.GL_TEXTURE_2D, Renderer.whiteTexture.textureObjectID);
-			renderer.SetView(Camera.position, Camera.basis);
-			renderer.SetProjection(WindowApp.viewerProjection);
+			Renderer.SetView(Camera.position, Camera.basis);
+			Renderer.SetProjection(WindowApp.viewerProjection);
 			GL.glEnable(GL.GL_DEPTH_TEST);
-			state.DrawView(renderer);
+			state.DrawView();
 
-			renderer.SetView(.Zero, .Identity);
-			renderer.SetProjection(WindowApp.uiProjection);
+			Renderer.SetView(.Zero, .Identity);
+			Renderer.SetProjection(WindowApp.uiProjection);
 			GL.glDisable(GL.GL_DEPTH_TEST);
-			state.DrawGUI(renderer);
+			state.DrawGUI();
 
 			int32 majorVersion = ?;
 			int32 minorVersion = ?;
 			GL.glGetIntegerv(GL.GL_MAJOR_VERSION, (.)&majorVersion);
 			GL.glGetIntegerv(GL.GL_MINOR_VERSION, (.)&minorVersion);
 
-			bitmapFont.Print(scope String() .. AppendF("OpenGL {}.{}", majorVersion, minorVersion), .((.)WindowApp.width - bitmapFont.characterWidth * 10, 0, 0), .(255,255,255,8), renderer);
+			bitmapFont.Print(scope String() .. AppendF("OpenGL {}.{}", majorVersion, minorVersion), .((.)WindowApp.width - bitmapFont.characterWidth * 10, 0, 0), .(255,255,255,8));
 
-			renderer.Draw();
-			renderer.Sync();
-			renderer.Display();
+			Renderer.Draw();
+			Renderer.Sync();
+			Renderer.Display();
 		}
 
 		public mixin GoToState<T>() where T : WindowState {

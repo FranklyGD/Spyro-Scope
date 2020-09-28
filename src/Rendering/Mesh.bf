@@ -140,23 +140,23 @@ namespace SpyroScope {
 			Renderer.CheckForErrors();
 		}
 
-		public void Draw(Renderer renderer) {
+		public void Draw() {
 			if (!IsValid) {
 				return;
 			}
 
 			// draw mesh
-			QueueInstance(renderer);
+			QueueInstance();
 			DrawInstances();
 		}
 
-		public void QueueInstance(Renderer renderer) {
+		public void QueueInstance() {
 			if (!IsValid) {
 				return;
 			}
 
-			instanceMatrices[instanceCount] = renderer.model;
-			instanceColors[instanceCount] = renderer.tint;
+			instanceMatrices[instanceCount] = Renderer.model;
+			instanceColors[instanceCount] = Renderer.tint;
 
 			instanceCount++;
 			if (instanceCount >= 512) {

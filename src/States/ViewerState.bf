@@ -222,8 +222,8 @@ namespace SpyroScope {
 			}
 		}
 
-		public override void DrawView(Renderer renderer) {
-			collisionTerrain.Draw(renderer);
+		public override void DrawView() {
+			collisionTerrain.Draw();
 			if (viewMode != .Game) {
 				DrawGameCameraFrustrum();
 			}
@@ -248,17 +248,17 @@ namespace SpyroScope {
 					continue;
 				}
 
-				DrawMoby(object, renderer);
+				DrawMoby(object);
 
 				if (drawObjectOrigins) {
-					object.DrawOriginAxis(renderer);
+					object.DrawOriginAxis();
 				}
 			}
 
 			if (currentObjIndex != -1) {
 				if (currentObjIndex < objectList.Count) {
 					let (address, object) = objectList[currentObjIndex];
-					object.DrawData(renderer);
+					object.DrawData();
 				} else {
 					currentObjIndex = -1;
 				}
@@ -290,21 +290,21 @@ namespace SpyroScope {
 				}
 
 				if (Camera.position.z > deathHeight) {
-					DrawUtilities.Grid(.(0,0,deathHeight), .Identity, .(255,64,32), renderer);
+					DrawUtilities.Grid(.(0,0,deathHeight), .Identity, .(255,64,32));
 				}
 				
 				let flightHeight = Emulator.maxFreeflightHeights[currentWorldId];
 				if (Camera.position.z < flightHeight) {
-					DrawUtilities.Grid(.(0,0,flightHeight), .Identity, .(32,64,255), renderer);
+					DrawUtilities.Grid(.(0,0,flightHeight), .Identity, .(32,64,255));
 				}
 			}
 
-			renderer.SetModel(.Zero, .Identity);
-			renderer.SetTint(.(255,255,255));
-			renderer.Draw();
+			Renderer.SetModel(.Zero, .Identity);
+			Renderer.SetTint(.(255,255,255));
+			Renderer.Draw();
 		}
 
-		public override void DrawGUI(Renderer renderer) {
+		public override void DrawGUI() {
 			if (displayIcons) {
 				for	(let (address, object) in objectList) {
 					if (hideInactive && !object.IsActive) {
@@ -318,7 +318,7 @@ namespace SpyroScope {
 	
 					var screenPosition = Camera.SceneToScreen(offsettedPosition);
 					if (screenPosition.z > 10000) { // Must be in front of view
-						DrawMobyIcon(object, screenPosition, 1, renderer);
+						DrawMobyIcon(object, screenPosition, 1);
 					}
 				}
 			}
@@ -331,7 +331,7 @@ namespace SpyroScope {
 					if (drawObjectOrigins && screenPosition.z > 0) { // Must be in front of view
 						let screenSize = Camera.SceneSizeToScreenSize(200, screenPosition.z);
 						screenPosition.z = 0;
-						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(16,16,16), renderer);
+						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(16,16,16));
 
 						Emulator.Address objectArrayPointer = ?;
 						Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
@@ -340,13 +340,13 @@ namespace SpyroScope {
 						screenPosition.x = Math.Floor(screenPosition.x);
 						screenPosition.y = Math.Floor(screenPosition.y);
 						DrawUtilities.Rect(screenPosition.y, screenPosition.y + WindowApp.bitmapFont.characterHeight * 2, screenPosition.x, screenPosition.x + WindowApp.bitmapFont.characterWidth * 10,
-							.(0,0,0,192), renderer);
+							.(0,0,0,192));
 
 						screenPosition.y += 2;
 						WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", address),
-							screenPosition, .(255,255,255), renderer);
+							screenPosition, .(255,255,255));
 						WindowApp.bitmapFont.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
-							screenPosition + .(0,WindowApp.bitmapFont.characterHeight,0), .(255,255,255), renderer);
+							screenPosition + .(0,WindowApp.bitmapFont.characterHeight,0), .(255,255,255));
 					}
 				}
 
@@ -357,7 +357,7 @@ namespace SpyroScope {
 					if (screenPosition.z > 0) { // Must be in front of view
 						let screenSize = Camera.SceneSizeToScreenSize(150, screenPosition.z);
 						screenPosition.z = 0;
-						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(128,64,16), renderer);
+						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(128,64,16));
 					}
 				}
 
@@ -368,31 +368,31 @@ namespace SpyroScope {
 					if (screenPosition.z > 0) { // Must be in front of view
 						let screenSize = Camera.SceneSizeToScreenSize(hoveredAnimGroup.radius - 50, screenPosition.z);
 						screenPosition.z = 0;
-						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(128,64,16), renderer);
+						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(128,64,16));
 					}
 				}
 			}
 
 			// Print list of objects currently under the cursor
 			if (hoveredObjects.Count > 0) {
-				DrawUtilities.Rect(mousePosition.y + 16, mousePosition.y + 16 + WindowApp.bitmapFont.characterHeight * hoveredObjects.Count, mousePosition.x + 16, mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(0,0,0,192), renderer);
+				DrawUtilities.Rect(mousePosition.y + 16, mousePosition.y + 16 + WindowApp.bitmapFont.characterHeight * hoveredObjects.Count, mousePosition.x + 16, mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(0,0,0,192));
 			}
 			for	(let i < hoveredObjects.Count) {
 				let hoveredObject = hoveredObjects[i];
 				Renderer.Color textColor = .(255,255,255);
 				if (hoveredObject.index == currentObjIndex) {
 					textColor = .(0,0,0);
-					DrawUtilities.Rect(mousePosition.y + 16 + i * WindowApp.bitmapFont.characterHeight, mousePosition.y + 16 + (i + 1) * WindowApp.bitmapFont.characterHeight, mousePosition.x + 16, mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(255,255,255,192), renderer);
+					DrawUtilities.Rect(mousePosition.y + 16 + i * WindowApp.bitmapFont.characterHeight, mousePosition.y + 16 + (i + 1) * WindowApp.bitmapFont.characterHeight, mousePosition.x + 16, mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(255,255,255,192));
 				}
-				DrawMobyIcon(objectList[hoveredObject.index].1, .(mousePosition.x + 28 + WindowApp.bitmapFont.characterWidth * 16, mousePosition.y + 16 + WindowApp.bitmapFont.characterHeight * (0.5f + i), 0), 0.75f, renderer);
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]: {:X4}", objectList[hoveredObject.index].0, (objectList[hoveredObject.index].1).objectTypeID), mousePosition + .(16, 18 + i * WindowApp.bitmapFont.characterHeight,0), textColor, renderer);
+				DrawMobyIcon(objectList[hoveredObject.index].1, .(mousePosition.x + 28 + WindowApp.bitmapFont.characterWidth * 16, mousePosition.y + 16 + WindowApp.bitmapFont.characterHeight * (0.5f + i), 0), 0.75f);
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]: {:X4}", objectList[hoveredObject.index].0, (objectList[hoveredObject.index].1).objectTypeID), mousePosition + .(16, 18 + i * WindowApp.bitmapFont.characterHeight,0), textColor);
 			}
 
 			// Begin window relative position UI
 			if (!toggleList[0].button.visible) {
 				DrawMessageFeed();
 			} else {
-				DrawUtilities.Rect(0,200,0,200, .(0,0,0,192), renderer);
+				DrawUtilities.Rect(0,200,0,200, .(0,0,0,192));
 			}
 
 			if (collisionTerrain.overlay == .Flags) {
@@ -403,7 +403,7 @@ namespace SpyroScope {
 				// Background
 				let backgroundHeight = 18 * collisionTerrain.collisionTypes.Count + 2;
 				DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
-					.(0,0,0,192), renderer);
+					.(0,0,0,192));
 
 				// Content
 				for (let i < collisionTerrain.collisionTypes.Count) {
@@ -416,9 +416,9 @@ namespace SpyroScope {
 
 					let leftPadding = 8;
 					let bottomPadding = 8 + 18 * i;
-					DrawUtilities.Rect((.)WindowApp.height - (bottomPadding + 16), (.)WindowApp.height - bottomPadding, leftPadding, leftPadding + 16, color, renderer);
+					DrawUtilities.Rect((.)WindowApp.height - (bottomPadding + 16), (.)WindowApp.height - bottomPadding, leftPadding, leftPadding + 16, color);
 
-					WindowApp.bitmapFont.Print(label, .(leftPadding + 24, (.)WindowApp.height - (bottomPadding + 15), 0), .(255,255,255), renderer);
+					WindowApp.bitmapFont.Print(label, .(leftPadding + 24, (.)WindowApp.height - (bottomPadding + 15), 0), .(255,255,255));
 				}
 			} else if (collisionTerrain.overlay == .Deform) {
 				if (currentAnimGroupIndex != -1) {
@@ -427,7 +427,7 @@ namespace SpyroScope {
 					if (screenPosition.z > 0) { // Must be in front of view
 						let screenSize = Camera.SceneSizeToScreenSize(animationGroup.radius, screenPosition.z);
 						screenPosition.z = 0;
-						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(16,16,0), renderer);
+						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(16,16,0));
 					}
 
 					let leftPaddingBG = 4;
@@ -436,24 +436,24 @@ namespace SpyroScope {
 					// Background
 					let backgroundHeight = 18 * 6;
 					DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 14 + 8,
-						.(0,0,0,192), renderer);
+						.(0,0,0,192));
 	
 					// Content
 					let currentKeyframe = animationGroup.CurrentKeyframe;
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Group Index {}", currentAnimGroupIndex), .(8, (.)WindowApp.height - (18 * 5 + 8 + 15), 0), .(255,255,255), renderer);
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Keyframe {}", (uint)currentKeyframe), .(8, (.)WindowApp.height - (18 * 4 + 8 + 15), 0), .(255,255,255), renderer);
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("Group Index {}", currentAnimGroupIndex), .(8, (.)WindowApp.height - (18 * 5 + 8 + 15), 0), .(255,255,255));
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("Keyframe {}", (uint)currentKeyframe), .(8, (.)WindowApp.height - (18 * 4 + 8 + 15), 0), .(255,255,255));
 					let keyframeData = animationGroup.GetKeyframeData(currentKeyframe);
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Flag {}", (uint)keyframeData.flag), .(8, (.)WindowApp.height - (18 * 3 + 8 + 15), 0), .(255,255,255), renderer);
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Interp. {}", (uint)keyframeData.interpolation), .(8, (.)WindowApp.height - (18 * 2 + 8 + 15), 0), .(255,255,255), renderer);
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("From State {}", (uint)keyframeData.fromState), .(8, (.)WindowApp.height - (18 * 1 + 8 + 15), 0), .(255,255,255), renderer);
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("To State {}", (uint)keyframeData.toState), .(8, (.)WindowApp.height - (18 * 0 + 8 + 15), 0), .(255,255,255), renderer);
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("Flag {}", (uint)keyframeData.flag), .(8, (.)WindowApp.height - (18 * 3 + 8 + 15), 0), .(255,255,255));
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("Interp. {}", (uint)keyframeData.interpolation), .(8, (.)WindowApp.height - (18 * 2 + 8 + 15), 0), .(255,255,255));
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("From State {}", (uint)keyframeData.fromState), .(8, (.)WindowApp.height - (18 * 1 + 8 + 15), 0), .(255,255,255));
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("To State {}", (uint)keyframeData.toState), .(8, (.)WindowApp.height - (18 * 0 + 8 + 15), 0), .(255,255,255));
 				} else {
 					for (let animationGroup in collisionTerrain.animationGroups) {
 						var screenPosition = Camera.SceneToScreen(animationGroup.center);
 						if (screenPosition.z > 0) { // Must be in front of view
 							let screenSize = Camera.SceneSizeToScreenSize(animationGroup.radius, screenPosition.z);
 							screenPosition.z = 0;
-							DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), Renderer.Color(16,16,0), renderer);
+							DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(16,16,0));
 						}
 					}
 				}
@@ -461,13 +461,13 @@ namespace SpyroScope {
 
 			for (let element in guiElements) {
 				if (element.visible) {
-					element.Draw(.(0, WindowApp.width, 0, WindowApp.height), renderer);
+					element.Draw(.(0, WindowApp.width, 0, WindowApp.height));
 				}
 			}
 
 			for (let toggle in toggleList) {
 				if (toggle.button.visible) {
-					WindowApp.fontSmall.Print(toggle.label, .(toggle.button.drawn.right + 8, toggle.button.drawn.top + 1, 0), .(255,255,255), renderer);
+					WindowApp.fontSmall.Print(toggle.label, .(toggle.button.drawn.right + 8, toggle.button.drawn.top + 1, 0), .(255,255,255));
 				}
 			}
 		}
@@ -686,7 +686,7 @@ namespace SpyroScope {
 			return true;
 		}
 
-		void DrawMoby(Moby object, Renderer renderer) {
+		void DrawMoby(Moby object) {
 			if (object.HasModel) {
 				if (modelSets.ContainsKey(object.objectTypeID)) {
 					let basis = Matrix.Euler(
@@ -695,9 +695,9 @@ namespace SpyroScope {
 						-(float)object.eulerRotation.z / 0x80 * Math.PI_f
 					);
 
-					renderer.SetModel(object.position, basis * 2);
-					renderer.SetTint(object.IsActive ? .(255,255,255) : .(32,32,32));
-					modelSets[object.objectTypeID].models[object.modelID].QueueInstance(renderer);
+					Renderer.SetModel(object.position, basis * 2);
+					Renderer.SetTint(object.IsActive ? .(255,255,255) : .(32,32,32));
+					modelSets[object.objectTypeID].models[object.modelID].QueueInstance();
 				} else {
 					Emulator.Address modelSetAddress = ?;
 					Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
@@ -709,7 +709,7 @@ namespace SpyroScope {
 			}
 		}
 
-		void DrawMobyIcon(Moby object, Vector screenPosition, float scale, Renderer renderer) {
+		void DrawMobyIcon(Moby object, Vector screenPosition, float scale) {
 			switch (object.objectTypeID) {
 				case 0xca:
 				case 0xcb:
@@ -736,7 +736,7 @@ namespace SpyroScope {
 					if (containerIcon != null) {
 						let halfWidth = vaseIconTexture.width / 2 * scale;
 						let halfHeight = vaseIconTexture.height / 2 * scale;
-						DrawUtilities.Rect(screenPosition.y - halfHeight, screenPosition.y + halfHeight, screenPosition.x - halfWidth, screenPosition.x + halfWidth, 0,1,0,1, containerIcon, iconTint, renderer);
+						DrawUtilities.Rect(screenPosition.y - halfHeight, screenPosition.y + halfHeight, screenPosition.x - halfWidth, screenPosition.x + halfWidth, 0,1,0,1, containerIcon, iconTint);
 					}
 		
 					var halfWidth = (float)gemIconTexture.width / 2 * scale;
@@ -756,7 +756,7 @@ namespace SpyroScope {
 						case 25: color = .(255,32,255);
 					}
 		
-					DrawUtilities.Rect(screenPosition.y - halfHeight, screenPosition.y + halfHeight, screenPosition.x - halfWidth, screenPosition.x + halfWidth, 0,1,0,1, gemIconTexture, color, renderer);
+					DrawUtilities.Rect(screenPosition.y - halfHeight, screenPosition.y + halfHeight, screenPosition.x - halfWidth, screenPosition.x + halfWidth, 0,1,0,1, gemIconTexture, color);
 			}
 		}
 
@@ -808,11 +808,10 @@ namespace SpyroScope {
 		void DrawGameCameraFrustrum() {
 			let cameraBasis = Emulator.cameraBasisInv.ToMatrixCorrected().Transpose();
 			let cameraBasisCorrected = Matrix(cameraBasis.y, cameraBasis.z, -cameraBasis.x);
-			let renderer = WindowApp.renderer;
 
-			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(500,0,0), .(255,0,0), .(255,0,0));
-			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(0,500,0), .(0,255,0), .(0,255,0));
-			renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(0,0,500), .(0,0,255), .(0,0,255));
+			Renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(500,0,0), .(255,0,0), .(255,0,0));
+			Renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(0,500,0), .(0,255,0), .(0,255,0));
+			Renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(0,0,500), .(0,0,255), .(0,0,255));
 
 			let projectionMatrixInv = WindowApp.gameProjection.Inverse();
 			let viewProjectionMatrixInv = cameraBasisCorrected * projectionMatrixInv;
@@ -827,35 +826,34 @@ namespace SpyroScope {
 			let nearBottomLeft = (Vector)(viewProjectionMatrixInv * Vector4(-1,-1,-1,1)) + Emulator.cameraPosition.ToVector();
 			let nearBottomRight = (Vector)(viewProjectionMatrixInv * Vector4(1,-1,-1,1)) + Emulator.cameraPosition.ToVector();
 
-			renderer.DrawLine(nearTopLeft, farTopLeft , .(16,16,16), .(16,16,16));
-			renderer.DrawLine(nearTopRight, farTopRight, .(16,16,16), .(16,16,16));
-			renderer.DrawLine(nearBottomLeft, farBottomLeft, .(16,16,16), .(16,16,16));
-			renderer.DrawLine(nearBottomRight, farBottomRight, .(16,16,16), .(16,16,16));
+			Renderer.DrawLine(nearTopLeft, farTopLeft , .(16,16,16), .(16,16,16));
+			Renderer.DrawLine(nearTopRight, farTopRight, .(16,16,16), .(16,16,16));
+			Renderer.DrawLine(nearBottomLeft, farBottomLeft, .(16,16,16), .(16,16,16));
+			Renderer.DrawLine(nearBottomRight, farBottomRight, .(16,16,16), .(16,16,16));
 			
-			renderer.DrawLine(nearTopLeft, nearTopRight, .(16,16,16), .(16,16,16));
-			renderer.DrawLine(nearBottomLeft, nearBottomRight, .(16,16,16), .(16,16,16));
-			renderer.DrawLine(nearTopLeft, nearBottomLeft, .(16,16,16), .(16,16,16));
-			renderer.DrawLine(nearTopRight, nearBottomRight, .(16,16,16), .(16,16,16));
+			Renderer.DrawLine(nearTopLeft, nearTopRight, .(16,16,16), .(16,16,16));
+			Renderer.DrawLine(nearBottomLeft, nearBottomRight, .(16,16,16), .(16,16,16));
+			Renderer.DrawLine(nearTopLeft, nearBottomLeft, .(16,16,16), .(16,16,16));
+			Renderer.DrawLine(nearTopRight, nearBottomRight, .(16,16,16), .(16,16,16));
 
-			renderer.DrawLine(farTopLeft, farTopRight, .(16,16,16), .(16,16,16));
-			renderer.DrawLine(farBottomLeft, farBottomRight, .(16,16,16), .(16,16,16));
-			renderer.DrawLine(farTopLeft, farBottomLeft, .(16,16,16), .(16,16,16));
-			renderer.DrawLine(farTopRight, farBottomRight, .(16,16,16), .(16,16,16));
+			Renderer.DrawLine(farTopLeft, farTopRight, .(16,16,16), .(16,16,16));
+			Renderer.DrawLine(farBottomLeft, farBottomRight, .(16,16,16), .(16,16,16));
+			Renderer.DrawLine(farTopLeft, farBottomLeft, .(16,16,16), .(16,16,16));
+			Renderer.DrawLine(farTopRight, farBottomRight, .(16,16,16), .(16,16,16));
 		}
 
 		void DrawSpyroInformation() {
-			let renderer = WindowApp.renderer;
-			DrawUtilities.Arrow(Emulator.spyroPosition, Emulator.spyroIntendedVelocity / 10, 25, Renderer.Color(255,255,0), renderer);
-			DrawUtilities.Arrow(Emulator.spyroPosition, Emulator.spyroPhysicsVelocity / 10, 50, Renderer.Color(255,128,0), renderer);
+			DrawUtilities.Arrow(Emulator.spyroPosition, Emulator.spyroIntendedVelocity / 10, 25, .(255,255,0));
+			DrawUtilities.Arrow(Emulator.spyroPosition, Emulator.spyroPhysicsVelocity / 10, 50, .(255,128,0));
 
 			let viewerSpyroBasis = Emulator.spyroBasis.ToMatrixCorrected();
-			renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(500,0,0), .(255,0,0), .(255,0,0));
-			renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(0,500,0), .(0,255,0), .(0,255,0));
-			renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(0,0,500), .(0,0,255), .(0,0,255));
+			Renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(500,0,0), .(255,0,0), .(255,0,0));
+			Renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(0,500,0), .(0,255,0), .(0,255,0));
+			Renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(0,0,500), .(0,0,255), .(0,0,255));
 
 			let radius = 0x164;
 
-			DrawUtilities.WireframeSphere(Emulator.spyroPosition, viewerSpyroBasis, radius, Renderer.Color(32,32,32), renderer);
+			DrawUtilities.WireframeSphere(Emulator.spyroPosition, viewerSpyroBasis, radius, .(32,32,32));
 		}
 
 		void DrawMessageFeed() {
@@ -876,8 +874,8 @@ namespace SpyroScope {
 				let fade = Math.Min(age.TotalSeconds, 1);
 				let offsetOrigin = Vector(0,(messageFeed.Count - i - 1) * WindowApp.font.height,0);
 				DrawUtilities.Rect(offsetOrigin.y, offsetOrigin.y + WindowApp.font.height, offsetOrigin.x, offsetOrigin.x + WindowApp.font.CalculateWidth(message) + 4,
-					.(0,0,0,(.)(192 * fade)), WindowApp.renderer);
-				WindowApp.font.Print(message, offsetOrigin + .(2,0,0), .(255,255,255,(.)(255 * fade)),  WindowApp.renderer);
+					.(0,0,0,(.)(192 * fade)));
+				WindowApp.font.Print(message, offsetOrigin + .(2,0,0), .(255,255,255,(.)(255 * fade)));
 			}
 		}
 

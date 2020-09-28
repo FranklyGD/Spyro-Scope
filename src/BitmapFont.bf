@@ -15,7 +15,7 @@ namespace SpyroScope {
 			this.characterHeight = characterHeight;
 		}
 
-		public void Print(String text, float width, float height, Vector position, Renderer.Color4 color, Renderer renderer) {
+		public void Print(String text, float width, float height, Vector position, Renderer.Color4 color) {
 			for (let i < text.Length) {
 				if (text[i] == ' ') {
 					continue;
@@ -30,12 +30,12 @@ namespace SpyroScope {
 
 				DrawUtilities.Rect(position.y, position.y + height, position.x + i * width, position.x + (i + 1) * width,
 					character / 16 * glyphSize.1, (character / 16 + 1) * glyphSize.1, r0, r0 + glyphSize.0,
-					texture, color, renderer);
+					texture, color);
 			}
 		}
 
-		public void Print(String text, Vector position, Renderer.Color4 color, Renderer renderer) {
-			Print(text, characterWidth, characterHeight, position, color, renderer);
+		public void Print(String text, Vector position, Renderer.Color4 color) {
+			Print(text, characterWidth, characterHeight, position, color);
 		}
 	}
 }

@@ -281,34 +281,34 @@ namespace SpyroScope {
 			mesh.Update();
 		}
 
-		public void Draw(Renderer renderer) {
+		public void Draw() {
 			if (mesh == null) {
 				return;
 			}
 
-			renderer.SetModel(.Zero, .Identity);
-			renderer.SetTint(.(255,255,255));
-			renderer.BeginSolid();
+			Renderer.SetModel(.Zero, .Identity);
+			Renderer.SetTint(.(255,255,255));
+			Renderer.BeginSolid();
 
 			if (!wireframe) {
-				mesh.Draw(renderer);
-				renderer.SetTint(.(128,128,128));
+				mesh.Draw();
+				Renderer.SetTint(.(128,128,128));
 			}
 
-			renderer.BeginWireframe();
-			mesh.Draw(renderer);
+			Renderer.BeginWireframe();
+			mesh.Draw();
 
 			if (overlay == .Deform && animationGroups != null) {
-				renderer.SetTint(.(255,255,0));
+				Renderer.SetTint(.(255,255,0));
 				for	(let animationGroup in animationGroups) {
 					for (let mesh in animationGroup.mesh) {
-						mesh.Draw(renderer);
+						mesh.Draw();
 					}
 				}
 			}
 
 			// Restore polygon mode to default
-			renderer.BeginSolid();
+			Renderer.BeginSolid();
 		}
 
 		public void CycleOverlay() {

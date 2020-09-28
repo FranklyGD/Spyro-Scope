@@ -15,8 +15,8 @@ namespace SpyroScope {
 		public bool enabled = true;
 		public Event<delegate void()> OnPressed ~ _.Dispose();
 
-		public override void Draw(Rect parentRect, Renderer renderer) {
-			base.Draw(parentRect, renderer);
+		public override void Draw(Rect parentRect) {
+			base.Draw(parentRect);
 
 			Renderer.Color color = disabled;
 			Texture texture = pressedTexture;
@@ -31,14 +31,14 @@ namespace SpyroScope {
 					}
 				}
 			}
-			DrawUtilities.SlicedRect(drawn.bottom, drawn.top, drawn.left, drawn.right, 0,1,0,1, 0.3f,0.7f,0.3f,0.7f, texture, color, renderer);
+			DrawUtilities.SlicedRect(drawn.bottom, drawn.top, drawn.left, drawn.right, 0,1,0,1, 0.3f,0.7f,0.3f,0.7f, texture, color);
 
 			if (iconTexture != null) {
 				let hcenter = (drawn.left + drawn.right) / 2;
 				let vcenter = (drawn.top + drawn.bottom) / 2;
 				let halfWidth = iconTexture.width / 2;
 				let halfHeight = iconTexture.height / 2;
-				DrawUtilities.Rect(vcenter - halfHeight, vcenter + halfWidth, hcenter - halfHeight, hcenter + halfHeight, 0,1,0,1, iconTexture, color, renderer);
+				DrawUtilities.Rect(vcenter - halfHeight, vcenter + halfWidth, hcenter - halfHeight, hcenter + halfHeight, 0,1,0,1, iconTexture, color);
 			}
 
 			if (text != null && !text.IsEmpty) {
@@ -47,7 +47,7 @@ namespace SpyroScope {
 				let textWidth = WindowApp.fontSmall.CalculateWidth(text);
 				let halfWidth = Math.Floor(textWidth / 2);
 				let halfHeight = Math.Floor(WindowApp.fontSmall.height / 2);
-				WindowApp.fontSmall.Print(text, .(hcenter - halfWidth, vcenter - halfHeight, 0), .(0,0,0), renderer);
+				WindowApp.fontSmall.Print(text, .(hcenter - halfWidth, vcenter - halfHeight, 0), .(0,0,0));
 			}
 		}
 

@@ -3,32 +3,32 @@ using System;
 namespace SpyroScope {
 	static struct DrawUtilities {
 		[Inline]
-		public static void Axis(Vector position, Matrix basis, Renderer renderer) {
+		public static void Axis(Vector position, Matrix basis) {
 			let squareAngle = Math.PI_f / 2;
-			renderer.SetModel(position + basis.x * 0.5f, basis * .Euler(0, -squareAngle, 0) * .Scale(0.1f,0.1f,1));
-			renderer.SetTint(.(255,0,0));
-			PrimitiveShape.cylinder.QueueInstance(renderer);
-			renderer.SetModel(position + basis.y * 0.5f, basis * .Euler(squareAngle, 0, 0) * .Scale(0.1f,0.1f,1));
-			renderer.SetTint(.(0,255,0));
-			PrimitiveShape.cylinder.QueueInstance(renderer);
-			renderer.SetModel(position + basis.z * 0.5f, basis * .Scale(0.1f,0.1f,1));
-			renderer.SetTint(.(0,0,255));
-			PrimitiveShape.cylinder.QueueInstance(renderer);
+			Renderer.SetModel(position + basis.x * 0.5f, basis * .Euler(0, -squareAngle, 0) * .Scale(0.1f,0.1f,1));
+			Renderer.SetTint(.(255,0,0));
+			PrimitiveShape.cylinder.QueueInstance();
+			Renderer.SetModel(position + basis.y * 0.5f, basis * .Euler(squareAngle, 0, 0) * .Scale(0.1f,0.1f,1));
+			Renderer.SetTint(.(0,255,0));
+			PrimitiveShape.cylinder.QueueInstance();
+			Renderer.SetModel(position + basis.z * 0.5f, basis * .Scale(0.1f,0.1f,1));
+			Renderer.SetTint(.(0,0,255));
+			PrimitiveShape.cylinder.QueueInstance();
 		}
 
 		[Inline]
-		public static void Circle(Vector position, Matrix basis, Renderer.Color color, Renderer renderer) {
+		public static void Circle(Vector position, Matrix basis, Renderer.Color color) {
 			for (int i < 32) {
 				let theta0 = (float)i / 16 * Math.PI_f;
 				let theta1 = (float)(i + 1) / 16 * Math.PI_f;
 				let point0 = basis * Vector(Math.Cos(theta0), Math.Sin(theta0), 0);
 				let point1 = basis * Vector(Math.Cos(theta1), Math.Sin(theta1), 0);
-				renderer.DrawLine(position + point0, position + point1, color, color);
+				Renderer.DrawLine(position + point0, position + point1, color, color);
 			}
 		}
 
 		[Inline]
-		public static void Arrow(Vector origin, Vector direction, float width, Renderer.Color color, Renderer renderer) {
+		public static void Arrow(Vector origin, Vector direction, float width, Renderer.Color color) {
 			if (direction.x * direction.x < 1 && direction.y * direction.y < 1 && direction.z * direction.z < 1) {
 				return;
 			}
@@ -44,28 +44,28 @@ namespace SpyroScope {
 				arrowMatrix.x = Vector.Cross(arrowMatrix.y, arrowMatrix.z).Normalized();
 			}
 
-			renderer.SetTint(color);
+			Renderer.SetTint(color);
 
 			arrowMatrix.x *= width;
 			arrowMatrix.y *= width;
-			renderer.SetModel(origin + direction / 2, arrowMatrix);
-			PrimitiveShape.cylinder.QueueInstance(renderer);
+			Renderer.SetModel(origin + direction / 2, arrowMatrix);
+			PrimitiveShape.cylinder.QueueInstance();
 
 			arrowMatrix.x *= 2;
 			arrowMatrix.y *= 2;
 			arrowMatrix.z = arrowMatrix.z.Normalized() * width * 2;
-			renderer.SetModel(origin + direction, arrowMatrix);
-			PrimitiveShape.cone.QueueInstance(renderer);
+			Renderer.SetModel(origin + direction, arrowMatrix);
+			PrimitiveShape.cone.QueueInstance();
 		}
 
 		[Inline]
-		public static void WireframeSphere(Vector position, Matrix basis, float radius, Renderer.Color color, Renderer renderer) {
+		public static void WireframeSphere(Vector position, Matrix basis, float radius, Renderer.Color color) {
 			let scaledBasis = basis * radius;
-			DrawUtilities.Circle(position, scaledBasis, color, renderer);
-			DrawUtilities.Circle(position, Matrix(scaledBasis.y, scaledBasis.z, scaledBasis.x), color, renderer);
-			DrawUtilities.Circle(position, Matrix(scaledBasis.z, scaledBasis.x, scaledBasis.y), color, renderer);
+			DrawUtilities.Circle(position, scaledBasis, color);
+			DrawUtilities.Circle(position, Matrix(scaledBasis.y, scaledBasis.z, scaledBasis.x), color);
+			DrawUtilities.Circle(position, Matrix(scaledBasis.z, scaledBasis.x, scaledBasis.y), color);
 
-			let positionDifference = renderer.viewPosition - position;
+			let positionDifference = Renderer.viewPosition - position;
 			let distance = positionDifference.Length();
 
 			// Check if view is inside collision radius
@@ -80,33 +80,33 @@ namespace SpyroScope {
 
 			Matrix tangentCircleBasis = ?;
 			tangentCircleBasis.z = positionDifference / distance;
-			tangentCircleBasis.y = Vector.Cross(positionDifference, renderer.viewBasis.x).Normalized();
+			tangentCircleBasis.y = Vector.Cross(positionDifference, Renderer.viewBasis.x).Normalized();
 			tangentCircleBasis.x = Vector.Cross(tangentCircleBasis.z, tangentCircleBasis.y);
 
-			DrawUtilities.Circle(offsetedCenter, tangentCircleBasis * tangentRadius, color, renderer);
+			DrawUtilities.Circle(offsetedCenter, tangentCircleBasis * tangentRadius, color);
 		}
 
 		[Inline]
 		public static void Rect(float top, float bottom, float left, float right,
 			float uvtop, float uvbottom, float uvleft, float uvright,
-			Texture texture, Renderer.Color4 color, Renderer renderer) {
+			Texture texture, Renderer.Color4 color) {
 
-			renderer.DrawTriangle(.(left,bottom,0), .(left,top,0), .(right,top,0), color, color, color,
+			Renderer.DrawTriangle(.(left,bottom,0), .(left,top,0), .(right,top,0), color, color, color,
 					(uvleft, uvbottom), (uvleft, uvtop), (uvright, uvtop), texture.textureObjectID);
-			renderer.DrawTriangle(.(left,bottom,0), .(right,top,0), .(right,bottom,0), color, color, color,
+			Renderer.DrawTriangle(.(left,bottom,0), .(right,top,0), .(right,bottom,0), color, color, color,
 					(uvleft, uvbottom), (uvright, uvtop), (uvright, uvbottom), texture.textureObjectID);
 		}
 
 		[Inline]
-		public static void Rect(float top, float bottom, float left, float right, Renderer.Color4 color, Renderer renderer) {
-			Rect(top,bottom,left,right, 0,0,0,0, Renderer.whiteTexture, color, renderer);
+		public static void Rect(float top, float bottom, float left, float right, Renderer.Color4 color) {
+			Rect(top,bottom,left,right, 0,0,0,0, Renderer.whiteTexture, color);
 		}
 
 		[Inline]
 		public static void SlicedRect(float top, float bottom, float left, float right,
 			float uvtop, float uvbottom, float uvleft, float uvright,
 			float uvtopinner, float uvbottominner, float uvleftinner, float uvrightinner,
-			Texture texture, Renderer.Color4 color, Renderer renderer) {
+			Texture texture, Renderer.Color4 color) {
 
 			var width = left - right;
 			var height = top - bottom;
@@ -116,25 +116,25 @@ namespace SpyroScope {
 			var rightBorder = texture.width * (1 - uvrightinner);
 
 			// Preserved Corners
-			Rect(top - topBorder, top, left, left + leftBorder, uvbottominner, uvbottom, uvleft, uvleftinner, texture, color, renderer);
-			Rect(top - topBorder, top, right - rightBorder, right, uvbottominner, uvbottom, uvrightinner, uvright, texture, color, renderer);
-			Rect(bottom, bottom + bottomBorder, left, left + leftBorder, uvtop, uvtopinner, uvleft, uvleftinner, texture, color, renderer);
-			Rect(bottom, bottom + bottomBorder, right - rightBorder, right, uvtop, uvtopinner, uvrightinner, uvright, texture, color, renderer);
+			Rect(top - topBorder, top, left, left + leftBorder, uvbottominner, uvbottom, uvleft, uvleftinner, texture, color);
+			Rect(top - topBorder, top, right - rightBorder, right, uvbottominner, uvbottom, uvrightinner, uvright, texture, color);
+			Rect(bottom, bottom + bottomBorder, left, left + leftBorder, uvtop, uvtopinner, uvleft, uvleftinner, texture, color);
+			Rect(bottom, bottom + bottomBorder, right - rightBorder, right, uvtop, uvtopinner, uvrightinner, uvright, texture, color);
 
 			// Stretched Edges
-			Rect(top - topBorder, top, left + leftBorder, right - rightBorder, uvbottominner, uvbottom, uvleftinner, uvrightinner, texture, color, renderer);
-			Rect(bottom, bottom + bottomBorder, left + leftBorder, right - rightBorder, uvtop, uvtopinner, uvleftinner, uvrightinner, texture, color, renderer);
-			Rect(bottom + bottomBorder, top - topBorder, left, left + leftBorder, uvtopinner, uvbottominner, uvleft, uvleftinner, texture, color, renderer);
-			Rect(bottom + bottomBorder, top - topBorder, right - rightBorder, right, uvtopinner, uvbottominner, uvrightinner, uvright, texture, color, renderer);
+			Rect(top - topBorder, top, left + leftBorder, right - rightBorder, uvbottominner, uvbottom, uvleftinner, uvrightinner, texture, color);
+			Rect(bottom, bottom + bottomBorder, left + leftBorder, right - rightBorder, uvtop, uvtopinner, uvleftinner, uvrightinner, texture, color);
+			Rect(bottom + bottomBorder, top - topBorder, left, left + leftBorder, uvtopinner, uvbottominner, uvleft, uvleftinner, texture, color);
+			Rect(bottom + bottomBorder, top - topBorder, right - rightBorder, right, uvtopinner, uvbottominner, uvrightinner, uvright, texture, color);
 
 			// Stretched Center
-			Rect(bottom + bottomBorder, top - topBorder, left + leftBorder, right - rightBorder, uvtopinner, uvbottominner, uvleftinner, uvrightinner, texture, color, renderer);
+			Rect(bottom + bottomBorder, top - topBorder, left + leftBorder, right - rightBorder, uvtopinner, uvbottominner, uvleftinner, uvrightinner, texture, color);
 		}
 
 
 		[Inline]
-		public static void Grid(Vector position, Matrix basis, Renderer.Color4 color, Renderer renderer) {
-			let distance = Math.Max(Math.Abs(Vector.Dot(renderer.viewPosition - position, basis.z)), 1000);
+		public static void Grid(Vector position, Matrix basis, Renderer.Color4 color) {
+			let distance = Math.Max(Math.Abs(Vector.Dot(Renderer.viewPosition - position, basis.z)), 1000);
 			let magnitude = Math.Log10(distance);
 			let invMagnitudeFrac = 1 - (magnitude - (int)magnitude);
 			let roundedDistance = Math.Pow(10, (int)magnitude - 1);
@@ -143,7 +143,7 @@ namespace SpyroScope {
 			var endColor = color;
 			endColor.a = 0;
 
-			let relativeViewPosition = basis.Transpose() * (renderer.viewPosition - position);
+			let relativeViewPosition = basis.Transpose() * (Renderer.viewPosition - position);
 			
 			for (var i = -(int)normalizedDistance; i < normalizedDistance; i++) {
 				let baseInterval = Math.Round((position.y + relativeViewPosition.y) / roundedDistance);
@@ -155,8 +155,8 @@ namespace SpyroScope {
 				var midColor = color;
 				midColor.a = (.)(255 * brightness);
 
-				renderer.DrawLine(slidingOffset, slidingOffset + .(distance * 4,0,0), midColor, endColor);
-				renderer.DrawLine(slidingOffset, slidingOffset + .(-distance * 4,0,0), midColor, endColor);
+				Renderer.DrawLine(slidingOffset, slidingOffset + .(distance * 4,0,0), midColor, endColor);
+				Renderer.DrawLine(slidingOffset, slidingOffset + .(-distance * 4,0,0), midColor, endColor);
 			}
 
 			for (var i = -(int)normalizedDistance; i < normalizedDistance; i++) {
@@ -169,8 +169,8 @@ namespace SpyroScope {
 				var midColor = color;
 				midColor.a = (.)(255 * brightness);
 
-				renderer.DrawLine(slidingOffset, slidingOffset + .(0,distance * 4,0), midColor, endColor);
-				renderer.DrawLine(slidingOffset, slidingOffset + .(0,-distance * 4,0), midColor, endColor);
+				Renderer.DrawLine(slidingOffset, slidingOffset + .(0,distance * 4,0), midColor, endColor);
+				Renderer.DrawLine(slidingOffset, slidingOffset + .(0,-distance * 4,0), midColor, endColor);
 			}
 		}
 	}

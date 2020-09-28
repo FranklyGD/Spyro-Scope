@@ -7,8 +7,8 @@ namespace SpyroScope {
 		public virtual void Exit() {}
 
 		public virtual void Update() {}
-		public virtual void DrawView(Renderer renderer) {}
-		public virtual void DrawGUI(Renderer renderer) {}
+		public virtual void DrawView() {}
+		public virtual void DrawGUI() {}
 		
 		public virtual bool OnEvent(SDL.Event event) { return false; }
 	}
