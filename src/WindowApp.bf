@@ -34,9 +34,9 @@ namespace SpyroScope {
 			window = SDL.CreateWindow("Scope", .Undefined, .Undefined, (.)width, (.)height,
 				.Shown | .Resizable | .InputFocus | .Utility | .OpenGL);
 			renderer = new .(window);
-			bitmapFont = new .("images/font.png", 12, 20);
-			font = new .("Roboto-Regular.ttf", 20);
-			fontSmall = new .("Roboto-Regular.ttf", 14);
+			bitmapFont = new .("images/ui/font.png", 12, 20);
+			font = new .("fonts/Roboto-Regular.ttf", 20);
+			fontSmall = new .("fonts/Roboto-Regular.ttf", 14);
 
 			Camera.fov = 55;
 			viewerProjection = Camera.projection;
