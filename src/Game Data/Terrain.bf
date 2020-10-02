@@ -49,7 +49,8 @@ namespace SpyroScope {
 			Flags,
 			Deform,
 			Water,
-			Sound
+			Sound,
+			Platform
 		}
 		public Overlay overlay = .None;
 
@@ -72,6 +73,9 @@ namespace SpyroScope {
 			collisionTypes.Clear();
 			waterSurfaceTriangles.Clear();
 
+			upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
+			lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
+
 			for (let triangleIndex < Emulator.collisionTriangles.Count) {
 				let triangle = Emulator.collisionTriangles[triangleIndex];
 				let unpackedTriangle = triangle.Unpack(false);
@@ -83,25 +87,10 @@ namespace SpyroScope {
 				// Derived from Spyro: Ripto's Rage [8003e694]
 				if (triangle.data.z & 0x4000 != 0) {
 					waterSurfaceTriangles.Add(triangleIndex);
-					if (overlay == .Water) {
-						color = .(64, 128, 255);
-					}
 				}
 
 				if (triangleIndex < Emulator.specialTerrainTriangleCount) {
 					let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
-
-					if (overlay == .Sound) {
-						// Terrain Collision Sound
-						// Derived from Spyro: Ripto's Rage [80034f50]
-						let collisionSound = flagInfo >> 6;
-
-						switch (collisionSound) {
-							case 1: color = .(255,128,128);
-							case 2: color = .(128,255,128);
-							case 3: color = .(128,128,255);
-						}
-					}
 
 					let flagIndex = flagInfo & 0x3f;
 					if (flagIndex != 0x3f) {
@@ -150,6 +139,9 @@ namespace SpyroScope {
 				delete animationGroups;
 				animationGroups = null;
 			}
+
+			ClearColor();
+			ApplyColor();
 		}
 
 		public void ReloadAnimationGroups() {
@@ -228,6 +220,8 @@ namespace SpyroScope {
 					animationGroup.radius = (upperBound - animationGroup.center).Length();
 				}
 			}
+
+			ClearColor();
 		}
 
 		public void Update() {
@@ -313,71 +307,120 @@ namespace SpyroScope {
 
 		public void CycleOverlay() {
 			// Reset colors before highlighting
+			ClearColor();
+
+			switch (overlay) {
+				case .None: overlay = .Flags;
+				case .Flags: overlay = .Deform;
+				case .Deform: overlay = .Water;
+				case .Water: overlay = .Sound;
+				case .Sound: overlay = .Platform;
+				case .Platform: overlay = .None;
+			}
+
+			ApplyColor();
+		}
+
+		void ApplyColor() {
+			switch (overlay) {
+				case .None:
+				case .Flags: ColorCollisionFlags();
+				case .Deform: // Colors applied on update 
+				case .Water: ColorWater();
+				case .Sound: ColorCollisionSounds();
+				case .Platform: ColorPlatforms();
+			}
+		}
+
+		void ClearColor() {
 			for (let i < mesh.colors.Count) {
 				mesh.colors[i] = .(255, 255, 255);
 			}
+		}
 
-			switch (overlay) {
-				case .None: {
-					overlay = .Flags;
-					// Apply colors based on the flag applied on the triangles
-					for (int triangleIndex < Emulator.specialTerrainTriangleCount) {
-						Renderer.Color color = .(255,255,255);
-						let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
+		/// Apply colors based on the flag applied on the triangles
+		void ColorCollisionFlags() {
+			for (int triangleIndex < Emulator.specialTerrainTriangleCount) {
+				Renderer.Color color = .(255,255,255);
+				let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
 
-						let flagIndex = flagInfo & 0x3f;
-						if (flagIndex != 0x3f) {
-							Emulator.Address flagPointer = Emulator.collisionFlagPointerArray[flagIndex];
-							uint8 flag = ?;
-							Emulator.ReadFromRAM(flagPointer, &flag, 1);
+				let flagIndex = flagInfo & 0x3f;
+				if (flagIndex != 0x3f) {
+					Emulator.Address flagPointer = Emulator.collisionFlagPointerArray[flagIndex];
+					uint8 flag = ?;
+					Emulator.ReadFromRAM(flagPointer, &flag, 1);
 
-							if (flag < 11 /*Emulator.collisionTypes.Count*/) {
-								color = Emulator.collisionTypes[flag].color;
-							} else {
-								color = .(255, 0, 255);
-							}
-						}
-
-						for (let vi < 3) {
-							let i = triangleIndex * 3 + vi;
-							mesh.colors[i] = color;
-						}
+					if (flag < 11 /*Emulator.collisionTypes.Count*/) {
+						color = Emulator.collisionTypes[flag].color;
+					} else {
+						color = .(255, 0, 255);
 					}
 				}
-				case .Flags: {
-					overlay = .Deform;
+
+				for (let vi < 3) {
+					let i = triangleIndex * 3 + vi;
+					mesh.colors[i] = color;
 				}
-				case .Deform: {
-					overlay = .Water;
-					for (let triangleIndex in waterSurfaceTriangles) {
-						for (let vi < 3) {
-							let i = triangleIndex * 3 + vi;
-							mesh.colors[i] = .(64, 128, 255);
-						}
+			}
+		}
+		
+		/// Apply colors on triangles that are considered water surfaces
+		void ColorWater() {
+			for (let triangleIndex in waterSurfaceTriangles) {
+				for (let vi < 3) {
+					let i = triangleIndex * 3 + vi;
+					mesh.colors[i] = .(64, 128, 255);
+				}
+			}
+		}
+
+		void ColorCollisionSounds() {
+			for (int triangleIndex < Emulator.specialTerrainTriangleCount) {
+				Renderer.Color color = .(255,255,255);
+				let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
+
+				// Terrain Collision Sound
+				// Derived from Spyro: Ripto's Rage [80034f50]
+				let collisionSound = flagInfo >> 6;
+
+				switch (collisionSound) {
+					case 1: color = .(255,128,128);
+					case 2: color = .(128,255,128);
+					case 3: color = .(128,128,255);
+				}
+
+				for (let vi < 3) {
+					let i = triangleIndex * 3 + vi;
+					mesh.colors[i] = color;
+				}
+			}
+		}
+
+		void ColorPlatforms() {
+			for (int triangleIndex < Emulator.collisionTriangles.Count) {
+				let normal = Vector.Cross(
+					mesh.vertices[triangleIndex * 3 + 2] - mesh.vertices[triangleIndex * 3 + 0],
+					mesh.vertices[triangleIndex * 3 + 1] - mesh.vertices[triangleIndex * 3 + 0]
+				);
+
+				VectorInt normalInt = normal.ToVectorInt();
+				// (GTE) Outer Product of 2 Vectors has its
+				// Shift Fraction bit enabled so that it
+				// shifts the final value by 12 bits to the right
+				normalInt.x = normalInt.x >> 12;
+				normalInt.y = normalInt.y >> 12;
+				normalInt.z = normalInt.z >> 12;
+
+				// Derived from Spyro: Ripto's Rage [8002cda0]
+				var slopeDirection = normalInt;
+				slopeDirection.z = 0;
+				let slope = EMath.Atan2(normalInt.z, (.)EMath.VectorLength(slopeDirection));
+
+				if (Math.Round(slope) < 0x17) { // Derived from Spyro: Ripto's Rage [80035e44]
+					for (let vi < 3) {
+						let i = triangleIndex * 3 + vi;
+						mesh.colors[i] = .(128,255,128);
 					}
-				}
-				case .Water: {
-					overlay = .Sound;
-					for (int triangleIndex < Emulator.specialTerrainTriangleCount) {
-						Renderer.Color color = .(255,255,255);
-						let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
-
-						let collisionSound = flagInfo >> 6;
-
-						switch (collisionSound) {
-							case 1: color = .(255,128,128);
-							case 2: color = .(128,255,128);
-							case 3: color = .(128,128,255);
-						}
-
-						for (let vi < 3) {
-							let i = triangleIndex * 3 + vi;
-							mesh.colors[i] = color;
-						}
-					}
-				}
-				case .Sound: {
-					overlay = .None;
 				}
 			}
 		}

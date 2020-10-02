@@ -1061,6 +1061,7 @@ namespace SpyroScope {
 				case .Deform: overlayType = "Deform";
 				case .Water: overlayType = "Water";
 				case .Sound: overlayType = "Sound";
+				case .Platform: overlayType = "Platform";
 			}
 			PushMessageToFeed(new String() .. AppendF("Terrain Overlay [{}]", overlayType));
 		}

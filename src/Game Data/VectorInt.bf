@@ -27,7 +27,7 @@ namespace SpyroScope {
 		}
 
 		public static VectorInt operator -(VectorInt value) {
-			return .(- value.x , - value.y, -value.z);
+			return .(-value.x , -value.y, -value.z);
 		}
 
 		public static VectorInt operator +(VectorInt left, VectorInt right) {
