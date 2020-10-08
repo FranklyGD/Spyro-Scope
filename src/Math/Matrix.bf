@@ -43,6 +43,14 @@ namespace SpyroScope {
 			);
 		}
 
+		public static Matrix Scale(float scale) {
+			return .(
+				.(scale,0,0),
+				.(0,scale,0),
+				.(0,0,scale)
+			);
+		}
+
 		public static Matrix Scale(Vector scale) {
 			return .(
 				.(scale.x,0,0),

@@ -59,6 +59,8 @@ namespace SpyroScope {
 		public const Address<char8>[3] testAddresses = .(0, (.)0x80066ea8, (.)0x8006c490);
 		public const String[4] gameNames = .(String.Empty, "Spyro the Dragon", "Spyro: Ripto's Rage", "Spyro: Year of the Dragon");
 
+		public const Address<uint32>[4] gameStateAddresses = .(0, 0, (.)0x800681c8, 0);
+
 		public const Address<VectorInt>[4] spyroPositionAddresses = .(0, 0, (.)0x80069ff0, (.)0x80070408);
 		public const Address<MatrixInt>[4] spyroMatrixAddresses = .(0, 0, (.)0x8006a020, (.)0x80070438);
 		public const Address<VectorInt>[4] spyroIntendedVelocityAddresses = .(0, 0, (.)0x8006a084, (.)0x80070494);
@@ -87,6 +89,8 @@ namespace SpyroScope {
 		public const uint32[4] gameInputValue = .(0, 0, 0xac2283a0, 0);
 
 		// Game Values
+		public static uint32 gameState;
+
 		public static VectorInt cameraPosition, spyroPosition;
 		public static VectorInt spyroIntendedVelocity, spyroPhysicsVelocity;
 		public static int16[3] cameraEulerRotation;
@@ -117,8 +121,10 @@ namespace SpyroScope {
 			("Ramp", 		.(128, 255, 64)),
 			("Slip", 		.(64, 64, 128))
 		);
-
+		
 		// Function Overrides
+		public const Address<uint32>[4] spyroUpdateAddresses = .(0, 0, (.)0x8001b0c4, 0);		  
+		public const uint32[4] spyroUpdateJumpValue = .(0, 0, 0x0c00a81f, 0);
 		public const Address<uint32>[4] cameraUpdateAddresses = .(0, 0, (.)0x8001b110, (.)0x800553d0);		  
 		public const uint32[4] cameraUpdateJumpValue = .(0, 0, 0x0c00761f, 0x0c004818);
 		public const Address<uint32>[4] updateAddresses = .(0, 0, (.)0x80011af4, (.)0x80012038);
@@ -344,14 +350,15 @@ namespace SpyroScope {
 		}
 
 		public static void FetchImportantObjects() {
-			ReadFromRAM(spyroPositionAddresses[(int)rom], &spyroPosition, sizeof(VectorInt));
-			ReadFromRAM(spyroMatrixAddresses[(int)rom], &spyroBasis, sizeof(MatrixInt));
-			ReadFromRAM(spyroIntendedVelocityAddresses[(int)rom], &spyroIntendedVelocity, sizeof(VectorInt));
-			ReadFromRAM(spyroPhysicsVelocityAddresses[(int)rom], &spyroPhysicsVelocity, sizeof(VectorInt));
+			gameStateAddresses[(int)rom].Read(&gameState);
+			spyroPositionAddresses[(int)rom].Read(&spyroPosition);
+			spyroMatrixAddresses[(int)rom].Read(&spyroBasis);
+			spyroIntendedVelocityAddresses[(int)rom].Read(&spyroIntendedVelocity);
+			spyroPhysicsVelocityAddresses[(int)rom].Read(&spyroPhysicsVelocity);
 
-			ReadFromRAM(cameraPositionAddress[(int)rom], &cameraPosition, sizeof(VectorInt));
-			ReadFromRAM(cameraMatrixAddress[(int)rom], &cameraBasisInv, sizeof(MatrixInt));
-			ReadFromRAM(cameraEulerRotationAddress[(int)rom], &cameraEulerRotation, 6);
+			cameraPositionAddress[(int)rom].Read(&cameraPosition);
+			cameraMatrixAddress[(int)rom].Read(&cameraBasisInv);
+			cameraEulerRotationAddress[(int)rom].Read(&cameraEulerRotation);
 
 			//ReadFromRAM((.)0x8006a28c, &collidingTriangle, 4);
 
@@ -393,6 +400,20 @@ namespace SpyroScope {
 			}
 		}
 
+		public static void SetSpyroPosition(VectorInt* position) {
+			spyroPositionAddresses[(int)rom].Write(position);
+		}
+
+		public static void KillSpyroUpdate() {
+			uint32 v = 0;
+			spyroUpdateAddresses[(int)rom].Write(&v);
+		}
+
+		public static void RestoreSpyroUpdate() {
+			uint32 v = spyroUpdateJumpValue[(int)rom];
+			spyroUpdateAddresses[(int)rom].Write(&v);
+		}
+
 		// Main Update
 		public static void KillUpdate() {
 			uint32 v = stepperInjected ? 0x0C002400 : 0;
@@ -415,11 +436,7 @@ namespace SpyroScope {
 			cameraUpdateAddresses[(int)rom].Write(&v);
 		}
 
-		public static void GetCameraPosition(VectorInt* position) {
-			cameraPositionAddress[(int)rom].Read(position);
-		}
-
-		public static void MoveCameraTo(VectorInt* position) {
+		public static void SetCameraPosition(VectorInt* position) {
 			cameraPositionAddress[(int)rom].Write(position);
 		}
 

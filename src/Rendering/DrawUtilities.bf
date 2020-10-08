@@ -134,7 +134,9 @@ namespace SpyroScope {
 
 		[Inline]
 		public static void Grid(Vector position, Matrix basis, Renderer.Color4 color) {
-			let distance = Math.Max(Math.Abs(Vector.Dot(Renderer.viewPosition - position, basis.z)), 1000);
+			let relativeViewPosition = basis.Transpose() * (Camera.position - position);
+			
+			let distance = Math.Max(Math.Abs(relativeViewPosition.z), 1000);
 			let magnitude = Math.Log10(distance);
 			let invMagnitudeFrac = 1 - (magnitude - (int)magnitude);
 			let roundedDistance = Math.Pow(10, (int)magnitude - 1);
@@ -143,34 +145,33 @@ namespace SpyroScope {
 			var endColor = color;
 			endColor.a = 0;
 
-			let relativeViewPosition = basis.Transpose() * (Renderer.viewPosition - position);
 			
 			for (var i = -(int)normalizedDistance; i < normalizedDistance; i++) {
-				let baseInterval = Math.Round((position.y + relativeViewPosition.y) / roundedDistance);
+				let baseInterval = Math.Round(relativeViewPosition.y / roundedDistance);
 				let interval = baseInterval + i;
 				let slidingOffset = position + basis * Vector(relativeViewPosition.x, interval * roundedDistance, 0);
 
 				let isTenth = interval % 10 == 0;
-				let brightness = Math.Max(1f - Math.Abs(slidingOffset.y - relativeViewPosition.y) / (distance * 4), 0) * (isTenth ? 1 : invMagnitudeFrac * invMagnitudeFrac);
+				let brightness = Math.Max(1f - Math.Abs(interval * roundedDistance - relativeViewPosition.y) / (distance * 4), 0) * (isTenth ? 1 : invMagnitudeFrac * invMagnitudeFrac);
 				var midColor = color;
 				midColor.a = (.)(255 * brightness);
 
-				Renderer.DrawLine(slidingOffset, slidingOffset + .(distance * 4,0,0), midColor, endColor);
-				Renderer.DrawLine(slidingOffset, slidingOffset + .(-distance * 4,0,0), midColor, endColor);
+				Renderer.DrawLine(slidingOffset, slidingOffset + basis.x * distance * 4, midColor, endColor);
+				Renderer.DrawLine(slidingOffset, slidingOffset - basis.x * distance * 4, midColor, endColor);
 			}
 
 			for (var i = -(int)normalizedDistance; i < normalizedDistance; i++) {
-				let baseInterval = Math.Round((position.x + relativeViewPosition.x) / roundedDistance);
+				let baseInterval = Math.Round(relativeViewPosition.x / roundedDistance);
 				let interval = baseInterval + i;
 				let slidingOffset = position + basis * Vector(interval * roundedDistance, relativeViewPosition.y, 0);
 
 				let isTenth = interval % 10 == 0;
-				let brightness = Math.Max(1f - Math.Abs(slidingOffset.x - relativeViewPosition.x) / (distance * 4), 0) * (isTenth ? 1 : invMagnitudeFrac * invMagnitudeFrac);
+				let brightness = Math.Max(1f - Math.Abs(interval * roundedDistance - relativeViewPosition.x) / (distance * 4), 0) * (isTenth ? 1 : invMagnitudeFrac * invMagnitudeFrac);
 				var midColor = color;
 				midColor.a = (.)(255 * brightness);
 
-				Renderer.DrawLine(slidingOffset, slidingOffset + .(0,distance * 4,0), midColor, endColor);
-				Renderer.DrawLine(slidingOffset, slidingOffset + .(0,-distance * 4,0), midColor, endColor);
+				Renderer.DrawLine(slidingOffset, slidingOffset + basis.y * distance * 4, midColor, endColor);
+				Renderer.DrawLine(slidingOffset, slidingOffset - basis.y * distance * 4, midColor, endColor);
 			}
 		}
 	}

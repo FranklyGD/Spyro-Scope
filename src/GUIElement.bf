@@ -1,3 +1,5 @@
+using System.Collections;
+
 namespace SpyroScope {
 	class GUIElement {
 		public static bool debug;
@@ -28,8 +30,29 @@ namespace SpyroScope {
 
 		public bool visible = true;
 
+		public GUIElement parent;
+		static List<GUIElement> parentStack = new .() ~ delete _;
+		static List<GUIElement> activeGUI;
+
 		public static GUIElement hoveredElement;
-		public static GUIElement preselectedElement;
+		public static GUIElement pressedElement;
+
+		public static void SetActiveGUI(List<GUIElement> GUI) {
+			activeGUI = GUI;
+		}
+
+		public static void PushParent(GUIElement parent) {
+			parentStack.Add(parent);
+		}
+
+		public static void PopParent() {
+			parentStack.PopBack();
+		}
+
+		public this() {
+			parent = parentStack.Count > 0 ? parentStack[parentStack.Count - 1] : null;
+			activeGUI.Add(this);
+		}
 
 		public virtual void Draw(Rect parentRect) {
 			CalculateDrawingRect(parentRect);
@@ -71,9 +94,17 @@ namespace SpyroScope {
 
 		public virtual void Update() {}
 		public virtual void Pressed() {}
+		public virtual void Unpressed() {}
+		public virtual void MouseEnter() {}
+		public virtual void MouseExit() {}
 
 		public void MouseUpdate(Vector mousePosition) {
-			if (visible && mousePosition.x > drawn.left && mousePosition.x < drawn.right && mousePosition.y > drawn.top && mousePosition.y < drawn.bottom) {
+			if (visible &&
+				mousePosition.x > drawn.left &&
+				mousePosition.x < drawn.right &&
+				mousePosition.y > drawn.top &&
+				mousePosition.y < drawn.bottom) {
+
 				hoveredElement = this;
 			}
 		}
@@ -91,6 +122,13 @@ namespace SpyroScope {
 			drawn.right = parentRect.left + rightAnchor + offset.right;
 			drawn.top = parentRect.top + topAnchor + offset.top;
 			drawn.bottom = parentRect.top + bottomAnchor + offset.bottom;
+		}
+
+		public bool GetVisibility() {
+			if (parent != null) {
+				return parent.GetVisibility() && visible;
+			}
+			return visible;
 		}
 	}
 }

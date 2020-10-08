@@ -12,8 +12,9 @@ namespace SpyroScope {
 
 		public static Matrix4 projection {
 			get {
-				return orthographic ? .Orthographic(size * WindowApp.width / WindowApp.height, size, near, far):
-				.Perspective(fov * Math.PI_f / 180,  (float)WindowApp.width / WindowApp.height, near, far);
+				let aspect = (float)WindowApp.width / WindowApp.height;
+				return orthographic ? .Orthographic(size * aspect, size, near, far):
+				.Perspective(fov * Math.PI_f / 180, aspect, near, far);
 			}
 		};
 
@@ -30,6 +31,31 @@ namespace SpyroScope {
 
 		public static float SceneSizeToScreenSize(float size, float depth) {
 			return size * WindowApp.height / (orthographic ? Camera.size / 2 : (depth * Math.Tan(fov * (Math.PI_f / 180) / 2) * 2));
+		}
+
+		public static Vector ScreenPointToOrigin(Vector screenPosition) {
+			if (orthographic) {
+				let x = 1 - (screenPosition.x / WindowApp.width * 2);
+				let y = screenPosition.y / WindowApp.height * 2 - 1;
+
+				let aspect = (float)WindowApp.width / WindowApp.height;
+				return position + basis.x * x * aspect * size + basis.y * y * size;
+			} else {
+				return position;
+			}
+		}
+
+		public static Vector ScreenPointToRay(Vector screenPosition) {
+			if (orthographic) {
+				return -basis.z;
+			} else {
+				let x = 1 - (screenPosition.x / WindowApp.width * 2);
+				let y = screenPosition.y / WindowApp.height * 2 - 1;
+				let tangent = Math.Tan(fov * Math.PI_f / 360);
+	
+				let aspect = (float)WindowApp.width / WindowApp.height;
+				return basis * Vector(-x * tangent * aspect, -y * tangent, -1);
+			}
 		}
 	}
 }

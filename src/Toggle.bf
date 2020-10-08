@@ -1,14 +1,14 @@
 namespace SpyroScope {
 	class Toggle : Button {
-		public bool toggled;
+		public bool value;
 
-		public Texture toggleTexture;
+		public Texture toggleIconTexture;
 
 		public override void Pressed() {
 			if (enabled) {
-				toggled = !toggled;
-				iconTexture = toggled ? toggleTexture : null;
-				OnPressed();
+				value = !value;
+				iconTexture = value ? toggleIconTexture : null;
+				OnActuated();
 			}
 		}
 	}

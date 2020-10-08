@@ -35,13 +35,15 @@ namespace SpyroScope {
 		// Derived from Spyro: Year of the Dragon [80030410]
 		public bool IsActive { get { return updateState < 0x80; } }
 
+		public Matrix basis { get { return .Euler(
+			-(float)eulerRotation.x / 0x80 * Math.PI_f,
+			(float)eulerRotation.y / 0x80 * Math.PI_f,
+			-(float)eulerRotation.z / 0x80 * Math.PI_f
+		); } }
+
 		public void DrawOriginAxis() {
-			let basis = Matrix.Euler(
-				-(float)eulerRotation.x / 0x80 * Math.PI_f,
-				(float)eulerRotation.y / 0x80 * Math.PI_f,
-				-(float)eulerRotation.z / 0x80 * Math.PI_f
-			);
-			DrawUtilities.Axis(position, basis * .Scale(200,200,200));
+			let basis = basis;
+			DrawUtilities.Axis(position, basis * .Scale(200));
 
 			// Is object rendering in game?
 			if (draw) {
@@ -94,6 +96,17 @@ namespace SpyroScope {
 						SparxData sparx = ?;
 						Emulator.ReadFromRAM(dataPointer, &sparx, sizeof(SparxData));
 						sparx.Draw(this);
+					}
+					case 0x03f3: { // ???
+						int32 objectIndex = ?;
+						Emulator.ReadFromRAM(dataPointer, &objectIndex, 4);
+
+						Moby linkedMoby = ?;
+						Emulator.Address<Moby> objPointer = ?;
+						Emulator.objectArrayPointers[(int)Emulator.rom].Read(&objPointer);
+						Emulator.ReadFromRAM(objPointer + objectIndex * sizeof(Moby), &linkedMoby, sizeof(Moby));
+
+						Renderer.DrawLine(position, linkedMoby.position, .(255,255,255), .(255,255,255));
 					}
 					case 0x03ff: { // Whirlwind
 						WhirlwindData whirlwind = ?;
