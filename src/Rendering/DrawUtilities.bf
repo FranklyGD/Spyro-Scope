@@ -108,8 +108,6 @@ namespace SpyroScope {
 			float uvtopinner, float uvbottominner, float uvleftinner, float uvrightinner,
 			Texture texture, Renderer.Color4 color) {
 
-			var width = left - right;
-			var height = top - bottom;
 			var bottomBorder = texture.height * (1 - uvbottominner);
 			var leftBorder = texture.width * uvleftinner;
 			var topBorder = texture.height * uvtopinner;

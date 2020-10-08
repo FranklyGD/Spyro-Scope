@@ -75,7 +75,8 @@ namespace SpyroScope {
 						case 4: axis = referenceBasis.z; color = .(0,0,255);
 					}
 
-					let tickDirection = Vector.Cross(axis, Camera.basis.z);
+					let referenceToCamera = Camera.position - referencePosition;
+					let tickDirection = Vector.Cross(axis, referenceToCamera.Normalized());
 					let normalDirection = Vector.Cross(tickDirection, axis);
 
 					let viewDistance = Math.Max(Math.Abs(Vector.Dot(normalDirection, Camera.position - referencePosition)), 1000);

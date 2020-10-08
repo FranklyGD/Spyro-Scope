@@ -35,11 +35,11 @@ namespace SpyroScope {
 
 		public static Vector ScreenPointToOrigin(Vector screenPosition) {
 			if (orthographic) {
-				let x = 1 - (screenPosition.x / WindowApp.width * 2);
-				let y = screenPosition.y / WindowApp.height * 2 - 1;
+				let x = 0.5f - (screenPosition.x / WindowApp.width);
+				let y = screenPosition.y / WindowApp.height - 0.5f;
 
 				let aspect = (float)WindowApp.width / WindowApp.height;
-				return position + basis.x * x * aspect * size + basis.y * y * size;
+				return position - basis.x * x * aspect * size - basis.y * y * size;
 			} else {
 				return position;
 			}

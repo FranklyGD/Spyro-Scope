@@ -278,20 +278,20 @@ namespace SpyroScope {
 				if (object.dataPointer.IsNull) {
 					break;
 				}
-				
-				objectList.Add((objPointer, object));
-				
-				objPointer += sizeof(Moby);
 
 				if (hideInactive && !object.IsActive) {
 					continue;
 				}
 
-				DrawMoby(object);
-
-				if (drawObjectOrigins) {
+				if ((!showManipulator || currentObjIndex != objectList.Count) && drawObjectOrigins) {
 					object.DrawOriginAxis();
 				}
+
+				DrawMoby(object);
+
+				objectList.Add((objPointer, object));
+				
+				objPointer += sizeof(Moby);
 			}
 
 			if (displayAllData) {
