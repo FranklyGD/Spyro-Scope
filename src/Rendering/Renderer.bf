@@ -404,7 +404,7 @@ namespace SpyroScope {
 
 		public static void BeginWireframe() {
 			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE);
-			GL.glUniform1f(uniformZdepthOffsetIndex, -1f); // Push the lines a little forward
+			GL.glUniform1f(uniformZdepthOffsetIndex, -0.2f); // Push the lines a little forward
 		}
 
 		public static void BeginSolid() {

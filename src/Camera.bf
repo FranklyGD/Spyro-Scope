@@ -26,7 +26,7 @@ namespace SpyroScope {
 				return .Zero;
 			}
 
-			return .((viewPosition.x / viewPosition.w + 1) * WindowApp.width / 2, (1 - viewPosition.y / viewPosition.w) * WindowApp.height / 2, orthographic ? viewPosition.z * size : viewPosition.w);
+			return .((viewPosition.x / viewPosition.w + 1) * WindowApp.width / 2, (1 - viewPosition.y / viewPosition.w) * WindowApp.height / 2, orthographic ? Math.Lerp(near, far, (viewPosition.z + 1) / 2) : viewPosition.w);
 		}
 
 		public static float SceneSizeToScreenSize(float size, float depth) {

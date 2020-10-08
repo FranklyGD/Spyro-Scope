@@ -324,6 +324,11 @@ namespace SpyroScope {
 				}
 			}
 
+			// Draw world's origin
+			Renderer.DrawLine(.Zero, .(10000,0,0), .(255,255,255), .(255,0,0));
+			Renderer.DrawLine(.Zero, .(0,10000,0), .(255,255,255), .(0,255,0));
+			Renderer.DrawLine(.Zero, .(0,0,10000), .(255,255,255), .(0,0,255));
+
 			if (drawLimits) {
 				uint32 currentWorldId = ?;
 				Emulator.currentWorldIdAddress[(int)Emulator.rom].Read(&currentWorldId);
@@ -1088,6 +1093,8 @@ namespace SpyroScope {
 		void ToggleView(ViewMode mode) {
 			if (viewMode == .Map && mode != .Map) {
 				Camera.orthographic = false;
+				Camera.near = 100;
+				Camera.far = 500000;
 
 				Camera.position = Emulator.cameraPosition;
 				viewEulerRotation.x = (float)Emulator.cameraEulerRotation[1] / 0x800;
@@ -1097,10 +1104,12 @@ namespace SpyroScope {
 				WindowApp.viewerProjection = Camera.projection;
 			} else if (viewMode != .Map && mode == .Map)  {
 				Camera.orthographic = true;
+				Camera.near = 0;
+				Camera.far = collisionTerrain.upperBound.z * 1.1f;
 
 				Camera.position.x = (collisionTerrain.upperBound.x + collisionTerrain.lowerBound.x) / 2;
 				Camera.position.y = (collisionTerrain.upperBound.y + collisionTerrain.lowerBound.y) / 2;
-				Camera.position.z = 500000;
+				Camera.position.z = collisionTerrain.upperBound.z * 1.1f;
 
 				let mapSize = collisionTerrain.upperBound - collisionTerrain.lowerBound;
 				let aspect = (float)WindowApp.width / WindowApp.height;

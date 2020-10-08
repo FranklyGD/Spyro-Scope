@@ -13,6 +13,7 @@ namespace SpyroScope {
 		public static bool hovered { get { return axisIndex > 0; } };
 		public static bool dragged { get; private set; };
 		static int8 axisIndex;
+		static int8 axisVisibleIndex;
 
 		static Vector anim;
 
@@ -21,6 +22,27 @@ namespace SpyroScope {
 		public static Event<delegate void()> OnDragEnd ~ _.Dispose();
 
 		public static void Update(Vector position, Matrix basis) {
+			let viewDirection = Camera.orthographic ? Camera.basis.z : (Camera.position - Translator.position).Normalized();
+			axisVisibleIndex = 0;
+			if (Math.Abs(Vector.Dot(viewDirection, Translator.basis.x)) < 0.96f) {
+				axisVisibleIndex |= 1;
+			}
+			if (Math.Abs(Vector.Dot(viewDirection, Translator.basis.y)) < 0.96f) {
+				axisVisibleIndex |= 2;
+			}
+			if (Math.Abs(Vector.Dot(viewDirection, Translator.basis.z)) < 0.96f) {
+				axisVisibleIndex |= 4;
+			}
+			if (Math.Abs(Vector.Dot(viewDirection, Translator.basis.x)) > 0.2f) {
+				axisVisibleIndex |= 8;
+			}
+			if (Math.Abs(Vector.Dot(viewDirection, Translator.basis.y)) > 0.2f) {
+				axisVisibleIndex |= 16;
+			}
+			if (Math.Abs(Vector.Dot(viewDirection, Translator.basis.z)) > 0.2f) {
+				axisVisibleIndex |= 32;
+			}
+
 			if (!dragged) {
 				Translator.position = position;
 				Translator.basis = basis;
@@ -32,38 +54,50 @@ namespace SpyroScope {
 		}
 
 		public static void Draw() {
-			scale = Camera.SceneToScreen(position).z;
+			scale = Camera.orthographic ? Camera.size : Camera.SceneToScreen(position).z;
 			let squareAngle = Math.PI_f / 2;
 
 			var axisLength = scale * 0.125f;
 			var axisDiameter = scale * 0.01f;
-			Renderer.Color xColor = (axisIndex & 1) > 0 ? .(255,128,128) : .(255,0,0);
-			Renderer.Color yColor = (axisIndex & 2) > 0 ? .(128,255,128) : .(0,255,0);
-			Renderer.Color zColor = (axisIndex & 4) > 0 ? .(128,128,255) : .(0,0,255);
-			DrawUtilities.Arrow(position, basis.x * (axisLength + anim.x * 0.01f * scale), axisDiameter, xColor);
-			DrawUtilities.Arrow(position, basis.y * (axisLength + anim.y * 0.01f * scale), axisDiameter, yColor);
-			DrawUtilities.Arrow(position, basis.z * (axisLength + anim.z * 0.01f * scale), axisDiameter, zColor);
+			if (axisVisibleIndex & 1 > 0) {
+				Renderer.Color xColor = (axisIndex & 1) > 0 ? .(255,128,128) : .(255,0,0);
+				DrawUtilities.Arrow(position, basis.x * (axisLength + anim.x * 0.01f * scale), axisDiameter, xColor);
+			}
+			if (axisVisibleIndex & 2 > 0) {
+				Renderer.Color yColor = (axisIndex & 2) > 0 ? .(128,255,128) : .(0,255,0);
+				DrawUtilities.Arrow(position, basis.y * (axisLength + anim.y * 0.01f * scale), axisDiameter, yColor);
+			}
+			if (axisVisibleIndex & 4 > 0) {
+				Renderer.Color zColor = (axisIndex & 4) > 0 ? .(128,128,255) : .(0,0,255);
+				DrawUtilities.Arrow(position, basis.z * (axisLength + anim.z * 0.01f * scale), axisDiameter, zColor);
+			}
 
 			axisLength /= 3;
 			axisDiameter *= 2f/3;
-
-			Renderer.SetTint((axisIndex & 6) == 6 ? .(255,128,128) : .(255,64,64));
-			Renderer.SetModel(position + (basis.y / 2 + basis.z) * axisLength, basis * .Euler(squareAngle, 0, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
-			PrimitiveShape.cylinder.QueueInstance();
-			Renderer.SetModel(position + (basis.z / 2 + basis.y) * axisLength, basis * .Scale(axisDiameter, axisDiameter, axisLength));
-			PrimitiveShape.cylinder.QueueInstance();
-
-			Renderer.SetTint((axisIndex & 5) == 5 ? .(128,255,128) : .(64,255,64));
-			Renderer.SetModel(position + (basis.x / 2 + basis.z) * axisLength, basis * .Euler(0, squareAngle, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
-			PrimitiveShape.cylinder.QueueInstance();
-			Renderer.SetModel(position + (basis.z / 2 + basis.x) * axisLength, basis * .Scale(axisDiameter, axisDiameter, axisLength));
-			PrimitiveShape.cylinder.QueueInstance();
-
-			Renderer.SetTint((axisIndex & 3) == 3 ? .(128,128,255) : .(64,64,255));
-			Renderer.SetModel(position + (basis.x / 2 + basis.y) * axisLength, basis * .Euler(0, squareAngle, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
-			PrimitiveShape.cylinder.QueueInstance();
-			Renderer.SetModel(position + (basis.y / 2 + basis.x) * axisLength, basis * .Euler(squareAngle, 0, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
-			PrimitiveShape.cylinder.QueueInstance();
+			
+			if (axisVisibleIndex & 8 > 0) {
+				Renderer.SetTint((axisIndex & 6) == 6 ? .(255,128,128) : .(255,64,64));
+				Renderer.SetModel(position + (basis.y / 2 + basis.z) * axisLength, basis * .Euler(squareAngle, 0, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
+				PrimitiveShape.cylinder.QueueInstance();
+				Renderer.SetModel(position + (basis.z / 2 + basis.y) * axisLength, basis * .Scale(axisDiameter, axisDiameter, axisLength));
+				PrimitiveShape.cylinder.QueueInstance();
+			}
+			
+			if (axisVisibleIndex & 16 > 0) {
+				Renderer.SetTint((axisIndex & 5) == 5 ? .(128,255,128) : .(64,255,64));
+				Renderer.SetModel(position + (basis.x / 2 + basis.z) * axisLength, basis * .Euler(0, squareAngle, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
+				PrimitiveShape.cylinder.QueueInstance();
+				Renderer.SetModel(position + (basis.z / 2 + basis.x) * axisLength, basis * .Scale(axisDiameter, axisDiameter, axisLength));
+				PrimitiveShape.cylinder.QueueInstance();
+			}
+				
+			if (axisVisibleIndex & 32 > 0) {
+				Renderer.SetTint((axisIndex & 3) == 3 ? .(128,128,255) : .(64,64,255));
+				Renderer.SetModel(position + (basis.x / 2 + basis.y) * axisLength, basis * .Euler(0, squareAngle, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
+				PrimitiveShape.cylinder.QueueInstance();
+				Renderer.SetModel(position + (basis.y / 2 + basis.x) * axisLength, basis * .Euler(squareAngle, 0, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
+				PrimitiveShape.cylinder.QueueInstance();
+			}
 
 			if (dragged) {
 				if (axisIndex == 1 || axisIndex == 2 || axisIndex == 4) {
@@ -159,36 +193,43 @@ namespace SpyroScope {
 				Vector* basisAxis = &basis.x;
 				for (uint8 axis < 3) {
 					let planeNormal = basisAxis[axis % 3];
+					
+					let viewDirection = Camera.orthographic ? Camera.basis.z : (Camera.position - Translator.position).Normalized();
+					if (Vector.Dot(viewDirection, planeNormal) < 0.2f) {
+						continue;
+					}
 
 					let intersectTime = GMath.RayPlaneIntersect(mouseOrigin, mouseRay, position, planeNormal);
-					if (intersectTime < closest) {
-						int8 hoveredAxisIndex = 0;
+					if (intersectTime > closest) {
+						continue;
+					}
 
-						let firstAxisIndex = (axis + 1) % 3;
-						let secondAxisIndex = (axis + 2) % 3;
-						let firstPlaneAxis = basisAxis[firstAxisIndex];
-						let secondPlaneAxis = basisAxis[secondAxisIndex];
+					int8 hoveredAxisIndex = 0;
 
-						let planePosition = mouseOrigin + mouseRay * intersectTime - position;
-						let firstCoordinate = Vector.Dot(planePosition, firstPlaneAxis) / scale;
-						let secondCoordinate = Vector.Dot(planePosition, secondPlaneAxis) / scale;
+					let firstAxisIndex = (axis + 1) % 3;
+					let secondAxisIndex = (axis + 2) % 3;
+					let firstPlaneAxis = basisAxis[firstAxisIndex];
+					let secondPlaneAxis = basisAxis[secondAxisIndex];
 
-						if (firstCoordinate > -0.01f && secondCoordinate > -0.01f) {
-							if (firstCoordinate < 0.125f / 6 && secondCoordinate < 0.125f / 6) {
-								hoveredAxisIndex = 7;
-							} else if (firstCoordinate < 0.125f / 3 && secondCoordinate < 0.125f / 3) {
-								hoveredAxisIndex = 1 << (firstAxisIndex) | 1 << (secondAxisIndex);
-							} else if (firstCoordinate < 0.125f && secondCoordinate < 0.01f) {
-								hoveredAxisIndex = 1 << (firstAxisIndex);
-							} else if (secondCoordinate < 0.125f && firstCoordinate < 0.01f) {
-								hoveredAxisIndex = 1 << (secondAxisIndex);
-							}
+					let planePosition = mouseOrigin + mouseRay * intersectTime - position;
+					let firstCoordinate = Vector.Dot(planePosition, firstPlaneAxis) / scale;
+					let secondCoordinate = Vector.Dot(planePosition, secondPlaneAxis) / scale;
+
+					if (firstCoordinate > -0.01f && secondCoordinate > -0.01f) {
+						if (firstCoordinate < 0.125f / 6 && secondCoordinate < 0.125f / 6) {
+							hoveredAxisIndex = 7;
+						} else if (firstCoordinate < 0.125f / 3 && secondCoordinate < 0.125f / 3) {
+							hoveredAxisIndex = 1 << (firstAxisIndex) | 1 << (secondAxisIndex);
+						} else if (firstCoordinate < 0.125f && secondCoordinate < 0.01f) {
+							hoveredAxisIndex = 1 << (firstAxisIndex);
+						} else if (secondCoordinate < 0.125f && firstCoordinate < 0.01f) {
+							hoveredAxisIndex = 1 << (secondAxisIndex);
 						}
+					}
 
-						if (hoveredAxisIndex > 0) {
-							closest = intersectTime;
-							axisIndex = hoveredAxisIndex;
-						}
+					if (hoveredAxisIndex > 0) {
+						closest = intersectTime;
+						axisIndex = hoveredAxisIndex;
 					}
 				}
 
