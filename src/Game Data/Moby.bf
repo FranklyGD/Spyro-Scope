@@ -19,7 +19,7 @@ namespace SpyroScope {
 		uint32 i; // 64
 		public VectorByte eulerRotation; // 68
 		public uint8 updateState; // 72
-		public uint8 varientID; // 73
+		public uint8 variantID; // 73
 		uint8[3] k; // 74
 		public bool draw; // 77
 		public uint8 lodDistance; // 78
