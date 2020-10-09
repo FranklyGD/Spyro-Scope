@@ -82,6 +82,8 @@ namespace SpyroScope {
 			(null, "(E)nable Manipulator")
 		);
 
+		Toggle pinInspectorButton;
+
 		public this() {
 			GUIElement.SetActiveGUI(guiElements);
 
@@ -179,6 +181,41 @@ namespace SpyroScope {
 			teleportButton.OnActuated.Add(new => Teleport);
 			teleportButton.enabled = false;
 
+			GUIElement.PopParent();
+			
+			sideInspector = new GUIElement();
+			sideInspector.anchor = .(1,1,0,1);
+			sideInspector.offset = .(-300,0,0,0);
+			GUIElement.PushParent(sideInspector);
+
+			pinInspectorButton = new .();
+
+			pinInspectorButton.offset = .(0, 16, 0, 16);
+			pinInspectorButton.offset.Shift(2,2);
+			pinInspectorButton.normalTexture = normalButtonTexture;
+			pinInspectorButton.pressedTexture = pressedButtonTexture;
+			pinInspectorButton.toggleIconTexture = toggledTexture;
+
+			Button copyMobyAddress = new .();
+
+			copyMobyAddress.offset = .(0,64,0,16);
+			copyMobyAddress.offset.Shift(150,2);
+			copyMobyAddress.normalTexture = normalButtonTexture;
+			copyMobyAddress.pressedTexture = pressedButtonTexture;
+			copyMobyAddress.text = "Copy";
+			copyMobyAddress.OnActuated.Add(new () => { SDL.SetClipboardText(scope String() .. AppendF("{}", objectList[currentObjIndex].0)); });
+
+			Button copyMobyDataAddress = new .();
+
+			copyMobyDataAddress.offset = .(0,64,0,16);
+			copyMobyDataAddress.offset.Shift(195,251);
+			copyMobyDataAddress.normalTexture = normalButtonTexture;
+			copyMobyDataAddress.pressedTexture = pressedButtonTexture;
+			copyMobyDataAddress.text = "Copy";
+			copyMobyDataAddress.OnActuated.Add(new () => { SDL.SetClipboardText(scope String() .. AppendF("{}", (objectList[currentObjIndex].1).dataPointer)); });
+
+			GUIElement.PopParent();
+
 			for (let element in guiElements) {
 				Button button = element as Button;
 				if (button != null) {
@@ -186,17 +223,6 @@ namespace SpyroScope {
 					button.[Friend]texture = button.normalTexture;
 				}
 			}
-
-			GUIElement.PopParent();
-			
-			sideInspector = new GUIElement();
-			sideInspector.anchor = .(1,1,0,1);
-			sideInspector.offset = .(-200,0,0,0);
-			GUIElement.PushParent(sideInspector);
-
-			
-
-			GUIElement.PopParent();
 		}
 
 		public ~this() {
@@ -240,11 +266,11 @@ namespace SpyroScope {
 
 			UpdateView();
 
-			cornerMenuInterp = Math.MoveTo(cornerMenuInterp, cornerMenuVisible ? 0 : 1, 0.1f);
-			cornerMenu.offset = .(-200 * cornerMenuInterp,0,0,240);
+			cornerMenuInterp = Math.MoveTo(cornerMenuInterp, cornerMenuVisible ? 1 : 0, 0.1f);
+			cornerMenu.offset = .(-200 * (1 - cornerMenuInterp),0,0,240);
 			
-			sideInspectorInterp = Math.MoveTo(sideInspectorInterp, sideInspectorVisible ? 0 : 1, 0.1f);
-			sideInspector.offset = .(0,200 * sideInspectorInterp,0,0);
+			sideInspectorInterp = Math.MoveTo(sideInspectorInterp, sideInspectorVisible ? 1 : 0, 0.1f);
+			sideInspector.offset = .(-300 * sideInspectorInterp,0,0,0);
 
 			for (let element in guiElements) {
 				element.Update();
@@ -387,20 +413,22 @@ namespace SpyroScope {
 						screenPosition.z = 0;
 						DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(16,16,16));
 
-						Emulator.Address objectArrayPointer = ?;
-						Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
-
-						screenPosition.y += screenSize;
-						screenPosition.x = Math.Floor(screenPosition.x);
-						screenPosition.y = Math.Floor(screenPosition.y);
-						DrawUtilities.Rect(screenPosition.y, screenPosition.y + WindowApp.bitmapFont.characterHeight * 2, screenPosition.x, screenPosition.x + WindowApp.bitmapFont.characterWidth * 10,
-							.(0,0,0,192));
-
-						screenPosition.y += 2;
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", address),
-							screenPosition, .(255,255,255));
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
-							screenPosition + .(0,WindowApp.bitmapFont.characterHeight,0), .(255,255,255));
+						if (!sideInspectorVisible) {
+							Emulator.Address objectArrayPointer = ?;
+							Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
+	
+							screenPosition.y += screenSize;
+							screenPosition.x = Math.Floor(screenPosition.x);
+							screenPosition.y = Math.Floor(screenPosition.y);
+							DrawUtilities.Rect(screenPosition.y, screenPosition.y + WindowApp.bitmapFont.characterHeight * 2, screenPosition.x, screenPosition.x + WindowApp.bitmapFont.characterWidth * 10,
+								.(0,0,0,192));
+	
+							screenPosition.y += 2;
+							WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", address),
+								screenPosition, .(255,255,255));
+							WindowApp.bitmapFont.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
+								screenPosition + .(0,WindowApp.bitmapFont.characterHeight,0), .(255,255,255));
+						}
 					}
 				}
 
@@ -448,8 +476,8 @@ namespace SpyroScope {
 			if (!cornerMenuVisible) {
 				DrawMessageFeed();
 			}
-			DrawUtilities.Rect(0,240,0,200 * (1 - cornerMenuInterp), .(0,0,0,192));
-			DrawUtilities.Rect(0,WindowApp.height,WindowApp.width - 200 * (1 - sideInspectorInterp),WindowApp.width, .(0,0,0,192));
+			DrawUtilities.Rect(0,240,0,200 * cornerMenuInterp, .(0,0,0,192));
+			DrawUtilities.Rect(0,WindowApp.height,WindowApp.width - 300 * sideInspectorInterp,WindowApp.width, .(0,0,0,192));
 
 			if (collisionTerrain.overlay == .Flags) {
 				// Legend
@@ -515,6 +543,7 @@ namespace SpyroScope {
 				}
 			}
 
+			// Corner Menu
 			for (let element in guiElements) {
 				if (element.GetVisibility()) {
 					let parentRect = element.parent != null ? element.parent.drawn : GUIElement.Rect(0, WindowApp.width, 0, WindowApp.height);
@@ -526,6 +555,28 @@ namespace SpyroScope {
 				if (toggle.button.visible) {
 					WindowApp.fontSmall.Print(toggle.label, .(toggle.button.drawn.right + 8, toggle.button.drawn.top + 1, 0), .(255,255,255));
 				}
+			}
+
+			// Side Inspector
+			if (currentObjIndex > -1) {
+				let (address, object) = objectList[currentObjIndex];
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", address), .(sideInspector.drawn.left + 22, 3, 0), .(255,255,255));
+				int line = 0;
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("State {} ({})", object.updateState, object.IsActive ? "Active" : "Inactive"), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
+				line++;
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Pos {}", object.position), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Rot {},{},{}", object.eulerRotation.x,object.eulerRotation.y,object.eulerRotation.z),
+					.(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Model {}:{}", object.objectTypeID, object.modelID), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("LOD Distance {} ({})", object.lodDistance, object.lodDistance * 1000), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Color {},{},{},{}", object.color.r, object.color.g, object.color.b, object.color.a), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
+				line++;
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Type {}", object.objectTypeID), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Sub-Type? {}", object.objectSubTypeID), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Variant? {}", object.variantID), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Data [{}]", object.dataPointer), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
+				line++;
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Gem-Value {}", (int8)object.heldGemValue), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
 			}
 		}
 
@@ -561,8 +612,6 @@ namespace SpyroScope {
 										Translator.OnDragged.Add(new (position) => { Emulator.spyroPosition = position.ToVectorInt(); });
 										Translator.OnDragEnd.Add(new => Emulator.RestoreSpyroUpdate);
 									} else {
-										SDL.SetClipboardText(scope String() .. AppendF("{:X8}", objectList[currentObjIndex].0));
-										 
 										Translator.OnDragged.Add(new (position) => {
 											var (address, moby) = objectList[currentObjIndex];
 											moby.position = position.ToVectorInt();
@@ -616,7 +665,7 @@ namespace SpyroScope {
 						mousePosition = .(event.motion.x, event.motion.y, 0);
 
 						cornerMenuVisible = mousePosition.x < 200 && mousePosition.y < 240;
-						sideInspectorVisible = mousePosition.x > WindowApp.width - 200;
+						sideInspectorVisible = showManipulator && currentObjIndex > -1 && (pinInspectorButton.value || mousePosition.x > WindowApp.width - 300);
 
 						let lastHoveredElement = GUIElement.hoveredElement;
 						GUIElement.hoveredElement = null;
