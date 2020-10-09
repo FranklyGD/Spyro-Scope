@@ -195,7 +195,7 @@ namespace SpyroScope {
 					let planeNormal = basisAxis[axis % 3];
 					
 					let viewDirection = Camera.orthographic ? Camera.basis.z : (Camera.position - Translator.position).Normalized();
-					if (Vector.Dot(viewDirection, planeNormal) < 0.2f) {
+					if (Math.Abs(Vector.Dot(viewDirection, planeNormal)) < 0.2f) {
 						continue;
 					}
 

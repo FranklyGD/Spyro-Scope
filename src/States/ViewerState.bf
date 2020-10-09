@@ -664,8 +664,8 @@ namespace SpyroScope {
 					} else {
 						mousePosition = .(event.motion.x, event.motion.y, 0);
 
-						cornerMenuVisible = mousePosition.x < 200 && mousePosition.y < 240;
-						sideInspectorVisible = showManipulator && currentObjIndex > -1 && (pinInspectorButton.value || mousePosition.x > WindowApp.width - 300);
+						cornerMenuVisible = !Translator.dragged && (cornerMenuVisible && mousePosition.x < 200 || mousePosition.x < 10) && mousePosition.y < 240;
+						sideInspectorVisible = !Translator.dragged && currentObjIndex > -1 && (pinInspectorButton.value || (sideInspectorVisible && mousePosition.x > WindowApp.width - 300 || mousePosition.x > WindowApp.width - 10));
 
 						let lastHoveredElement = GUIElement.hoveredElement;
 						GUIElement.hoveredElement = null;

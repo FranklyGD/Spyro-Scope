@@ -123,8 +123,8 @@ namespace SpyroScope {
 		);
 		
 		// Function Overrides
-		public const Address<uint32>[4] spyroUpdateAddresses = .(0, 0, (.)0x8001b0c4, 0);		  
-		public const uint32[4] spyroUpdateJumpValue = .(0, 0, 0x0c00a81f, 0);
+		public const Address<uint32>[4] spyroUpdateAddresses = .(0, 0, (.)0x8001b0c4, (.)0x80055384);		  
+		public const uint32[4] spyroUpdateJumpValue = .(0, 0, 0x0c00a81f, 0x0c00fa18);
 		public const Address<uint32>[4] cameraUpdateAddresses = .(0, 0, (.)0x8001b110, (.)0x800553d0);		  
 		public const uint32[4] cameraUpdateJumpValue = .(0, 0, 0x0c00761f, 0x0c004818);
 		public const Address<uint32>[4] updateAddresses = .(0, 0, (.)0x80011af4, (.)0x80012038);
