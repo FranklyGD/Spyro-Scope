@@ -136,8 +136,7 @@ namespace SpyroScope {
 				for (let item in animationGroups) {
 					item.Dispose();
 				}
-				delete animationGroups;
-				animationGroups = null;
+				DeleteAndNullify!(animationGroups);
 			}
 
 			ClearColor();
@@ -330,6 +329,9 @@ namespace SpyroScope {
 				case .Sound: ColorCollisionSounds();
 				case .Platform: ColorPlatforms();
 			}
+
+			// Send changed color data
+			mesh.Update();
 		}
 
 		void ClearColor() {
