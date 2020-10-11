@@ -305,17 +305,15 @@ namespace SpyroScope {
 					break;
 				}
 
-				if (hideInactive && !object.IsActive) {
-					continue;
+				if (!hideInactive || object.IsActive) {
+					if ((!showManipulator || currentObjIndex != objectList.Count) && drawObjectOrigins) {
+						object.DrawOriginAxis();
+					}
+	
+					DrawMoby(object);
+	
+					objectList.Add((objPointer, object));
 				}
-
-				if ((!showManipulator || currentObjIndex != objectList.Count) && drawObjectOrigins) {
-					object.DrawOriginAxis();
-				}
-
-				DrawMoby(object);
-
-				objectList.Add((objPointer, object));
 				
 				objPointer += sizeof(Moby);
 			}
