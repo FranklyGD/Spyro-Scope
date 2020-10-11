@@ -531,7 +531,7 @@ namespace SpyroScope {
 					WindowApp.bitmapFont.Print(scope String() .. AppendF("Interp. {}", (uint)keyframeData.interpolation), .(8, (.)WindowApp.height - (18 * 2 + 8 + 15), 0), .(255,255,255));
 					WindowApp.bitmapFont.Print(scope String() .. AppendF("From State {}", (uint)keyframeData.fromState), .(8, (.)WindowApp.height - (18 * 1 + 8 + 15), 0), .(255,255,255));
 					WindowApp.bitmapFont.Print(scope String() .. AppendF("To State {}", (uint)keyframeData.toState), .(8, (.)WindowApp.height - (18 * 0 + 8 + 15), 0), .(255,255,255));
-				} else {
+				} else if (collisionTerrain.animationGroups != null) {
 					for (let animationGroup in collisionTerrain.animationGroups) {
 						var screenPosition = Camera.SceneToScreen(animationGroup.center);
 						if (screenPosition.z > 0) { // Must be in front of view
