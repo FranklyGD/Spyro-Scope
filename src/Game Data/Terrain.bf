@@ -4,7 +4,18 @@ using System.Threading;
 
 namespace SpyroScope {
 	class Terrain {
-		Mesh mesh;
+		Mesh collisionMesh;
+
+		public struct TerrainRegion {
+			public Mesh farMesh;
+			public Vector offset;
+
+			public void Dispose() {
+				delete farMesh;
+			}
+		}
+		TerrainRegion[] visualMeshes;
+
 		public Vector upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
 		public Vector lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
 
@@ -53,6 +64,7 @@ namespace SpyroScope {
 			Platform
 		}
 		public Overlay overlay = .None;
+		public int drawnRegion = -1;
 
 		public ~this() {
 			if (animationGroups != null) {
@@ -61,7 +73,12 @@ namespace SpyroScope {
 				}
 			}
 			delete animationGroups;
-			delete mesh;
+			delete collisionMesh;
+
+			for (let item in visualMeshes) {
+				item.Dispose();
+			}
+			delete visualMeshes;
 		}
 
 		public void Reload() {
@@ -128,8 +145,115 @@ namespace SpyroScope {
 				}
 			}
 
-			delete mesh;
-			mesh = new .(vertices, normals, colors);
+			delete collisionMesh;
+			collisionMesh = new .(vertices, normals, colors);
+
+			List<Vector> vertexList = scope .();
+			List<Renderer.Color4> colorList = scope .();
+
+			Emulator.Address<Emulator.Address> sceneDataRegionArrayPointer = ?;
+			Emulator.Address<Emulator.Address> sceneDataRegionArrayPointerAddress = (.)0x800673d4;
+			sceneDataRegionArrayPointerAddress.Read(&sceneDataRegionArrayPointer);
+			uint32 sceneDataRegionCount = ?;
+			Emulator.Address<uint32> sceneDataRegionCountAddress = (.)0x800673d8;
+			sceneDataRegionCountAddress.Read(&sceneDataRegionCount);
+
+			visualMeshes = new .[sceneDataRegionCount];
+			Emulator.Address[] sceneDataRegions = scope .[sceneDataRegionCount];
+			sceneDataRegionArrayPointer.ReadArray(&sceneDataRegions[0], sceneDataRegionCount);
+
+			for (let regionIndex < sceneDataRegionCount) {
+				let regionPointer = sceneDataRegions[regionIndex];
+				(uint16 centerY, uint16 centerX, uint16 a, uint16 centerZ,
+					uint16 offsetY, uint16 offsetX, uint16 b, uint16 offsetZ,
+					uint8 vertexCount, uint8 colorCount, uint8 faceCount) regionMetadata = ?;
+				Emulator.ReadFromRAM(regionPointer, &regionMetadata, 19);
+
+				// Low Poly Count / Far Mesh
+				if (regionMetadata.vertexCount > 0) {
+					visualMeshes[regionIndex].offset = .(regionMetadata.offsetX, regionMetadata.offsetY, regionMetadata.offsetZ);
+	
+					uint32[] packedVertices = scope .[regionMetadata.vertexCount];
+					Emulator.ReadFromRAM(regionPointer + 0x1c, &packedVertices[0], (uint16)regionMetadata.vertexCount * 4);
+					
+					Renderer.Color4[] vertexColors = scope .[regionMetadata.colorCount];
+					Emulator.ReadFromRAM(regionPointer + 0x1c + (uint16)regionMetadata.vertexCount * 4, &vertexColors[0], (uint16)regionMetadata.colorCount * 4);
+
+					uint32[4] triangleIndices = ?;
+					Vector[4] triangleVertices = ?;
+					Renderer.Color[4] triangleColors = ?;
+	
+					uint32[] regionTriangles = scope .[regionMetadata.faceCount * 2];
+					// Derived from Spyro: Ripto's Rage
+					// Vertex Indexing [80028e10]
+					// Color Indexing [80028f28]
+					Emulator.ReadFromRAM(regionPointer + 0x1c + (uint16)regionMetadata.vertexCount * 4 + (uint16)regionMetadata.colorCount * 4, &regionTriangles[0], (uint16)regionMetadata.faceCount * 2 * 4);
+					for (let i < regionMetadata.faceCount) {
+						uint32 packedTriangleIndex = regionTriangles[i * 2];
+						uint32 packedTriangleColorIndex = regionTriangles[i * 2 + 1];
+	
+						triangleIndices[0] = packedTriangleIndex >> 10 & 0x7f; //((packedTriangleIndex >> 7) & 0x3f8) >> 3;
+						triangleIndices[1] = packedTriangleIndex >> 17 & 0x7f; //((packedTriangleIndex >> 14) & 0x3f8) >> 3;
+						triangleIndices[2] = packedTriangleIndex >> 24 & 0x7f; //((packedTriangleIndex >> 21) & 0x3f8) >> 3;
+						triangleIndices[3] = packedTriangleIndex >> 3 & 0x7f; //(packedTriangleIndex & 0x3f8) >> 3;
+	
+						triangleVertices[0] = UnpackVertex(packedVertices[triangleIndices[0]]);
+						triangleVertices[1] = UnpackVertex(packedVertices[triangleIndices[1]]);
+						triangleVertices[2] = UnpackVertex(packedVertices[triangleIndices[2]]);
+
+						triangleColors[0] = vertexColors[packedTriangleColorIndex >> 11 & 0x7f]; //((packedTriangleColorIndex >> 9) & 0x1fc) >> 2;
+						triangleColors[1] = vertexColors[packedTriangleColorIndex >> 18 & 0x7f]; //((packedTriangleColorIndex >> 16) & 0x1fc) >> 2;
+						triangleColors[2] = vertexColors[packedTriangleColorIndex >> 25 & 0x7f]; //((packedTriangleColorIndex >> 23) & 0x1fc) >> 2;
+	
+						if (triangleIndices[0] == triangleIndices[3]) {
+							vertexList.Add(triangleVertices[0]);
+							vertexList.Add(triangleVertices[2]);
+							vertexList.Add(triangleVertices[1]);
+							
+							colorList.Add(triangleColors[0]);
+							colorList.Add(triangleColors[2]);
+							colorList.Add(triangleColors[1]);
+						} else {
+							triangleVertices[3] = UnpackVertex(packedVertices[triangleIndices[3] % packedVertices.Count]);
+							triangleColors[3] = vertexColors[packedTriangleColorIndex >> 4 & 0x7f]; //((packedTriangleColorIndex >> 2) & 0x1fc) >> 2;
+
+							vertexList.Add(triangleVertices[0]);
+							vertexList.Add(triangleVertices[2]);
+							vertexList.Add(triangleVertices[1]);
+	
+							vertexList.Add(triangleVertices[0]);
+							vertexList.Add(triangleVertices[1]);
+							vertexList.Add(triangleVertices[3]);
+							
+							colorList.Add(triangleColors[0]);
+							colorList.Add(triangleColors[2]);
+							colorList.Add(triangleColors[1]);
+
+							colorList.Add(triangleColors[0]);
+							colorList.Add(triangleColors[1]);
+							colorList.Add(triangleColors[3]);
+						}
+					}
+				}
+				
+				Vector[] v = new .[vertexList.Count];
+				Vector[] n = new .[vertexList.Count];
+				Renderer.Color4[] c = new .[vertexList.Count];
+
+				for (let i < vertexList.Count) {
+					v[i] = vertexList[i];
+					c[i] = colorList[i];
+				}
+
+				for (var i = 0; i < vertexList.Count; i += 3) {
+					n[i] = n[i+1] = n[i+2] = .(0,0,1);
+				}
+
+				visualMeshes[regionIndex].farMesh = new .(v, n, c);
+
+				vertexList.Clear();
+				colorList.Clear();
+			}
 
 			// Delete animations as the new loaded mesh may be incompatible
 			if (animationGroups != null) {
@@ -141,6 +265,17 @@ namespace SpyroScope {
 
 			ClearColor();
 			ApplyColor();
+		}
+
+		// Derived from Spyro: Ripto's Rage [80028c2c]
+		Vector UnpackVertex(uint32 packedVertex) {
+			Vector vertex = ?;
+
+			vertex.x = packedVertex >> 21;
+			vertex.y = packedVertex >> 10 & 0x7ff;
+			vertex.z = (packedVertex & 0x3ff) << 1;
+
+			return vertex;
 		}
 
 		public void ReloadAnimationGroups() {
@@ -224,7 +359,7 @@ namespace SpyroScope {
 		}
 
 		public void Update() {
-			if (mesh == null || mesh.vertices.Count == 0) {
+			if (collisionMesh == null || collisionMesh.vertices.Count == 0) {
 				return; // No mesh to update
 			}
 
@@ -246,7 +381,7 @@ namespace SpyroScope {
 				
 				let interpolation = (float)keyframeData.interpolation / (256);
 
-				if ((animationGroup.start + animationGroup.count) * 3 > mesh.vertices.Count ||
+				if ((animationGroup.start + animationGroup.count) * 3 > collisionMesh.vertices.Count ||
 					keyframeData.fromState >= animationGroup.mesh.Count || keyframeData.toState >= animationGroup.mesh.Count) {
 					break; // Don't bother since it picked up garbage data
 				}
@@ -258,38 +393,49 @@ namespace SpyroScope {
 					Vector toNormal = animationGroup.mesh[keyframeData.toState].normals[i];
 
 					let vertexIndex = animationGroup.start * 3 + i;
-					mesh.vertices[vertexIndex] = fromVertex + (toVertex - fromVertex) * interpolation;
-					mesh.normals[vertexIndex] = fromNormal + (toNormal - fromNormal) * interpolation;
+					collisionMesh.vertices[vertexIndex] = fromVertex + (toVertex - fromVertex) * interpolation;
+					collisionMesh.normals[vertexIndex] = fromNormal + (toNormal - fromNormal) * interpolation;
 				}
 
 				if (overlay == .Deform) {
 					Renderer.Color transitionColor = keyframeData.fromState == keyframeData.toState ? .(255,128,0) : .((.)((1 - interpolation) * 255), (.)(interpolation * 255), 0);
 					for (let i < animationGroup.count * 3) {
 						let vertexIndex = animationGroup.start * 3 + i;
-						mesh.colors[vertexIndex] = transitionColor;
+						collisionMesh.colors[vertexIndex] = transitionColor;
 					}
 				}
 			}
 
-			mesh.Update();
+			collisionMesh.Update();
 		}
 
 		public void Draw() {
-			if (mesh == null) {
+			Renderer.SetTint(.(255,255,255));
+			Renderer.BeginSolid();
+
+			if (drawnRegion > -1) {
+				Renderer.SetModel(visualMeshes[drawnRegion].offset * 16, .Scale(16));
+				visualMeshes[drawnRegion].farMesh.Draw();
+			} else {
+				for (let i < visualMeshes.Count) {
+					Renderer.SetModel(visualMeshes[i].offset * 16, .Scale(16));
+					visualMeshes[i].farMesh.Draw();
+				}
+			}
+
+			if (collisionMesh == null) {
 				return;
 			}
 
 			Renderer.SetModel(.Zero, .Identity);
-			Renderer.SetTint(.(255,255,255));
-			Renderer.BeginSolid();
 
 			if (!wireframe) {
-				mesh.Draw();
+				collisionMesh.Draw();
 				Renderer.SetTint(.(128,128,128));
 			}
 
 			Renderer.BeginWireframe();
-			mesh.Draw();
+			collisionMesh.Draw();
 
 			if (overlay == .Deform && animationGroups != null) {
 				Renderer.SetTint(.(255,255,0));
@@ -331,12 +477,12 @@ namespace SpyroScope {
 			}
 
 			// Send changed color data
-			mesh.Update();
+			collisionMesh.Update();
 		}
 
 		void ClearColor() {
-			for (let i < mesh.colors.Count) {
-				mesh.colors[i] = .(255, 255, 255);
+			for (let i < collisionMesh.colors.Count) {
+				collisionMesh.colors[i] = .(255, 255, 255);
 			}
 		}
 
@@ -361,7 +507,7 @@ namespace SpyroScope {
 
 				for (let vi < 3) {
 					let i = triangleIndex * 3 + vi;
-					mesh.colors[i] = color;
+					collisionMesh.colors[i] = color;
 				}
 			}
 		}
@@ -371,7 +517,7 @@ namespace SpyroScope {
 			for (let triangleIndex in waterSurfaceTriangles) {
 				for (let vi < 3) {
 					let i = triangleIndex * 3 + vi;
-					mesh.colors[i] = .(64, 128, 255);
+					collisionMesh.colors[i] = .(64, 128, 255);
 				}
 			}
 		}
@@ -393,7 +539,7 @@ namespace SpyroScope {
 
 				for (let vi < 3) {
 					let i = triangleIndex * 3 + vi;
-					mesh.colors[i] = color;
+					collisionMesh.colors[i] = color;
 				}
 			}
 		}
@@ -401,8 +547,8 @@ namespace SpyroScope {
 		void ColorPlatforms() {
 			for (int triangleIndex < Emulator.collisionTriangles.Count) {
 				let normal = Vector.Cross(
-					mesh.vertices[triangleIndex * 3 + 2] - mesh.vertices[triangleIndex * 3 + 0],
-					mesh.vertices[triangleIndex * 3 + 1] - mesh.vertices[triangleIndex * 3 + 0]
+					collisionMesh.vertices[triangleIndex * 3 + 2] - collisionMesh.vertices[triangleIndex * 3 + 0],
+					collisionMesh.vertices[triangleIndex * 3 + 1] - collisionMesh.vertices[triangleIndex * 3 + 0]
 				);
 
 				VectorInt normalInt = normal.ToVectorInt();
@@ -421,7 +567,7 @@ namespace SpyroScope {
 				if (Math.Round(slope) < 0x17) { // Derived from Spyro: Ripto's Rage [80035e44]
 					for (let vi < 3) {
 						let i = triangleIndex * 3 + vi;
-						mesh.colors[i] = .(128,255,128);
+						collisionMesh.colors[i] = .(128,255,128);
 					}
 				}
 			}

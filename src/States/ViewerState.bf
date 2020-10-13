@@ -35,7 +35,7 @@ namespace SpyroScope {
 		List<(float distance, int index)> lastHoveredObjects = new .() ~ delete _;
 
 		// Scene
-		Terrain collisionTerrain = new .() ~ delete _;
+		Terrain terrain = new .() ~ delete _;
 		bool drawLimits;
 
 		// Objects
@@ -262,7 +262,7 @@ namespace SpyroScope {
 			Emulator.FetchRAMBaseAddress();
 			Emulator.FetchImportantObjects();
 
-			collisionTerrain.Update();
+			terrain.Update();
 
 			UpdateView();
 
@@ -288,7 +288,7 @@ namespace SpyroScope {
 		}
 
 		public override void DrawView() {
-			collisionTerrain.Draw();
+			terrain.Draw();
 			if (viewMode != .Game) {
 				DrawGameCameraFrustrum();
 			}
@@ -441,8 +441,8 @@ namespace SpyroScope {
 					}
 				}
 
-				if (collisionTerrain.overlay == .Deform && hoveredAnimGroupIndex != -1) {
-					let hoveredAnimGroup = collisionTerrain.animationGroups[hoveredAnimGroupIndex];
+				if (terrain.overlay == .Deform && hoveredAnimGroupIndex != -1) {
+					let hoveredAnimGroup = terrain.animationGroups[hoveredAnimGroupIndex];
 					// Begin overlays
 					var screenPosition = Camera.SceneToScreen(hoveredAnimGroup.center);
 					if (screenPosition.z > 0) { // Must be in front of view
@@ -477,19 +477,19 @@ namespace SpyroScope {
 			DrawUtilities.Rect(0,240,0,200 * cornerMenuInterp, .(0,0,0,192));
 			DrawUtilities.Rect(0,WindowApp.height,WindowApp.width - 300 * sideInspectorInterp,WindowApp.width, .(0,0,0,192));
 
-			if (collisionTerrain.overlay == .Flags) {
+			if (terrain.overlay == .Flags) {
 				// Legend
 				let leftPaddingBG = 4;
 				let bottomPaddingBG = 4;
 
 				// Background
-				let backgroundHeight = 18 * collisionTerrain.collisionTypes.Count + 2;
+				let backgroundHeight = 18 * terrain.collisionTypes.Count + 2;
 				DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
 					.(0,0,0,192));
 
 				// Content
-				for (let i < collisionTerrain.collisionTypes.Count) {
-					let flag = collisionTerrain.collisionTypes[i];
+				for (let i < terrain.collisionTypes.Count) {
+					let flag = terrain.collisionTypes[i];
 					String label = scope String() .. AppendF("Unknown {}", flag);
 					Renderer.Color color = .(255, 0, 255);
 					if (flag < 11 /*Emulator.collisionTypes.Count*/) {
@@ -502,9 +502,9 @@ namespace SpyroScope {
 
 					WindowApp.bitmapFont.Print(label, .(leftPadding + 24, (.)WindowApp.height - (bottomPadding + 15), 0), .(255,255,255));
 				}
-			} else if (collisionTerrain.overlay == .Deform) {
+			} else if (terrain.overlay == .Deform) {
 				if (currentAnimGroupIndex != -1) {
-					let animationGroup = collisionTerrain.animationGroups[currentAnimGroupIndex];
+					let animationGroup = terrain.animationGroups[currentAnimGroupIndex];
 					var screenPosition = Camera.SceneToScreen(animationGroup.center);
 					if (screenPosition.z > 0) { // Must be in front of view
 						let screenSize = Camera.SceneSizeToScreenSize(animationGroup.radius, screenPosition.z);
@@ -529,8 +529,8 @@ namespace SpyroScope {
 					WindowApp.bitmapFont.Print(scope String() .. AppendF("Interp. {}", (uint)keyframeData.interpolation), .(8, (.)WindowApp.height - (18 * 2 + 8 + 15), 0), .(255,255,255));
 					WindowApp.bitmapFont.Print(scope String() .. AppendF("From State {}", (uint)keyframeData.fromState), .(8, (.)WindowApp.height - (18 * 1 + 8 + 15), 0), .(255,255,255));
 					WindowApp.bitmapFont.Print(scope String() .. AppendF("To State {}", (uint)keyframeData.toState), .(8, (.)WindowApp.height - (18 * 0 + 8 + 15), 0), .(255,255,255));
-				} else if (collisionTerrain.animationGroups != null) {
-					for (let animationGroup in collisionTerrain.animationGroups) {
+				} else if (terrain.animationGroups != null) {
+					for (let animationGroup in terrain.animationGroups) {
 						var screenPosition = Camera.SceneToScreen(animationGroup.center);
 						if (screenPosition.z > 0) { // Must be in front of view
 							let screenSize = Camera.SceneSizeToScreenSize(animationGroup.radius, screenPosition.z);
@@ -618,7 +618,7 @@ namespace SpyroScope {
 									}
 								}
 	
-								if (collisionTerrain.overlay == .Deform) {
+								if (terrain.overlay == .Deform) {
 									currentAnimGroupIndex = hoveredAnimGroupIndex;
 								}
 	
@@ -685,7 +685,7 @@ namespace SpyroScope {
 						} else {
 							var closestDistance = float.PositiveInfinity;
 							hoveredObjIndex = GetObjectIndexUnderMouse(ref closestDistance);
-							if (collisionTerrain.overlay == .Deform) {
+							if (terrain.overlay == .Deform) {
 								hoveredAnimGroupIndex = GetTerrainAnimationGroupIndexUnderMouse(ref closestDistance);
 								if (hoveredAnimGroupIndex != -1) {
 									hoveredObjIndex = -1;
@@ -770,6 +770,12 @@ namespace SpyroScope {
 								if (!Translator.dragged) {
 									toggleList[7].button.Pressed();
 								}
+							}
+							case .KpPlus : {
+								terrain.drawnRegion++;
+							}
+							case .KpMinus : {
+								terrain.drawnRegion--;
 							}
 							default : {}
 						}
@@ -943,7 +949,7 @@ namespace SpyroScope {
 			currentObjIndex = hoveredObjIndex = -1;
 			currentAnimGroupIndex = hoveredAnimGroupIndex = -1;
 
-			collisionTerrain.Reload();
+			terrain.Reload();
 		}
 
 		void PushMessageToFeed(String message) {
@@ -1083,8 +1089,8 @@ namespace SpyroScope {
 		int GetTerrainAnimationGroupIndexUnderMouse(ref float closestDepth) {
 			var closestGroupIndex = -1;
 
-			for (int groupIndex = 0; groupIndex < collisionTerrain.animationGroups.Count; groupIndex++) {
-				let group = collisionTerrain.animationGroups[groupIndex];
+			for (int groupIndex = 0; groupIndex < terrain.animationGroups.Count; groupIndex++) {
+				let group = terrain.animationGroups[groupIndex];
 				
 				let screenPosition = Camera.SceneToScreen(group.center);
 
@@ -1123,7 +1129,7 @@ namespace SpyroScope {
 		}
 
 		void ToggleWireframe(bool toggle) {
-			collisionTerrain.wireframe = toggle;
+			terrain.wireframe = toggle;
 			PushMessageToFeed("Toggled Terrain Wireframe");
 		}
 
@@ -1152,13 +1158,13 @@ namespace SpyroScope {
 			} else if (viewMode != .Map && mode == .Map)  {
 				Camera.orthographic = true;
 				Camera.near = 0;
-				Camera.far = collisionTerrain.upperBound.z * 1.1f;
+				Camera.far = terrain.upperBound.z * 1.1f;
 
-				Camera.position.x = (collisionTerrain.upperBound.x + collisionTerrain.lowerBound.x) / 2;
-				Camera.position.y = (collisionTerrain.upperBound.y + collisionTerrain.lowerBound.y) / 2;
-				Camera.position.z = collisionTerrain.upperBound.z * 1.1f;
+				Camera.position.x = (terrain.upperBound.x + terrain.lowerBound.x) / 2;
+				Camera.position.y = (terrain.upperBound.y + terrain.lowerBound.y) / 2;
+				Camera.position.z = terrain.upperBound.z * 1.1f;
 
-				let mapSize = collisionTerrain.upperBound - collisionTerrain.lowerBound;
+				let mapSize = terrain.upperBound - terrain.lowerBound;
 				let aspect = (float)WindowApp.width / WindowApp.height;
 				if (mapSize.x / mapSize.y > aspect) {
 					Camera.size = mapSize.x / aspect;
@@ -1197,14 +1203,14 @@ namespace SpyroScope {
 		}
 
 		void CycleTerrainOverlay() {
-			if (collisionTerrain.overlay == .Deform) {
+			if (terrain.overlay == .Deform) {
 				currentAnimGroupIndex = -1;
 			}
 
-			collisionTerrain.CycleOverlay();
+			terrain.CycleOverlay();
 
 			String overlayType;
-			switch (collisionTerrain.overlay) {
+			switch (terrain.overlay) {
 				case .None: overlayType = "None";
 				case .Flags: overlayType = "Flags";
 				case .Deform: overlayType = "Deform";

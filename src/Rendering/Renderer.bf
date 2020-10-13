@@ -18,6 +18,10 @@ namespace SpyroScope {
 				this.g = g;
 				this.b = b;
 			}
+
+			public static implicit operator Color(Color4 color) {
+				return .(color.r, color.g, color.b);
+			}
 		}
 
 		public struct Color4 {
