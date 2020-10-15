@@ -142,7 +142,7 @@ namespace SpyroScope {
 			startDrawQueue = lastDrawQueue = &drawQueue[0];
 
 			// Initialize OpenGL
-			SDL.GL_SetAttribute(.GL_CONTEXT_FLAGS, (.)SDL.SDL_GLContextFlags.GL_CONTEXT_DEBUG_FLAG);
+			SDL.GL_SetAttribute(.GL_CONTEXT_FLAGS, (uint32)SDL.SDL_GLContextFlags.GL_CONTEXT_DEBUG_FLAG);
 
 			context = SDL.GL_CreateContext(window);
 			GL.Init(=> SdlGetProcAddress);
