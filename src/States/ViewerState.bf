@@ -72,7 +72,7 @@ namespace SpyroScope {
 		float sideInspectorInterp;
 
 		(Toggle button, String label)[8] toggleList = .(
-			(null, "Collision Wirefra(m)e"),
+			(null, "Wirefra(m)e"),
 			(null, "Object (O)rigin Axis"),
 			(null, "Hide (I)nactive Objects"),
 			(null, "(H)eight Limits"),
@@ -107,7 +107,7 @@ namespace SpyroScope {
 			stepButton.OnActuated.Add(new => Step);
 
 			cornerMenu = new GUIElement();
-			cornerMenu.offset = .(0,240,0,200);
+			cornerMenu.offset = .(0,260,0,200);
 			GUIElement.PushParent(cornerMenu);
 
 			Button viewButton1 = new .();
@@ -142,10 +142,42 @@ namespace SpyroScope {
 				ToggleView(.Map);
 			});
 
+			viewButton1 = new .();
+			viewButton2 = new .();
+			viewButton3 = new .();
+
+			viewButton1.offset = .(16,72,36,52);
+			viewButton2.offset = .(72,128,36,52);
+			viewButton3.offset = .(128,184,36,52);
+			viewButton1.normalTexture = viewButton2.normalTexture = viewButton3.normalTexture = normalButtonTexture;
+			viewButton1.pressedTexture = viewButton2.pressedTexture = viewButton3.pressedTexture = pressedButtonTexture;
+
+			viewButton1.text = "Collision";
+			viewButton2.text = "Far";
+			viewButton3.text = "Near";
+
+			viewButton1.enabled = false;
+
+			viewButton1.OnActuated.Add(new () => {
+				viewButton1.enabled = false;
+				viewButton2.enabled = viewButton3.enabled = cycleTerrainOverlayButton.enabled = true;
+				terrain.renderMode = .Collision;
+			});
+			viewButton2.OnActuated.Add(new () => {
+				viewButton2.enabled = cycleTerrainOverlayButton.enabled = false;
+				viewButton1.enabled = viewButton3.enabled = true;
+				terrain.renderMode = .Far;
+			});
+			viewButton3.OnActuated.Add(new () => {
+				viewButton3.enabled = cycleTerrainOverlayButton.enabled = false;
+				viewButton2.enabled = viewButton1.enabled = true;
+				terrain.renderMode = .Near;
+			});
+
 			for (let i < toggleList.Count) {
 				Toggle button = new .();
 
-				button.offset = .(16, 32, 16 + (i + 1) * WindowApp.font.height, 32 + (i + 1) * WindowApp.font.height);
+				button.offset = .(16, 32, 16 + (i + 2) * WindowApp.font.height, 32 + (i + 2) * WindowApp.font.height);
 				button.normalTexture = normalButtonTexture;
 				button.pressedTexture = pressedButtonTexture;
 				button.toggleIconTexture = toggledTexture;
@@ -166,7 +198,7 @@ namespace SpyroScope {
 
 			cycleTerrainOverlayButton = new .();
 
-			cycleTerrainOverlayButton.offset = .(16, 180, 16 + (toggleList.Count + 1) * WindowApp.font.height, 32 + (toggleList.Count + 1) * WindowApp.font.height);
+			cycleTerrainOverlayButton.offset = .(16, 180, 16 + (toggleList.Count + 2) * WindowApp.font.height, 32 + (toggleList.Count + 2) * WindowApp.font.height);
 			cycleTerrainOverlayButton.normalTexture = normalButtonTexture;
 			cycleTerrainOverlayButton.pressedTexture = pressedButtonTexture;
 			cycleTerrainOverlayButton.text = "Terrain Over(l)ay";
@@ -174,7 +206,7 @@ namespace SpyroScope {
 
 			teleportButton = new .();
 
-			teleportButton.offset = .(16, 180, 16 + (toggleList.Count + 2) * WindowApp.font.height, 32 + (toggleList.Count + 2) * WindowApp.font.height);
+			teleportButton.offset = .(16, 180, 16 + (toggleList.Count + 3) * WindowApp.font.height, 32 + (toggleList.Count + 3) * WindowApp.font.height);
 			teleportButton.normalTexture = normalButtonTexture;
 			teleportButton.pressedTexture = pressedButtonTexture;
 			teleportButton.text = "(T)eleport";
@@ -441,7 +473,7 @@ namespace SpyroScope {
 					}
 				}
 
-				if (terrain.overlay == .Deform && hoveredAnimGroupIndex != -1) {
+				if (terrain.renderMode == .Collision && terrain.overlay == .Deform && hoveredAnimGroupIndex != -1) {
 					let hoveredAnimGroup = terrain.animationGroups[hoveredAnimGroupIndex];
 					// Begin overlays
 					var screenPosition = Camera.SceneToScreen(hoveredAnimGroup.center);
@@ -474,7 +506,7 @@ namespace SpyroScope {
 			if (!cornerMenuVisible) {
 				DrawMessageFeed();
 			}
-			DrawUtilities.Rect(0,240,0,200 * cornerMenuInterp, .(0,0,0,192));
+			DrawUtilities.Rect(0,260,0,200 * cornerMenuInterp, .(0,0,0,192));
 			DrawUtilities.Rect(0,WindowApp.height,WindowApp.width - 300 * sideInspectorInterp,WindowApp.width, .(0,0,0,192));
 
 			if (terrain.overlay == .Flags) {
@@ -662,7 +694,7 @@ namespace SpyroScope {
 					} else {
 						mousePosition = .(event.motion.x, event.motion.y, 0);
 
-						cornerMenuVisible = !Translator.dragged && (cornerMenuVisible && mousePosition.x < 200 || mousePosition.x < 10) && mousePosition.y < 240;
+						cornerMenuVisible = !Translator.dragged && (cornerMenuVisible && mousePosition.x < 200 || mousePosition.x < 10) && mousePosition.y < 260;
 						sideInspectorVisible = !Translator.dragged && currentObjIndex > -1 && (pinInspectorButton.value || (sideInspectorVisible && mousePosition.x > WindowApp.width - 300 || mousePosition.x > WindowApp.width - 10));
 
 						let lastHoveredElement = GUIElement.hoveredElement;
@@ -1130,7 +1162,7 @@ namespace SpyroScope {
 
 		void ToggleWireframe(bool toggle) {
 			terrain.wireframe = toggle;
-			PushMessageToFeed("Toggled Terrain Wireframe");
+			PushMessageToFeed("Toggled Wireframe");
 		}
 
 		void ToggleOrigins(bool toggle) {

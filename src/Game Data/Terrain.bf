@@ -8,13 +8,22 @@ namespace SpyroScope {
 
 		public struct TerrainRegion {
 			public Mesh farMesh;
+			public Mesh nearMesh;
 			public Vector offset;
 
 			public void Dispose() {
 				delete farMesh;
+				delete nearMesh;
 			}
 		}
 		TerrainRegion[] visualMeshes;
+
+		public enum RenderMode {
+			Collision,
+			Near,
+			Far
+		}
+		public RenderMode renderMode = .Collision;
 
 		public Vector upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
 		public Vector lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
@@ -75,8 +84,10 @@ namespace SpyroScope {
 			delete animationGroups;
 			delete collisionMesh;
 
-			for (let item in visualMeshes) {
-				item.Dispose();
+			if (visualMeshes != null) {
+				for (let item in visualMeshes) {
+					item.Dispose();
+				}
 			}
 			delete visualMeshes;
 		}
@@ -158,101 +169,32 @@ namespace SpyroScope {
 			Emulator.Address<uint32> sceneDataRegionCountAddress = (.)0x800673d8;
 			sceneDataRegionCountAddress.Read(&sceneDataRegionCount);
 
+			if (visualMeshes != null) {
+				for (let item in visualMeshes) {
+					item.Dispose();
+				}
+				DeleteAndNullify!(visualMeshes);
+			}
 			visualMeshes = new .[sceneDataRegionCount];
+
 			Emulator.Address[] sceneDataRegions = scope .[sceneDataRegionCount];
 			sceneDataRegionArrayPointer.ReadArray(&sceneDataRegions[0], sceneDataRegionCount);
 
 			for (let regionIndex < sceneDataRegionCount) {
 				let regionPointer = sceneDataRegions[regionIndex];
+				// Region Metadata
+				// Derived from Spyro: Ripto's Rage [80028b84]
 				(uint16 centerY, uint16 centerX, uint16 a, uint16 centerZ,
 					uint16 offsetY, uint16 offsetX, uint16 b, uint16 offsetZ,
-					uint8 vertexCount, uint8 colorCount, uint8 faceCount) regionMetadata = ?;
-				Emulator.ReadFromRAM(regionPointer, &regionMetadata, 19);
+					uint8 vertexCount, uint8 colorCount, uint8 faceCount, uint8 c,
+					uint8 vertexCount2, uint8 colorCount2, uint8 faceCount2) regionMetadata = ?;
+				Emulator.ReadFromRAM(regionPointer, &regionMetadata, 23);
 
+				visualMeshes[regionIndex].offset = .(regionMetadata.offsetX, regionMetadata.offsetY, regionMetadata.offsetZ);
 				// Low Poly Count / Far Mesh
-				if (regionMetadata.vertexCount > 0) {
-					visualMeshes[regionIndex].offset = .(regionMetadata.offsetX, regionMetadata.offsetY, regionMetadata.offsetZ);
-	
-					uint32[] packedVertices = scope .[regionMetadata.vertexCount];
-					Emulator.ReadFromRAM(regionPointer + 0x1c, &packedVertices[0], (uint16)regionMetadata.vertexCount * 4);
-					
-					Renderer.Color4[] vertexColors = scope .[regionMetadata.colorCount];
-					Emulator.ReadFromRAM(regionPointer + 0x1c + (uint16)regionMetadata.vertexCount * 4, &vertexColors[0], (uint16)regionMetadata.colorCount * 4);
-
-					uint32[4] triangleIndices = ?;
-					Vector[4] triangleVertices = ?;
-					Renderer.Color[4] triangleColors = ?;
-	
-					uint32[] regionTriangles = scope .[regionMetadata.faceCount * 2];
-					// Derived from Spyro: Ripto's Rage
-					// Vertex Indexing [80028e10]
-					// Color Indexing [80028f28]
-					Emulator.ReadFromRAM(regionPointer + 0x1c + (uint16)regionMetadata.vertexCount * 4 + (uint16)regionMetadata.colorCount * 4, &regionTriangles[0], (uint16)regionMetadata.faceCount * 2 * 4);
-					for (let i < regionMetadata.faceCount) {
-						uint32 packedTriangleIndex = regionTriangles[i * 2];
-						uint32 packedTriangleColorIndex = regionTriangles[i * 2 + 1];
-	
-						triangleIndices[0] = packedTriangleIndex >> 10 & 0x7f; //((packedTriangleIndex >> 7) & 0x3f8) >> 3;
-						triangleIndices[1] = packedTriangleIndex >> 17 & 0x7f; //((packedTriangleIndex >> 14) & 0x3f8) >> 3;
-						triangleIndices[2] = packedTriangleIndex >> 24 & 0x7f; //((packedTriangleIndex >> 21) & 0x3f8) >> 3;
-						triangleIndices[3] = packedTriangleIndex >> 3 & 0x7f; //(packedTriangleIndex & 0x3f8) >> 3;
-	
-						triangleVertices[0] = UnpackVertex(packedVertices[triangleIndices[0]]);
-						triangleVertices[1] = UnpackVertex(packedVertices[triangleIndices[1]]);
-						triangleVertices[2] = UnpackVertex(packedVertices[triangleIndices[2]]);
-
-						triangleColors[0] = vertexColors[packedTriangleColorIndex >> 11 & 0x7f]; //((packedTriangleColorIndex >> 9) & 0x1fc) >> 2;
-						triangleColors[1] = vertexColors[packedTriangleColorIndex >> 18 & 0x7f]; //((packedTriangleColorIndex >> 16) & 0x1fc) >> 2;
-						triangleColors[2] = vertexColors[packedTriangleColorIndex >> 25 & 0x7f]; //((packedTriangleColorIndex >> 23) & 0x1fc) >> 2;
-	
-						if (triangleIndices[0] == triangleIndices[3]) {
-							vertexList.Add(triangleVertices[0]);
-							vertexList.Add(triangleVertices[2]);
-							vertexList.Add(triangleVertices[1]);
-							
-							colorList.Add(triangleColors[0]);
-							colorList.Add(triangleColors[2]);
-							colorList.Add(triangleColors[1]);
-						} else {
-							triangleVertices[3] = UnpackVertex(packedVertices[triangleIndices[3] % packedVertices.Count]);
-							triangleColors[3] = vertexColors[packedTriangleColorIndex >> 4 & 0x7f]; //((packedTriangleColorIndex >> 2) & 0x1fc) >> 2;
-
-							vertexList.Add(triangleVertices[0]);
-							vertexList.Add(triangleVertices[2]);
-							vertexList.Add(triangleVertices[1]);
-	
-							vertexList.Add(triangleVertices[0]);
-							vertexList.Add(triangleVertices[1]);
-							vertexList.Add(triangleVertices[3]);
-							
-							colorList.Add(triangleColors[0]);
-							colorList.Add(triangleColors[2]);
-							colorList.Add(triangleColors[1]);
-
-							colorList.Add(triangleColors[0]);
-							colorList.Add(triangleColors[1]);
-							colorList.Add(triangleColors[3]);
-						}
-					}
-				}
-				
-				Vector[] v = new .[vertexList.Count];
-				Vector[] n = new .[vertexList.Count];
-				Renderer.Color4[] c = new .[vertexList.Count];
-
-				for (let i < vertexList.Count) {
-					v[i] = vertexList[i];
-					c[i] = colorList[i];
-				}
-
-				for (var i = 0; i < vertexList.Count; i += 3) {
-					n[i] = n[i+1] = n[i+2] = .(0,0,1);
-				}
-
-				visualMeshes[regionIndex].farMesh = new .(v, n, c);
-
-				vertexList.Clear();
-				colorList.Clear();
+				visualMeshes[regionIndex].farMesh = BuildVisualMesh(regionPointer + 0x1c, regionMetadata.vertexCount, regionMetadata.colorCount, regionMetadata.faceCount, false);
+				// High Poly Count / Near Mesh
+				visualMeshes[regionIndex].nearMesh = BuildVisualMesh(regionPointer + 0x1c + ((int)regionMetadata.vertexCount + (int)regionMetadata.colorCount + (int)regionMetadata.faceCount * 2) * 4, regionMetadata.vertexCount2, regionMetadata.colorCount2, regionMetadata.faceCount2, true);
 			}
 
 			// Delete animations as the new loaded mesh may be incompatible
@@ -265,17 +207,6 @@ namespace SpyroScope {
 
 			ClearColor();
 			ApplyColor();
-		}
-
-		// Derived from Spyro: Ripto's Rage [80028c2c]
-		Vector UnpackVertex(uint32 packedVertex) {
-			Vector vertex = ?;
-
-			vertex.x = packedVertex >> 21;
-			vertex.y = packedVertex >> 10 & 0x7ff;
-			vertex.z = (packedVertex & 0x3ff) << 1;
-
-			return vertex;
 		}
 
 		public void ReloadAnimationGroups() {
@@ -413,39 +344,63 @@ namespace SpyroScope {
 			Renderer.SetTint(.(255,255,255));
 			Renderer.BeginSolid();
 
-			if (drawnRegion > -1) {
-				Renderer.SetModel(visualMeshes[drawnRegion].offset * 16, .Scale(16));
-				visualMeshes[drawnRegion].farMesh.Draw();
-			} else {
-				for (let i < visualMeshes.Count) {
-					Renderer.SetModel(visualMeshes[i].offset * 16, .Scale(16));
-					visualMeshes[i].farMesh.Draw();
+			switch (renderMode) {
+				case .Far : {
+					if (wireframe) {
+						Renderer.BeginWireframe();
+					}
+
+					if (drawnRegion > -1) {
+						Renderer.SetModel(visualMeshes[drawnRegion].offset * 16, .Scale(16));
+						visualMeshes[drawnRegion].farMesh.Draw();
+					} else {
+						for (let i < visualMeshes.Count) {
+							Renderer.SetModel(visualMeshes[i].offset * 16, .Scale(16));
+							visualMeshes[i].farMesh.Draw();
+						}
+					}
 				}
-			}
+				case .Near : {
+					if (wireframe) {
+						Renderer.BeginWireframe();
+					}
 
-			if (collisionMesh == null) {
-				return;
-			}
+					if (drawnRegion > -1) {
+						Renderer.SetModel(visualMeshes[drawnRegion].offset * 16, .Scale(16));
+						visualMeshes[drawnRegion].nearMesh.Draw();
+					} else {
+						for (let i < visualMeshes.Count) {
+							Renderer.SetModel(visualMeshes[i].offset * 16, .Scale(16));
+							visualMeshes[i].nearMesh.Draw();
+						}
+					}
+				}
+				case .Collision : {
+					if (collisionMesh == null) {
+						return;
+					}
 
-			Renderer.SetModel(.Zero, .Identity);
+					Renderer.SetModel(.Zero, .Identity);
 
-			if (!wireframe) {
-				collisionMesh.Draw();
-				Renderer.SetTint(.(128,128,128));
-			}
+					if (!wireframe) {
+						collisionMesh.Draw();
+						Renderer.SetTint(.(192,192,192));
+					}
 
-			Renderer.BeginWireframe();
-			collisionMesh.Draw();
+					Renderer.BeginWireframe();
+					collisionMesh.Draw();
 
-			if (overlay == .Deform && animationGroups != null) {
-				Renderer.SetTint(.(255,255,0));
-				for	(let animationGroup in animationGroups) {
-					for (let mesh in animationGroup.mesh) {
-						mesh.Draw();
+					if (overlay == .Deform && animationGroups != null) {
+						Renderer.SetTint(.(255,255,0));
+						for	(let animationGroup in animationGroups) {
+							for (let mesh in animationGroup.mesh) {
+								mesh.Draw();
+							}
+						}
 					}
 				}
 			}
-
+				
 			// Restore polygon mode to default
 			Renderer.BeginSolid();
 		}
@@ -571,6 +526,191 @@ namespace SpyroScope {
 					}
 				}
 			}
+		}
+
+		Mesh BuildVisualMesh(Emulator.Address regionPointer, int vertexSize, int colorSize, int faceSize, bool isNear) {
+			List<Vector> vertexList = scope .();
+			List<Renderer.Color> colorList = scope .();
+
+			if (vertexSize > 0) {
+				uint32[] packedVertices = scope .[vertexSize];
+				Emulator.ReadFromRAM(regionPointer, &packedVertices[0], vertexSize * 4);
+
+				Vector[4] triangleVertices = ?;
+				Renderer.Color[4] triangleColors = ?;
+
+				if (isNear) {
+					uint32[] regionTriangles = scope .[faceSize * 4];
+					Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize * 2) * 4, &regionTriangles[0], faceSize * 4 * 4);
+
+					Renderer.Color4[] vertexColors = scope .[colorSize * 2];
+					Emulator.ReadFromRAM(regionPointer + vertexSize * 4, &vertexColors[0], colorSize * 2 * 4);
+
+					// Derived from Spyro: Ripto's Rage
+					// Vertex Indexing [80024a00]
+					// Color Indexing [80024c84]
+					for (let i < faceSize) {
+						uint32 packedTriangleIndex = regionTriangles[i * 4];
+						uint32 packedColorIndex = regionTriangles[i * 4 + 1];
+						uint32 packedTextureIndex = regionTriangles[i * 4 + 3];
+
+						uint8[4] unpackedTrianglesIndex = *(uint8[4]*)&packedTriangleIndex;
+						uint8[4] unpackedColorsIndex = *(uint8[4]*)&packedColorIndex;
+						uint8[4] unpackedTextureIndex = *(uint8[4]*)&packedTextureIndex;
+
+						bool triangle = unpackedTrianglesIndex[0] == unpackedTrianglesIndex[1];
+						bool flipSide = unpackedTextureIndex[1] & 0b0100 > 0;
+						bool doubleSide = unpackedTextureIndex[1] & 0b1000 > 0;
+
+						if (triangle) {
+							int first = 0;
+							int second = 2;
+
+							if (flipSide) {
+								first = 2;
+								second = 0;
+							}
+
+							triangleVertices[first] = UnpackVertex(packedVertices[unpackedTrianglesIndex[1]]);
+							triangleVertices[1] = UnpackVertex(packedVertices[unpackedTrianglesIndex[2]]);
+							triangleVertices[second] = UnpackVertex(packedVertices[unpackedTrianglesIndex[3]]);
+							triangleColors[first] = vertexColors[unpackedColorsIndex[1]];
+							triangleColors[1] = vertexColors[unpackedColorsIndex[2]];
+							triangleColors[second] = vertexColors[unpackedColorsIndex[3]];
+
+							vertexList.Add(triangleVertices[2]);
+							vertexList.Add(triangleVertices[1]);
+							vertexList.Add(triangleVertices[0]);
+							
+							colorList.Add(triangleColors[2]);
+							colorList.Add(triangleColors[1]);
+							colorList.Add(triangleColors[0]);
+						} else {
+							if (flipSide) {
+								Swap!(unpackedTrianglesIndex[0], unpackedTrianglesIndex[3]);
+								Swap!(unpackedTrianglesIndex[2], unpackedTrianglesIndex[1]);
+							}
+
+							triangleVertices[0] = UnpackVertex(packedVertices[unpackedTrianglesIndex[1]]);
+							triangleVertices[1] = UnpackVertex(packedVertices[unpackedTrianglesIndex[2]]);
+							triangleVertices[2] = UnpackVertex(packedVertices[unpackedTrianglesIndex[3]]);
+							triangleVertices[3] = UnpackVertex(packedVertices[unpackedTrianglesIndex[0]]);
+							
+							triangleColors[0] = vertexColors[unpackedColorsIndex[1]];
+							triangleColors[1] = vertexColors[unpackedColorsIndex[2]];
+							triangleColors[2] = vertexColors[unpackedColorsIndex[3]];
+							triangleColors[3] = vertexColors[unpackedColorsIndex[0]];
+
+							if (flipSide) {
+								Swap!(triangleColors[0], triangleColors[1]);
+								Swap!(triangleColors[2], triangleColors[3]);
+							}
+
+							vertexList.Add(triangleVertices[1]);
+							vertexList.Add(triangleVertices[0]);
+							vertexList.Add(triangleVertices[3]);
+
+							vertexList.Add(triangleVertices[1]);
+							vertexList.Add(triangleVertices[3]);
+							vertexList.Add(triangleVertices[2]);
+							
+							colorList.Add(triangleColors[1]);
+							colorList.Add(triangleColors[0]);
+							colorList.Add(triangleColors[3]);
+
+							colorList.Add(triangleColors[1]);
+							colorList.Add(triangleColors[3]);
+							colorList.Add(triangleColors[2]);
+						}
+					}
+				} else {
+					uint32[4] triangleIndices = ?;
+
+					uint32[] regionTriangles = scope .[faceSize * 2];
+					Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize) * 4, &regionTriangles[0], faceSize * 2 * 4);
+
+					Renderer.Color4[] vertexColors = scope .[colorSize];
+					Emulator.ReadFromRAM(regionPointer + vertexSize * 4, &vertexColors[0], colorSize * 4);
+
+					// Derived from Spyro: Ripto's Rage
+					// Vertex Indexing [80028e10]
+					// Color Indexing [80028f28]
+					for (let i < faceSize) {
+						uint32 packedTriangleIndex = regionTriangles[i * 2];
+						uint32 packedColorIndex = regionTriangles[i * 2 + 1];
+	
+						triangleIndices[0] = packedTriangleIndex >> 10 & 0x7f; //((packedTriangleIndex >> 7) & 0x3f8) >> 3;
+						triangleIndices[1] = packedTriangleIndex >> 17 & 0x7f; //((packedTriangleIndex >> 14) & 0x3f8) >> 3;
+						triangleIndices[2] = packedTriangleIndex >> 24 & 0x7f; //((packedTriangleIndex >> 21) & 0x3f8) >> 3;
+						triangleIndices[3] = packedTriangleIndex >> 3 & 0x7f; //(packedTriangleIndex & 0x3f8) >> 3;
+	
+						triangleVertices[0] = UnpackVertex(packedVertices[triangleIndices[0]]);
+						triangleVertices[1] = UnpackVertex(packedVertices[triangleIndices[1]]);
+						triangleVertices[2] = UnpackVertex(packedVertices[triangleIndices[2]]);
+	
+						triangleColors[0] = vertexColors[packedColorIndex >> 11 & 0x7f]; //((packedTriangleColorIndex >> 9) & 0x1fc) >> 2;
+						triangleColors[1] = vertexColors[packedColorIndex >> 18 & 0x7f]; //((packedTriangleColorIndex >> 16) & 0x1fc) >> 2;
+						triangleColors[2] = vertexColors[packedColorIndex >> 25 & 0x7f]; //((packedTriangleColorIndex >> 23) & 0x1fc) >> 2;
+	
+						if (triangleIndices[0] == triangleIndices[3]) {
+							vertexList.Add(triangleVertices[0]);
+							vertexList.Add(triangleVertices[2]);
+							vertexList.Add(triangleVertices[1]);
+							
+							colorList.Add(triangleColors[0]);
+							colorList.Add(triangleColors[2]);
+							colorList.Add(triangleColors[1]);
+						} else {
+							triangleVertices[3] = UnpackVertex(packedVertices[triangleIndices[3] % packedVertices.Count]);
+							triangleColors[3] = vertexColors[packedColorIndex >> 4 & 0x7f]; //((packedTriangleColorIndex >> 2) & 0x1fc) >> 2;
+	
+							vertexList.Add(triangleVertices[0]);
+							vertexList.Add(triangleVertices[2]);
+							vertexList.Add(triangleVertices[1]);
+	
+							vertexList.Add(triangleVertices[0]);
+							vertexList.Add(triangleVertices[1]);
+							vertexList.Add(triangleVertices[3]);
+							
+							colorList.Add(triangleColors[0]);
+							colorList.Add(triangleColors[2]);
+							colorList.Add(triangleColors[1]);
+	
+							colorList.Add(triangleColors[0]);
+							colorList.Add(triangleColors[1]);
+							colorList.Add(triangleColors[3]);
+						}
+					}
+				}
+			}
+
+			Vector[] v = new .[vertexList.Count];
+			Vector[] n = new .[vertexList.Count];
+			Renderer.Color4[] c = new .[vertexList.Count];
+
+			for (let i < vertexList.Count) {
+				v[i] = vertexList[i];
+				c[i] = colorList[i];
+			}
+
+			for (var i = 0; i < vertexList.Count; i += 3) {
+				n[i] = n[i+1] = n[i+2] = .(0,0,1);
+			}
+
+			return new .(v, n, c);
+		}
+
+		// Derived from Spyro: Ripto's Rage
+		// Far [80028c2c]
+		// Near [80024664]
+		Vector UnpackVertex(uint32 packedVertex) {
+			Vector vertex = ?;
+
+			vertex.x = packedVertex >> 21;
+			vertex.y = packedVertex >> 10 & 0x7ff;
+			vertex.z = (packedVertex & 0x3ff) << 1;
+
+			return vertex;
 		}
 	}
 }
