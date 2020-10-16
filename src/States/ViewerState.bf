@@ -360,9 +360,9 @@ namespace SpyroScope {
 				Emulator.currentWorldIdAddress[(int)Emulator.rom].Read(&currentWorldId);
 
 				uint32 deathHeight;
-				if (Emulator.rom == .YearOfTheDragon) {
+				if (Emulator.rom == .YearOfTheDragon_1_0_NTSC_U || Emulator.rom == .YearOfTheDragon_1_1_NTSC_U || Emulator.rom == .YearOfTheDragon_1_0_PAL || Emulator.rom == .YearOfTheDragon_1_1_PAL) {
 					uint32 currentSubWorldId = ?;
-					Emulator.currentSubWorldIdAddress.Read(&currentSubWorldId);
+					Emulator.currentSubWorldIdAddress[(int)Emulator.rom].Read(&currentSubWorldId);
 
 					deathHeight = Emulator.deathPlaneHeights[currentWorldId * 4 + currentSubWorldId];
 				} else {

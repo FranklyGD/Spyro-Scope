@@ -60,7 +60,7 @@ namespace SpyroScope {
 		public void DrawData() {
 			// This is incomplete and possible inefficient
 			// to work with when adding new entries
-			if (Emulator.rom == .RiptosRage) {
+			if (Emulator.rom == .RiptosRage_NTSC_U) {
 				switch (objectTypeID) {
 					case 0x0078: { // Sparx
 						SparxData sparx = ?;
@@ -90,7 +90,7 @@ namespace SpyroScope {
 						whirlwind.Draw(this);
 					}
 				}
-			} else if (Emulator.rom == .YearOfTheDragon) {
+			} else if (Emulator.rom == .YearOfTheDragon_1_1_NTSC_U) {
 				switch (objectTypeID) {
 					case 0x0078: { // Sparx
 						SparxData sparx = ?;
