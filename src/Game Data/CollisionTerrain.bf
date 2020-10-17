@@ -222,6 +222,7 @@ namespace SpyroScope {
 			if (count == 0) {
 				return;
 			}
+			delete animationGroups;
 			animationGroups = new .[count];
 
 			let collisionModifyingGroupPointers = scope Emulator.Address[count];

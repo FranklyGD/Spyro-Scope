@@ -6,6 +6,7 @@ namespace SpyroScope {
 	class Terrain {
 		public CollisionTerrain collision = .();
 		public TerrainRegion[] visualMeshes;
+		public RegionAnimation[] animations;
 
 		public enum RenderMode {
 			Collision,
@@ -25,6 +26,13 @@ namespace SpyroScope {
 				}
 			}
 			delete visualMeshes;
+
+			if (animations != null) {
+				for (var item in animations) {
+					item.Dispose();
+				}
+			}
+			delete animations;
 		}
 
 		public void Reload() {
@@ -55,6 +63,17 @@ namespace SpyroScope {
 
 		public void Update() {
 			collision.Update();
+			if (animations != null) {
+				for (let animation in animations) {
+					animation.Update();
+				}
+			}
+
+			let terrainAnimationPointerArrayAddressOld = Emulator.terrainAnimationPointerArrayAddress;
+			Emulator.ReadFromRAM((.)0x800681f8, &Emulator.terrainAnimationPointerArrayAddress, 4);
+			if (Emulator.collisionModifyingPointerArrayAddress != 0 && terrainAnimationPointerArrayAddressOld != Emulator.terrainAnimationPointerArrayAddress) {
+				ReloadAnimations();
+			}
 		}
 
 		public void Draw() {
@@ -97,6 +116,29 @@ namespace SpyroScope {
 				
 			// Restore polygon mode to default
 			Renderer.BeginSolid();
+		}
+
+		void ReloadAnimations() {
+			uint32 count = ?;
+			Emulator.ReadFromRAM((.)0x800681f8 - 4, &count, 4);
+			if (count == 0) {
+				return;
+			}
+			delete animations;
+			animations = new .[count];
+
+			let animationPointers = scope Emulator.Address[count];
+			Emulator.ReadFromRAM(Emulator.terrainAnimationPointerArrayAddress, &animationPointers[0], 4 * count);
+
+			for (let animationIndex < count) {
+				let animation = &animations[animationIndex];
+
+				animation.dataPointer = animationPointers[animationIndex];
+
+				if (!animation.dataPointer.IsNull) {
+					animation.Reload(visualMeshes);
+				}
+			}
 		}
 	}
 }

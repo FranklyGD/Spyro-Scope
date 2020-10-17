@@ -4,7 +4,9 @@ namespace SpyroScope {
 	struct TerrainRegion {
 		Emulator.Address address;
 		public Mesh farMesh;
+		public List<uint32> farMeshIndices = new .();
 		public Mesh nearMesh;
+		public List<uint32> nearMeshIndices = new .();
 		public Vector offset;
 
 		// Region Metadata
@@ -28,6 +30,8 @@ namespace SpyroScope {
 
 			delete farMesh;
 			delete nearMesh;
+			delete farMeshIndices;
+			delete nearMeshIndices;
 		}
 
 		public void Reload() mut {
@@ -50,7 +54,7 @@ namespace SpyroScope {
 			if (vertexSize > 0) {
 				uint32[] packedVertices = scope .[vertexSize];
 				Emulator.ReadFromRAM(regionPointer, &packedVertices[0], vertexSize * 4);
-	
+				
 				Vector[4] triangleVertices = ?;
 				Renderer.Color[4] triangleColors = ?;
 	
@@ -78,20 +82,24 @@ namespace SpyroScope {
 						bool doubleSide = unpackedTextureIndex[1] & 0b1000 > 0;
 	
 						if (triangle) {
-							int first = 0;
-							int second = 2;
+							int first = 1;
+							int second = 3;
 	
 							if (flipSide) {
-								first = 2;
-								second = 0;
+								first = 3;
+								second = 1;
 							}
-	
-							triangleVertices[first] = UnpackVertex(packedVertices[unpackedTrianglesIndex[1]]);
+
+							nearMeshIndices.Add(unpackedTrianglesIndex[first]);
+							nearMeshIndices.Add(unpackedTrianglesIndex[2]);
+							nearMeshIndices.Add(unpackedTrianglesIndex[second]);
+
+							triangleVertices[0] = UnpackVertex(packedVertices[unpackedTrianglesIndex[first]]);
 							triangleVertices[1] = UnpackVertex(packedVertices[unpackedTrianglesIndex[2]]);
-							triangleVertices[second] = UnpackVertex(packedVertices[unpackedTrianglesIndex[3]]);
-							triangleColors[first] = vertexColors[unpackedColorsIndex[1]];
+							triangleVertices[2] = UnpackVertex(packedVertices[unpackedTrianglesIndex[second]]);
+							triangleColors[0] = vertexColors[unpackedColorsIndex[first]];
 							triangleColors[1] = vertexColors[unpackedColorsIndex[2]];
-							triangleColors[second] = vertexColors[unpackedColorsIndex[3]];
+							triangleColors[2] = vertexColors[unpackedColorsIndex[second]];
 	
 							vertexList.Add(triangleVertices[2]);
 							vertexList.Add(triangleVertices[1]);
@@ -120,7 +128,15 @@ namespace SpyroScope {
 								Swap!(triangleColors[0], triangleColors[1]);
 								Swap!(triangleColors[2], triangleColors[3]);
 							}
-	
+
+							nearMeshIndices.Add(unpackedTrianglesIndex[2]);
+							nearMeshIndices.Add(unpackedTrianglesIndex[1]);
+							nearMeshIndices.Add(unpackedTrianglesIndex[0]);
+
+							nearMeshIndices.Add(unpackedTrianglesIndex[2]);
+							nearMeshIndices.Add(unpackedTrianglesIndex[0]);
+							nearMeshIndices.Add(unpackedTrianglesIndex[3]);
+
 							vertexList.Add(triangleVertices[1]);
 							vertexList.Add(triangleVertices[0]);
 							vertexList.Add(triangleVertices[3]);
@@ -218,7 +234,7 @@ namespace SpyroScope {
 		// Derived from Spyro: Ripto's Rage
 		// Far [80028c2c]
 		// Near [80024664]
-		Vector UnpackVertex(uint32 packedVertex) {
+		public static Vector UnpackVertex(uint32 packedVertex) {
 			Vector vertex = ?;
 	
 			vertex.x = packedVertex >> 21;
