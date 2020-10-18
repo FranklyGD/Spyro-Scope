@@ -47,13 +47,17 @@ namespace SpyroScope {
 			nearMesh = GenerateMesh(regionDataAddress + ((int)metadata.vertexCount + (int)metadata.colorCount + (int)metadata.faceCount * 2) * 4, metadata.vertexCount2, metadata.colorCount2, metadata.faceCount2, true);
 		}
 
-		Mesh GenerateMesh(Emulator.Address regionPointer, int vertexSize, int colorSize, int faceSize, bool isNear) {
+		Mesh GenerateMesh(Emulator.Address regionPointer, int vertexSize, int colorSize, int faceSize, bool isNear) mut {
 			List<Vector> vertexList = scope .();
 			List<Renderer.Color> colorList = scope .();
 	
 			if (vertexSize > 0) {
 				uint32[] packedVertices = scope .[vertexSize];
 				Emulator.ReadFromRAM(regionPointer, &packedVertices[0], vertexSize * 4);
+				Vector[] sourceVertices = scope .[vertexSize];
+				for (let i < vertexSize) {
+					sourceVertices[i] = UnpackVertex(packedVertices[i]);
+				}
 				
 				Vector[4] triangleVertices = ?;
 				Renderer.Color[4] triangleColors = ?;
@@ -90,17 +94,17 @@ namespace SpyroScope {
 								second = 1;
 							}
 
-							nearMeshIndices.Add(unpackedTrianglesIndex[first]);
-							nearMeshIndices.Add(unpackedTrianglesIndex[2]);
-							nearMeshIndices.Add(unpackedTrianglesIndex[second]);
-
-							triangleVertices[0] = UnpackVertex(packedVertices[unpackedTrianglesIndex[first]]);
-							triangleVertices[1] = UnpackVertex(packedVertices[unpackedTrianglesIndex[2]]);
-							triangleVertices[2] = UnpackVertex(packedVertices[unpackedTrianglesIndex[second]]);
+							triangleVertices[0] = sourceVertices[unpackedTrianglesIndex[first]];
+							triangleVertices[1] = sourceVertices[unpackedTrianglesIndex[2]];
+							triangleVertices[2] = sourceVertices[unpackedTrianglesIndex[second]];
 							triangleColors[0] = vertexColors[unpackedColorsIndex[first]];
 							triangleColors[1] = vertexColors[unpackedColorsIndex[2]];
 							triangleColors[2] = vertexColors[unpackedColorsIndex[second]];
-	
+							
+							nearMeshIndices.Add(unpackedTrianglesIndex[second]);
+							nearMeshIndices.Add(unpackedTrianglesIndex[2]);
+							nearMeshIndices.Add(unpackedTrianglesIndex[first]);
+
 							vertexList.Add(triangleVertices[2]);
 							vertexList.Add(triangleVertices[1]);
 							vertexList.Add(triangleVertices[0]);
@@ -114,10 +118,10 @@ namespace SpyroScope {
 								Swap!(unpackedTrianglesIndex[2], unpackedTrianglesIndex[1]);
 							}
 	
-							triangleVertices[0] = UnpackVertex(packedVertices[unpackedTrianglesIndex[1]]);
-							triangleVertices[1] = UnpackVertex(packedVertices[unpackedTrianglesIndex[2]]);
-							triangleVertices[2] = UnpackVertex(packedVertices[unpackedTrianglesIndex[3]]);
-							triangleVertices[3] = UnpackVertex(packedVertices[unpackedTrianglesIndex[0]]);
+							triangleVertices[0] = sourceVertices[unpackedTrianglesIndex[1]];
+							triangleVertices[1] = sourceVertices[unpackedTrianglesIndex[2]];
+							triangleVertices[2] = sourceVertices[unpackedTrianglesIndex[3]];
+							triangleVertices[3] = sourceVertices[unpackedTrianglesIndex[0]];
 							
 							triangleColors[0] = vertexColors[unpackedColorsIndex[1]];
 							triangleColors[1] = vertexColors[unpackedColorsIndex[2]];

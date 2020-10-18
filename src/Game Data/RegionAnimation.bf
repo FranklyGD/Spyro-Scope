@@ -9,8 +9,9 @@ namespace SpyroScope {
 		public Vector center;
 		public float radius;
 		public Mesh sourceMesh;
-		public Mesh[] meshStates;
-		public uint32 sourceStart;
+		public Mesh[] nearMeshStates;
+		public List<uint32> nearAnimatedIndices;
+		public List<int> nearAnimatedTriangles;
 
 		public struct KeyframeData {
 			public uint8 flag, a, nextKeyframe, b, interpolation, fromState, toState, c;
@@ -25,7 +26,9 @@ namespace SpyroScope {
 		}
 
 		public void Dispose() {
-			DeleteContainerAndItems!(meshStates);
+			DeleteContainerAndItems!(nearMeshStates);
+			delete nearAnimatedIndices;
+			delete nearAnimatedTriangles;
 		}
 
 		public void Reload(TerrainRegion[] terrainMeshes) mut {
@@ -55,24 +58,24 @@ namespace SpyroScope {
 			sourceMesh = terrainMeshes[regionIndex].nearMesh;
 
 			// Find triangles using these vertices
-			sourceStart = uint32.MaxValue;
 			let terrainRegionIndicies = terrainMeshes[regionIndex].nearMeshIndices;
-			let indices = scope List<int>();
+			nearAnimatedIndices = new .();
+			nearAnimatedTriangles = new .();
 			for (var i = 0; i < terrainRegionIndicies.Count; i += 3) {
 				if (terrainRegionIndicies[i] < vertexCount ||
 					terrainRegionIndicies[i + 1] < vertexCount ||
 					terrainRegionIndicies[i + 2] < vertexCount) {
 
-					indices.Add(terrainRegionIndicies[i]);
-					indices.Add(terrainRegionIndicies[i + 1]);
-					indices.Add(terrainRegionIndicies[i + 2]);
+					nearAnimatedIndices.Add(terrainRegionIndicies[i]);
+					nearAnimatedIndices.Add(terrainRegionIndicies[i + 1]);
+					nearAnimatedIndices.Add(terrainRegionIndicies[i + 2]);
 
-					sourceStart = Math.Min(sourceStart, (.)i);
+					nearAnimatedTriangles.Add(i);
 				}
 			}
 
 			let vertices = scope Vector[vertexCount];
-			meshStates = new .[stateCount];
+			nearMeshStates = new .[stateCount];
 			for (let stateIndex < stateCount) {
 				let startVertexState = stateIndex * vertexCount;
 
@@ -94,20 +97,17 @@ namespace SpyroScope {
 				center = (upperBound + lowerBound) / 2;
 				radius = (upperBound - center).Length();
 
-				Vector[] v = new .[indices.Count];
-				Vector[] n = new .[indices.Count];
-				Renderer.Color4[] c = new .[indices.Count];
+				Vector[] v = new .[nearAnimatedIndices.Count];
+				Vector[] n = new .[nearAnimatedIndices.Count];
+				Renderer.Color4[] c = new .[nearAnimatedIndices.Count];
 
-				for (let i < indices.Count) {
-					v[i] = vertices[indices[i]];
+				for (let i < nearAnimatedIndices.Count) {
+					v[i] = vertices[nearAnimatedIndices[i]];
 					c[i] = .(255,255,255);
+					n[i] = .(0,0,1);
 				}
 
-				for (var i = 0; i < indices.Count; i += 3) {
-					n[i] = n[i+1] = n[i+2] = .(0,0,1);
-				}
-
-				meshStates[stateIndex] = new .(v,n,c);
+				nearMeshStates[stateIndex] = new .(v,n,c);
 			}
 		}
 
@@ -118,27 +118,16 @@ namespace SpyroScope {
 
 			let interpolation = (float)keyframeData.interpolation / (256);
 
-			if (keyframeData.fromState >= meshStates.Count || keyframeData.toState >= meshStates.Count) {
+			if (keyframeData.fromState >= nearMeshStates.Count || keyframeData.toState >= nearMeshStates.Count) {
 				return; // Don't bother since it picked up garbage data
 			}
 
-			for (let i < meshStates[0].vertices.Count) {
-				Vector fromVertex = meshStates[keyframeData.fromState].vertices[i];
-				Vector toVertex = meshStates[keyframeData.toState].vertices[i];
-				Vector fromNormal = meshStates[keyframeData.fromState].normals[i];
-				Vector toNormal = meshStates[keyframeData.toState].normals[i];
-
-				sourceMesh.vertices[sourceStart + i] = fromVertex + (toVertex - fromVertex) * interpolation;
-				sourceMesh.normals[sourceStart + i] = fromNormal + (toNormal - fromNormal) * interpolation;
+			for (let i < nearAnimatedIndices.Count) {
+				Vector fromVertex = nearMeshStates[keyframeData.fromState].vertices[i];
+				Vector toVertex = nearMeshStates[keyframeData.toState].vertices[i];
+				
+				sourceMesh.vertices[nearAnimatedTriangles[i / 3] + (i % 3)] = fromVertex + (toVertex - fromVertex) * interpolation;
 			}
-
-			/*if (overlay == .Deform) {
-				Renderer.Color transitionColor = keyframeData.fromState == keyframeData.toState ? .(255,128,0) : .((.)((1 - interpolation) * 255), (.)(interpolation * 255), 0);
-				for (let i < animationGroup.count * 3) {
-					let vertexIndex = animationGroup.start * 3 + i;
-					collisionMesh.colors[vertexIndex] = transitionColor;
-				}
-			}*/
 
 			sourceMesh.Update();
 		}
