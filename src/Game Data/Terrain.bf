@@ -37,12 +37,11 @@ namespace SpyroScope {
 		public void Reload() {
 			collision.Reload();
 
-			Emulator.Address<Emulator.Address> sceneDataRegionArrayPointer = ?;
-			Emulator.Address<Emulator.Address> sceneDataRegionArrayPointerAddress = (.)0x800673d4;
-			sceneDataRegionArrayPointerAddress.Read(&sceneDataRegionArrayPointer);
+			Emulator.Address<Emulator.Address> sceneDataRegionArrayAddress = ?;
+			var sceneDataRegionArrayPointer = Emulator.sceneDataRegionArrayPointers[(int)Emulator.rom];
+			sceneDataRegionArrayPointer.Read(&sceneDataRegionArrayAddress);
 			uint32 sceneDataRegionCount = ?;
-			Emulator.Address<uint32> sceneDataRegionCountAddress = (.)0x800673d8;
-			sceneDataRegionCountAddress.Read(&sceneDataRegionCount);
+			Emulator.ReadFromRAM(sceneDataRegionArrayPointer + 4, &sceneDataRegionCount, 4);
 
 			if (visualMeshes != null) {
 				for (var item in visualMeshes) {
@@ -53,14 +52,13 @@ namespace SpyroScope {
 			visualMeshes = new .[sceneDataRegionCount];
 
 			Emulator.Address[] sceneDataRegions = scope .[sceneDataRegionCount];
-			sceneDataRegionArrayPointer.ReadArray(&sceneDataRegions[0], sceneDataRegionCount);
+			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegions[0], sceneDataRegionCount);
 			for (let regionIndex < sceneDataRegionCount) {
 				visualMeshes[regionIndex] = .(sceneDataRegions[regionIndex]);
 			}
 
 			Emulator.Address waterRegionArrayPointer = ?;
-			Emulator.Address<Emulator.Address> waterRegionArrayPointerAddress = (.)0x800673f0;
-			waterRegionArrayPointerAddress.Read(&waterRegionArrayPointer);
+			Emulator.waterRegionArrayPointers[(int)Emulator.rom].Read(&waterRegionArrayPointer);
 			uint32 waterRegionOffset = ?;
 			Emulator.ReadFromRAM(waterRegionArrayPointer, &waterRegionOffset, 4);
 			uint32 waterRegionCount = ?;
@@ -81,7 +79,7 @@ namespace SpyroScope {
 			}
 
 			let terrainAnimationPointerArrayAddressOld = Emulator.terrainAnimationPointerArrayAddress;
-			Emulator.ReadFromRAM((.)0x800681f8, &Emulator.terrainAnimationPointerArrayAddress, 4);
+			Emulator.sceneDataRegionAnimationArrayPointers[(int)Emulator.rom].Read(&Emulator.terrainAnimationPointerArrayAddress);
 			if (Emulator.collisionModifyingPointerArrayAddress != 0 && terrainAnimationPointerArrayAddressOld != Emulator.terrainAnimationPointerArrayAddress) {
 				ReloadAnimations();
 			}
@@ -131,7 +129,7 @@ namespace SpyroScope {
 
 		void ReloadAnimations() {
 			uint32 count = ?;
-			Emulator.ReadFromRAM((.)0x800681f8 - 4, &count, 4);
+			Emulator.ReadFromRAM(Emulator.sceneDataRegionAnimationArrayPointers[(int)Emulator.rom] - 4, &count, 4);
 			if (count == 0) {
 				return;
 			}

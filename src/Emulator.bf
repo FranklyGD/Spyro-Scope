@@ -73,16 +73,22 @@ namespace SpyroScope {
 		public const Address<int16[3]>[4] cameraEulerRotationAddress = .(0, 0, (.)0x80067ec8, (.)0x8006e11c);
 		public const Address<MatrixInt>[4] cameraMatrixAddress = .(0, 0, (.)0x80067e98, (.)0x8006e0ec);
 
+		// World
 		public const Address<uint32>[4] currentWorldIdAddress = .(0, 0, (.)0x80066f54, (.)0x8006c66c);
 		public const Address<uint32> currentSubWorldIdAddress = (.)0x8006c6a8; // Exclusive to Spyro: Year of the Dragon
 
 		public const Address<Address>[4] collisionDataPointers = .(0, 0, (.)0x800673fc, (.)0x8006d150);
 		public const Address<Address>[4] collisionFlagsArrayPointers = .(0, 0, (.)0x800673e8, (.)0x8006d13c);
 		public const Address<Address>[4] collisionModifyingDataPointers = .(0, 0, (.)0x80068208, (.)0x8006e464);
+
+		public const Address<Address>[4] sceneDataRegionArrayPointers = .(0, 0, (.)0x800673d4, (.)0x8006d128);
+		public const Address<Address>[4] sceneDataRegionAnimationArrayPointers = .(0, 0, (.)0x800681f8, (.)0x8006e454);
+		public const Address<Address>[4] waterRegionArrayPointers = .(0, 0, (.)0x800673f0, (.)0x8006d144);
 		
 		public const Address<uint32>[4] deathPlaneHeightsAddresses = .(0, 0, (.)0x80060234, (.)0x800677c8);
 		public const Address<uint32>[4] maxFreeflightHeightsAddresses = .(0, 0, (.)0x800601b4, (.)0x80067728);
 
+		// Other
 		public const Address<uint32>[4] healthAddresses = .(0, 0, (.)0x8006A248, (.)0x80070688);
 
 		public const Address<uint32>[4] gameInputAddress = .(0, 0, (.)0x8001291c, 0);
