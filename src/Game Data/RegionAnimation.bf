@@ -8,9 +8,9 @@ namespace SpyroScope {
 		public uint32 count;
 		public Vector center;
 		public float radius;
-		public Mesh sourceMesh;
+
+		public Mesh sourceNearMesh;
 		public Mesh[] nearMeshStates;
-		public List<uint32> nearAnimatedIndices;
 		public List<int> nearAnimatedTriangles;
 
 		public struct KeyframeData {
@@ -55,11 +55,11 @@ namespace SpyroScope {
 			let stateCount = highestUsedState + 1;
 			let vertexCount = count / 4;
 
-			sourceMesh = terrainMeshes[regionIndex].nearMesh;
+			sourceNearMesh = terrainMeshes[regionIndex].nearMesh;
 
 			// Find triangles using these vertices
 			let terrainRegionIndicies = terrainMeshes[regionIndex].nearMeshIndices;
-			nearAnimatedIndices = new .();
+			List<uint32> nearAnimatedIndices = new .();
 			nearAnimatedTriangles = new .();
 			for (var i = 0; i < terrainRegionIndicies.Count; i += 3) {
 				if (terrainRegionIndicies[i] < vertexCount ||
@@ -122,14 +122,14 @@ namespace SpyroScope {
 				return; // Don't bother since it picked up garbage data
 			}
 
-			for (let i < nearAnimatedIndices.Count) {
+			for (let i < nearMeshStates.Count) {
 				Vector fromVertex = nearMeshStates[keyframeData.fromState].vertices[i];
 				Vector toVertex = nearMeshStates[keyframeData.toState].vertices[i];
 				
-				sourceMesh.vertices[nearAnimatedTriangles[i / 3] + (i % 3)] = fromVertex + (toVertex - fromVertex) * interpolation;
+				sourceNearMesh.vertices[nearAnimatedTriangles[i / 3] + (i % 3)] = fromVertex + (toVertex - fromVertex) * interpolation;
 			}
 
-			sourceMesh.Update();
+			sourceNearMesh.Update();
 		}
 
 		public KeyframeData GetKeyframeData(uint8 keyframeIndex) {
