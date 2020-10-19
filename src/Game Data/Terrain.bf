@@ -54,9 +54,21 @@ namespace SpyroScope {
 
 			Emulator.Address[] sceneDataRegions = scope .[sceneDataRegionCount];
 			sceneDataRegionArrayPointer.ReadArray(&sceneDataRegions[0], sceneDataRegionCount);
-
 			for (let regionIndex < sceneDataRegionCount) {
 				visualMeshes[regionIndex] = .(sceneDataRegions[regionIndex]);
+			}
+
+			Emulator.Address waterRegionArrayPointer = ?;
+			Emulator.Address<Emulator.Address> waterRegionArrayPointerAddress = (.)0x800673f0;
+			waterRegionArrayPointerAddress.Read(&waterRegionArrayPointer);
+			uint32 waterRegionOffset = ?;
+			Emulator.ReadFromRAM(waterRegionArrayPointer, &waterRegionOffset, 4);
+			uint32 waterRegionCount = ?;
+			Emulator.ReadFromRAM(waterRegionArrayPointer + waterRegionOffset, &waterRegionCount, 4);
+			(uint8 regionIndex, uint8, uint8, uint8)[] waterData = scope .[waterRegionCount];
+			Emulator.ReadFromRAM(waterRegionArrayPointer + waterRegionOffset + 4, &waterData[0], waterRegionCount * 4);
+			for (let waterRegionData in waterData) {
+				visualMeshes[waterRegionData.regionIndex].isWater = true;
 			}
 		}
 

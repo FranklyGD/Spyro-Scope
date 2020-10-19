@@ -27,7 +27,6 @@ namespace SpyroScope {
 
 		public void Dispose() {
 			DeleteContainerAndItems!(nearMeshStates);
-			delete nearAnimatedIndices;
 			delete nearAnimatedTriangles;
 		}
 
@@ -59,7 +58,7 @@ namespace SpyroScope {
 
 			// Find triangles using these vertices
 			let terrainRegionIndicies = terrainMeshes[regionIndex].nearMeshIndices;
-			List<uint32> nearAnimatedIndices = new .();
+			List<uint32> nearAnimatedIndices = scope .();
 			nearAnimatedTriangles = new .();
 			for (var i = 0; i < terrainRegionIndicies.Count; i += 3) {
 				if (terrainRegionIndicies[i] < vertexCount ||

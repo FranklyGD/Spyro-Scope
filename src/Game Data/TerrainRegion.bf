@@ -9,6 +9,8 @@ namespace SpyroScope {
 		public List<uint32> nearMeshIndices = new .();
 		public Vector offset;
 
+		public bool isWater = false;
+
 		// Region Metadata
 		// Derived from Spyro: Ripto's Rage [80028b84]
 		struct RegionMetadata {
@@ -254,7 +256,7 @@ namespace SpyroScope {
 		}
 
 		public void DrawNear() {
-			Renderer.SetModel(offset * 16, .Scale(16));
+			Renderer.SetModel(offset * 16, .Scale(16,16, isWater ? 2 : 16));
 			nearMesh.Draw();
 		}
 	}
