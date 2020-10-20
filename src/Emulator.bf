@@ -16,6 +16,8 @@ namespace SpyroScope {
 		}
 		public static EmulatorType emulator;
 		static uint emulatorRAMBaseAddress;
+		static uint emulatorVRAMBaseAddress;
+		static uint16[] vramSnapshot ~ delete _;
 		
 		public const String[4] emulatorNames = .(String.Empty, "Nocash PSX", "Bizhawk", "ePSXe");
 
@@ -32,9 +34,7 @@ namespace SpyroScope {
 				strBuffer.AppendF("{:X8}", (uint32)this);
 			}
 
-			public bool IsNull { get {
-				return this == 0;
-			} }
+			public bool IsNull { get => this == 0; }
 		}
 		public struct Address<T> : Address {
 			public override void ToString(String strBuffer) {
@@ -248,6 +248,7 @@ namespace SpyroScope {
 			}
 
 			if (rom != .None) {
+				FetchVRAMBaseAddress();
 				FetchStaticData();
 			}
 		}
@@ -316,6 +317,19 @@ namespace SpyroScope {
 			}
 		}
 
+		public static void FetchVRAMBaseAddress() {
+			switch (emulator) {
+				case .NocashPSX : {
+					// uint8* pointer = (uint8*)(void*)(moduleHandle + 0x00091E10)
+					// No need to use module base address since its always loaded at 0x00400000
+					uint8* pointer = (uint8*)(void*)0x00492784;
+					Windows.ReadProcessMemory(processHandle, pointer, &emulatorVRAMBaseAddress, 4, null);
+				}
+
+				default : // Well this is awkward...
+			}
+		}
+
 		[Inline]
 		public static void* RawAddressFromRAM(Address address) {
 			return ((uint8*)null + emulatorRAMBaseAddress + ((uint32)address & 0x003fffff));
@@ -333,24 +347,28 @@ namespace SpyroScope {
 
 		// Spyro
 		static void FetchStaticData() {
-			delete Emulator.maxFreeflightHeights;
-			delete Emulator.deathPlaneHeights;
+			delete vramSnapshot;
+			delete maxFreeflightHeights;
+			delete deathPlaneHeights;
 
-			switch (Emulator.rom) {
+			vramSnapshot = new .[1024 * 512];
+			Windows.ReadProcessMemory(processHandle, (void*)emulatorVRAMBaseAddress, &vramSnapshot[0], 1024 * 512 * 4, null);
+
+			switch (rom) {
 				case .RiptosRage: {
 					// 28 worlds exists but there is space for 32 (probably a power of 2 related thing)
-					Emulator.deathPlaneHeights = new .[32];
-					Emulator.maxFreeflightHeights = new .[32];
+					deathPlaneHeights = new .[32];
+					maxFreeflightHeights = new .[32];
 					
-					deathPlaneHeightsAddresses[(int)rom].ReadArray(&Emulator.deathPlaneHeights[0], 32);
-					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&Emulator.maxFreeflightHeights[0], 32);
+					deathPlaneHeightsAddresses[(int)rom].ReadArray(&deathPlaneHeights[0], 32);
+					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&maxFreeflightHeights[0], 32);
 				}
 			case .YearOfTheDragon: {
-				Emulator.deathPlaneHeights = new .[40 * 4];
-				Emulator.maxFreeflightHeights = new .[40 * 4];
+				deathPlaneHeights = new .[40 * 4];
+				maxFreeflightHeights = new .[40 * 4];
 
-				deathPlaneHeightsAddresses[(int)rom].ReadArray(&Emulator.deathPlaneHeights[0], 40 * 4);
-				maxFreeflightHeightsAddresses[(int)rom].ReadArray(&Emulator.maxFreeflightHeights[0], 40);
+				deathPlaneHeightsAddresses[(int)rom].ReadArray(&deathPlaneHeights[0], 40 * 4);
+				maxFreeflightHeightsAddresses[(int)rom].ReadArray(&maxFreeflightHeights[0], 40);
 			}
 				default : {}
 			}
