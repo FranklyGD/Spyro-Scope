@@ -1,3 +1,4 @@
+using OpenGL;
 using System;
 using System.Collections;
 
@@ -6,6 +7,8 @@ namespace SpyroScope {
 		public CollisionTerrain collision = .();
 		public TerrainRegion[] visualMeshes;
 		public RegionAnimation[] animations;
+		public static TextureLOD[] texturesLODs;
+		public Texture[] textures;
 
 		public enum RenderMode {
 			Collision,
@@ -32,10 +35,28 @@ namespace SpyroScope {
 				}
 			}
 			delete animations;
+			DeleteContainerAndItems!(textures);
+			delete texturesLODs;
 		}
 
 		public void Reload() {
 			collision.Reload();
+
+			DeleteContainerAndItems!(textures);
+			textures = new .[1];
+			textures[0] = new .(1024, 512, OpenGL.GL.GL_RGBA, OpenGL.GL.GL_UNSIGNED_SHORT_5_5_5_1, &Emulator.vramSnapshot[0]);
+			textures[0].Bind();
+			
+			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
+			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_SWIZZLE_A, GL.GL_ONE);
+
+			Texture.Unbind();
+
+			Emulator.Address<TextureLOD> textureDataAddress = ?;
+			Emulator.Address<Emulator.Address> textureDataPointer = (.)0x800673f4;
+			textureDataPointer.Read(&textureDataAddress);
+			texturesLODs = new .[0x100];
+			textureDataAddress.ReadArray(&texturesLODs[0], 0x100);
 
 			Emulator.Address<Emulator.Address> sceneDataRegionArrayAddress = ?;
 			var sceneDataRegionArrayPointer = Emulator.sceneDataRegionArrayPointers[(int)Emulator.rom];
@@ -115,9 +136,11 @@ namespace SpyroScope {
 						Renderer.SetModel(visualMeshes[drawnRegion].offset * 16, .Scale(16));
 						visualMeshes[drawnRegion].nearMesh.Draw();
 					} else {
+						textures[0].Bind();
 						for (let visualMesh in visualMeshes) {
 							visualMesh.DrawNear();
 						}
+						Renderer.whiteTexture.Bind();
 					}
 				}
 				case .Collision : {
