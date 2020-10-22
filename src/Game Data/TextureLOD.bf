@@ -16,9 +16,9 @@ namespace SpyroScope {
 
 				return (
 					pageOffsetX + (float)left / 4 / 1024,
-					pageOffsetX + (float)(right + 1) / 4 / 1024,
+					pageOffsetX + (float)((uint16)right + 1) / 4 / 1024,
 					pageOffsetY + (float)leftSkew / 512,
-					pageOffsetY + (float)(rightSkew + 1) / 512
+					pageOffsetY + (float)((uint16)rightSkew + 1) / 512
 				);
 			}
 
