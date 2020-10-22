@@ -55,8 +55,8 @@ namespace SpyroScope {
 			Emulator.Address<TextureLOD> textureDataAddress = ?;
 			Emulator.Address<Emulator.Address> textureDataPointer = (.)0x800673f4;
 			textureDataPointer.Read(&textureDataAddress);
-			texturesLODs = new .[0x100];
-			textureDataAddress.ReadArray(&texturesLODs[0], 0x100);
+			texturesLODs = new .[128];
+			textureDataAddress.ReadArray(&texturesLODs[0], 128);
 
 			Emulator.Address<Emulator.Address> sceneDataRegionArrayAddress = ?;
 			var sceneDataRegionArrayPointer = Emulator.sceneDataRegionArrayPointers[(int)Emulator.rom];

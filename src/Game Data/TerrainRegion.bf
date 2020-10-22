@@ -64,6 +64,7 @@ namespace SpyroScope {
 				
 				Vector[4] triangleVertices = ?;
 				Renderer.Color[4] triangleColors = ?;
+				float[4][2] triangleUV = ?;
 	
 				if (isNear) {
 					uint32[] regionTriangles = scope .[faceSize * 4];
@@ -83,12 +84,16 @@ namespace SpyroScope {
 						uint8[4] unpackedTrianglesIndex = *(uint8[4]*)&packedTriangleIndex;
 						uint8[4] unpackedColorsIndex = *(uint8[4]*)&packedColorIndex;
 						uint8[4] unpackedTextureIndex = *(uint8[4]*)&packedTextureIndex;
-						uint8 textureIndex = unpackedColorsIndex[0];
+						uint8 textureIndex = unpackedTextureIndex[0];
 
-						let textureLOD = Terrain.texturesLODs[textureIndex];
-						let texturePage = textureLOD.topLeftQuad.texturePage;
-						let texturePageX = texturePage % 16;
-						let texturePageY = texturePage / 16;
+						let nearQuad = Terrain.texturesLODs[textureIndex % 128].nearQuad;
+						let partialUV = nearQuad.GetVramPartialUV();
+						const let quadSize = TextureLOD.TextureQuad.quadSize;
+						const let fullQuadSize = quadSize * 2;
+
+						triangleUV[1] = .(partialUV.right, partialUV.rightY - quadSize);
+						triangleUV[2] = .(partialUV.right, partialUV.rightY);
+						triangleUV[3] = .(partialUV.left, partialUV.leftY + quadSize);
 
 						bool triangle = unpackedTrianglesIndex[0] == unpackedTrianglesIndex[1];
 						bool flipSide = unpackedTextureIndex[1] & 0b0100 > 0;
@@ -122,10 +127,12 @@ namespace SpyroScope {
 							colorList.Add(triangleColors[1]);
 							colorList.Add(triangleColors[0]);
 
-							uvList.Add(.(0.5f + (float)textureLOD.topLeftQuad.left / 1024, 0));
-							uvList.Add(.(0.5f + (float)textureLOD.topLeftQuad.left / 1024, 1));
-							uvList.Add(.(0.5f + (float)(textureLOD.topLeftQuad.left + 1) / 1024, 0));
+							uvList.Add(triangleUV[first]);
+							uvList.Add(triangleUV[2]);
+							uvList.Add(triangleUV[second]);
 						} else {
+							triangleUV[0] = .(partialUV.left, partialUV.leftY);
+
 							if (flipSide) {
 								Swap!(unpackedTrianglesIndex[0], unpackedTrianglesIndex[3]);
 								Swap!(unpackedTrianglesIndex[2], unpackedTrianglesIndex[1]);
@@ -144,6 +151,8 @@ namespace SpyroScope {
 							if (flipSide) {
 								Swap!(triangleColors[0], triangleColors[1]);
 								Swap!(triangleColors[2], triangleColors[3]);
+								Swap!(triangleUV[0], triangleUV[1]);
+								Swap!(triangleUV[2], triangleUV[3]);
 							}
 
 							nearMeshIndices.Add(unpackedTrianglesIndex[2]);
@@ -170,13 +179,13 @@ namespace SpyroScope {
 							colorList.Add(triangleColors[3]);
 							colorList.Add(triangleColors[2]);
 
-							uvList.Add(.(0.5f + (float)textureLOD.topRightQuad.right / 1024, 0));
-							uvList.Add(.(0.5f + (float)textureLOD.bottomRightQuad.right / 1024, 1f / 16));
-							uvList.Add(.(0.5f + (float)textureLOD.bottomLeftQuad.left / 1024, 1f / 16));
+							uvList.Add(triangleUV[2]);
+							uvList.Add(triangleUV[1]);
+							uvList.Add(triangleUV[0]);
 
-							uvList.Add(.(0.5f + (float)textureLOD.topRightQuad.right / 1024, 0));
-							uvList.Add(.(0.5f + (float)textureLOD.bottomLeftQuad.left / 1024, 1f / 16));
-							uvList.Add(.(0.5f + (float)textureLOD.topLeftQuad.left / 1024, 0));
+							uvList.Add(triangleUV[2]);
+							uvList.Add(triangleUV[0]);
+							uvList.Add(triangleUV[3]);
 						}
 					}
 				} else {
