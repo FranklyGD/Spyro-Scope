@@ -110,10 +110,6 @@ namespace SpyroScope {
 			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
 
 			Texture.Unbind();
-
-			SDL2.SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&textureBuffer[0], 1024 * 4, 512, 32, 4 * 1024 * 4, 0x000000ff, 0x0000ff00, 0x00ff0000, 0);
-			SDL2.SDL.SDL_SaveBMP(img, "./vram2.bmp");
-			SDL2.SDL.FreeSurface(img);
 			delete textureBuffer;
 
 			Emulator.Address waterRegionArrayPointer = ?;
@@ -171,6 +167,8 @@ namespace SpyroScope {
 						Renderer.BeginWireframe();
 					}
 
+					Renderer.BeginRetroShading();
+
 					if (drawnRegion > -1) {
 						Renderer.SetModel(visualMeshes[drawnRegion].offset * 16, .Scale(16));
 						visualMeshes[drawnRegion].nearMesh.Draw();
@@ -181,6 +179,8 @@ namespace SpyroScope {
 						}
 						Renderer.whiteTexture.Bind();
 					}
+
+					Renderer.BeginDefaultShading();
 				}
 				case .Collision : {
 					collision.Draw(wireframe);

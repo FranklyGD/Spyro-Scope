@@ -98,10 +98,11 @@ namespace SpyroScope {
 						let partialUV = nearQuad.GetVramPartialUV();
 						const let quadSize = TextureLOD.TextureQuad.quadSize;
 						const let fullQuadSize = quadSize * 2;
-
-						triangleUV[1] = .(partialUV.right, partialUV.rightY - quadSize);
-						triangleUV[2] = .(partialUV.right, partialUV.rightY);
-						triangleUV[3] = .(partialUV.left, partialUV.leftY + quadSize);
+						
+						triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
+						triangleUV[1] = .(partialUV.left, partialUV.leftY);
+						triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
+						triangleUV[3] = .(partialUV.right, partialUV.rightY);
 
 						bool triangle = unpackedTrianglesIndex[0] == unpackedTrianglesIndex[1];
 						bool flipSide = unpackedTextureIndex[1] & 0b0100 > 0;
@@ -135,15 +136,19 @@ namespace SpyroScope {
 							colorList.Add(triangleColors[1]);
 							colorList.Add(triangleColors[0]);
 
-							uvList.Add(triangleUV[first]);
-							uvList.Add(triangleUV[2]);
-							uvList.Add(triangleUV[second]);
-						} else {
-							triangleUV[0] = .(partialUV.left, partialUV.leftY);
-
 							if (flipSide) {
-								Swap!(unpackedTrianglesIndex[0], unpackedTrianglesIndex[3]);
-								Swap!(unpackedTrianglesIndex[2], unpackedTrianglesIndex[1]);
+								uvList.Add(triangleUV[0]);
+								uvList.Add(triangleUV[2]);
+								uvList.Add(triangleUV[3]);
+							} else {
+								uvList.Add(triangleUV[1]);
+								uvList.Add(triangleUV[0]);
+								uvList.Add(triangleUV[2]);
+							}
+						} else {
+							if (flipSide) {
+								Swap!(unpackedTrianglesIndex[0], unpackedTrianglesIndex[1]);
+								Swap!(unpackedTrianglesIndex[2], unpackedTrianglesIndex[3]);
 							}
 	
 							triangleVertices[0] = sourceVertices[unpackedTrianglesIndex[1]];
@@ -157,43 +162,43 @@ namespace SpyroScope {
 							triangleColors[3] = vertexColors[unpackedColorsIndex[0]];
 	
 							if (flipSide) {
-								Swap!(triangleColors[0], triangleColors[1]);
-								Swap!(triangleColors[2], triangleColors[3]);
+								Swap!(triangleColors[0], triangleColors[3]);
+								Swap!(triangleColors[2], triangleColors[1]);
 								Swap!(triangleUV[0], triangleUV[1]);
 								Swap!(triangleUV[2], triangleUV[3]);
 							}
 
 							nearMeshIndices.Add(unpackedTrianglesIndex[2]);
 							nearMeshIndices.Add(unpackedTrianglesIndex[1]);
-							nearMeshIndices.Add(unpackedTrianglesIndex[0]);
-
-							nearMeshIndices.Add(unpackedTrianglesIndex[2]);
-							nearMeshIndices.Add(unpackedTrianglesIndex[0]);
 							nearMeshIndices.Add(unpackedTrianglesIndex[3]);
 
+							nearMeshIndices.Add(unpackedTrianglesIndex[3]);
+							nearMeshIndices.Add(unpackedTrianglesIndex[1]);
+							nearMeshIndices.Add(unpackedTrianglesIndex[0]);
+							
 							vertexList.Add(triangleVertices[1]);
 							vertexList.Add(triangleVertices[0]);
-							vertexList.Add(triangleVertices[3]);
-	
-							vertexList.Add(triangleVertices[1]);
-							vertexList.Add(triangleVertices[3]);
 							vertexList.Add(triangleVertices[2]);
+							
+							vertexList.Add(triangleVertices[2]);
+							vertexList.Add(triangleVertices[0]);
+							vertexList.Add(triangleVertices[3]);
 							
 							colorList.Add(triangleColors[1]);
 							colorList.Add(triangleColors[0]);
-							colorList.Add(triangleColors[3]);
-	
-							colorList.Add(triangleColors[1]);
-							colorList.Add(triangleColors[3]);
 							colorList.Add(triangleColors[2]);
-
+							
+							colorList.Add(triangleColors[2]);
+							colorList.Add(triangleColors[0]);
+							colorList.Add(triangleColors[3]);
+							
 							uvList.Add(triangleUV[0]);
 							uvList.Add(triangleUV[3]);
-							uvList.Add(triangleUV[2]);
-
-							uvList.Add(triangleUV[0]);
-							uvList.Add(triangleUV[2]);
 							uvList.Add(triangleUV[1]);
+							
+							uvList.Add(triangleUV[1]);
+							uvList.Add(triangleUV[3]);
+							uvList.Add(triangleUV[2]);
 						}
 					}
 				} else {

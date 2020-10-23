@@ -80,7 +80,7 @@ namespace SpyroScope {
 
 		public static Vector tint = .(1,1,1);
 		public static int uniformZdepthOffsetIndex; // Z-depth Offset (mainly for pushing the wireframe forward to avoid Z-fighting)
-
+		public static int uniformRetroShadingIndex; // Change shading from modern to emulated
 		public static Texture whiteTexture ~ delete _;
 
 		public struct Buffer<T> {
@@ -232,6 +232,7 @@ namespace SpyroScope {
 			uniformViewMatrixIndex = FindProgramUniform(program, "view");
 			uniformProjectionMatrixIndex = FindProgramUniform(program, "projection");
 			uniformZdepthOffsetIndex = FindProgramUniform(program, "zdepthOffset");
+			uniformRetroShadingIndex = FindProgramUniform(program, "retroShading");
 
 			// Create Default Texture
 
@@ -414,6 +415,14 @@ namespace SpyroScope {
 		public static void BeginSolid() {
 			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL);
 			GL.glUniform1f(uniformZdepthOffsetIndex, 0); // Reset depth offset
+		}
+
+		public static void BeginRetroShading() {
+			GL.glUniform1f(uniformRetroShadingIndex, 1);
+		}
+
+		public static void BeginDefaultShading() {
+			GL.glUniform1f(uniformRetroShadingIndex, 0);
 		}
 
 		public static void Draw() {
