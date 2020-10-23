@@ -121,7 +121,7 @@ namespace SpyroScope {
 				return; // Don't bother since it picked up garbage data
 			}
 
-			for (let i < nearMeshStates.Count) {
+			for (let i < nearMeshStates[0].vertices.Count) {
 				Vector fromVertex = nearMeshStates[keyframeData.fromState].vertices[i];
 				Vector toVertex = nearMeshStates[keyframeData.toState].vertices[i];
 				
