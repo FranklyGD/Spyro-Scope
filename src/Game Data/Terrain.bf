@@ -8,7 +8,7 @@ namespace SpyroScope {
 		public TerrainRegion[] visualMeshes;
 		public RegionAnimation[] animations;
 		public static TextureLOD[] texturesLODs;
-		public Texture[] textures;
+		public Texture terrainTexture;
 
 		public enum RenderMode {
 			Collision,
@@ -35,53 +35,86 @@ namespace SpyroScope {
 				}
 			}
 			delete animations;
-			DeleteContainerAndItems!(textures);
+			delete terrainTexture;
 			delete texturesLODs;
 		}
 
 		public void Reload() {
 			collision.Reload();
 
-			DeleteContainerAndItems!(textures);
-			textures = new .[1];
-			textures[0] = new .(1024, 512, OpenGL.GL.GL_RGBA, OpenGL.GL.GL_UNSIGNED_SHORT_5_5_5_1, &Emulator.vramSnapshot[0]);
-			textures[0].Bind();
-			
-			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_SWIZZLE_A, GL.GL_ONE);
+			delete terrainTexture;
+			uint32[] textureBuffer = new .[(1024 * 4) * 512](0,); // VRAM but four times wider
 
-			Texture.Unbind();
-
+			// Get max amount of possible textures
 			Emulator.Address<TextureLOD> textureDataAddress = ?;
 			Emulator.Address<Emulator.Address> textureDataPointer = (.)0x800673f4;
 			textureDataPointer.Read(&textureDataAddress);
 			texturesLODs = new .[128];
 			textureDataAddress.ReadArray(&texturesLODs[0], 128);
 
-			var textureData = texturesLODs[0].nearQuad.GetTextureData();
-			SDL2.SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&textureData, 32, 32, 32, 4 * 32, 0x000000ff, 0x0000ff00, 0x00ff0000, 0);
-			SDL2.SDL.SDL_SaveBMP(img, "./texture.bmp");
-			SDL2.SDL.FreeSurface(img);
-
+			// Locate scene region data and amount that are present in RAM
 			Emulator.Address<Emulator.Address> sceneDataRegionArrayAddress = ?;
 			var sceneDataRegionArrayPointer = Emulator.sceneDataRegionArrayPointers[(int)Emulator.rom];
 			sceneDataRegionArrayPointer.Read(&sceneDataRegionArrayAddress);
 			uint32 sceneDataRegionCount = ?;
 			Emulator.ReadFromRAM(sceneDataRegionArrayPointer + 4, &sceneDataRegionCount, 4);
 
+			// Remove any existing parsed data
 			if (visualMeshes != null) {
 				for (var item in visualMeshes) {
 					item.Dispose();
 				}
 				DeleteAndNullify!(visualMeshes);
 			}
+
 			visualMeshes = new .[sceneDataRegionCount];
 
-			Emulator.Address[] sceneDataRegions = scope .[sceneDataRegionCount];
+			// Parse all terrain regions
+			let usedTextureIndices = new List<int>(); // Also get all used texture indices while we are at it
+			Emulator.Address[] sceneDataRegions = new .[sceneDataRegionCount];
 			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegions[0], sceneDataRegionCount);
 			for (let regionIndex < sceneDataRegionCount) {
 				visualMeshes[regionIndex] = .(sceneDataRegions[regionIndex]);
+
+				for (let textureIndex in visualMeshes[regionIndex].usedTextureIndices) {
+					let usedIndex = usedTextureIndices.FindIndex(scope (x) => x == textureIndex);
+					if (usedIndex == -1) {
+						usedTextureIndices.Add(textureIndex);
+					}
+				}
 			}
+			delete sceneDataRegions;
+
+			// Convert any used VRAM textures for previewing
+			for (let usedTextureIndex in usedTextureIndices) {
+				let textureLOD = &texturesLODs[usedTextureIndex];
+				let quad = &textureLOD.nearQuad;
+				let pageCoords = quad.GetPageCoordinates();
+				let vramPageCoords = (pageCoords.x * 64) + (pageCoords.y * 256 * 1024);
+				let vramCoords = vramPageCoords * 4 + (quad.left + (int)quad.leftSkew * 1024 * 4);
+
+				let quadTexture = quad.GetTextureData();
+				for (let x < 32) {
+					for (let y < 32) {
+						textureBuffer[vramCoords + x + y * 1024 * 4] = quadTexture[x + y * 32];
+					}
+				}
+				delete quadTexture;
+			}
+			delete usedTextureIndices;
+
+			terrainTexture = new .(1024 * 4, 512, OpenGL.GL.GL_RGBA, &textureBuffer[0]);
+			terrainTexture.Bind();
+			
+			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
+			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
+
+			Texture.Unbind();
+
+			SDL2.SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&textureBuffer[0], 1024 * 4, 512, 32, 4 * 1024 * 4, 0x000000ff, 0x0000ff00, 0x00ff0000, 0);
+			SDL2.SDL.SDL_SaveBMP(img, "./vram2.bmp");
+			SDL2.SDL.FreeSurface(img);
+			delete textureBuffer;
 
 			Emulator.Address waterRegionArrayPointer = ?;
 			Emulator.waterRegionArrayPointers[(int)Emulator.rom].Read(&waterRegionArrayPointer);
@@ -89,13 +122,14 @@ namespace SpyroScope {
 			Emulator.ReadFromRAM(waterRegionArrayPointer, &waterRegionOffset, 4);
 			uint32 waterRegionCount = ?;
 			Emulator.ReadFromRAM(waterRegionArrayPointer + waterRegionOffset, &waterRegionCount, 4);
-			(uint8 regionIndex, uint8, uint8, uint8)[] waterData = scope .[waterRegionCount];
+			(uint8 regionIndex, uint8, uint8, uint8)[] waterData = new .[waterRegionCount];
 			if (waterRegionCount > 0) {
 				Emulator.ReadFromRAM(waterRegionArrayPointer + waterRegionOffset + 4, &waterData[0], waterRegionCount * 4);
 				for (let waterRegionData in waterData) {
 					visualMeshes[waterRegionData.regionIndex].isWater = true;
 				}
 			}
+			delete waterData;
 		}
 
 		public void Update() {
@@ -141,7 +175,7 @@ namespace SpyroScope {
 						Renderer.SetModel(visualMeshes[drawnRegion].offset * 16, .Scale(16));
 						visualMeshes[drawnRegion].nearMesh.Draw();
 					} else {
-						textures[0].Bind();
+						terrainTexture.Bind();
 						for (let visualMesh in visualMeshes) {
 							visualMesh.DrawNear();
 						}

@@ -353,9 +353,6 @@ namespace SpyroScope {
 
 			vramSnapshot = new .[1024 * 512];
 			Windows.ReadProcessMemory(processHandle, (void*)emulatorVRAMBaseAddress, &vramSnapshot[0], 1024 * 512 * 2, null);
-			/*SDL2.SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&vramSnapshot[0], 1024, 512, 16, 4 * 512, 0x001f, 0x03e0, 0x7c00, 0x0000);
-			SDL2.SDL.SDL_SaveBMP(img, "./vram.bmp");
-			SDL2.SDL.FreeSurface(img);*/
 
 			switch (rom) {
 				case .RiptosRage: {

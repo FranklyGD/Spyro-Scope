@@ -5,7 +5,7 @@ namespace SpyroScope {
 	struct TextureLOD {
 		[Ordered]
 		public struct TextureQuad {
-			public uint8 left, leftSkew, a, b, right, rightSkew, texturePage, flags;
+			public uint8 left, leftSkew, clutX, clutY, right, rightSkew, texturePage, flags;
 			public const float quadSize = 1f / 16;
 
 			// Used for checking where the quad UVs would line up in VRAM
@@ -31,17 +31,18 @@ namespace SpyroScope {
 			// and the closer rendered ones are four of those combined
 
 			/// Get a 32x32 pixel texture from the quad
-			public uint32[32 * 32] GetTextureData() {
+			public uint32[] GetTextureData() {
 				let pageCoords = GetPageCoordinates();
 				let vramPageCoords = (pageCoords.x * 64) + (pageCoords.y * 256 * 1024);
 				let vramCoords = vramPageCoords + ((int)leftSkew * 1024);
+				// We are going to assuming that the area used in VRAM is always square
 
 				// The game splits the VRAM into a grid of 64 by 128 possible CLUT locations
 				// The size of each cell is 16x4 that contain all the necessary colors horizontally
 				// and the fade out of saturation vertically when viewed from increasing distance
-				let clutPosition = (int)a * 16 + (int)b * 4 * 1024;
+				let clutPosition = (int)clutX * 16 + (int)clutY * 4 * 1024;
 
-				uint32[32 * 32] pixels = ?;
+				uint32[] pixels = new .[32 * 32](0,);
 				for (let x < 32) {
 					for (let y < 32) {
 						let texelX = x + left;

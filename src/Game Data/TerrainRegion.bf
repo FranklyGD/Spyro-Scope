@@ -11,6 +11,8 @@ namespace SpyroScope {
 
 		public bool isWater = false;
 
+		public List<int> usedTextureIndices = new .();
+
 		// Region Metadata
 		// Derived from Spyro: Ripto's Rage [80028b84]
 		struct RegionMetadata {
@@ -34,6 +36,7 @@ namespace SpyroScope {
 			delete nearMesh;
 			delete farMeshIndices;
 			delete nearMeshIndices;
+			delete usedTextureIndices;
 		}
 
 		public void Reload() mut {
@@ -84,9 +87,14 @@ namespace SpyroScope {
 						uint8[4] unpackedTrianglesIndex = *(uint8[4]*)&packedTriangleIndex;
 						uint8[4] unpackedColorsIndex = *(uint8[4]*)&packedColorIndex;
 						uint8[4] unpackedTextureIndex = *(uint8[4]*)&packedTextureIndex;
-						uint8 textureIndex = unpackedTextureIndex[0];
+						uint8 textureIndex = unpackedTextureIndex[0] % 128;
 
-						let nearQuad = Terrain.texturesLODs[textureIndex % 128].nearQuad;
+						let usedIndex = usedTextureIndices.FindIndex(scope (x) => x == textureIndex);
+						if (usedIndex == -1) {
+							usedTextureIndices.Add(textureIndex);
+						}
+
+						let nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
 						let partialUV = nearQuad.GetVramPartialUV();
 						const let quadSize = TextureLOD.TextureQuad.quadSize;
 						const let fullQuadSize = quadSize * 2;
@@ -179,13 +187,13 @@ namespace SpyroScope {
 							colorList.Add(triangleColors[3]);
 							colorList.Add(triangleColors[2]);
 
-							uvList.Add(triangleUV[2]);
-							uvList.Add(triangleUV[1]);
-							uvList.Add(triangleUV[0]);
-
-							uvList.Add(triangleUV[2]);
 							uvList.Add(triangleUV[0]);
 							uvList.Add(triangleUV[3]);
+							uvList.Add(triangleUV[2]);
+
+							uvList.Add(triangleUV[0]);
+							uvList.Add(triangleUV[2]);
+							uvList.Add(triangleUV[1]);
 						}
 					}
 				} else {
