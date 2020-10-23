@@ -58,6 +58,11 @@ namespace SpyroScope {
 			texturesLODs = new .[128];
 			textureDataAddress.ReadArray(&texturesLODs[0], 128);
 
+			var textureData = texturesLODs[0].nearQuad.GetTextureData();
+			SDL2.SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&textureData, 32, 32, 32, 4 * 32, 0x000000ff, 0x0000ff00, 0x00ff0000, 0);
+			SDL2.SDL.SDL_SaveBMP(img, "./texture.bmp");
+			SDL2.SDL.FreeSurface(img);
+
 			Emulator.Address<Emulator.Address> sceneDataRegionArrayAddress = ?;
 			var sceneDataRegionArrayPointer = Emulator.sceneDataRegionArrayPointers[(int)Emulator.rom];
 			sceneDataRegionArrayPointer.Read(&sceneDataRegionArrayAddress);
