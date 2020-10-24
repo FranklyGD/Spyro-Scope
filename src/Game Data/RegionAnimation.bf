@@ -121,6 +121,7 @@ namespace SpyroScope {
 				return; // Don't bother since it picked up garbage data
 			}
 
+			// Update all vertices that are meant to move between states
 			for (let i < nearMeshStates[0].vertices.Count) {
 				Vector fromVertex = nearMeshStates[keyframeData.fromState].vertices[i];
 				Vector toVertex = nearMeshStates[keyframeData.toState].vertices[i];

@@ -62,8 +62,8 @@ namespace SpyroScope {
 						let bgr555pixel = Emulator.vramSnapshot[clutSample];
 
 						// Get each 5 bit color channel
-						// |      16-bit pixel      |
-						// | ? | bbbb | gggg | rrrr |
+						// |        16-bit pixel       |
+						// | ? | bbbbb | ggggg | rrrrr |
 						let r5 = bgr555pixel & 0x1f;
 						let g5 = bgr555pixel >> 5 & 0x1f;
 						let b5 = bgr555pixel >> 10 & 0x1f;

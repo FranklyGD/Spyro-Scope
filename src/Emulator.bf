@@ -84,7 +84,9 @@ namespace SpyroScope {
 		public const Address<Address>[4] sceneDataRegionArrayPointers = .(0, 0, (.)0x800673d4, (.)0x8006d128);
 		public const Address<Address>[4] sceneDataRegionAnimationArrayPointers = .(0, 0, (.)0x800681f8, (.)0x8006e454);
 		public const Address<Address>[4] waterRegionArrayPointers = .(0, 0, (.)0x800673f0, (.)0x8006d144);
-		
+
+		public const Address<Address>[4] textureDataPointers = .(0, 0, (.)0x800673f4, (.)0x8006d148);
+
 		public const Address<uint32>[4] deathPlaneHeightsAddresses = .(0, 0, (.)0x80060234, (.)0x800677c8);
 		public const Address<uint32>[4] maxFreeflightHeightsAddresses = .(0, 0, (.)0x800601b4, (.)0x80067728);
 

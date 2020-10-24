@@ -47,8 +47,7 @@ namespace SpyroScope {
 
 			// Get max amount of possible textures
 			Emulator.Address<TextureLOD> textureDataAddress = ?;
-			Emulator.Address<Emulator.Address> textureDataPointer = (.)0x800673f4;
-			textureDataPointer.Read(&textureDataAddress);
+			Emulator.textureDataPointers[(int)Emulator.rom].Read(&textureDataAddress);
 			texturesLODs = new .[128];
 			textureDataAddress.ReadArray(&texturesLODs[0], 128);
 

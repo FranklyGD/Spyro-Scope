@@ -168,6 +168,7 @@ namespace SpyroScope {
 					break; // Don't bother since it picked up garbage data
 				}
 
+				// Update all triangles that are meant to move between states
 				for (let i < animationGroup.count * 3) {
 					Vector fromVertex = animationGroup.mesh[keyframeData.fromState].vertices[i];
 					Vector toVertex = animationGroup.mesh[keyframeData.toState].vertices[i];
@@ -179,6 +180,7 @@ namespace SpyroScope {
 					collisionMesh.normals[vertexIndex] = fromNormal + (toNormal - fromNormal) * interpolation;
 				}
 
+				// While in this overlay, color the terrain mesh to show the interpolation amount between states
 				if (overlay == .Deform) {
 					Renderer.Color transitionColor = keyframeData.fromState == keyframeData.toState ? .(255,128,0) : .((.)((1 - interpolation) * 255), (.)(interpolation * 255), 0);
 					for (let i < animationGroup.count * 3) {
