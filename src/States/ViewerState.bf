@@ -383,7 +383,6 @@ namespace SpyroScope {
 				}
 			}
 
-			////////////////////////
 			DrawUtilities.Axis(cursor3DPosition, .Scale(1000));
 
 			// Draw world's origin
@@ -553,20 +552,38 @@ namespace SpyroScope {
 						}
 					}
 				}
-			} else if (currentRegionIndex > -1 && currentTriangleIndex > -1) {
+			} else if (terrain.renderMode == .Near && currentRegionIndex > -1 && currentTriangleIndex > -1) {
+
 				let visualMesh = terrain.visualMeshes[currentRegionIndex];
 				let faceIndex = visualMesh.nearFaceIndices[currentTriangleIndex];
 				let face = visualMesh.GetNearFace(faceIndex);
 				let textureInfo = Terrain.texturesLODs[face.renderInfo.textureIndex];
-				let partialUV = textureInfo.nearQuad.GetVramPartialUV();
 				const let quadSize = TextureLOD.TextureQuad.quadSize;
+				
+				DrawUtilities.Rect(WindowApp.height - 145, WindowApp.height, 0, 490, .(0,0,0,128));
 
+				var partialUV = textureInfo.nearQuad.GetVramPartialUV();
 				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 0,128, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, terrain.terrainTexture, .(255,255,255));
 
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("{:X2}", face.renderInfo.[Friend]texture), .(128, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 4, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("{:X2}", face.renderInfo.[Friend]sideDepth), .(128, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 3, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("{:X2}", face.renderInfo.[Friend]a), .(128, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 2, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("{:X2}", face.renderInfo.[Friend]b), .(128, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight, 0), .(255,255,255));
+				partialUV = textureInfo.topLeftQuad.GetVramPartialUV();
+				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height - 64, 128,128 + 64, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, terrain.terrainTexture, .(255,255,255));
+
+				partialUV = textureInfo.topRightQuad.GetVramPartialUV();
+				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height - 64, 128 + 64,128 + 128, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, terrain.terrainTexture, .(255,255,255));
+
+				partialUV = textureInfo.bottomLeftQuad.GetVramPartialUV();
+				DrawUtilities.Rect(WindowApp.height - 64, WindowApp.height, 128,128 + 64, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, terrain.terrainTexture, .(255,255,255));
+
+				partialUV = textureInfo.bottomRightQuad.GetVramPartialUV();
+				DrawUtilities.Rect(WindowApp.height - 64, WindowApp.height, 128 + 64,128 + 128, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, terrain.terrainTexture, .(255,255,255));
+				
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", currentRegionIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 7, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Face Index: {}", faceIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 6, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Tex Index: {}", face.renderInfo.textureIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 5, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Rotation: {}", face.renderInfo.rotation), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 4, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Mirror: {}", face.renderInfo.flipped), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 3, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Depth Offset: {}", face.renderInfo.depthOffset), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 2, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Double Sided: {}", face.renderInfo.doubleSided), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight, 0), .(255,255,255));
 
 			} else if (terrain.drawnRegion > -1) {
 				// Background
@@ -689,9 +706,7 @@ namespace SpyroScope {
 								currentRegionIndex = -1;
 								
 								if (terrain.renderMode == .Collision) {
-									if (GMath.RayMeshIntersect(origin, ray, terrain.collision.mesh, ref distance, ref currentTriangleIndex)) {
-										currentRegionIndex = 0;
-									}
+									GMath.RayMeshIntersect(origin, ray, terrain.collision.mesh, ref distance, ref currentTriangleIndex);
 								} else {
 									for (let i < terrain.visualMeshes.Count) {
 										let visualMesh = terrain.visualMeshes[i];

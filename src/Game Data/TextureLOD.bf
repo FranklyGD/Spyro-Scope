@@ -11,20 +11,21 @@ namespace SpyroScope {
 			// Used for checking where the quad UVs would line up in VRAM
 			public (float left, float right, float leftY, float rightY) GetVramPartialUV() {
 				let pageCoords = GetPageCoordinates();
+				let subPixels = (texturePage & 0x80 > 0) ? 2 : 4;
 
 				let pageOffsetX = pageCoords.x * 0.0625f;
 				let pageOffsetY = pageCoords.y * 0.5f;
 
 				return (
-					pageOffsetX + (float)left / 4 / 1024,
-					pageOffsetX + (float)((uint16)right + 1) / 4 / 1024,
+					pageOffsetX + (float)left / subPixels / 1024,
+					pageOffsetX + (float)((uint16)right + 1) / subPixels / 1024,
 					pageOffsetY + (float)leftSkew / 512,
 					pageOffsetY + (float)((uint16)rightSkew + 1) / 512
 				);
 			}
 
 			public (int x, int y) GetPageCoordinates() {
-				return (texturePage & 0xf, ((texturePage & 0x10) >> 4));
+				return (texturePage & 0xf, (texturePage & 0x10) >> 4);
 			}
 
 			// All terrain quads are 32 by 32,
@@ -37,6 +38,10 @@ namespace SpyroScope {
 				let vramCoords = vramPageCoords + ((int)leftSkew * 1024);
 				// We are going to assuming that the area used in VRAM is always square
 
+				let bitMode = (texturePage & 0x80 > 0) ? 8 : 4;
+				let bitModeMask = (1 << bitMode) - 1;
+				let subPixels = bitMode == 8 ? 2 : 4;
+
 				// The game splits the VRAM into a grid of 64 by 128 possible CLUT locations
 				// The size of each cell is 16x4 that contain all the necessary colors horizontally
 				// and the fade out of saturation vertically when viewed from increasing distance
@@ -48,17 +53,20 @@ namespace SpyroScope {
 						let texelX = x + left;
 
 						// Get the target pixel from the texture
-						let vramPixel = Emulator.vramSnapshot[vramCoords + texelX / 4 + y * 1024];
+						let vramPixel = Emulator.vramSnapshot[vramCoords + texelX / subPixels + y * 1024];
 
-						// Retrieve a sub-pixel value from VRAM (4-bit mode) to sample from a CLUT
-						// Each sub-pixel contains a 4 bit value that tells the location of sample
+						// Retrieve a sub-pixel value from VRAM (8- or 4-bit mode) to sample from a CLUT
+						// Each sub-pixel contains a 8 or 4 bit value that tells the location of sample
 						//
 						// |       16-bit pixel        |
+						// |       (8-bit mode)        |
+						// |   11111111  |  00000000   |
+						// |       (4-bit mode)        |
 						// | 3333 | 2222 | 1111 | 0000 |
 						//
 						// After sampling, the result is a pixel in a color format of BGR555
-						let p = texelX % 4;
-						let clutSample = (((int)vramPixel >> (p * 4)) & 0xf) + clutPosition;
+						let p = texelX % subPixels;
+						let clutSample = (((int)vramPixel >> (p * bitMode)) & bitModeMask) + clutPosition;
 						let bgr555pixel = Emulator.vramSnapshot[clutSample];
 
 						// Get each 5 bit color channel

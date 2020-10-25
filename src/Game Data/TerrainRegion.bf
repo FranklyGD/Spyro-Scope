@@ -34,9 +34,10 @@ namespace SpyroScope {
 				uint8 texture, flipSideDepth, a, b;
 
 				public uint8 textureIndex { get => texture % 128; }
+				public uint8 depthOffset { get => flipSideDepth & 0b0011; }
 				public bool flipped { get => flipSideDepth & 0b0100 > 0; }
+				public bool doubleSided { get => flipSideDepth & 0b1000 > 0; }
 				public uint8 rotation { get => (flipSideDepth & 0b00110000) >> 4; }
-				public bool double { get => flipSideDepth & 0b1000 > 0; }
 			}
 			public RenderInfo renderInfo;
 		}
@@ -114,7 +115,6 @@ namespace SpyroScope {
 						let nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
 						let partialUV = nearQuad.GetVramPartialUV();
 						const let quadSize = TextureLOD.TextureQuad.quadSize;
-						const let fullQuadSize = quadSize * 2;
 						
 						triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
 						triangleUV[1] = .(partialUV.left, partialUV.leftY);

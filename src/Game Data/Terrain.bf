@@ -87,24 +87,32 @@ namespace SpyroScope {
 			// Convert any used VRAM textures for previewing
 			for (let usedTextureIndex in usedTextureIndices) {
 				let textureLOD = &texturesLODs[usedTextureIndex];
-				let quad = &textureLOD.nearQuad;
-				let pageCoords = quad.GetPageCoordinates();
-				let vramPageCoords = (pageCoords.x * 64) + (pageCoords.y * 256 * 1024);
-				let vramCoords = vramPageCoords * 4 + (quad.left + (int)quad.leftSkew * 1024 * 4);
-
-				let quadTexture = quad.GetTextureData();
-				for (let x < 32) {
-					for (let y < 32) {
-						textureBuffer[vramCoords + x + y * 1024 * 4] = quadTexture[x + y * 32];
+				var quad = &textureLOD.nearQuad;
+				
+				for (let i < 6) {
+					let mode = quad.texturePage & 0x80 > 0;
+					let pageCoords = quad.GetPageCoordinates();
+					let vramPageCoords = (pageCoords.x * 64) + (pageCoords.y * 256 * 1024);
+					let vramCoords = vramPageCoords * 4 + ((int)quad.left * (mode ? 2 : 1) + (int)quad.leftSkew * 1024 * 4);
+	
+					let quadTexture = quad.GetTextureData();
+					let width = mode ? 64 : 32;
+					let pixelWidth = mode ? 2 : 1;
+					for (let x < width) {
+						for (let y < 32) {
+							textureBuffer[(vramCoords + x + y * 1024 * 4)] = quadTexture[x / pixelWidth + y * 32];
+						}
 					}
+					delete quadTexture;
+					quad++;
 				}
-				delete quadTexture;
 			}
 			delete usedTextureIndices;
 
 			terrainTexture = new .(1024 * 4, 512, OpenGL.GL.GL_RGBA, &textureBuffer[0]);
 			terrainTexture.Bind();
-			
+
+			// Make the textures sample sharp
 			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
 			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
 
