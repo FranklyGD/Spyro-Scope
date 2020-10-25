@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace SpyroScope {
 	struct CollisionTerrain {
-		Mesh collisionMesh;
+		public Mesh mesh;
 
 		public Vector upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
 		public Vector lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
@@ -60,7 +60,7 @@ namespace SpyroScope {
 				}
 			}
 			delete animationGroups;
-			delete collisionMesh;
+			delete mesh;
 			delete waterSurfaceTriangles;
 			delete collisionTypes;
 		}
@@ -129,8 +129,8 @@ namespace SpyroScope {
 				}
 			}
 
-			delete collisionMesh;
-			collisionMesh = new .(vertices, normals, colors);
+			delete mesh;
+			mesh = new .(vertices, normals, colors);
 
 			// Delete animations as the new loaded mesh may be incompatible
 			if (animationGroups != null) {
@@ -163,7 +163,7 @@ namespace SpyroScope {
 				
 				let interpolation = (float)keyframeData.interpolation / (256);
 
-				if ((animationGroup.start + animationGroup.count) * 3 > collisionMesh.vertices.Count ||
+				if ((animationGroup.start + animationGroup.count) * 3 > mesh.vertices.Count ||
 					keyframeData.fromState >= animationGroup.mesh.Count || keyframeData.toState >= animationGroup.mesh.Count) {
 					break; // Don't bother since it picked up garbage data
 				}
@@ -176,8 +176,8 @@ namespace SpyroScope {
 					Vector toNormal = animationGroup.mesh[keyframeData.toState].normals[i];
 
 					let vertexIndex = animationGroup.start * 3 + i;
-					collisionMesh.vertices[vertexIndex] = fromVertex + (toVertex - fromVertex) * interpolation;
-					collisionMesh.normals[vertexIndex] = fromNormal + (toNormal - fromNormal) * interpolation;
+					mesh.vertices[vertexIndex] = fromVertex + (toVertex - fromVertex) * interpolation;
+					mesh.normals[vertexIndex] = fromNormal + (toNormal - fromNormal) * interpolation;
 				}
 
 				// While in this overlay, color the terrain mesh to show the interpolation amount between states
@@ -185,28 +185,28 @@ namespace SpyroScope {
 					Renderer.Color transitionColor = keyframeData.fromState == keyframeData.toState ? .(255,128,0) : .((.)((1 - interpolation) * 255), (.)(interpolation * 255), 0);
 					for (let i < animationGroup.count * 3) {
 						let vertexIndex = animationGroup.start * 3 + i;
-						collisionMesh.colors[vertexIndex] = transitionColor;
+						mesh.colors[vertexIndex] = transitionColor;
 					}
 				}
 			}
 
-			collisionMesh.Update();
+			mesh.Update();
 		}
 
 		public void Draw(bool wireframe) {
-			if (collisionMesh == null) {
+			if (mesh == null) {
 				return;
 			}
 
 			Renderer.SetModel(.Zero, .Identity);
 
 			if (!wireframe) {
-				collisionMesh.Draw();
+				mesh.Draw();
 				Renderer.SetTint(.(192,192,192));
 			}
 
 			Renderer.BeginWireframe();
-			collisionMesh.Draw();
+			mesh.Draw();
 
 			if (overlay == .Deform && animationGroups != null) {
 				Renderer.SetTint(.(255,255,0));
@@ -326,12 +326,12 @@ namespace SpyroScope {
 			}
 
 			// Send changed color data
-			collisionMesh.Update();
+			mesh.Update();
 		}
 
 		void ClearColor() {
-			for (let i < collisionMesh.colors.Count) {
-				collisionMesh.colors[i] = .(255, 255, 255);
+			for (let i < mesh.colors.Count) {
+				mesh.colors[i] = .(255, 255, 255);
 			}
 		}
 
@@ -356,7 +356,7 @@ namespace SpyroScope {
 
 				for (let vi < 3) {
 					let i = triangleIndex * 3 + vi;
-					collisionMesh.colors[i] = color;
+					mesh.colors[i] = color;
 				}
 			}
 		}
@@ -366,7 +366,7 @@ namespace SpyroScope {
 			for (let triangleIndex in waterSurfaceTriangles) {
 				for (let vi < 3) {
 					let i = triangleIndex * 3 + vi;
-					collisionMesh.colors[i] = .(64, 128, 255);
+					mesh.colors[i] = .(64, 128, 255);
 				}
 			}
 		}
@@ -388,7 +388,7 @@ namespace SpyroScope {
 
 				for (let vi < 3) {
 					let i = triangleIndex * 3 + vi;
-					collisionMesh.colors[i] = color;
+					mesh.colors[i] = color;
 				}
 			}
 		}
@@ -396,8 +396,8 @@ namespace SpyroScope {
 		void ColorPlatforms() {
 			for (int triangleIndex < Emulator.collisionTriangles.Count) {
 				let normal = Vector.Cross(
-					collisionMesh.vertices[triangleIndex * 3 + 2] - collisionMesh.vertices[triangleIndex * 3 + 0],
-					collisionMesh.vertices[triangleIndex * 3 + 1] - collisionMesh.vertices[triangleIndex * 3 + 0]
+					mesh.vertices[triangleIndex * 3 + 2] - mesh.vertices[triangleIndex * 3 + 0],
+					mesh.vertices[triangleIndex * 3 + 1] - mesh.vertices[triangleIndex * 3 + 0]
 				);
 
 				VectorInt normalInt = normal.ToVectorInt();
@@ -416,7 +416,7 @@ namespace SpyroScope {
 				if (Math.Round(slope) < 0x17) { // Derived from Spyro: Ripto's Rage [80035e44]
 					for (let vi < 3) {
 						let i = triangleIndex * 3 + vi;
-						collisionMesh.colors[i] = .(128,255,128);
+						mesh.colors[i] = .(128,255,128);
 					}
 				}
 			}

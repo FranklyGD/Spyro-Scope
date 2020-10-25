@@ -153,8 +153,7 @@ namespace SpyroScope {
 					}
 
 					if (drawnRegion > -1) {
-						Renderer.SetModel(visualMeshes[drawnRegion].offset * 16, .Scale(16));
-						visualMeshes[drawnRegion].farMesh.Draw();
+						visualMeshes[drawnRegion].DrawFar();
 					} else {
 						for (let visualMesh in visualMeshes) {
 							visualMesh.DrawFar();
@@ -169,8 +168,7 @@ namespace SpyroScope {
 					Renderer.BeginRetroShading();
 
 					if (drawnRegion > -1) {
-						Renderer.SetModel(visualMeshes[drawnRegion].offset * 16, .Scale(16));
-						visualMeshes[drawnRegion].nearMesh.Draw();
+						visualMeshes[drawnRegion].DrawNear();
 					} else {
 						terrainTexture.Bind();
 						for (let visualMesh in visualMeshes) {
