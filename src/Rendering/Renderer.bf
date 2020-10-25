@@ -236,8 +236,8 @@ namespace SpyroScope {
 
 			// Create Default Texture
 
-			var whiteTextureData = Color4[1](.(255,255,255,255));
-			whiteTexture = new .(1, 1, GL.GL_RGBA, &whiteTextureData);
+			var whiteTextureData = Color(255,255,255);
+			whiteTexture = new .(1, 1, GL.GL_RGB, GL.GL_RGB, &whiteTextureData);
 
 			Renderer.window = window;
 

@@ -65,7 +65,7 @@ namespace SpyroScope {
 			let textureSize = (int)Math.Pow(2, Math.Ceiling(Math.Log(Math.Sqrt(area), 2)));
 
 			let blank = new uint8[textureSize * textureSize];
-			atlas = new .(textureSize, textureSize, GL.GL_RED, &blank[0]);
+			atlas = new .(textureSize, textureSize, GL.GL_RED, GL.GL_RED, &blank[0]);
 			delete blank;
 
 			atlas.Bind();

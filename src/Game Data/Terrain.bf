@@ -91,13 +91,13 @@ namespace SpyroScope {
 				
 				for (let i < 6) {
 					let mode = quad.texturePage & 0x80 > 0;
+					let pixelWidth = mode ? 2 : 1;
 					let pageCoords = quad.GetPageCoordinates();
 					let vramPageCoords = (pageCoords.x * 64) + (pageCoords.y * 256 * 1024);
-					let vramCoords = vramPageCoords * 4 + ((int)quad.left * (mode ? 2 : 1) + (int)quad.leftSkew * 1024 * 4);
+					let vramCoords = vramPageCoords * 4 + ((int)quad.left * pixelWidth + (int)quad.leftSkew * 1024 * 4);
 	
 					let quadTexture = quad.GetTextureData();
 					let width = mode ? 64 : 32;
-					let pixelWidth = mode ? 2 : 1;
 					for (let x < width) {
 						for (let y < 32) {
 							textureBuffer[(vramCoords + x + y * 1024 * 4)] = quadTexture[x / pixelWidth + y * 32];
@@ -109,7 +109,7 @@ namespace SpyroScope {
 			}
 			delete usedTextureIndices;
 
-			terrainTexture = new .(1024 * 4, 512, OpenGL.GL.GL_RGBA, &textureBuffer[0]);
+			terrainTexture = new .(1024 * 4, 512, OpenGL.GL.GL_SRGB, OpenGL.GL.GL_RGBA, &textureBuffer[0]);
 			terrainTexture.Bind();
 
 			// Make the textures sample sharp
