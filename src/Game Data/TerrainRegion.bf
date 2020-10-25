@@ -11,6 +11,8 @@ namespace SpyroScope {
 			public uint16 offsetY, offsetX, b, offsetZ;
 			public uint8 farVertexCount, farColorCount, farFaceCount, c;
 			public uint8 nearVertexCount, nearColorCount, nearFaceCount;
+
+			public bool verticallyScaledDown { get => a & 0b1000000000000 > 0; }
 		}
 		public RegionMetadata metadata;
 
@@ -20,8 +22,6 @@ namespace SpyroScope {
 		public List<uint32> nearMeshIndices = new .();
 		public List<int> nearFaceIndices = new .();
 		public Vector offset;
-
-		public bool isWater = false;
 
 		public List<int> usedTextureIndices = new .();
 
@@ -331,11 +331,11 @@ namespace SpyroScope {
 
 		public NearFace GetNearFace(int index) {
 			NearFace face = ?;
-			Emulator.ReadFromRAM(address + 0x1c +
-				((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2) * 4 + // Pass over all far data
-				((int)metadata.nearVertexCount + (int)metadata.nearColorCount * 2) * 4 + // Pass over previous near data
-				(index * 4) * 4,// Index the face
-				&face, sizeof(NearFace));
+			Emulator.Address<NearFace> faceAddress = (.)address + 0x1c +
+				((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2 + // Pass over all far data
+				(int)metadata.nearVertexCount + (int)metadata.nearColorCount * 2 + // Pass over previous near data
+				index * 4) * 4;// Index the face
+			Emulator.ReadFromRAM(faceAddress, &face, sizeof(NearFace));
 			return face;
 		}
 		
@@ -345,7 +345,7 @@ namespace SpyroScope {
 		}
 
 		public void DrawNear() {
-			Renderer.SetModel(offset * 16, .Scale(16,16, isWater ? 2 : 16));
+			Renderer.SetModel(offset * 16, .Scale(16,16, metadata.verticallyScaledDown ? 2 : 16));
 			nearMesh.Draw();
 		}
 	}

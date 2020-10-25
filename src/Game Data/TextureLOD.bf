@@ -5,7 +5,7 @@ namespace SpyroScope {
 	struct TextureLOD {
 		[Ordered]
 		public struct TextureQuad {
-			public uint8 left, leftSkew, clutX, clutY, right, rightSkew, texturePage, flags;
+			public uint8 left, leftSkew, clutX, clutY, right, rightSkew, texturePage, flipRotateRaw;
 			public const float quadSize = 1f / 16;
 
 			// Used for checking where the quad UVs would line up in VRAM
@@ -26,6 +26,14 @@ namespace SpyroScope {
 
 			public (int x, int y) GetPageCoordinates() {
 				return (texturePage & 0xf, (texturePage & 0x10) >> 4);
+			}
+
+			public uint8 GetQuadRotation() {
+				return (flipRotateRaw & 0b00110000) >> 4;
+			}
+
+			public bool GetDiagonalFlip() {
+				return (flipRotateRaw & 0b01000000) > 0;
 			}
 
 			// All terrain quads are 32 by 32,
