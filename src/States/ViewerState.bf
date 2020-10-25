@@ -969,16 +969,16 @@ namespace SpyroScope {
 					}
 		
 					Texture containerIcon = object.objectTypeID == 1 ? null : gemHolderIconTexture;
-					Renderer.Color iconTint = .(64,64,64);
+					Renderer.Color iconTint = .(128,128,128);
 					switch (object.objectTypeID) {
 						case 0xc8:
-							iconTint = .(192,64,32);
+							iconTint = .(222,128,90);
 							containerIcon = basketIconTexture;
 						case 0xc9:
-							iconTint = .(32,64,192);
+							iconTint = .(90,128,222);
 							containerIcon = vaseIconTexture;
 						case 0xd1:
-							iconTint = .(16,192,0);
+							iconTint = .(64,222,0);
 							containerIcon = bottleIconTexture;
 					}
 		
@@ -1000,9 +1000,9 @@ namespace SpyroScope {
 					switch (object.heldGemValue) {
 						case 1: color = .(255,0,0);
 						case 2: color = .(0,255,0);
-						case 5: color = .(32,16,255);
-						case 10: color = .(255,128,0);
-						case 25: color = .(255,32,255);
+						case 5: color = .(90,64,255);
+						case 10: color = .(255,180,0);
+						case 25: color = .(255,90,255);
 					}
 		
 					DrawUtilities.Rect(screenPosition.y - halfHeight, screenPosition.y + halfHeight, screenPosition.x - halfWidth, screenPosition.x + halfWidth, 0,1,0,1, gemIconTexture, color);
