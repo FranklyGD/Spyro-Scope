@@ -19,8 +19,11 @@ namespace SpyroScope {
 		public Mesh farMesh;
 		public List<uint32> farMeshIndices = new .();
 		public Mesh nearMesh;
+		public Mesh nearMeshTransparent;
 		public List<uint32> nearMeshIndices = new .();
+		public List<uint32> nearMeshTransparentIndices = new .();
 		public List<int> nearFaceIndices = new .();
+		public List<int> nearFaceTransparentIndices = new .();
 		public Vector offset;
 
 		public List<int> usedTextureIndices = new .();
@@ -54,10 +57,13 @@ namespace SpyroScope {
 
 			delete farMesh;
 			delete nearMesh;
+			delete nearMeshTransparent;
 			delete farMeshIndices;
 			delete nearMeshIndices;
+			delete nearMeshTransparentIndices;
 			delete usedTextureIndices;
 			delete nearFaceIndices;
+			delete nearFaceTransparentIndices;
 		}
 
 		public void Reload() mut {
@@ -66,12 +72,18 @@ namespace SpyroScope {
 			offset = .(metadata.offsetX, metadata.offsetY, metadata.offsetZ);
 
 			// Low Poly Count / Far Mesh
-			farMesh = GenerateMesh(address + 0x1c, metadata.farVertexCount, metadata.farColorCount, metadata.farFaceCount, false);
+			GenerateMesh(address + 0x1c, metadata.farVertexCount, metadata.farColorCount, metadata.farFaceCount, false);
 			// High Poly Count / Near Mesh
-			nearMesh = GenerateMesh(address + 0x1c + ((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2) * 4, metadata.nearVertexCount, metadata.nearColorCount, metadata.nearFaceCount, true);
+			GenerateMesh(address + 0x1c + ((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2) * 4, metadata.nearVertexCount, metadata.nearColorCount, metadata.nearFaceCount, true);
 		}
 
-		Mesh GenerateMesh(Emulator.Address regionPointer, int vertexSize, int colorSize, int faceSize, bool isNear) mut {
+		void GenerateMesh(Emulator.Address regionPointer, int vertexSize, int colorSize, int faceSize, bool isNear) mut {
+			List<Vector> activeVertexList = ?;
+			List<Renderer.Color> activeColorList = ?;
+			List<float[2]> activeUvList = ?;
+			List<uint32> activeNearMeshIndices = ?;
+			List<int> activeNearFaceIndices = ?;
+
 			List<Vector> vertexList = scope .();
 			List<Renderer.Color> colorList = scope .();
 			List<float[2]> uvList = scope .();
@@ -90,6 +102,10 @@ namespace SpyroScope {
 				float[4][2] triangleUV = ?;
 	
 				if (isNear) {
+					List<Vector> vertexTransparentList = scope .();
+					List<Renderer.Color> colorTransparentList = scope .();
+					List<float[2]> uvTransparentList = scope .();
+
 					NearFace[] regionFaces = scope .[faceSize];
 					Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize * 2) * 4, &regionFaces[0], faceSize * 4 * 4);
 	
@@ -120,7 +136,21 @@ namespace SpyroScope {
 						triangleUV[1] = .(partialUV.left, partialUV.leftY);
 						triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
 						triangleUV[3] = .(partialUV.right, partialUV.rightY);
-	
+
+						if (nearQuad.GetAlpha()) {
+							activeVertexList = vertexList;
+							activeColorList = colorList;
+							activeUvList = uvList;
+							activeNearMeshIndices = nearMeshIndices;
+							activeNearFaceIndices = nearFaceIndices;
+						} else {
+							activeVertexList = vertexTransparentList;
+							activeColorList = colorTransparentList;
+							activeUvList = uvTransparentList;
+							activeNearMeshIndices = nearMeshTransparentIndices;
+							activeNearFaceIndices = nearFaceTransparentIndices;
+						}
+
 						if (regionFace.isTriangle) {
 							int first = 1;
 							int second = 3;
@@ -137,17 +167,17 @@ namespace SpyroScope {
 							triangleColors[1] = vertexColors[colorIndices[2]];
 							triangleColors[2] = vertexColors[colorIndices[second]];
 							
-							nearMeshIndices.Add(trianglesIndices[second]);
-							nearMeshIndices.Add(trianglesIndices[2]);
-							nearMeshIndices.Add(trianglesIndices[first]);
+							activeNearMeshIndices.Add(trianglesIndices[second]);
+							activeNearMeshIndices.Add(trianglesIndices[2]);
+							activeNearMeshIndices.Add(trianglesIndices[first]);
 
-							vertexList.Add(triangleVertices[2]);
-							vertexList.Add(triangleVertices[1]);
-							vertexList.Add(triangleVertices[0]);
+							activeVertexList.Add(triangleVertices[2]);
+							activeVertexList.Add(triangleVertices[1]);
+							activeVertexList.Add(triangleVertices[0]);
 							
-							colorList.Add(triangleColors[2]);
-							colorList.Add(triangleColors[1]);
-							colorList.Add(triangleColors[0]);
+							activeColorList.Add(triangleColors[2]);
+							activeColorList.Add(triangleColors[1]);
+							activeColorList.Add(triangleColors[0]);
 
 							float[3][2] rotatedTriangleUV = .(
 								triangleUV[(0 - textureRotation + 4) % 4],
@@ -156,16 +186,16 @@ namespace SpyroScope {
 								);
 
 							if (flipSide) {
-								uvList.Add(rotatedTriangleUV[2]);
-								uvList.Add(rotatedTriangleUV[0]);
-								uvList.Add(rotatedTriangleUV[1]);
+								activeUvList.Add(rotatedTriangleUV[2]);
+								activeUvList.Add(rotatedTriangleUV[0]);
+								activeUvList.Add(rotatedTriangleUV[1]);
 							} else {
-								uvList.Add(rotatedTriangleUV[1]);
-								uvList.Add(rotatedTriangleUV[0]);
-								uvList.Add(rotatedTriangleUV[2]);
+								activeUvList.Add(rotatedTriangleUV[1]);
+								activeUvList.Add(rotatedTriangleUV[0]);
+								activeUvList.Add(rotatedTriangleUV[2]);
 							}
 
-							nearFaceIndices.Add(i);
+							activeNearFaceIndices.Add(i);
 						} else {
 							if (flipSide) {
 								Swap!(trianglesIndices[0], trianglesIndices[1]);
@@ -189,42 +219,59 @@ namespace SpyroScope {
 								Swap!(triangleUV[2], triangleUV[3]);
 							}
 
-							nearMeshIndices.Add(trianglesIndices[2]);
-							nearMeshIndices.Add(trianglesIndices[1]);
-							nearMeshIndices.Add(trianglesIndices[3]);
+							activeNearMeshIndices.Add(trianglesIndices[2]);
+							activeNearMeshIndices.Add(trianglesIndices[1]);
+							activeNearMeshIndices.Add(trianglesIndices[3]);
 
-							nearMeshIndices.Add(trianglesIndices[3]);
-							nearMeshIndices.Add(trianglesIndices[1]);
-							nearMeshIndices.Add(trianglesIndices[0]);
+							activeNearMeshIndices.Add(trianglesIndices[3]);
+							activeNearMeshIndices.Add(trianglesIndices[1]);
+							activeNearMeshIndices.Add(trianglesIndices[0]);
 							
-							vertexList.Add(triangleVertices[1]);
-							vertexList.Add(triangleVertices[0]);
-							vertexList.Add(triangleVertices[2]);
+							activeVertexList.Add(triangleVertices[1]);
+							activeVertexList.Add(triangleVertices[0]);
+							activeVertexList.Add(triangleVertices[2]);
 							
-							vertexList.Add(triangleVertices[2]);
-							vertexList.Add(triangleVertices[0]);
-							vertexList.Add(triangleVertices[3]);
+							activeVertexList.Add(triangleVertices[2]);
+							activeVertexList.Add(triangleVertices[0]);
+							activeVertexList.Add(triangleVertices[3]);
 							
-							colorList.Add(triangleColors[1]);
-							colorList.Add(triangleColors[0]);
-							colorList.Add(triangleColors[2]);
+							activeColorList.Add(triangleColors[1]);
+							activeColorList.Add(triangleColors[0]);
+							activeColorList.Add(triangleColors[2]);
 							
-							colorList.Add(triangleColors[2]);
-							colorList.Add(triangleColors[0]);
-							colorList.Add(triangleColors[3]);
+							activeColorList.Add(triangleColors[2]);
+							activeColorList.Add(triangleColors[0]);
+							activeColorList.Add(triangleColors[3]);
 							
-							uvList.Add(triangleUV[0]);
-							uvList.Add(triangleUV[3]);
-							uvList.Add(triangleUV[1]);
+							activeUvList.Add(triangleUV[0]);
+							activeUvList.Add(triangleUV[3]);
+							activeUvList.Add(triangleUV[1]);
 							
-							uvList.Add(triangleUV[1]);
-							uvList.Add(triangleUV[3]);
-							uvList.Add(triangleUV[2]);
+							activeUvList.Add(triangleUV[1]);
+							activeUvList.Add(triangleUV[3]);
+							activeUvList.Add(triangleUV[2]);
 
-							nearFaceIndices.Add(i);
-							nearFaceIndices.Add(i);
+							activeNearFaceIndices.Add(i);
+							activeNearFaceIndices.Add(i);
 						}
 					}
+
+					Vector[] v = new .[vertexTransparentList.Count];
+					Vector[] n = new .[vertexTransparentList.Count];
+					Renderer.Color4[] c = new .[vertexTransparentList.Count];
+					float[][2] u = new .[vertexTransparentList.Count];
+
+					for (let i < vertexTransparentList.Count) {
+						v[i] = vertexTransparentList[i];
+						u[i] = uvTransparentList[i];
+						c[i] = colorTransparentList[i];
+					}
+
+					for (var i = 0; i < vertexTransparentList.Count; i++) {
+						n[i] = .(0,0,1);
+					}
+					
+					nearMeshTransparent = new .(v, u, n, c);
 				} else {
 					uint32[4] triangleIndices = ?;
 	
@@ -309,11 +356,15 @@ namespace SpyroScope {
 				c[i] = colorList[i];
 			}
 	
-			for (var i = 0; i < vertexList.Count; i += 3) {
-				n[i] = n[i+1] = n[i+2] = .(0,0,1);
+			for (var i = 0; i < vertexList.Count; i++) {
+				n[i] = .(0,0,1);
 			}
-	
-			return new .(v, u, n, c);
+
+			if (isNear) {
+				nearMesh = new .(v, u, n, c);
+			} else {
+				farMesh = new .(v, u, n, c);
+			}
 		}
 	
 		// Derived from Spyro: Ripto's Rage
@@ -343,10 +394,15 @@ namespace SpyroScope {
 			Renderer.SetModel(offset * 16, .Scale(16));
 			farMesh.Draw();
 		}
-
+		
 		public void DrawNear() {
 			Renderer.SetModel(offset * 16, .Scale(16,16, metadata.verticallyScaledDown ? 2 : 16));
 			nearMesh.Draw();
+		}
+
+		public void DrawNearTransparent() {
+			Renderer.SetModel(offset * 16, .Scale(16,16, metadata.verticallyScaledDown ? 2 : 16));
+			nearMeshTransparent.Draw();
 		}
 	}
 }

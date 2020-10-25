@@ -34,6 +34,7 @@ namespace SpyroScope {
 		List<(float distance, int index)> hoveredObjects = new .() ~ delete _;
 		List<(float distance, int index)> lastHoveredObjects = new .() ~ delete _;
 		int currentRegionIndex = -1;
+		bool currentRegionTransparent = false;
 		int currentTriangleIndex = -1;
 
 		// Scene
@@ -563,7 +564,13 @@ namespace SpyroScope {
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("b: {:X2}", metadata.b), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 8, 0), .(255,255,255));
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("c: {:X2}", metadata.c), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 7, 0), .(255,255,255));
 
-				let faceIndex = visualMesh.nearFaceIndices[currentTriangleIndex];
+				int faceIndex = ?;
+				if (currentRegionTransparent) {
+					faceIndex = visualMesh.nearFaceTransparentIndices[currentTriangleIndex];
+				} else {
+					faceIndex = visualMesh.nearFaceIndices[currentTriangleIndex];
+				}
+
 				let face = visualMesh.GetNearFace(faceIndex);
 				let textureInfo = Terrain.texturesLODs[face.renderInfo.textureIndex];
 				const let quadSize = TextureLOD.TextureQuad.quadSize;
@@ -718,8 +725,24 @@ namespace SpyroScope {
 									for (let i < terrain.visualMeshes.Count) {
 										let visualMesh = terrain.visualMeshes[i];
 										let transform = Vector(1f/16, 1f/16, 1f/16);
-										if (GMath.RayMeshIntersect(origin * transform - visualMesh.offset, ray * transform, terrain.renderMode == .Near ? visualMesh.nearMesh : visualMesh.farMesh, ref distance, ref currentTriangleIndex)) {
-											currentRegionIndex = i;
+
+										let transformedOrigin = origin * transform - visualMesh.offset;
+										let transformedRay = ray * transform;
+
+										if (terrain.renderMode == .Near) {
+											if (GMath.RayMeshIntersect(transformedOrigin, transformedRay, visualMesh.nearMesh, ref distance, ref currentTriangleIndex)) {
+												currentRegionIndex = i;
+												currentRegionTransparent = false;
+											}
+											if (GMath.RayMeshIntersect(transformedOrigin, transformedRay, visualMesh.nearMeshTransparent, ref distance, ref currentTriangleIndex)) {
+												currentRegionIndex = i;
+												currentRegionTransparent = true;
+											}
+										} else {
+											if (GMath.RayMeshIntersect(transformedOrigin, transformedRay, visualMesh.farMesh, ref distance, ref currentTriangleIndex)) {
+												currentRegionIndex = i;
+												currentRegionTransparent = false;
+											}
 										}
 									}
 								}

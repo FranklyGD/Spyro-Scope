@@ -109,7 +109,7 @@ namespace SpyroScope {
 			}
 			delete usedTextureIndices;
 
-			terrainTexture = new .(1024 * 4, 512, OpenGL.GL.GL_SRGB, OpenGL.GL.GL_RGBA, &textureBuffer[0]);
+			terrainTexture = new .(1024 * 4, 512, OpenGL.GL.GL_SRGB_ALPHA, OpenGL.GL.GL_RGBA, &textureBuffer[0]);
 			terrainTexture.Bind();
 
 			// Make the textures sample sharp
@@ -180,6 +180,17 @@ namespace SpyroScope {
 						for (let visualMesh in visualMeshes) {
 							visualMesh.DrawNear();
 						}
+						
+						GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
+						GL.glDepthMask(GL.GL_FALSE);  
+
+						for (let visualMesh in visualMeshes) {
+							visualMesh.DrawNearTransparent();
+						}
+
+						GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+						GL.glDepthMask(GL.GL_TRUE);  
+
 						Renderer.whiteTexture.Bind();
 					}
 

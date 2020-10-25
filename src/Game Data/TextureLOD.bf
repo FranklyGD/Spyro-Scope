@@ -79,10 +79,11 @@ namespace SpyroScope {
 
 						// Get each 5 bit color channel
 						// |        16-bit pixel       |
-						// | ? | bbbbb | ggggg | rrrrr |
+						// | a | bbbbb | ggggg | rrrrr |
 						let r5 = bgr555pixel & 0x1f;
 						let g5 = bgr555pixel >> 5 & 0x1f;
 						let b5 = bgr555pixel >> 10 & 0x1f;
+						let a1 = bgr555pixel >> 15;
 
 						// Bring values from 31 up to 255 (0x1f to 0xff)
 						let r = (uint32)((float)r5 / 0x1f * 255);
@@ -90,11 +91,31 @@ namespace SpyroScope {
 						let b = (uint32)((float)b5 / 0x1f * 255);
 
 						// Write to the texture data
-						pixels[x + y * 32] = r + (g << 8) + (b << 16) + 0xff000000;
+						pixels[x + y * 32] = r + (g << 8) + (b << 16) + (a1 > 0 ? 0 : 0xff000000);
 					}
 				}
 
 				return pixels;
+			}
+
+			public bool GetAlpha() {
+				let pageCoords = GetPageCoordinates();
+				let vramPageCoords = (pageCoords.x * 64) + (pageCoords.y * 256 * 1024);
+				let vramCoords = vramPageCoords + ((int)leftSkew * 1024);
+
+				let bitMode = (texturePage & 0x80 > 0) ? 8 : 4;
+				let bitModeMask = (1 << bitMode) - 1;
+				let subPixels = bitMode == 8 ? 2 : 4;
+
+				let clutPosition = (int)clutX * 16 + (int)clutY * 4 * 1024;
+
+				let vramPixel = Emulator.vramSnapshot[vramCoords + left / subPixels];
+
+				let p = left % subPixels;
+				let clutSample = (((int)vramPixel >> (p * bitMode)) & bitModeMask) + clutPosition;
+				let bgr555pixel = Emulator.vramSnapshot[clutSample];
+
+				return (bgr555pixel >> 15) == 0;
 			}
 		}
 
