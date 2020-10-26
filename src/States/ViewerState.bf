@@ -375,6 +375,11 @@ namespace SpyroScope {
 				Translator.Draw();
 			}
 
+			if (currentRegionIndex > 0) {
+				let region = terrain.visualMeshes[currentRegionIndex];
+				DrawUtilities.Axis(.((int)region.metadata.centerX * 16, (int)region.metadata.centerY * 16, (int)region.metadata.centerZ * 16), .Scale(1000));
+			}
+
 			// Draw all queued instances
 			PrimitiveShape.DrawInstances();
 
@@ -383,8 +388,6 @@ namespace SpyroScope {
 					model.DrawInstances();
 				}
 			}
-
-			DrawUtilities.Axis(cursor3DPosition, .Scale(1000));
 
 			// Draw world's origin
 			Renderer.DrawLine(.Zero, .(10000,0,0), .(255,255,255), .(255,0,0));
@@ -557,12 +560,10 @@ namespace SpyroScope {
 				let visualMesh = terrain.visualMeshes[currentRegionIndex];
 				let metadata = visualMesh.metadata;
 				
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", currentRegionIndex), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 12, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Center: <{},{},{}>", metadata.centerX * 16, metadata.centerY * 16, metadata.centerZ * 16), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 11, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Offset: <{},{},{}>", metadata.offsetX * 16, metadata.offsetY * 16, metadata.offsetZ * 16), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 10, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("a: {:X4}", metadata.a), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 9, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("b: {:X2}", metadata.b), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 8, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("c: {:X2}", metadata.c), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 7, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", currentRegionIndex), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 11, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Center: <{},{},{}>", (int)metadata.centerX * 16, (int)metadata.centerY * 16, (int)metadata.centerZ * 16), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 10, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Offset: <{},{},{}>", (int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 9, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Scaled Vertically: {}", metadata.verticallyScaledDown), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 8, 0), .(255,255,255));
 
 				int faceIndex = ?;
 				if (currentRegionTransparent) {
@@ -720,13 +721,15 @@ namespace SpyroScope {
 								currentRegionIndex = -1;
 								
 								if (terrain.renderMode == .Collision) {
-									GMath.RayMeshIntersect(origin, ray, terrain.collision.mesh, ref distance, ref currentTriangleIndex);
+									if (GMath.RayMeshIntersect(origin, ray, terrain.collision.mesh, ref distance, ref currentTriangleIndex)) {
+										cursor3DPosition = origin + ray * distance;
+									}
 								} else {
 									for (let i < terrain.visualMeshes.Count) {
 										let visualMesh = terrain.visualMeshes[i];
-										let transform = Vector(1f/16, 1f/16, 1f/16);
+										let transform = Vector(1f/16, 1f/16, visualMesh.metadata.verticallyScaledDown ? 1f/2 : 1f/16);
 
-										let transformedOrigin = origin * transform - visualMesh.offset;
+										let transformedOrigin = (origin - visualMesh.offset * 16) * transform;
 										let transformedRay = ray * transform;
 
 										if (terrain.renderMode == .Near) {
@@ -744,11 +747,11 @@ namespace SpyroScope {
 												currentRegionTransparent = false;
 											}
 										}
+
+										if (currentRegionIndex > -1) {
+											cursor3DPosition = origin + ray * distance;
+										}
 									}
-								}
-								
-								if (currentRegionIndex > -1) {
-									cursor3DPosition = origin + ray * distance;
 								}
 
 								hoveredObjIndex = GetObjectIndexUnderMouse(ref distance);
