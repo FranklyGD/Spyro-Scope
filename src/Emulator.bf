@@ -349,12 +349,8 @@ namespace SpyroScope {
 
 		// Spyro
 		static void FetchStaticData() {
-			delete vramSnapshot;
 			delete maxFreeflightHeights;
 			delete deathPlaneHeights;
-
-			vramSnapshot = new .[1024 * 512];
-			Windows.ReadProcessMemory(processHandle, (void*)emulatorVRAMBaseAddress, &vramSnapshot[0], 1024 * 512 * 2, null);
 
 			switch (rom) {
 				case .RiptosRage: {
@@ -374,6 +370,12 @@ namespace SpyroScope {
 			}
 				default : {}
 			}
+		}
+
+		public static void TakeVRAMSnapshot() {
+			delete vramSnapshot;
+			vramSnapshot = new .[1024 * 512];
+			Windows.ReadProcessMemory(processHandle, (void*)emulatorVRAMBaseAddress, &vramSnapshot[0], 1024 * 512 * 2, null);
 		}
 
 		public static void FetchImportantObjects() {

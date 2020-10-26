@@ -43,6 +43,7 @@ namespace SpyroScope {
 			collision.Reload();
 
 			delete terrainTexture;
+			delete texturesLODs;
 			uint32[] textureBuffer = new .[(1024 * 4) * 512](0,); // VRAM but four times wider
 
 			// Get max amount of possible textures
@@ -119,6 +120,14 @@ namespace SpyroScope {
 			Texture.Unbind();
 			delete textureBuffer;
 
+			// Delete animations as the new loaded mesh may be incompatible
+			if (animations != null) {
+				for (let item in animations) {
+					item.Dispose();
+				}
+				DeleteAndNullify!(animations);
+			}
+
 			/*Emulator.Address waterRegionArrayPointer = ?;
 			Emulator.waterRegionArrayPointers[(int)Emulator.rom].Read(&waterRegionArrayPointer);
 			uint32 waterRegionOffset = ?;
@@ -135,16 +144,17 @@ namespace SpyroScope {
 
 		public void Update() {
 			collision.Update();
-			if (animations != null) {
-				for (let animation in animations) {
-					animation.Update();
-				}
-			}
 
 			let terrainAnimationPointerArrayAddressOld = Emulator.terrainAnimationPointerArrayAddress;
 			Emulator.sceneDataRegionAnimationArrayPointers[(int)Emulator.rom].Read(&Emulator.terrainAnimationPointerArrayAddress);
 			if (Emulator.collisionModifyingPointerArrayAddress != 0 && terrainAnimationPointerArrayAddressOld != Emulator.terrainAnimationPointerArrayAddress) {
 				ReloadAnimations();
+			}
+
+			if (animations != null) {
+				for (let animation in animations) {
+					animation.Update();
+				}
 			}
 		}
 
