@@ -323,12 +323,22 @@ namespace SpyroScope {
 		public static void FetchVRAMBaseAddress() {
 			switch (emulator) {
 				case .NocashPSX : {
-					// uint8* pointer = (uint8*)(void*)(moduleHandle + 0x00091E10)
+					// uint8* pointer = (uint8*)(void*)(moduleHandle + 0x00092784)
 					// No need to use module base address since its always loaded at 0x00400000
 					uint8* pointer = (uint8*)(void*)0x00492784;
 					Windows.ReadProcessMemory(processHandle, pointer, &emulatorVRAMBaseAddress, 4, null);
 				}
-
+				case .Bizhawk : {
+					// Static address
+					emulatorVRAMBaseAddress = (.)moduleHandle + 0x005280D0;
+				}
+				case .ePSXe : {
+					// Plugin address
+					let gpuModuleHandle = GetModule(processHandle, "gpuPeteOpenGL2.dll");
+					emulatorVRAMBaseAddress = (.)gpuModuleHandle + 0x00051F80;
+					// NOTE: According to Cheat Engine this should work, however...
+					// the module is not being listed and therefore cannot be found
+				}
 				default : // Well this is awkward...
 			}
 		}
