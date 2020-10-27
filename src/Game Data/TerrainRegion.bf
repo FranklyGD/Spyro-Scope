@@ -24,6 +24,8 @@ namespace SpyroScope {
 		public List<uint32> nearMeshTransparentIndices = new .();
 		public List<int> nearFaceIndices = new .();
 		public List<int> nearFaceTransparentIndices = new .();
+		public List<uint8> nearTextureIndices = new .();
+		public List<uint8> nearTextureTransparentIndices = new .();
 		public Vector offset;
 
 		public List<int> usedTextureIndices = new .();
@@ -64,6 +66,8 @@ namespace SpyroScope {
 			delete usedTextureIndices;
 			delete nearFaceIndices;
 			delete nearFaceTransparentIndices;
+			delete nearTextureIndices;
+			delete nearTextureTransparentIndices;
 		}
 
 		public void Reload() mut {
@@ -83,6 +87,7 @@ namespace SpyroScope {
 			List<float[2]> activeUvList = ?;
 			List<uint32> activeNearMeshIndices = ?;
 			List<int> activeNearFaceIndices = ?;
+			List<uint8> activeNearTextureIndices = ?;
 
 			List<Vector> vertexList = scope .();
 			List<Renderer.Color> colorList = scope .();
@@ -143,12 +148,14 @@ namespace SpyroScope {
 							activeUvList = uvList;
 							activeNearMeshIndices = nearMeshIndices;
 							activeNearFaceIndices = nearFaceIndices;
+							activeNearTextureIndices = nearTextureIndices;
 						} else {
 							activeVertexList = vertexTransparentList;
 							activeColorList = colorTransparentList;
 							activeUvList = uvTransparentList;
 							activeNearMeshIndices = nearMeshTransparentIndices;
 							activeNearFaceIndices = nearFaceTransparentIndices;
+							activeNearTextureIndices = nearTextureTransparentIndices;
 						}
 
 						if (regionFace.isTriangle) {
@@ -196,6 +203,7 @@ namespace SpyroScope {
 							}
 
 							activeNearFaceIndices.Add(i);
+							activeNearTextureIndices.Add(textureIndex);
 						} else {
 							if (flipSide) {
 								Swap!(trianglesIndices[0], trianglesIndices[1]);
@@ -253,6 +261,8 @@ namespace SpyroScope {
 
 							activeNearFaceIndices.Add(i);
 							activeNearFaceIndices.Add(i);
+							activeNearTextureIndices.Add(textureIndex);
+							activeNearTextureIndices.Add(textureIndex);
 						}
 					}
 
@@ -380,12 +390,12 @@ namespace SpyroScope {
 			return vertex;
 		}
 
-		public NearFace GetNearFace(int index) {
+		public NearFace GetNearFace(int faceIndex) {
 			NearFace face = ?;
 			Emulator.Address<NearFace> faceAddress = (.)address + 0x1c +
 				((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2 + // Pass over all far data
 				(int)metadata.nearVertexCount + (int)metadata.nearColorCount * 2 + // Pass over previous near data
-				index * 4) * 4;// Index the face
+				faceIndex * 4) * 4;// Index the face
 			Emulator.ReadFromRAM(faceAddress, &face, sizeof(NearFace));
 			return face;
 		}

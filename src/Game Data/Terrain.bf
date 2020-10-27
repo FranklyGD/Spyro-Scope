@@ -8,7 +8,8 @@ namespace SpyroScope {
 		public TerrainRegion[] visualMeshes;
 		public RegionAnimation[] animations;
 		public static TextureLOD[] texturesLODs;
-		public Texture terrainTexture;
+		public static Texture terrainTexture;
+		public TextureAnimation[] textureAnimations;
 
 		public enum RenderMode {
 			Collision,
@@ -37,6 +38,7 @@ namespace SpyroScope {
 			delete animations;
 			delete terrainTexture;
 			delete texturesLODs;
+			delete textureAnimations;
 		}
 
 		public void Reload() {
@@ -44,6 +46,8 @@ namespace SpyroScope {
 
 			delete terrainTexture;
 			delete texturesLODs;
+			delete textureAnimations;
+
 			uint32[] textureBuffer = new .[(1024 * 4) * 512](0,); // VRAM but four times wider
 
 			// Get max amount of possible textures
@@ -54,7 +58,7 @@ namespace SpyroScope {
 
 			// Locate scene region data and amount that are present in RAM
 			Emulator.Address<Emulator.Address> sceneDataRegionArrayAddress = ?;
-			var sceneDataRegionArrayPointer = Emulator.sceneDataRegionArrayPointers[(int)Emulator.rom];
+			let sceneDataRegionArrayPointer = Emulator.sceneDataRegionArrayPointers[(int)Emulator.rom];
 			sceneDataRegionArrayPointer.Read(&sceneDataRegionArrayAddress);
 			uint32 sceneDataRegionCount = ?;
 			Emulator.ReadFromRAM(sceneDataRegionArrayPointer + 4, &sceneDataRegionCount, 4);
@@ -71,10 +75,10 @@ namespace SpyroScope {
 
 			// Parse all terrain regions
 			let usedTextureIndices = new List<int>(); // Also get all used texture indices while we are at it
-			Emulator.Address[] sceneDataRegions = new .[sceneDataRegionCount];
-			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegions[0], sceneDataRegionCount);
+			Emulator.Address[] sceneDataRegionAddresses = new .[sceneDataRegionCount];
+			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegionAddresses[0], sceneDataRegionCount);
 			for (let regionIndex < sceneDataRegionCount) {
-				visualMeshes[regionIndex] = .(sceneDataRegions[regionIndex]);
+				visualMeshes[regionIndex] = .(sceneDataRegionAddresses[regionIndex]);
 
 				for (let textureIndex in visualMeshes[regionIndex].usedTextureIndices) {
 					let usedIndex = usedTextureIndices.FindIndex(scope (x) => x == textureIndex);
@@ -83,7 +87,7 @@ namespace SpyroScope {
 					}
 				}
 			}
-			delete sceneDataRegions;
+			delete sceneDataRegionAddresses;
 
 			// Convert any used VRAM textures for previewing
 			for (let usedTextureIndex in usedTextureIndices) {
@@ -94,7 +98,7 @@ namespace SpyroScope {
 					let mode = quad.texturePage & 0x80 > 0;
 					let pixelWidth = mode ? 2 : 1;
 					let pageCoords = quad.GetPageCoordinates();
-					let vramPageCoords = (pageCoords.x * 64) + (pageCoords.y * 256 * 1024);
+					let vramPageCoords = (pageCoords.x * 64) + ((pageCoords.y * 256) * 1024);
 					let vramCoords = vramPageCoords * 4 + ((int)quad.left * pixelWidth + (int)quad.leftSkew * 1024 * 4);
 	
 					let quadTexture = quad.GetTextureData();
@@ -120,6 +124,21 @@ namespace SpyroScope {
 			Texture.Unbind();
 			delete textureBuffer;
 
+			// Animated/Scrolling textures
+			Emulator.Address<Emulator.Address> textureModifyingDataArrayAddress = ?;
+			let textureModifyingData = Emulator.textureModifyingDataPointers[(int)Emulator.rom];
+			textureModifyingData.Read(&textureModifyingDataArrayAddress);
+			uint32 textureModifyingDataCount = ?;
+			Emulator.ReadFromRAM(textureModifyingData - 4, &textureModifyingDataCount, 4);
+
+			textureAnimations = new .[textureModifyingDataCount];
+			Emulator.Address[] textureModifyingDataAddresses = new .[textureModifyingDataCount];
+			textureModifyingDataArrayAddress.ReadArray(&textureModifyingDataAddresses[0], textureModifyingDataCount);
+			for (let i < textureModifyingDataCount) {
+				textureAnimations[i] = .(textureModifyingDataAddresses[i]);
+			}
+			delete textureModifyingDataAddresses;
+
 			// Delete animations as the new loaded mesh may be incompatible
 			if (animations != null) {
 				for (let item in animations) {
@@ -143,17 +162,82 @@ namespace SpyroScope {
 		}
 
 		public void Update() {
-			collision.Update();
-
-			let terrainAnimationPointerArrayAddressOld = Emulator.terrainAnimationPointerArrayAddress;
-			Emulator.sceneDataRegionAnimationArrayPointers[(int)Emulator.rom].Read(&Emulator.terrainAnimationPointerArrayAddress);
-			if (Emulator.collisionModifyingPointerArrayAddress != 0 && terrainAnimationPointerArrayAddressOld != Emulator.terrainAnimationPointerArrayAddress) {
-				ReloadAnimations();
+			if (renderMode == .Collision) {
+				collision.Update();
+			} else {
+				let terrainAnimationPointerArrayAddressOld = Emulator.terrainAnimationPointerArrayAddress;
+				Emulator.sceneDataRegionAnimationArrayPointers[(int)Emulator.rom].Read(&Emulator.terrainAnimationPointerArrayAddress);
+				if (Emulator.collisionModifyingPointerArrayAddress != 0 && terrainAnimationPointerArrayAddressOld != Emulator.terrainAnimationPointerArrayAddress) {
+					ReloadAnimations();
+				}
+	
+				if (animations != null) {
+					for (let animation in animations) {
+						animation.Update();
+					}
+				}
 			}
 
-			if (animations != null) {
-				for (let animation in animations) {
-					animation.Update();
+			if (renderMode == .Near) {
+				float[4][2] triangleUV = ?;
+
+				for (let textureAnimation in textureAnimations) {
+					textureAnimation.Update();
+					let textureIndex = textureAnimation.textureIndex;
+
+					let nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
+					let partialUV = nearQuad.GetVramPartialUV();
+					const let quadSize = TextureLOD.TextureQuad.quadSize;
+
+					triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
+					triangleUV[1] = .(partialUV.left, partialUV.leftY);
+					triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
+					triangleUV[3] = .(partialUV.right, partialUV.rightY);
+
+					for (let terrainRegion in visualMeshes) {
+						for (var triangleIndex = 0; triangleIndex < terrainRegion.nearTextureIndices.Count; triangleIndex++) {
+							let vertexIndex = triangleIndex * 3;
+							if (terrainRegion.nearTextureIndices[triangleIndex] == textureIndex) {
+								TerrainRegion.NearFace regionFace = terrainRegion.GetNearFace(terrainRegion.nearFaceIndices[triangleIndex]);
+								let textureRotation = regionFace.renderInfo.rotation;
+
+								if (regionFace.isTriangle) {
+									float[3][2] rotatedTriangleUV = .(
+										triangleUV[(0 - textureRotation + 4) % 4],
+										triangleUV[(1 - textureRotation + 4) % 4],
+										triangleUV[(2 - textureRotation + 4) % 4]
+										);
+	
+									if (regionFace.renderInfo.flipped) {
+										terrainRegion.nearMesh.uvs[0 + vertexIndex] = rotatedTriangleUV[2];
+										terrainRegion.nearMesh.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
+										terrainRegion.nearMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[1];
+									} else {
+										terrainRegion.nearMesh.uvs[0 + vertexIndex] = rotatedTriangleUV[1];
+										terrainRegion.nearMesh.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
+										terrainRegion.nearMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[2];
+									}
+								} else {
+									if (regionFace.renderInfo.flipped) {
+										Swap!(triangleUV[0], triangleUV[1]);
+										Swap!(triangleUV[2], triangleUV[3]);
+									}
+
+									terrainRegion.nearMesh.uvs[0 + vertexIndex] = triangleUV[0];
+									terrainRegion.nearMesh.uvs[1 + vertexIndex] = triangleUV[3];
+									terrainRegion.nearMesh.uvs[2 + vertexIndex] = triangleUV[1];
+
+									terrainRegion.nearMesh.uvs[3 + vertexIndex] = triangleUV[1];
+									terrainRegion.nearMesh.uvs[4 + vertexIndex] = triangleUV[3];
+									terrainRegion.nearMesh.uvs[5 + vertexIndex] = triangleUV[2];
+
+									triangleIndex++;
+								}
+							}
+						}
+
+						terrainRegion.nearMesh.Update();
+					}
 				}
 			}
 		}
@@ -162,12 +246,12 @@ namespace SpyroScope {
 			Renderer.SetTint(.(255,255,255));
 			Renderer.BeginSolid();
 
+			if (wireframe) {
+				Renderer.BeginWireframe();
+			}
+
 			switch (renderMode) {
 				case .Far : {
-					if (wireframe) {
-						Renderer.BeginWireframe();
-					}
-
 					if (drawnRegion > -1) {
 						visualMeshes[drawnRegion].DrawFar();
 					} else {
@@ -177,10 +261,6 @@ namespace SpyroScope {
 					}
 				}
 				case .Near : {
-					if (wireframe) {
-						Renderer.BeginWireframe();
-					}
-
 					Renderer.BeginRetroShading();
 
 					if (drawnRegion > -1) {
@@ -230,11 +310,8 @@ namespace SpyroScope {
 			for (let animationIndex < count) {
 				let animation = &animations[animationIndex];
 
-				animation.dataPointer = animationPointers[animationIndex];
-
-				if (!animation.dataPointer.IsNull) {
-					animation.Reload(visualMeshes);
-				}
+				*animation = .(animationPointers[animationIndex]);
+				animation.Reload(visualMeshes);
 			}
 		}
 	}

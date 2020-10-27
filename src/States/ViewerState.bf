@@ -579,19 +579,19 @@ namespace SpyroScope {
 				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 256, 490, .(0,0,0,128));
 
 				var partialUV = textureInfo.nearQuad.GetVramPartialUV();
-				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 0,128, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, terrain.terrainTexture, .(255,255,255));
+				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 0,128, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, Terrain.terrainTexture, .(255,255,255));
 
 				partialUV = textureInfo.topLeftQuad.GetVramPartialUV();
-				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height - 64, 128,128 + 64, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, terrain.terrainTexture, .(255,255,255));
+				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height - 64, 128,128 + 64, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, Terrain.terrainTexture, .(255,255,255));
 
 				partialUV = textureInfo.topRightQuad.GetVramPartialUV();
-				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height - 64, 128 + 64,128 + 128, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, terrain.terrainTexture, .(255,255,255));
+				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height - 64, 128 + 64,128 + 128, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, Terrain.terrainTexture, .(255,255,255));
 
 				partialUV = textureInfo.bottomLeftQuad.GetVramPartialUV();
-				DrawUtilities.Rect(WindowApp.height - 64, WindowApp.height, 128,128 + 64, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, terrain.terrainTexture, .(255,255,255));
+				DrawUtilities.Rect(WindowApp.height - 64, WindowApp.height, 128,128 + 64, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, Terrain.terrainTexture, .(255,255,255));
 
 				partialUV = textureInfo.bottomRightQuad.GetVramPartialUV();
-				DrawUtilities.Rect(WindowApp.height - 64, WindowApp.height, 128 + 64, 256, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, terrain.terrainTexture, .(255,255,255));
+				DrawUtilities.Rect(WindowApp.height - 64, WindowApp.height, 128 + 64, 256, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, Terrain.terrainTexture, .(255,255,255));
 				
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("Face Index: {}", faceIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 6, 0), .(255,255,255));
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("Tex Index: {}", face.renderInfo.textureIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 5, 0), .(255,255,255));

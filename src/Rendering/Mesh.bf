@@ -223,6 +223,10 @@ namespace SpyroScope {
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, colorBufferObject);
 			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Renderer.Color4), null, GL.GL_STATIC_DRAW);
 			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Renderer.Color4), &colors[0]);
+			
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, uvBufferObject);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(float[2]), &uvs[0], GL.GL_STATIC_DRAW); 
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(float[2]), &uvs[0]);
 
 			GL.glBindVertexArray(0);
 		}

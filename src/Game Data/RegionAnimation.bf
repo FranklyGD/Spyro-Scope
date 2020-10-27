@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace SpyroScope {
 	struct RegionAnimation {
-		public Emulator.Address dataPointer;
+		public Emulator.Address address;
 		public uint8 regionIndex;
 		public uint32 count;
 		public Vector center;
@@ -20,9 +20,15 @@ namespace SpyroScope {
 		public uint8 CurrentKeyframe {
 			get {
 				uint8 currentKeyframe = ?;
-				Emulator.ReadFromRAM(dataPointer + 2, &currentKeyframe, 1);
+				Emulator.ReadFromRAM(address + 2, &currentKeyframe, 1);
 				return currentKeyframe;
 			}
+		}
+
+		public this(Emulator.Address address) {
+			this = ?;
+
+			this.address = address;
 		}
 
 		public void Dispose() {
@@ -31,18 +37,21 @@ namespace SpyroScope {
 		}
 
 		public void Reload(TerrainRegion[] terrainMeshes) mut {
-			Emulator.ReadFromRAM(dataPointer + 4, &regionIndex, 2);
-			Emulator.ReadFromRAM(dataPointer + 6, &count, 2);
+			if (address.IsNull)
+				return;
+
+			Emulator.ReadFromRAM(address + 4, &regionIndex, 2);
+			Emulator.ReadFromRAM(address + 6, &count, 2);
 
 			uint32 vertexDataOffset = ?;
-			Emulator.ReadFromRAM(dataPointer + 8, &vertexDataOffset, 4);
+			Emulator.ReadFromRAM(address + 8, &vertexDataOffset, 4);
 
 			// Analyze the animation
 			uint32 keyframeCount = vertexDataOffset >> 3 - 1; // triangleDataOffset / 8
 			uint8 highestUsedState = 0;
 			for (let keyframeIndex < keyframeCount) {
 				(uint8 fromState, uint8 toState) s = ?;
-				Emulator.ReadFromRAM(dataPointer + 12 + keyframeIndex * 8 + 5, &s, 2);
+				Emulator.ReadFromRAM(address + 12 + keyframeIndex * 8 + 5, &s, 2);
 
 				highestUsedState = Math.Max(highestUsedState, s.fromState);
 				highestUsedState = Math.Max(highestUsedState, s.toState);
@@ -80,7 +89,7 @@ namespace SpyroScope {
 
 				for (let vertexIndex < vertexCount) {
 					uint32 packedVertex = ?;
-					Emulator.ReadFromRAM(dataPointer + vertexDataOffset + ((startVertexState + vertexIndex) * 4), &packedVertex, 4);
+					Emulator.ReadFromRAM(address + vertexDataOffset + ((startVertexState + vertexIndex) * 4), &packedVertex, 4);
 					let unpackedVertex = TerrainRegion.UnpackVertex(packedVertex);
 					vertices[vertexIndex] = unpackedVertex;
 
@@ -134,7 +143,7 @@ namespace SpyroScope {
 
 		public KeyframeData GetKeyframeData(uint8 keyframeIndex) {
 			KeyframeData keyframeData = ?;
-			Emulator.ReadFromRAM(dataPointer + 12 + ((uint32)keyframeIndex) * 8, &keyframeData, 8);
+			Emulator.ReadFromRAM(address + 12 + ((uint32)keyframeIndex) * 8, &keyframeData, 8);
 			return keyframeData;
 		}
 	}
