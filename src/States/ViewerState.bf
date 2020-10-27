@@ -1082,6 +1082,7 @@ namespace SpyroScope {
 
 			currentObjIndex = hoveredObjIndex = -1;
 			currentAnimGroupIndex = hoveredAnimGroupIndex = -1;
+			currentRegionIndex = -1;
 
 			Emulator.TakeVRAMSnapshot();
 

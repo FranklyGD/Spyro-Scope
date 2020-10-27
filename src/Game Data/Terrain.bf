@@ -194,11 +194,15 @@ namespace SpyroScope {
 					triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
 					triangleUV[3] = .(partialUV.right, partialUV.rightY);
 
+					var opaqueMeshModified = false;
+					var transparentMeshModified = false;
 					for (let terrainRegion in visualMeshes) {
 						// Opaque Update
 						for (var triangleIndex = 0; triangleIndex < terrainRegion.nearTextureIndices.Count; triangleIndex++) {
 							let vertexIndex = triangleIndex * 3;
 							if (terrainRegion.nearTextureIndices[triangleIndex] == textureIndex) {
+								opaqueMeshModified = true;
+
 								TerrainRegion.NearFace regionFace = terrainRegion.GetNearFace(terrainRegion.nearFaceIndices[triangleIndex]);
 								let textureRotation = regionFace.renderInfo.rotation;
 
@@ -239,6 +243,8 @@ namespace SpyroScope {
 
 						// Transparent Update
 						for (var triangleIndex = 0; triangleIndex < terrainRegion.nearFaceTransparentIndices.Count; triangleIndex++) {
+							transparentMeshModified = true;
+
 							let vertexIndex = triangleIndex * 3;
 							if (terrainRegion.nearTextureTransparentIndices[triangleIndex] == textureIndex) {
 								TerrainRegion.NearFace regionFace = terrainRegion.GetNearFace(terrainRegion.nearFaceTransparentIndices[triangleIndex]);
@@ -279,8 +285,12 @@ namespace SpyroScope {
 							}
 						}
 
-						terrainRegion.nearMesh.Update();
-						terrainRegion.nearMeshTransparent.Update();
+						if (opaqueMeshModified) {
+							terrainRegion.nearMesh.Update();
+						}
+						if (transparentMeshModified) {
+							terrainRegion.nearMeshTransparent.Update();
+						}
 					}
 				}
 			}
