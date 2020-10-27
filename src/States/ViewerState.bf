@@ -362,7 +362,7 @@ namespace SpyroScope {
 				uint32 deathHeight;
 				if (Emulator.rom == .YearOfTheDragon_1_0_NTSC_U || Emulator.rom == .YearOfTheDragon_1_1_NTSC_U || Emulator.rom == .YearOfTheDragon_1_0_PAL || Emulator.rom == .YearOfTheDragon_1_1_PAL) {
 					uint32 currentSubWorldId = ?;
-					Emulator.currentSubWorldIdAddress[(int)Emulator.rom].Read(&currentSubWorldId);
+					Emulator.currentSubWorldIdAddress[(int)Emulator.rom - 7].Read(&currentSubWorldId);
 
 					deathHeight = Emulator.deathPlaneHeights[currentWorldId * 4 + currentSubWorldId];
 				} else {
@@ -847,7 +847,7 @@ namespace SpyroScope {
 					modelSets[object.objectTypeID].models[object.modelID].QueueInstance();
 				} else {
 					Emulator.Address modelSetAddress = ?;
-					Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
+					//Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4); // Commented out for now since it was causing issues for Spyro 1, will deal with later.
 
 					if (modelSetAddress != 0 && (int32)modelSetAddress > 0) {
 						modelSets.Add(object.objectTypeID, new .(modelSetAddress));
