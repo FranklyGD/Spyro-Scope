@@ -142,20 +142,20 @@ namespace SpyroScope {
 						triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
 						triangleUV[3] = .(partialUV.right, partialUV.rightY);
 
-						if (nearQuad.GetAlpha()) {
-							activeVertexList = vertexList;
-							activeColorList = colorList;
-							activeUvList = uvList;
-							activeNearMeshIndices = nearMeshIndices;
-							activeNearFaceIndices = nearFaceIndices;
-							activeNearTextureIndices = nearTextureIndices;
-						} else {
+						if (nearQuad.GetAdditiveTransparency()) {
 							activeVertexList = vertexTransparentList;
 							activeColorList = colorTransparentList;
 							activeUvList = uvTransparentList;
 							activeNearMeshIndices = nearMeshTransparentIndices;
 							activeNearFaceIndices = nearFaceTransparentIndices;
 							activeNearTextureIndices = nearTextureTransparentIndices;
+						} else {
+							activeVertexList = vertexList;
+							activeColorList = colorList;
+							activeUvList = uvList;
+							activeNearMeshIndices = nearMeshIndices;
+							activeNearFaceIndices = nearFaceIndices;
+							activeNearTextureIndices = nearTextureIndices;
 						}
 
 						if (regionFace.isTriangle) {

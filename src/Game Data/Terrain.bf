@@ -100,7 +100,7 @@ namespace SpyroScope {
 					let pageCoords = quad.GetPageCoordinates();
 					let vramPageCoords = (pageCoords.x * 64) + ((pageCoords.y * 256) * 1024);
 					let vramCoords = vramPageCoords * 4 + ((int)quad.left * pixelWidth + (int)quad.leftSkew * 1024 * 4);
-	
+
 					let quadTexture = quad.GetTextureData();
 					let width = mode ? 64 : 32;
 					for (let x < width) {
@@ -321,6 +321,7 @@ namespace SpyroScope {
 						visualMeshes[drawnRegion].DrawNear();
 					} else {
 						terrainTexture.Bind();
+
 						for (let visualMesh in visualMeshes) {
 							visualMesh.DrawNear();
 						}

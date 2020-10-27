@@ -36,6 +36,10 @@ namespace SpyroScope {
 				return (flipRotateRaw & 0b01000000) > 0;
 			}
 
+			public bool GetAdditiveTransparency() {
+				return (flipRotateRaw & 0b10000000) > 0;
+			}
+
 			// All terrain quads are 32 by 32,
 			// and the closer rendered ones are four of those combined
 
@@ -91,31 +95,11 @@ namespace SpyroScope {
 						let b = (uint32)((float)b5 / 0x1f * 255);
 
 						// Write to the texture data
-						pixels[x + y * 32] = r + (g << 8) + (b << 16) + (a1 > 0 ? 0 : 0xff000000);
+						pixels[x + y * 32] = r + (g << 8) + (b << 16) + ((1 - a1) * (uint32)0xff000000);
 					}
 				}
 
 				return pixels;
-			}
-
-			public bool GetAlpha() {
-				let pageCoords = GetPageCoordinates();
-				let vramPageCoords = (pageCoords.x * 64) + (pageCoords.y * 256 * 1024);
-				let vramCoords = vramPageCoords + ((int)leftSkew * 1024);
-
-				let bitMode = (texturePage & 0x80 > 0) ? 8 : 4;
-				let bitModeMask = (1 << bitMode) - 1;
-				let subPixels = bitMode == 8 ? 2 : 4;
-
-				let clutPosition = (int)clutX * 16 + (int)clutY * 4 * 1024;
-
-				let vramPixel = Emulator.vramSnapshot[vramCoords + left / subPixels];
-
-				let p = left % subPixels;
-				let clutSample = (((int)vramPixel >> (p * bitMode)) & bitModeMask) + clutPosition;
-				let bgr555pixel = Emulator.vramSnapshot[clutSample];
-
-				return (bgr555pixel >> 15) == 0;
 			}
 		}
 
