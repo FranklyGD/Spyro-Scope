@@ -125,19 +125,21 @@ namespace SpyroScope {
 			delete textureBuffer;
 
 			// Animated/Scrolling textures
-			Emulator.Address<Emulator.Address> textureModifyingDataArrayAddress = ?;
 			let textureModifyingData = Emulator.textureModifyingDataPointers[(int)Emulator.rom];
-			textureModifyingData.Read(&textureModifyingDataArrayAddress);
 			uint32 textureModifyingDataCount = ?;
 			Emulator.ReadFromRAM(textureModifyingData - 4, &textureModifyingDataCount, 4);
-
 			textureAnimations = new .[textureModifyingDataCount];
-			Emulator.Address[] textureModifyingDataAddresses = new .[textureModifyingDataCount];
-			textureModifyingDataArrayAddress.ReadArray(&textureModifyingDataAddresses[0], textureModifyingDataCount);
-			for (let i < textureModifyingDataCount) {
-				textureAnimations[i] = .(textureModifyingDataAddresses[i]);
+			if (textureModifyingDataCount > 0) {
+				Emulator.Address<Emulator.Address> textureModifyingDataArrayAddress = ?;
+				textureModifyingData.Read(&textureModifyingDataArrayAddress);
+	
+				Emulator.Address[] textureModifyingDataAddresses = new .[textureModifyingDataCount];
+				textureModifyingDataArrayAddress.ReadArray(&textureModifyingDataAddresses[0], textureModifyingDataCount);
+				for (let i < textureModifyingDataCount) {
+					textureAnimations[i] = .(textureModifyingDataAddresses[i]);
+				}
+				delete textureModifyingDataAddresses;
 			}
-			delete textureModifyingDataAddresses;
 
 			// Delete animations as the new loaded mesh may be incompatible
 			if (animations != null) {
