@@ -195,6 +195,7 @@ namespace SpyroScope {
 					triangleUV[3] = .(partialUV.right, partialUV.rightY);
 
 					for (let terrainRegion in visualMeshes) {
+						// Opaque Update
 						for (var triangleIndex = 0; triangleIndex < terrainRegion.nearTextureIndices.Count; triangleIndex++) {
 							let vertexIndex = triangleIndex * 3;
 							if (terrainRegion.nearTextureIndices[triangleIndex] == textureIndex) {
@@ -236,7 +237,50 @@ namespace SpyroScope {
 							}
 						}
 
+						// Transparent Update
+						for (var triangleIndex = 0; triangleIndex < terrainRegion.nearFaceTransparentIndices.Count; triangleIndex++) {
+							let vertexIndex = triangleIndex * 3;
+							if (terrainRegion.nearTextureTransparentIndices[triangleIndex] == textureIndex) {
+								TerrainRegion.NearFace regionFace = terrainRegion.GetNearFace(terrainRegion.nearFaceTransparentIndices[triangleIndex]);
+								let textureRotation = regionFace.renderInfo.rotation;
+
+								if (regionFace.isTriangle) {
+									float[3][2] rotatedTriangleUV = .(
+										triangleUV[(0 - textureRotation + 4) % 4],
+										triangleUV[(1 - textureRotation + 4) % 4],
+										triangleUV[(2 - textureRotation + 4) % 4]
+										);
+
+									if (regionFace.renderInfo.flipped) {
+										terrainRegion.nearMeshTransparent.uvs[0 + vertexIndex] = rotatedTriangleUV[2];
+										terrainRegion.nearMeshTransparent.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
+										terrainRegion.nearMeshTransparent.uvs[2 + vertexIndex] = rotatedTriangleUV[1];
+									} else {
+										terrainRegion.nearMeshTransparent.uvs[0 + vertexIndex] = rotatedTriangleUV[1];
+										terrainRegion.nearMeshTransparent.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
+										terrainRegion.nearMeshTransparent.uvs[2 + vertexIndex] = rotatedTriangleUV[2];
+									}
+								} else {
+									if (regionFace.renderInfo.flipped) {
+										Swap!(triangleUV[0], triangleUV[1]);
+										Swap!(triangleUV[2], triangleUV[3]);
+									}
+
+									terrainRegion.nearMeshTransparent.uvs[0 + vertexIndex] = triangleUV[0];
+									terrainRegion.nearMeshTransparent.uvs[1 + vertexIndex] = triangleUV[3];
+									terrainRegion.nearMeshTransparent.uvs[2 + vertexIndex] = triangleUV[1];
+
+									terrainRegion.nearMeshTransparent.uvs[3 + vertexIndex] = triangleUV[1];
+									terrainRegion.nearMeshTransparent.uvs[4 + vertexIndex] = triangleUV[3];
+									terrainRegion.nearMeshTransparent.uvs[5 + vertexIndex] = triangleUV[2];
+
+									triangleIndex++;
+								}
+							}
+						}
+
 						terrainRegion.nearMesh.Update();
+						terrainRegion.nearMeshTransparent.Update();
 					}
 				}
 			}
