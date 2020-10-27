@@ -98,7 +98,7 @@ namespace SpyroScope {
 			topLeftQuad.leftSkew = topRightQuad.leftSkew = doubleQuadVerticalPosition;
 			topLeftQuad.rightSkew = topRightQuad.rightSkew = doubleQuadVerticalPosition + 0x1f;
 
-			doubleQuadVerticalPosition = doubleQuadVerticalPosition + 0x20 & 0x3f;
+			doubleQuadVerticalPosition = (doubleQuadVerticalPosition + 0x20) & 0x3f;
 
 			let bottomLeftQuad = &textureLOD.bottomLeftQuad;
 			let bottomRightQuad = &textureLOD.bottomRightQuad;
