@@ -532,14 +532,14 @@ namespace SpyroScope {
 					WindowApp.bitmapFont.Print(scope String() .. AppendF("From State {}", (uint)keyframeData.fromState), .(8, (.)WindowApp.height - (18 * 1 + 8 + 15), 0), .(255,255,255));
 					WindowApp.bitmapFont.Print(scope String() .. AppendF("To State {}", (uint)keyframeData.toState), .(8, (.)WindowApp.height - (18 * 0 + 8 + 15), 0), .(255,255,255));
 				} else {
-					for (let animationGroup in collisionTerrain.animationGroups) {
+					/*for (let animationGroup in collisionTerrain.animationGroups) {
 						var screenPosition = Camera.SceneToScreen(animationGroup.center);
 						if (screenPosition.z > 0) { // Must be in front of view
 							let screenSize = Camera.SceneSizeToScreenSize(animationGroup.radius, screenPosition.z);
 							screenPosition.z = 0;
 							DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(16,16,0));
 						}
-					}
+					}*/
 				}
 			}
 
@@ -688,7 +688,7 @@ namespace SpyroScope {
 							var closestDistance = float.PositiveInfinity;
 							hoveredObjIndex = GetObjectIndexUnderMouse(ref closestDistance);
 							if (collisionTerrain.overlay == .Deform) {
-								hoveredAnimGroupIndex = GetTerrainAnimationGroupIndexUnderMouse(ref closestDistance);
+								//hoveredAnimGroupIndex = GetTerrainAnimationGroupIndexUnderMouse(ref closestDistance);
 								if (hoveredAnimGroupIndex != -1) {
 									hoveredObjIndex = -1;
 								}

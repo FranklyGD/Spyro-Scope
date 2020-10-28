@@ -84,7 +84,7 @@ namespace SpyroScope {
 		public const Address<uint32>[4] currentSubWorldIdAddress = .((.)0x8006c5c8, (.)0x8006c6a8, (.)0, (.)0); // Exclusive to Spyro: Year of the Dragon.
 
 		public const Address<Address>[11] collisionDataPointers = .(0, (.)0x800785d4/*StD*/, 0, 0, (.)0x800673fc/*RR*/, 0, 0, (.)0x8006d070, (.)0x8006d150/*YotD-1.1*/, 0, 0);
-		public const Address<Address>[11] collisionFlagsArrayPointers = .(0, 0/*StD*/, 0, 0, (.)0x800673e8/*RR*/, 0, 0, (.)0x8006d05c, (.)0x8006d13c/*YotD-1.1*/, 0, 0); //!!
+		public const Address<Address>[11] collisionFlagsArrayPointers = .(0, (.)0x800785b8/*StD*/, 0, 0, (.)0x800673e8/*RR*/, 0, 0, (.)0x8006d05c, (.)0x8006d13c/*YotD-1.1*/, 0, 0); //!!
 		public const Address<Address>[11] collisionModifyingDataPointers = .(0, (.)0x8007858c/*StD*/, 0, 0, (.)0x80068208/*RR*/, 0, 0, (.)0x8006e384, (.)0x8006e464/*YotD-1.1*/, 0, 0);
 		
 		public const Address<uint32>[11] deathPlaneHeightsAddresses = .(0, (.)0x8006e9a4/*StD*/, 0, 0, (.)0x80060234/*RR*/, 0, 0, (.)0x800676e8, (.)0x800677c8/*YotD-1.1*/, 0, 0);
@@ -410,7 +410,7 @@ namespace SpyroScope {
 				collisionTriangles.Clear();
 				let ptrTriangles = collisionTriangles.GrowUnitialized(triangleCount);
 				Address collisionTriangleArray = ?;
-				ReadFromRAM(collisionDataAddress + 20, &collisionTriangleArray, 4);
+				ReadFromRAM(collisionDataAddress + (Emulator.rom == .SpyroTheDragon_NTSC_U? 16:20), &collisionTriangleArray, 4);
 				ReadFromRAM(collisionTriangleArray, ptrTriangles, sizeof(PackedTriangle) * triangleCount);
 				
 				Address collisionFlagArray = ?;

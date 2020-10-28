@@ -234,6 +234,7 @@ namespace SpyroScope {
 			if (Emulator.collisionModifyingPointerArrayAddress != 0 && collisionModifyingPointerArrayAddressOld != Emulator.collisionModifyingPointerArrayAddress) {
 				ReloadAnimationGroups();
 			}
+			mesh.Update();
 
 			if (animationGroups == null || animationGroups.Count == 0) {
 				return; // Nothing to update
@@ -271,8 +272,6 @@ namespace SpyroScope {
 					}
 				}
 			}
-
-			mesh.Update();
 		}
 
 		public void Draw() {
