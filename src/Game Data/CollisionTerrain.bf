@@ -189,7 +189,8 @@ namespace SpyroScope {
 					}
 				}
 			}
-
+			
+			mesh.SetDirty();
 			mesh.Update();
 		}
 
@@ -326,6 +327,7 @@ namespace SpyroScope {
 			}
 
 			// Send changed color data
+			mesh.SetDirty();
 			mesh.Update();
 		}
 

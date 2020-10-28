@@ -57,7 +57,7 @@ namespace SpyroScope {
 				// The game splits the VRAM into a grid of 64 by 128 possible CLUT locations
 				// The size of each cell is 16x4 that contain all the necessary colors horizontally
 				// and the fade out of saturation vertically when viewed from increasing distance
-				let clutPosition = (int)clutX * 16 + (int)clutY * 4 * 1024;
+				let clutPosition = (int)clutX * 16 + ((int)clutY << 2) * 1024;
 
 				uint32[] pixels = new .[32 * 32](0,);
 				for (let x < 32) {

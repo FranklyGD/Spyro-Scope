@@ -138,7 +138,7 @@ namespace SpyroScope {
 				sourceNearMesh.vertices[nearAnimatedTriangles[i / 3] + (i % 3)] = fromVertex + (toVertex - fromVertex) * interpolation;
 			}
 
-			sourceNearMesh.Update();
+			sourceNearMesh.SetDirty();
 		}
 
 		public KeyframeData GetKeyframeData(uint8 keyframeIndex) {

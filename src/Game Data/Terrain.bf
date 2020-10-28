@@ -210,9 +210,9 @@ namespace SpyroScope {
 
 								if (regionFace.isTriangle) {
 									float[3][2] rotatedTriangleUV = .(
-										triangleUV[(0 - textureRotation + 4) % 4],
-										triangleUV[(1 - textureRotation + 4) % 4],
-										triangleUV[(2 - textureRotation + 4) % 4]
+										triangleUV[(0 - textureRotation) & 3],
+										triangleUV[(1 - textureRotation) & 3],
+										triangleUV[(2 - textureRotation) & 3]
 										);
 	
 									if (regionFace.renderInfo.flipped) {
@@ -254,9 +254,9 @@ namespace SpyroScope {
 
 								if (regionFace.isTriangle) {
 									float[3][2] rotatedTriangleUV = .(
-										triangleUV[(0 - textureRotation + 4) % 4],
-										triangleUV[(1 - textureRotation + 4) % 4],
-										triangleUV[(2 - textureRotation + 4) % 4]
+										triangleUV[(0 - textureRotation) & 3],
+										triangleUV[(1 - textureRotation) & 3],
+										triangleUV[(2 - textureRotation) & 3]
 										);
 
 									if (regionFace.renderInfo.flipped) {
@@ -288,13 +288,19 @@ namespace SpyroScope {
 						}
 
 						if (opaqueMeshModified) {
-							terrainRegion.nearMesh.Update();
+							terrainRegion.nearMesh.SetDirty();
 						}
 						if (transparentMeshModified) {
-							terrainRegion.nearMeshTransparent.Update();
+							terrainRegion.nearMeshTransparent.SetDirty();
 						}
 					}
 				}
+			}
+
+			
+			for (let terrainRegion in visualMeshes) {
+				terrainRegion.nearMesh.Update();
+				terrainRegion.nearMeshTransparent.Update();
 			}
 		}
 

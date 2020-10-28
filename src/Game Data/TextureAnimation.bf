@@ -44,7 +44,7 @@ namespace SpyroScope {
 				let mode = quad.texturePage & 0x80 > 0;
 				let pixelWidth = mode ? 2 : 1;
 				
-				let width = mode ? 64 : 32;
+				let width = 32 * pixelWidth;
 				uint32[] textureBuffer = new .[width * 32];
 
 				let pageCoords = quad.GetPageCoordinates();

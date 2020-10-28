@@ -187,9 +187,9 @@ namespace SpyroScope {
 							activeColorList.Add(triangleColors[0]);
 
 							float[3][2] rotatedTriangleUV = .(
-								triangleUV[(0 - textureRotation + 4) % 4],
-								triangleUV[(1 - textureRotation + 4) % 4],
-								triangleUV[(2 - textureRotation + 4) % 4]
+								triangleUV[(0 - textureRotation) & 3],
+								triangleUV[(1 - textureRotation) & 3],
+								triangleUV[(2 - textureRotation) & 3]
 								);
 
 							if (flipSide) {

@@ -9,6 +9,8 @@ namespace SpyroScope {
 
 		uint32[] indices ~ delete _;
 
+		bool dirty = false;
+
 		uint16 instanceCount;
 		//Matrix4[] instanceMatrices = new .[128] ~ delete _;
 		public Matrix4[] instanceMatrices = new .[512] ~ delete _;
@@ -185,11 +187,11 @@ namespace SpyroScope {
 			GL.glBindVertexArray(vertexArrayObject);
 
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, matrixBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, 2048 * sizeof(Matrix4), null, GL.GL_DYNAMIC_DRAW);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, 512 * sizeof(Matrix4), null, GL.GL_DYNAMIC_DRAW);
 			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, instanceCount * sizeof(Matrix4), &instanceMatrices[0]);
 
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, tintBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, 2048 * sizeof(Vector), null, GL.GL_DYNAMIC_DRAW);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, 512 * sizeof(Vector), null, GL.GL_DYNAMIC_DRAW);
 			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, instanceCount * sizeof(Vector), &instanceColors[0]);
 
 			GL.glDrawElementsInstanced(GL.GL_TRIANGLES, indices.Count, GL.GL_UNSIGNED_INT, null, instanceCount);
@@ -199,6 +201,10 @@ namespace SpyroScope {
 		}
 
 		public void Update() {
+			if (!dirty) {
+				return;
+			}
+
 			IsValid =
 				vertices.Count > 3 &&
 				vertices.Count == normals.Count &&
@@ -229,6 +235,12 @@ namespace SpyroScope {
 			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(float[2]), &uvs[0]);
 
 			GL.glBindVertexArray(0);
+
+			dirty = false;
+		}
+
+		public void SetDirty() {
+			dirty = true;
 		}
 	}
 }
