@@ -66,12 +66,12 @@ namespace SpyroScope {
 		public const Address<char8>[10] testAddresses = .((.)0x800103e7/*StD*/, 0, 0, (.)0x80066ea8/*RR*/, 0, 0, (.)0x8006c3b0, (.)0x8006c490/*YotD-1.1*/, 0, 0);
 		public const String[11] gameNames = .(String.Empty, "Spyro the Dragon (NTSC-U)", "Spyro the Dragon (NTSC-J)", "Spyro the Dragon (PAL)", "Spyro: Ripto's Rage (NTSC-U)", "Spyro and Sparx: Tondemo Tours (NTSC-J)", "Spyro: Gateway to Glimmer (PAL)", "Spyro: Year of the Dragon (v1.0 NTSC-U)", "Spyro: Year of the Dragon (v1.1 NTSC-U)", "Spyro: Year of the Dragon (v1.0 PAL)", "Spyro: Year of the Dragon (v1.1 PAL)");
 
-		public const Address<uint32>[11] gameStateAddresses = .(0, (.)0x800757d8/*StD*/, 0, 0, (.)0x800681c8/*RR*/, 0, 0, (.)0x8006e344, (.)0x8006e424/*YotD-1.1*/, 0, 0); //Added both 1.1 and 1.0 since master and dev-frank branch does not include it. //!! !!
+		public const Address<uint32>[11] gameStateAddresses = .(0, (.)0x800757d8/*StD*/, 0, 0, (.)0x800681c8/*RR*/, 0, 0, (.)0x8006e344, (.)0x8006e424/*YotD-1.1*/, 0, 0);
 
 		public const Address<VectorInt>[11] spyroPositionAddresses = .(0, (.)0x80078a58/*StD*/, 0, 0, (.)0x80069ff0/*RR*/, 0, 0, (.)0x80070328, (.)0x80070408/*YotD-1.1*/, 0, 0);
 		public const Address<MatrixInt>[11] spyroMatrixAddresses = .(0, (.)0x80078a8c/*StD*/, 0, 0, (.)0x8006a020/*RR*/, 0, 0, (.)0x80070358, (.)0x80070438/*YotD-1.1*/, 0, 0);
-		public const Address<VectorInt>[11] spyroIntendedVelocityAddresses = .(0, 0/*StD*/, 0, 0, (.)0x8006a084/*RR*/, 0, 0, (.)0x800703B4, (.)0x80070494/*YotD-1.1*/, 0, 0); //!!
-		public const Address<VectorInt>[11] spyroPhysicsVelocityAddresses = .(0, 0/*StD*/, 0, 0, (.)0x8006a090/*RR*/, 0, 0, (.)0x800703c0, (.)0x800704a0/*YotD-1.1*/, 0, 0); //!!
+		public const Address<VectorInt>[11] spyroIntendedVelocityAddresses = .(0, (.)0x80078b4c/*StD*/, 0, 0, (.)0x8006a084/*RR*/, 0, 0, (.)0x800703B4, (.)0x80070494/*YotD-1.1*/, 0, 0);
+		public const Address<VectorInt>[11] spyroPhysicsVelocityAddresses = .(0, (.)0x80078b64/*StD*/, 0, 0, (.)0x8006a090/*RR*/, 0, 0, (.)0x800703c0, (.)0x800704a0/*YotD-1.1*/, 0, 0);
 
 		public const Address<Address>[11] objectArrayPointers = .(0, (.)0x80075828/*StD*/, 0, 0, (.)0x80066f14/*RR*/, 0, 0, (.)0x8006c550, (.)0x8006c630/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] modelPointers = .(0, 0/*StD*/, 0, 0, (.)0x80068c94/*RR*/, 0, 0, (.)0x8006ee2c, (.)0x8006ef0c/*YotD-1.1*/, 0, 0); //!!
@@ -84,16 +84,16 @@ namespace SpyroScope {
 		public const Address<uint32>[4] currentSubWorldIdAddress = .((.)0x8006c5c8, (.)0x8006c6a8, (.)0, (.)0); // Exclusive to Spyro: Year of the Dragon.
 
 		public const Address<Address>[11] collisionDataPointers = .(0, (.)0x800785d4/*StD*/, 0, 0, (.)0x800673fc/*RR*/, 0, 0, (.)0x8006d070, (.)0x8006d150/*YotD-1.1*/, 0, 0);
-		public const Address<Address>[11] collisionFlagsArrayPointers = .(0, (.)0x800785b8/*StD*/, 0, 0, (.)0x800673e8/*RR*/, 0, 0, (.)0x8006d05c, (.)0x8006d13c/*YotD-1.1*/, 0, 0); //!!
-		public const Address<Address>[11] collisionModifyingDataPointers = .(0, (.)0x8007858c/*StD*/, 0, 0, (.)0x80068208/*RR*/, 0, 0, (.)0x8006e384, (.)0x8006e464/*YotD-1.1*/, 0, 0);
+		public const Address<Address>[11] collisionFlagsArrayPointers = .(0, (.)0x800785b8/*StD*/, 0, 0, (.)0x800673e8/*RR*/, 0, 0, (.)0x8006d05c, (.)0x8006d13c/*YotD-1.1*/, 0, 0);
+		public const Address<Address>[11] collisionModifyingDataPointers = .(0, (.)0x800785a4/*StD*/, 0, 0, (.)0x80068208/*RR*/, 0, 0, (.)0x8006e384, (.)0x8006e464/*YotD-1.1*/, 0, 0);
 		
 		public const Address<uint32>[11] deathPlaneHeightsAddresses = .(0, (.)0x8006e9a4/*StD*/, 0, 0, (.)0x80060234/*RR*/, 0, 0, (.)0x800676e8, (.)0x800677c8/*YotD-1.1*/, 0, 0);
-		public const Address<uint32>[11] maxFreeflightHeightsAddresses = .(0, 0/*StD*/, 0, 0, (.)0x800601b4/*RR*/, 0, 0, (.)0x80067648, (.)0x80067728/*YotD-1.1*/, 0, 0); //!!
+		public const Address<uint32>[11] maxFreeflightHeightsAddresses = .(0, 0/*StD*/, 0, 0, (.)0x800601b4/*RR*/, 0, 0, (.)0x80067648, (.)0x80067728/*YotD-1.1*/, 0, 0);
 
 		public const Address<uint32>[11] healthAddresses = .(0, (.)0x80078bbc/*StD*/, 0, 0, (.)0x8006A248/*RR*/, 0, 0, (.)0x800705a8, (.)0x80070688/*YotD-1.1*/, 0, 0);
 
-		public const Address<uint32>[11] gameInputAddress = .(0, 0/*StD*/, 0, 0, (.)0x8001291c/*RR*/, 0, 0, 0, (.)0x8003a7a0/*YotD-1.1*/, 0, 0); //Added 1.1 since master and dev-frank branch does not include it. **Address's also may be wrong so, look at in future reference!!**
-		public const uint32[11] gameInputValue = .(0, 0/*StD*/, 0, 0, 0xac2283a0/*RR*/, 0, 0, 0, 0xae220030/*YotD-1.1*/, 0, 0); //Added 1.1 since master and dev-frank branch does not include it. **Address's also may be wrong so, look at in future reference!!**
+		public const Address<uint32>[11] gameInputAddress = .(0, 0/*StD*/, 0, 0, (.)0x8001291c/*RR*/, 0, 0, 0, (.)0x8003a7a0/*YotD-1.1*/, 0, 0);
+		public const uint32[11] gameInputValue = .(0, 0/*StD*/, 0, 0, 0xac2283a0/*RR*/, 0, 0, 0, 0xae220030/*YotD-1.1*/, 0, 0);
 
 		// Game Values
 		public static uint32 gameState;
@@ -118,7 +118,7 @@ namespace SpyroScope {
 		public static (String label, Renderer.Color color)[11] collisionTypes = .(
 			("Sink", 		.(255, 255, 64)),
 			("Hot", 		.(255, 64, 64)),
-			("Road", 		.(64, 64, 64)),
+			("Supercharge", .(64, 64, 64)),
 			("Trigger", 	.(255, 64, 255)),
 			("Ice", 		.(64, 255, 255)),
 			("Barrier", 	.(128, 128, 255)),
@@ -130,8 +130,8 @@ namespace SpyroScope {
 		);
 		
 		// Function Overrides
-		public const Address<uint32>[11] spyroUpdateAddresses = .(0, 0/*StD*/, 0, 0, (.)0x8001b0c4/*RR*/, 0, 0, (.)0x800552f4, (.)0x80055384/*YotD-1.1*/, 0, 0); //!!
-		public const uint32[11] spyroUpdateJumpValue = .(0, 0/*StD*/, 0, 0, 0x0c00a81f/*RR*/, 0, 0, 0x0c00fa0f, 0x0c00fa18/*YotD-1.1*/, 0, 0);
+		public const Address<uint32>[11] spyroUpdateAddresses = .(0, (.)0x80033ad8/*StD*/, 0, 0, (.)0x8001b0c4/*RR*/, 0, 0, (.)0x800552f4, (.)0x80055384/*YotD-1.1*/, 0, 0);
+		public const uint32[11] spyroUpdateJumpValue = .(0, 0x0c012880/*StD*/, 0, 0, 0x0c00a81f/*RR*/, 0, 0, 0x0c00fa0f, 0x0c00fa18/*YotD-1.1*/, 0, 0);
 		public const Address<uint32>[11] cameraUpdateAddresses = .(0, (.)0x80037cfc/*StD*/, 0, 0, (.)0x8001b110/*RR*/, 0, 0, (.)0x80055340, (.)0x800553d0/*YotD-1.1*/, 0, 0);
 		public const uint32[11] cameraUpdateJumpValue = .(0, 0x0c00d7ed/*StD*/, 0, 0, 0x0c00761f/*RR*/, 0, 0, 0x0c004813, 0x0c004818/*YotD-1.1*/, 0, 0);
 		public const Address<uint32>[11] updateAddresses = .(0, (.)0x80012230/*StD*/, 0, 0, (.)0x80011af4/*RR*/, 0, 0, (.)0x80012024, (.)0x80012038/*YotD-1.1*/, 0, 0);

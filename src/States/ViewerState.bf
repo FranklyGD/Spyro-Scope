@@ -486,7 +486,7 @@ namespace SpyroScope {
 
 				// Background
 				let backgroundHeight = 18 * collisionTerrain.collisionTypes.Count + 2;
-				DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
+				DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 11 + 36,
 					.(0,0,0,192));
 
 				// Content
@@ -495,7 +495,7 @@ namespace SpyroScope {
 					String label = scope String() .. AppendF("Unknown {}", flag);
 					Renderer.Color color = .(255, 0, 255);
 					if (flag < 11 /*Emulator.collisionTypes.Count*/) {
-						(label, color) = Emulator.collisionTypes[flag];
+						(label, color) = Emulator.collisionTypes[Emulator.rom == .SpyroTheDragon_NTSC_U && flag == 4? 2:flag];
 					}
 
 					let leftPadding = 8;
@@ -532,14 +532,15 @@ namespace SpyroScope {
 					WindowApp.bitmapFont.Print(scope String() .. AppendF("From State {}", (uint)keyframeData.fromState), .(8, (.)WindowApp.height - (18 * 1 + 8 + 15), 0), .(255,255,255));
 					WindowApp.bitmapFont.Print(scope String() .. AppendF("To State {}", (uint)keyframeData.toState), .(8, (.)WindowApp.height - (18 * 0 + 8 + 15), 0), .(255,255,255));
 				} else {
-					/*for (let animationGroup in collisionTerrain.animationGroups) {
+					if (collisionTerrain.animationGroups != null)
+					for (let animationGroup in collisionTerrain.animationGroups) {
 						var screenPosition = Camera.SceneToScreen(animationGroup.center);
 						if (screenPosition.z > 0) { // Must be in front of view
 							let screenSize = Camera.SceneSizeToScreenSize(animationGroup.radius, screenPosition.z);
 							screenPosition.z = 0;
 							DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(16,16,0));
 						}
-					}*/
+					}
 				}
 			}
 
@@ -687,8 +688,8 @@ namespace SpyroScope {
 						} else {
 							var closestDistance = float.PositiveInfinity;
 							hoveredObjIndex = GetObjectIndexUnderMouse(ref closestDistance);
-							if (collisionTerrain.overlay == .Deform) {
-								//hoveredAnimGroupIndex = GetTerrainAnimationGroupIndexUnderMouse(ref closestDistance);
+							if (collisionTerrain.overlay == .Deform && collisionTerrain.animationGroups != null) {
+								hoveredAnimGroupIndex = GetTerrainAnimationGroupIndexUnderMouse(ref closestDistance);
 								if (hoveredAnimGroupIndex != -1) {
 									hoveredObjIndex = -1;
 								}

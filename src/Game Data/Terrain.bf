@@ -100,7 +100,7 @@ namespace SpyroScope {
 
 						if (overlay == .Flags) {
 							if (flag < 11 /*Emulator.collisionTypes.Count*/) {
-								color = Emulator.collisionTypes[flag].color;
+								color = Emulator.collisionTypes[Emulator.rom == .SpyroTheDragon_NTSC_U && flag == 4? 2:flag].color;
 							} else {
 								color = .(255, 0, 255);
 							}
@@ -350,7 +350,7 @@ namespace SpyroScope {
 					Emulator.ReadFromRAM(flagPointer, &flag, 1);
 
 					if (flag < 11 /*Emulator.collisionTypes.Count*/) {
-						color = Emulator.collisionTypes[flag].color;
+						color = Emulator.collisionTypes[Emulator.rom == .SpyroTheDragon_NTSC_U && flag == 4? 2:flag].color;
 					} else {
 						color = .(255, 0, 255);
 					}
