@@ -10,6 +10,7 @@ namespace SpyroScope {
 		static SDL.SDL_GLContext context;
 
 		static bool useSync;
+		static bool enableDebug;
 
 		public struct Color {
 			public uint8 r,g,b;
@@ -47,10 +48,11 @@ namespace SpyroScope {
 
 		const uint maxGenericBufferLength = 0x6000;
 		static uint vertexArrayObject;
-		static Buffer<Vector> positions;
-		static Buffer<Vector> normals;
-		static Buffer<Color4> colors;
-		static Buffer<(float,float)> uvs;
+		static uint32[6] bufferID = .(?);
+		static Vector[maxGenericBufferLength] positions;
+		static Vector[maxGenericBufferLength] normals;
+		static Color4[maxGenericBufferLength] colors;
+		static (float,float)[maxGenericBufferLength] uvs;
 		static DrawQueue[maxGenericBufferLength] drawQueue;
 		static DrawQueue* startDrawQueue, lastDrawQueue;
 		
@@ -83,47 +85,6 @@ namespace SpyroScope {
 		public static int uniformRetroShadingIndex; // Change shading from modern to emulated
 		public static Texture whiteTexture ~ delete _;
 
-		public struct Buffer<T> {
-			public uint obj;
-			public T* map;
-			public readonly int bufferLength;
-
-			public this(int bufferLength) {
-				obj = 0;
-
-				// Generate
-				GL.glGenBuffers(1, &obj);
-				// Bind
-				GL.glBindBuffer(GL.GL_ARRAY_BUFFER, obj);
-
-				// Calculate Buffer size
-				let item_size = sizeof(T);
-				let buffer_size = item_size * bufferLength;
-
-				let access = GL.GL_MAP_WRITE_BIT | GL.GL_MAP_PERSISTENT_BIT;
-
-				GL.glBufferStorage(GL.GL_ARRAY_BUFFER, buffer_size, null, access);
-				map = (T*)GL.glMapBufferRange(GL.GL_ARRAY_BUFFER, 0, buffer_size, access);
-
-				for (int i < bufferLength) {
-					*(map + i) = default;
-				}
-
-				this.bufferLength = bufferLength;
-			}
-
-			//[Optimize]
-			public void Set(uint32 index, T value) mut {
-				*(map + index) = value;
-			}
-
-			public void Dispose() mut {
-				GL.glBindBuffer(GL.GL_ARRAY_BUFFER, obj);
-				GL.glUnmapBuffer(GL.GL_ARRAY_BUFFER);
-				GL.glDeleteBuffers(1, &obj);
-			}
-		}
-
 		struct DrawQueue {
 			public uint16 type;
 			public uint16 count;
@@ -152,12 +113,15 @@ namespace SpyroScope {
 			GL.glGetIntegerv(GL.GL_MAJOR_VERSION, (.)&majorVersion);
 			GL.glGetIntegerv(GL.GL_MINOR_VERSION, (.)&minorVersion);
 
-			if (majorVersion > 3 || majorVersion == 3 && minorVersion > 1) {
-				useSync = true;
-			}
+			useSync = majorVersion > 3 || majorVersion == 3 && minorVersion > 1;
+			enableDebug = majorVersion == 4 && minorVersion > 2;
 
 			Clear();
 			SDL.GL_SwapWindow(window);
+
+			// Create Default Texture
+			var whiteTextureData = Color(255,255,255);
+			whiteTexture = new .(1, 1, GL.GL_RGB, GL.GL_RGB, &whiteTextureData);
 
 			// Compile shaders during run-time
 			vertexShader = CompileShader("shaders/vertex.glsl", GL.GL_VERTEX_SHADER);
@@ -173,33 +137,34 @@ namespace SpyroScope {
 			GL.glGenVertexArrays(1, &vertexArrayObject);
 			GL.glBindVertexArray(vertexArrayObject);
 
+			
+			GL.glGenBuffers(6, (.)&bufferID);
+
 			// Position Buffer
-			positions = .(maxGenericBufferLength);
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[0]);
 			positionAttributeIndex = FindProgramAttribute(program, "vertexPosition");
 			GL.glVertexAttribPointer(positionAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
 			GL.glEnableVertexAttribArray(positionAttributeIndex);
 
 			// Normals Buffer
-			normals = .(maxGenericBufferLength);
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[1]);
 			normalAttributeIndex = FindProgramAttribute(program, "vertexNormal");
 			GL.glVertexAttribPointer(normalAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
 			GL.glEnableVertexAttribArray(normalAttributeIndex);
 
 			// Color Buffer
-			colors = .(maxGenericBufferLength);
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[2]);
 			colorAttributeIndex = FindProgramAttribute(program, "vertexColor");
 			GL.glVertexAttribIPointer(colorAttributeIndex, 4, GL.GL_UNSIGNED_BYTE, 0, null);
 			GL.glEnableVertexAttribArray(colorAttributeIndex);
 
 			// UV Buffer
-			uvs = .(maxGenericBufferLength);
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[3]);
 			uvAttributeIndex = FindProgramAttribute(program, "vertexTextureMapping");
 			GL.glVertexAttribPointer(uvAttributeIndex, 2, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
 			GL.glEnableVertexAttribArray(uvAttributeIndex);
 
-			uint tempBufferID = ?;
-			GL.glGenBuffers(1, &tempBufferID);
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, tempBufferID);
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[4]);
 			GL.glBufferData(GL.GL_ARRAY_BUFFER, sizeof(Matrix4), &model, GL.GL_STATIC_DRAW);
 			
 			instanceMatrixAttributeIndex = FindProgramAttribute(program, "instanceModel");
@@ -219,8 +184,7 @@ namespace SpyroScope {
 			GL.glVertexAttribDivisor(instanceMatrixAttributeIndex+2, 1);
 			GL.glVertexAttribDivisor(instanceMatrixAttributeIndex+3, 1);
 
-			GL.glGenBuffers(1, &tempBufferID);
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, tempBufferID);
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[5]);
 			GL.glBufferData(GL.GL_ARRAY_BUFFER, sizeof(Vector), &tint, GL.GL_STATIC_DRAW);
 
 			instanceTintAttributeIndex = FindProgramAttribute(program, "instanceTint");
@@ -233,11 +197,6 @@ namespace SpyroScope {
 			uniformProjectionMatrixIndex = FindProgramUniform(program, "projection");
 			uniformZdepthOffsetIndex = FindProgramUniform(program, "zdepthOffset");
 			uniformRetroShadingIndex = FindProgramUniform(program, "retroShading");
-
-			// Create Default Texture
-
-			var whiteTextureData = Color(255,255,255);
-			whiteTexture = new .(1, 1, GL.GL_RGB, GL.GL_RGB, &whiteTextureData);
 
 			Renderer.window = window;
 
@@ -257,13 +216,10 @@ namespace SpyroScope {
 
 		public static void Unload() {
 			GL.glDeleteVertexArrays(1, &vertexArrayObject);
+			GL.glDeleteBuffers(6, (.)&bufferID);
 			GL.glDeleteShader(vertexShader);
 			GL.glDeleteShader(fragmentShader);
 			GL.glDeleteProgram(program);
-
-			positions.Dispose();
-			normals.Dispose();
-			colors.Dispose();
 		}
 
 		static uint CompileShader(String sourcePath, uint shaderType) {
@@ -329,10 +285,10 @@ namespace SpyroScope {
 				return;
 			}
 
-			positions.Set(vertexCount, position);
-			normals.Set(vertexCount, normal);
-			colors.Set(vertexCount, color);
-			uvs.Set(vertexCount, uv);
+			positions[vertexCount] = position;
+			normals[vertexCount] = normal;
+			colors[vertexCount] = color;
+			uvs[vertexCount] = uv;
 
 			vertexCount++;
 		}
@@ -428,6 +384,22 @@ namespace SpyroScope {
 		public static void Draw() {
 			GL.glBindVertexArray(vertexArrayObject);
 
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[0]);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector), null, GL.GL_STATIC_DRAW);
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector), &positions);
+
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[1]);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector), null, GL.GL_STATIC_DRAW); 
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector), &normals);
+
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[2]);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Renderer.Color4), null, GL.GL_STATIC_DRAW);
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Renderer.Color4), &colors);
+
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[3]);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(float[2]), &uvs[0], GL.GL_STATIC_DRAW); 
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(float[2]), &uvs);
+
 			startDrawQueue++;
 			while (startDrawQueue <= lastDrawQueue) {
 				GL.glBindTexture(GL.GL_TEXTURE_2D, startDrawQueue.texture);
@@ -467,6 +439,10 @@ namespace SpyroScope {
 		}
 
 		public static void CheckForErrors() {
+			if (!enableDebug) {
+				return;
+			}
+
 			char8[] buffer = scope .[1024];
 			uint severity = 0;
 			uint source = 0;
