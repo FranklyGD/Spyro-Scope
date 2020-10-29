@@ -483,30 +483,7 @@ namespace SpyroScope {
 
 			if (terrain.renderMode == .Collision) {
 				if (terrain.collision.overlay == .Flags) {
-					// Legend
-					let leftPaddingBG = 4;
-					let bottomPaddingBG = 4;
-
-					// Background
-					let backgroundHeight = 18 * terrain.collision.collisionTypes.Count + 2;
-					DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
-						.(0,0,0,192));
-
-					// Content
-					for (let i < terrain.collision.collisionTypes.Count) {
-						let flag = terrain.collision.collisionTypes[i];
-						String label = scope String() .. AppendF("Unknown {}", flag);
-						Renderer.Color color = .(255, 0, 255);
-						if (flag < 11 /*Emulator.collisionTypes.Count*/) {
-							(label, color) = Emulator.collisionTypes[flag];
-						}
-
-						let leftPadding = 8;
-						let bottomPadding = 8 + 18 * i;
-						DrawUtilities.Rect((.)WindowApp.height - (bottomPadding + 16), (.)WindowApp.height - bottomPadding, leftPadding, leftPadding + 16, color);
-
-						WindowApp.bitmapFont.Print(label, .(leftPadding + 24, (.)WindowApp.height - (bottomPadding + 15), 0), .(255,255,255));
-					}
+					DrawFlagsOverlay();
 				} else if (terrain.collision.overlay == .Deform) {
 					if (hoveredAnimGroupIndex != -1) {
 						let hoveredAnimGroup = terrain.collision.animationGroups[hoveredAnimGroupIndex];
@@ -1164,6 +1141,52 @@ namespace SpyroScope {
 				DrawUtilities.Rect(offsetOrigin.y, offsetOrigin.y + WindowApp.font.height, offsetOrigin.x, offsetOrigin.x + WindowApp.font.CalculateWidth(message) + 4,
 					.(0,0,0,(.)(192 * fade)));
 				WindowApp.font.Print(message, offsetOrigin + .(2,0,0), .(255,255,255,(.)(255 * fade)));
+			}
+		}
+
+		void DrawFlagsOverlay() {
+			if (currentTriangleIndex > -1 && currentTriangleIndex < Emulator.specialTerrainTriangleCount) {
+				let flagInfo = Emulator.collisionFlagsIndices[currentTriangleIndex];
+				let flagIndex = flagInfo & 0x3f;
+				let flagData = terrain.collision.GetCollisionFlagData(flagIndex);
+	
+				if (flagData.type < 11) {
+					var screenPosition = Camera.SceneToScreen(cursor3DPosition);
+					screenPosition.x = Math.Floor(screenPosition.x);
+					screenPosition.y = Math.Floor(screenPosition.y);
+					screenPosition.z = 0;
+					DrawUtilities.Rect(screenPosition.y, screenPosition.y + WindowApp.bitmapFont.characterHeight, screenPosition.x, screenPosition.x + WindowApp.bitmapFont.characterWidth * 10,
+						.(0,0,0,192));
+		
+					screenPosition.y += 2;
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("Param: {}", flagData.param),
+						screenPosition, .(255,255,255));
+				}
+			}
+
+			// Legend
+			let leftPaddingBG = 4;
+			let bottomPaddingBG = 4;
+
+			// Background
+			let backgroundHeight = 18 * terrain.collision.collisionTypes.Count + 2;
+			DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
+				.(0,0,0,192));
+
+			// Content
+			for (let i < terrain.collision.collisionTypes.Count) {
+				let flag = terrain.collision.collisionTypes[i];
+				String label = scope String() .. AppendF("Unknown {}", flag);
+				Renderer.Color color = .(255, 0, 255);
+				if (flag < 11 /*Emulator.collisionTypes.Count*/) {
+					(label, color) = Emulator.collisionTypes[flag];
+				}
+
+				let leftPadding = 8;
+				let bottomPadding = 8 + 18 * i;
+				DrawUtilities.Rect((.)WindowApp.height - (bottomPadding + 16), (.)WindowApp.height - bottomPadding, leftPadding, leftPadding + 16, color);
+
+				WindowApp.bitmapFont.Print(label, .(leftPadding + 24, (.)WindowApp.height - (bottomPadding + 15), 0), .(255,255,255));
 			}
 		}
 

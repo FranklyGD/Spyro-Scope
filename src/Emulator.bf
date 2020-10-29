@@ -432,7 +432,7 @@ namespace SpyroScope {
 				ReadFromRAM(collisionFlagArray, ptrFlagIndices, 1 * triangleCount);
 
 				collisionFlagPointerArray.Clear();
-				let ptrFlags = collisionFlagPointerArray.GrowUnitialized(0x3f);
+				let ptrFlags = collisionFlagPointerArray.GrowUnitialized(0x40);
 				ReadFromRAM(collisionFlagsArrayPointers[(uint)rom], &collisionFlagArray, 4);
 				ReadFromRAM(collisionFlagArray, ptrFlags, 4 * 0x3f);
 

@@ -9,7 +9,7 @@ namespace SpyroScope {
 		public Vector lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
 
 		public List<int> waterSurfaceTriangles = new .();
-		public List<uint8> collisionTypes = new .();
+		public List<uint32> collisionTypes = new .();
 
 		public enum Overlay {
 			None,
@@ -95,20 +95,18 @@ namespace SpyroScope {
 
 					let flagIndex = flagInfo & 0x3f;
 					if (flagIndex != 0x3f) {
-						Emulator.Address flagPointer = Emulator.collisionFlagPointerArray[flagIndex];
-						uint8 flag = ?;
-						Emulator.ReadFromRAM(flagPointer, &flag, 1);
+						let flagData = GetCollisionFlagData(flagIndex);
 
 						if (overlay == .Flags) {
-							if (flag < 11 /*Emulator.collisionTypes.Count*/) {
-								color = Emulator.collisionTypes[flag].color;
+							if (flagData.type < 11 /*Emulator.collisionTypes.Count*/) {
+								color = Emulator.collisionTypes[flagData.type].color;
 							} else {
 								color = .(255, 0, 255);
 							}
 						}
 
-						if (!collisionTypes.Contains(flag)) {
-							collisionTypes.Add(flag);
+						if (!collisionTypes.Contains(flagData.type)) {
+							collisionTypes.Add(flagData.type);
 						} 
 					}
 				}
@@ -345,12 +343,10 @@ namespace SpyroScope {
 
 				let flagIndex = flagInfo & 0x3f;
 				if (flagIndex != 0x3f) {
-					Emulator.Address flagPointer = Emulator.collisionFlagPointerArray[flagIndex];
-					uint8 flag = ?;
-					Emulator.ReadFromRAM(flagPointer, &flag, 1);
+					let flagData = GetCollisionFlagData(flagIndex);
 
-					if (flag < 11 /*Emulator.collisionTypes.Count*/) {
-						color = Emulator.collisionTypes[flag].color;
+					if (flagData.type < 11 /*Emulator.collisionTypes.Count*/) {
+						color = Emulator.collisionTypes[flagData.type].color;
 					} else {
 						color = .(255, 0, 255);
 					}
@@ -422,6 +418,13 @@ namespace SpyroScope {
 					}
 				}
 			}
+		}
+
+		public (uint32 type, uint32 param) GetCollisionFlagData(uint32 flagIndex) {
+			Emulator.Address flagPointer = Emulator.collisionFlagPointerArray[flagIndex];
+			(uint32, uint32) data = ?;
+			Emulator.ReadFromRAM(flagPointer, &data, 8);
+			return data;
 		}
 	}
 }
