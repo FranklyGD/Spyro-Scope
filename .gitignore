@@ -2,3 +2,4 @@ BeefSpace_User.toml
 build/
 dist/*
 !dist/*/
+recovery/

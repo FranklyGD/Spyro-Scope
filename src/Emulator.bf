@@ -16,6 +16,8 @@ namespace SpyroScope {
 		}
 		public static EmulatorType emulator;
 		static uint emulatorRAMBaseAddress;
+		static uint emulatorVRAMBaseAddress;
+		static public uint16[] vramSnapshot ~ delete _;
 		
 		public const String[4] emulatorNames = .(String.Empty, "Nocash PSX", "Bizhawk", "ePSXe");
 
@@ -39,9 +41,7 @@ namespace SpyroScope {
 				strBuffer.AppendF("{:X8}", (uint32)this);
 			}
 
-			public bool IsNull { get {
-				return this == 0;
-			} }
+			public bool IsNull { get => this == 0; }
 		}
 		public struct Address<T> : Address {
 			public override void ToString(String strBuffer) {
@@ -86,7 +86,14 @@ namespace SpyroScope {
 		public const Address<Address>[11] collisionDataPointers = .(0, (.)0x800785d4/*StD*/, 0, 0, (.)0x800673fc/*RR*/, 0, 0, (.)0x8006d070, (.)0x8006d150/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] collisionFlagsArrayPointers = .(0, (.)0x800785b8/*StD*/, 0, 0, (.)0x800673e8/*RR*/, 0, 0, (.)0x8006d05c, (.)0x8006d13c/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] collisionModifyingDataPointers = .(0, (.)0x800785a4/*StD*/, 0, 0, (.)0x80068208/*RR*/, 0, 0, (.)0x8006e384, (.)0x8006e464/*YotD-1.1*/, 0, 0);
-		
+
+		public const Address<Address>[11] sceneDataRegionArrayPointers = .(0, (.)0x800785a8/*StD*/, 0, 0, (.)0x800673d4/*RR*/, 0, 0, 0, (.)0x8006d128/*YotD-1.1*/, 0, 0);
+		public const Address<Address>[11] sceneDataRegionAnimationArrayPointers = .(0, 0/*StD*/, 0, 0, (.)0x800681f8/*RR*/, 0, 0, 0, (.)0x8006e454/*YotD-1.1*/, 0, 0);
+		public const Address<Address>[11] waterRegionArrayPointers = .(0, 0/*StD*/, 0, 0, (.)0x800673f0/*RR*/, 0, 0, 0, (.)0x8006d144/*YotD-1.1*/, 0, 0);
+
+		public const Address<Address>[11] textureDataPointers = .(0, (.)0x800785c4/*StD*/, 0, 0, (.)0x800673f4/*RR*/, 0, 0, 0, (.)0x8006d148/*YotD-1.1*/, 0, 0);
+		public const Address<Address>[11] textureModifyingDataPointers = .(0, (.)0x8007856c/*StD*/, 0, 0, (.)0x800681e0/*RR*/, 0, 0, 0, (.)0x8006e43c/*YotD-1.1*/, 0, 0);
+
 		public const Address<uint32>[11] deathPlaneHeightsAddresses = .(0, (.)0x8006e9a4/*StD*/, 0, 0, (.)0x80060234/*RR*/, 0, 0, (.)0x800676e8, (.)0x800677c8/*YotD-1.1*/, 0, 0);
 		public const Address<uint32>[11] maxFreeflightHeightsAddresses = .(0, 0/*StD*/, 0, 0, (.)0x800601b4/*RR*/, 0, 0, (.)0x80067648, (.)0x80067728/*YotD-1.1*/, 0, 0);
 
@@ -106,7 +113,8 @@ namespace SpyroScope {
 
 		public static uint32[] deathPlaneHeights ~ delete _;
 		public static uint32[] maxFreeflightHeights ~ delete _;
-		
+
+		public static Address terrainAnimationPointerArrayAddress;
 		public static Address collisionDataAddress;
 		public static Address collisionModifyingPointerArrayAddress;
 		public static List<PackedTriangle> collisionTriangles = new .() ~ delete _;
@@ -248,6 +256,7 @@ namespace SpyroScope {
 			}
 
 			if (rom != .None) {
+				FetchVRAMBaseAddress();
 				FetchStaticData();
 			}
 		}
@@ -316,6 +325,29 @@ namespace SpyroScope {
 			}
 		}
 
+		public static void FetchVRAMBaseAddress() {
+			switch (emulator) {
+				case .NocashPSX : {
+					// uint8* pointer = (uint8*)(void*)(moduleHandle + 0x00092784)
+					// No need to use module base address since its always loaded at 0x00400000
+					uint8* pointer = (uint8*)(void*)0x00492784;
+					Windows.ReadProcessMemory(processHandle, pointer, &emulatorVRAMBaseAddress, 4, null);
+				}
+				case .Bizhawk : {
+					// Static address
+					emulatorVRAMBaseAddress = (.)moduleHandle + 0x005280D0;
+				}
+				case .ePSXe : {
+					// Plugin address
+					let gpuModuleHandle = GetModule(processHandle, "gpuPeteOpenGL2.dll");
+					emulatorVRAMBaseAddress = (.)gpuModuleHandle + 0x00051F80;
+					// NOTE: According to Cheat Engine this should work, however...
+					// the module is not being listed and therefore cannot be found
+				}
+				default : // Well this is awkward...
+			}
+		}
+
 		[Inline]
 		public static void* RawAddressFromRAM(Address address) {
 			return ((uint8*)null + emulatorRAMBaseAddress + ((uint32)address & 0x003fffff));
@@ -333,8 +365,8 @@ namespace SpyroScope {
 
 		// Spyro
 		static void FetchStaticData() {
-			delete Emulator.maxFreeflightHeights;
-			delete Emulator.deathPlaneHeights;
+			delete maxFreeflightHeights;
+			delete deathPlaneHeights;
 
 			switch (Emulator.rom) {
 
@@ -349,11 +381,11 @@ namespace SpyroScope {
 
 				case .RiptosRage_NTSC_U: {
 					// 28 worlds exists but there is space for 32 (probably a power of 2 related thing)
-					Emulator.deathPlaneHeights = new .[32];
-					Emulator.maxFreeflightHeights = new .[32];
+					deathPlaneHeights = new .[32];
+					maxFreeflightHeights = new .[32];
 					
-					deathPlaneHeightsAddresses[(int)rom].ReadArray(&Emulator.deathPlaneHeights[0], 32);
-					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&Emulator.maxFreeflightHeights[0], 32);
+					deathPlaneHeightsAddresses[(int)rom].ReadArray(&deathPlaneHeights[0], 32);
+					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&maxFreeflightHeights[0], 32);
 				}
 
 				case .YearOfTheDragon_1_0_NTSC_U: {
@@ -373,9 +405,14 @@ namespace SpyroScope {
 					deathPlaneHeightsAddresses[(int)rom].ReadArray(&Emulator.deathPlaneHeights[0], 40 * 4);
 					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&Emulator.maxFreeflightHeights[0], 40);
 				}
-
 				default : {}
 			}
+		}
+
+		public static void TakeVRAMSnapshot() {
+			delete vramSnapshot;
+			vramSnapshot = new .[1024 * 512];
+			Windows.ReadProcessMemory(processHandle, (void*)emulatorVRAMBaseAddress, &vramSnapshot[0], 1024 * 512 * 2, null);
 		}
 
 		public static void FetchImportantObjects() {

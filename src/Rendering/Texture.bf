@@ -29,15 +29,15 @@ namespace SpyroScope {
 				Renderer.CheckForErrors();
 			}
 		}
-		
-		public this(int width, int height, uint format, void* data) {
+
+		public this(int width, int height, int fromFormat, uint toFormat, void* data) {
 			this.width = width;
 			this.height = height;
 
 			GL.glGenTextures(1, &textureObjectID);
 			GL.glBindTexture(GL.GL_TEXTURE_2D, textureObjectID);
 
-			GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, (.)format, width, height, 0, format, GL.GL_UNSIGNED_BYTE, data);
+			GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, fromFormat, width, height, 0, toFormat, GL.GL_UNSIGNED_BYTE, data);
 			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
 			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
 

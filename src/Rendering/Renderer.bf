@@ -18,6 +18,10 @@ namespace SpyroScope {
 				this.g = g;
 				this.b = b;
 			}
+
+			public static implicit operator Color(Color4 color) {
+				return .(color.r, color.g, color.b);
+			}
 		}
 
 		public struct Color4 {
@@ -76,7 +80,7 @@ namespace SpyroScope {
 
 		public static Vector tint = .(1,1,1);
 		public static int uniformZdepthOffsetIndex; // Z-depth Offset (mainly for pushing the wireframe forward to avoid Z-fighting)
-
+		public static int uniformRetroShadingIndex; // Change shading from modern to emulated
 		public static Texture whiteTexture ~ delete _;
 
 		public struct Buffer<T> {
@@ -138,7 +142,7 @@ namespace SpyroScope {
 			startDrawQueue = lastDrawQueue = &drawQueue[0];
 
 			// Initialize OpenGL
-			SDL.GL_SetAttribute(.GL_CONTEXT_FLAGS, (.)SDL.SDL_GLContextFlags.GL_CONTEXT_DEBUG_FLAG);
+			SDL.GL_SetAttribute(.GL_CONTEXT_FLAGS, (uint32)SDL.SDL_GLContextFlags.GL_CONTEXT_DEBUG_FLAG);
 
 			context = SDL.GL_CreateContext(window);
 			GL.Init(=> SdlGetProcAddress);
@@ -228,11 +232,12 @@ namespace SpyroScope {
 			uniformViewMatrixIndex = FindProgramUniform(program, "view");
 			uniformProjectionMatrixIndex = FindProgramUniform(program, "projection");
 			uniformZdepthOffsetIndex = FindProgramUniform(program, "zdepthOffset");
+			uniformRetroShadingIndex = FindProgramUniform(program, "retroShading");
 
 			// Create Default Texture
 
-			var whiteTextureData = Color4[1](.(255,255,255,255));
-			whiteTexture = new .(1, 1, GL.GL_RGBA, &whiteTextureData);
+			var whiteTextureData = Color(255,255,255);
+			whiteTexture = new .(1, 1, GL.GL_RGB, GL.GL_RGB, &whiteTextureData);
 
 			Renderer.window = window;
 
@@ -410,6 +415,14 @@ namespace SpyroScope {
 		public static void BeginSolid() {
 			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL);
 			GL.glUniform1f(uniformZdepthOffsetIndex, 0); // Reset depth offset
+		}
+
+		public static void BeginRetroShading() {
+			GL.glUniform1f(uniformRetroShadingIndex, 1);
+		}
+
+		public static void BeginDefaultShading() {
+			GL.glUniform1f(uniformRetroShadingIndex, 0);
 		}
 
 		public static void Draw() {
