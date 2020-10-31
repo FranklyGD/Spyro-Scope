@@ -316,6 +316,8 @@ namespace SpyroScope {
 				if (currentObjIndex == -1) {
 					Vector spyroPosition = Emulator.spyroPosition;
 					Translator.Update(spyroPosition, Emulator.spyroBasis.ToMatrixCorrected());
+				} else if (terrain.renderMode == .Collision && currentTriangleIndex > -1) {
+					Translator.Update(terrain.collision., .Identity);
 				} else {
 					Moby* moby = &(objectList[currentObjIndex].1);
 					Translator.Update(moby.position, moby.basis);
@@ -549,7 +551,7 @@ namespace SpyroScope {
 					faceIndex = visualMesh.nearFaceIndices[currentTriangleIndex];
 				}
 
-				let face = visualMesh.GetNearFace(faceIndex);
+				let face = visualMesh.nearFaces[faceIndex];
 				let textureInfo = Terrain.texturesLODs[face.renderInfo.textureIndex];
 				const let quadSize = TextureLOD.TextureQuad.quadSize;
 				
@@ -690,7 +692,6 @@ namespace SpyroScope {
 									currentAnimGroupIndex = hoveredAnimGroupIndex;
 								}
 	
-								// Re-evaluate anything being hovered
 								var distance = float.PositiveInfinity;
 								
 								let origin = Camera.ScreenPointToOrigin(mousePosition);
@@ -706,7 +707,8 @@ namespace SpyroScope {
 										let visualMesh = terrain.visualMeshes[i];
 										let transform = Vector(1f/16, 1f/16, visualMesh.metadata.verticallyScaledDown ? 1f/2 : 1f/16);
 
-										let transformedOrigin = (origin - visualMesh.offset * 16) * transform;
+										let metadata = visualMesh.metadata;
+										let transformedOrigin = (origin - .((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16)) * transform;
 										let transformedRay = ray * transform;
 
 										if (terrain.renderMode == .Near) {
@@ -730,7 +732,8 @@ namespace SpyroScope {
 										}
 									}
 								}
-
+								
+								// Re-evaluate anything being hovered
 								hoveredObjIndex = GetObjectIndexUnderMouse(ref distance);
 							}
 						}

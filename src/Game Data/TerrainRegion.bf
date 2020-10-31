@@ -18,15 +18,20 @@ namespace SpyroScope {
 
 		public Mesh farMesh;
 		public List<uint32> farMeshIndices = new .();
+
+		Vector[] nearVertices;
+		Renderer.Color4[] nearColors;
+		public NearFace[] nearFaces;
+		
 		public Mesh nearMesh;
-		public Mesh nearMeshTransparent;
-		public List<uint32> nearMeshIndices = new .();
-		public List<uint32> nearMeshTransparentIndices = new .();
+		public List<uint8> nearMesh2GameIndices = new .();
 		public List<int> nearFaceIndices = new .();
-		public List<int> nearFaceTransparentIndices = new .();
 		public List<uint8> nearTextureIndices = new .();
+
+		public Mesh nearMeshTransparent;
+		public List<uint8> nearMesh2GameTransparentIndices = new .();
+		public List<int> nearFaceTransparentIndices = new .();
 		public List<uint8> nearTextureTransparentIndices = new .();
-		public Vector offset;
 
 		public List<int> usedTextureIndices = new .();
 
@@ -38,7 +43,7 @@ namespace SpyroScope {
 			public struct RenderInfo {
 				uint8 texture, flipSideDepth, a, b;
 
-				public uint8 textureIndex { get => texture % 128; }
+				public uint8 textureIndex { get => texture & 0x7f; }
 				public uint8 depthOffset { get => flipSideDepth & 0b0011; }
 				public bool flipped { get => flipSideDepth & 0b0100 > 0; }
 				public bool doubleSided { get => flipSideDepth & 0b1000 > 0; }
@@ -56,24 +61,45 @@ namespace SpyroScope {
 
 		public void Dispose() mut {
 			address = 0;
-
+			
 			delete farMesh;
-			delete nearMesh;
-			delete nearMeshTransparent;
 			delete farMeshIndices;
-			delete nearMeshIndices;
-			delete nearMeshTransparentIndices;
-			delete usedTextureIndices;
+
+			delete nearColors;
+			delete nearFaces;
+
+			delete nearMesh;
+			delete nearMesh2GameIndices;
 			delete nearFaceIndices;
-			delete nearFaceTransparentIndices;
 			delete nearTextureIndices;
+
+			delete nearMeshTransparent;
+			delete nearMesh2GameTransparentIndices;
+			delete nearFaceTransparentIndices;
 			delete nearTextureTransparentIndices;
+
+			delete usedTextureIndices;
+		}
+
+		/// Sets the position of the mesh's vertex with the index the game uses
+		public void SetNearVertex(uint8 index, VectorInt position, bool updateGame = false) {
+			for (let meshVertexIndex < nearMesh2GameIndices.Count) {
+				let vertexIndex = nearMesh2GameIndices[meshVertexIndex];
+				if (vertexIndex == index) {
+					nearMesh.vertices[meshVertexIndex] = position;
+				}
+			}
+			nearVertices[index] = position;
+			if (updateGame) {
+				let regionPointer = address + 0x1c +
+					((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2 +
+					metadata.nearVertexCount + (int)metadata.nearColorCount * 2) * 4;
+				Emulator.WriteToRAM(regionPointer, &nearVertices[index], (int)index * 4);
+			}
 		}
 
 		public void Reload() mut {
 			Emulator.ReadFromRAM(address, &metadata, sizeof(RegionMetadata));
-
-			offset = .(metadata.offsetX, metadata.offsetY, metadata.offsetZ);
 
 			// Low Poly Count / Far Mesh
 			GenerateMesh(address + 0x1c, metadata.farVertexCount, metadata.farColorCount, metadata.farFaceCount, false);
@@ -85,7 +111,7 @@ namespace SpyroScope {
 			List<Vector> activeVertexList = ?;
 			List<Renderer.Color> activeColorList = ?;
 			List<float[2]> activeUvList = ?;
-			List<uint32> activeNearMeshIndices = ?;
+			List<uint8> activeNearMeshIndices = ?;
 			List<int> activeNearFaceIndices = ?;
 			List<uint8> activeNearTextureIndices = ?;
 
@@ -96,9 +122,9 @@ namespace SpyroScope {
 			if (vertexSize > 0) {
 				uint32[] packedVertices = scope .[vertexSize];
 				Emulator.ReadFromRAM(regionPointer, &packedVertices[0], vertexSize * 4);
-				Vector[] sourceVertices = scope .[vertexSize];
+				nearVertices = scope .[vertexSize];
 				for (let i < vertexSize) {
-					sourceVertices[i] = UnpackVertex(packedVertices[i]);
+					nearVertices[i] = UnpackVertex(packedVertices[i]);
 				}
 
 				// Used for swapping around values
@@ -111,17 +137,17 @@ namespace SpyroScope {
 					List<Renderer.Color> colorTransparentList = scope .();
 					List<float[2]> uvTransparentList = scope .();
 
-					NearFace[] regionFaces = scope .[faceSize];
-					Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize * 2) * 4, &regionFaces[0], faceSize * 4 * 4);
+					nearFaces = new .[faceSize];
+					Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize * 2) * 4, &nearFaces[0], faceSize * sizeof(NearFace));
 	
-					Renderer.Color4[] vertexColors = scope .[colorSize * 2];
-					Emulator.ReadFromRAM(regionPointer + vertexSize * 4, &vertexColors[0], colorSize * 2 * 4);
+					nearColors = new .[colorSize * 2];
+					Emulator.ReadFromRAM(regionPointer + vertexSize * 4, &nearColors[0], colorSize * 2 * 4);
 	
 					// Derived from Spyro: Ripto's Rage
 					// Vertex Indexing [80024a00]
 					// Color Indexing [80024c84]
 					for (let i < faceSize) {
-						var regionFace = regionFaces[i];
+						var regionFace = nearFaces[i];
 						var trianglesIndices = regionFace.trianglesIndices;
 						var colorIndices = regionFace.colorsIndices;
 						let textureIndex = regionFace.renderInfo.textureIndex;
@@ -146,14 +172,14 @@ namespace SpyroScope {
 							activeVertexList = vertexTransparentList;
 							activeColorList = colorTransparentList;
 							activeUvList = uvTransparentList;
-							activeNearMeshIndices = nearMeshTransparentIndices;
+							activeNearMeshIndices = nearMesh2GameTransparentIndices;
 							activeNearFaceIndices = nearFaceTransparentIndices;
 							activeNearTextureIndices = nearTextureTransparentIndices;
 						} else {
 							activeVertexList = vertexList;
 							activeColorList = colorList;
 							activeUvList = uvList;
-							activeNearMeshIndices = nearMeshIndices;
+							activeNearMeshIndices = nearMesh2GameIndices;
 							activeNearFaceIndices = nearFaceIndices;
 							activeNearTextureIndices = nearTextureIndices;
 						}
@@ -167,12 +193,12 @@ namespace SpyroScope {
 								second = 1;
 							}
 
-							triangleVertices[0] = sourceVertices[trianglesIndices[first]];
-							triangleVertices[1] = sourceVertices[trianglesIndices[2]];
-							triangleVertices[2] = sourceVertices[trianglesIndices[second]];
-							triangleColors[0] = vertexColors[colorIndices[first]];
-							triangleColors[1] = vertexColors[colorIndices[2]];
-							triangleColors[2] = vertexColors[colorIndices[second]];
+							triangleVertices[0] = nearVertices[trianglesIndices[first]];
+							triangleVertices[1] = nearVertices[trianglesIndices[2]];
+							triangleVertices[2] = nearVertices[trianglesIndices[second]];
+							triangleColors[0] = nearColors[colorIndices[first]];
+							triangleColors[1] = nearColors[colorIndices[2]];
+							triangleColors[2] = nearColors[colorIndices[second]];
 							
 							activeNearMeshIndices.Add(trianglesIndices[second]);
 							activeNearMeshIndices.Add(trianglesIndices[2]);
@@ -210,15 +236,15 @@ namespace SpyroScope {
 								Swap!(trianglesIndices[2], trianglesIndices[3]);
 							}
 	
-							triangleVertices[0] = sourceVertices[trianglesIndices[1]];
-							triangleVertices[1] = sourceVertices[trianglesIndices[2]];
-							triangleVertices[2] = sourceVertices[trianglesIndices[3]];
-							triangleVertices[3] = sourceVertices[trianglesIndices[0]];
+							triangleVertices[0] = nearVertices[trianglesIndices[1]];
+							triangleVertices[1] = nearVertices[trianglesIndices[2]];
+							triangleVertices[2] = nearVertices[trianglesIndices[3]];
+							triangleVertices[3] = nearVertices[trianglesIndices[0]];
 							
-							triangleColors[0] = vertexColors[colorIndices[1]];
-							triangleColors[1] = vertexColors[colorIndices[2]];
-							triangleColors[2] = vertexColors[colorIndices[3]];
-							triangleColors[3] = vertexColors[colorIndices[0]];
+							triangleColors[0] = nearColors[colorIndices[1]];
+							triangleColors[1] = nearColors[colorIndices[2]];
+							triangleColors[2] = nearColors[colorIndices[3]];
+							triangleColors[3] = nearColors[colorIndices[0]];
 	
 							if (flipSide) {
 								Swap!(triangleColors[0], triangleColors[3]);
@@ -298,10 +324,10 @@ namespace SpyroScope {
 						uint32 packedTriangleIndex = regionTriangles[i * 2];
 						uint32 packedColorIndex = regionTriangles[i * 2 + 1];
 	
-						triangleIndices[0] = packedTriangleIndex >> 10 & 0x7f; //((packedTriangleIndex >> 7) & 0x3f8) >> 3;
-						triangleIndices[1] = packedTriangleIndex >> 17 & 0x7f; //((packedTriangleIndex >> 14) & 0x3f8) >> 3;
-						triangleIndices[2] = packedTriangleIndex >> 24 & 0x7f; //((packedTriangleIndex >> 21) & 0x3f8) >> 3;
-						triangleIndices[3] = packedTriangleIndex >> 3 & 0x7f; //(packedTriangleIndex & 0x3f8) >> 3;
+						triangleIndices[0] = packedTriangleIndex >> 10 & 0x7f; //((packedTriangleIndex >> 7) & 0x3fc) >> 2;
+						triangleIndices[1] = packedTriangleIndex >> 17 & 0x7f; //((packedTriangleIndex >> 14) & 0x3fc) >> 2;
+						triangleIndices[2] = packedTriangleIndex >> 24 & 0x7f; //((packedTriangleIndex >> 21) & 0x3fc) >> 2;
+						triangleIndices[3] = packedTriangleIndex >> 3 & 0x7f; //(packedTriangleIndex & 0x3fc) >> 2;
 	
 						triangleVertices[0] = UnpackVertex(packedVertices[triangleIndices[0]]);
 						triangleVertices[1] = UnpackVertex(packedVertices[triangleIndices[1]]);
@@ -380,12 +406,12 @@ namespace SpyroScope {
 		// Derived from Spyro: Ripto's Rage
 		// Far [80028c2c]
 		// Near [80024664]
-		public static Vector UnpackVertex(uint32 packedVertex) {
-			Vector vertex = ?;
+		public static VectorInt UnpackVertex(uint32 packedVertex) {
+			VectorInt vertex = ?;
 	
-			vertex.x = packedVertex >> 21;
-			vertex.y = packedVertex >> 10 & 0x7ff;
-			vertex.z = (packedVertex & 0x3ff) << 1;
+			vertex.x = (.)(packedVertex >> 21);
+			vertex.y = (.)(packedVertex >> 10 & 0x7ff);
+			vertex.z = (.)((packedVertex & 0x3ff) << 1);
 	
 			return vertex;
 		}
@@ -401,17 +427,17 @@ namespace SpyroScope {
 		}
 		
 		public void DrawFar() {
-			Renderer.SetModel(offset * 16, .Scale(16));
+			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(16));
 			farMesh.Draw();
 		}
 		
 		public void DrawNear() {
-			Renderer.SetModel(offset * 16, .Scale(16,16, metadata.verticallyScaledDown ? 2 : 16));
+			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(16,16, metadata.verticallyScaledDown ? 2 : 16));
 			nearMesh.Draw();
 		}
 
 		public void DrawNearTransparent() {
-			Renderer.SetModel(offset * 16, .Scale(16,16, metadata.verticallyScaledDown ? 2 : 16));
+			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(16,16, metadata.verticallyScaledDown ? 2 : 16));
 			nearMeshTransparent.Draw();
 		}
 	}

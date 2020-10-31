@@ -205,7 +205,7 @@ namespace SpyroScope {
 							if (terrainRegion.nearTextureIndices[triangleIndex] == textureIndex) {
 								opaqueMeshModified = true;
 
-								TerrainRegion.NearFace regionFace = terrainRegion.GetNearFace(terrainRegion.nearFaceIndices[triangleIndex]);
+								TerrainRegion.NearFace regionFace = terrainRegion.nearFaces[terrainRegion.nearFaceIndices[triangleIndex]];
 								let textureRotation = regionFace.renderInfo.rotation;
 
 								if (regionFace.isTriangle) {
@@ -249,7 +249,7 @@ namespace SpyroScope {
 
 							let vertexIndex = triangleIndex * 3;
 							if (terrainRegion.nearTextureTransparentIndices[triangleIndex] == textureIndex) {
-								TerrainRegion.NearFace regionFace = terrainRegion.GetNearFace(terrainRegion.nearFaceTransparentIndices[triangleIndex]);
+								TerrainRegion.NearFace regionFace = terrainRegion.nearFaces[terrainRegion.nearFaceTransparentIndices[triangleIndex]];
 								let textureRotation = regionFace.renderInfo.rotation;
 
 								if (regionFace.isTriangle) {

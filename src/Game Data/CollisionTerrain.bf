@@ -65,6 +65,18 @@ namespace SpyroScope {
 			delete collisionTypes;
 		}
 
+		/// Sets the position of the mesh's vertex with the index the game uses
+		public void SetNearVertex(uint8 triangle, VectorInt[3] triangle, bool updateGame = false) {
+			nearVertices[index] = position;
+
+			if (updateGame) {
+				let regionPointer = address + 0x1c +
+					((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2 +
+					metadata.nearVertexCount + (int)metadata.nearColorCount * 2) * 4;
+				Emulator.WriteToRAM(regionPointer, &nearVertices[index], (int)triangle * 4);
+			}
+		}
+
 		public void Reload() mut {
 			let vertexCount = Emulator.collisionTriangles.Count * 3;
 			Vector[] vertices = new .[vertexCount];
@@ -86,7 +98,7 @@ namespace SpyroScope {
 
 				// Terrain as Water
 				// Derived from Spyro: Ripto's Rage [8003e694]
-				if (triangle.data.z & 0x4000 != 0) {
+				if (triangle.z & 0x4000 != 0) {
 					waterSurfaceTriangles.Add(triangleIndex);
 				}
 
@@ -266,7 +278,7 @@ namespace SpyroScope {
 
 					let startTrianglesState = stateIndex * animationGroup.count;
 					for (let triangleIndex < animationGroup.count) {
-						PackedTriangle packedTriangle = ?;
+						CollisionTriangle packedTriangle = ?;
 						Emulator.ReadFromRAM(animationGroup.dataPointer + triangleDataOffset + (startTrianglesState + triangleIndex) * 12, &packedTriangle, 12);
 						let unpackedTriangle = packedTriangle.Unpack(true);
 

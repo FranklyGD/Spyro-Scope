@@ -112,7 +112,7 @@ namespace SpyroScope {
 		public static Address terrainAnimationPointerArrayAddress;
 		public static Address collisionDataAddress;
 		public static Address collisionModifyingPointerArrayAddress;
-		public static List<PackedTriangle> collisionTriangles = new .() ~ delete _;
+		public static List<CollisionTriangle> collisionTriangles = new .() ~ delete _;
 		public static uint32 specialTerrainTriangleCount;
 		public static List<uint8> collisionFlagsIndices = new .() ~ delete _;
 		public static List<Address> collisionFlagPointerArray = new .() ~ delete _;
@@ -422,7 +422,7 @@ namespace SpyroScope {
 				let ptrTriangles = collisionTriangles.GrowUnitialized(triangleCount);
 				Address collisionTriangleArray = ?;
 				ReadFromRAM(collisionDataAddress + 20, &collisionTriangleArray, 4);
-				ReadFromRAM(collisionTriangleArray, ptrTriangles, sizeof(PackedTriangle) * triangleCount);
+				ReadFromRAM(collisionTriangleArray, ptrTriangles, sizeof(CollisionTriangle) * triangleCount);
 				
 				Address collisionFlagArray = ?;
 

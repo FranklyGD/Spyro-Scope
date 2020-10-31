@@ -66,7 +66,7 @@ namespace SpyroScope {
 			sourceNearMesh = terrainMeshes[regionIndex].nearMesh;
 
 			// Find triangles using these vertices
-			let terrainRegionIndicies = terrainMeshes[regionIndex].nearMeshIndices;
+			let terrainRegionIndicies = terrainMeshes[regionIndex].nearMesh2GameIndices;
 			List<uint32> nearAnimatedIndices = scope .();
 			nearAnimatedTriangles = new .();
 			for (var i = 0; i < terrainRegionIndicies.Count; i += 3) {
@@ -87,10 +87,11 @@ namespace SpyroScope {
 			for (let stateIndex < stateCount) {
 				let startVertexState = stateIndex * vertexCount;
 
+				let animatedVertices = scope uint32[vertexCount];
+				Emulator.ReadFromRAM(address + vertexDataOffset + (startVertexState * 4), &animatedVertices[0], vertexCount * 4);
+
 				for (let vertexIndex < vertexCount) {
-					uint32 packedVertex = ?;
-					Emulator.ReadFromRAM(address + vertexDataOffset + ((startVertexState + vertexIndex) * 4), &packedVertex, 4);
-					let unpackedVertex = TerrainRegion.UnpackVertex(packedVertex);
+					let unpackedVertex = TerrainRegion.UnpackVertex(animatedVertices[vertexIndex]);
 					vertices[vertexIndex] = unpackedVertex;
 
 					upperBound.x = Math.Max(upperBound.x, unpackedVertex.x);
