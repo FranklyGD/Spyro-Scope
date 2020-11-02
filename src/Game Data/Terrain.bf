@@ -66,8 +66,8 @@ namespace SpyroScope {
 			Emulator.Address<Emulator.Address> sceneDataRegionArrayAddress = ?;
 			let sceneDataRegionArrayPointer = Emulator.sceneRegionPointers[(int)Emulator.rom];
 			sceneDataRegionArrayPointer.Read(&sceneDataRegionArrayAddress);
-			uint32 sceneDataRegionCount = ?;
-			Emulator.ReadFromRAM(sceneDataRegionArrayPointer + 4, &sceneDataRegionCount, 4);
+			uint32 sceneRegionCount = ?;
+			Emulator.ReadFromRAM(sceneDataRegionArrayPointer + 4, &sceneRegionCount, 4);
 
 			// Remove any existing parsed data
 			if (visualMeshes != null) {
@@ -77,23 +77,29 @@ namespace SpyroScope {
 				DeleteAndNullify!(visualMeshes);
 			}
 
-			visualMeshes = new .[sceneDataRegionCount];
-
 			// Parse all terrain regions
 			let usedTextureIndices = new List<int>(); // Also get all used texture indices while we are at it
-			Emulator.Address[] sceneDataRegionAddresses = new .[sceneDataRegionCount];
-			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegionAddresses[0], sceneDataRegionCount);
-			for (let regionIndex < sceneDataRegionCount) {
-				visualMeshes[regionIndex] = .(sceneDataRegionAddresses[regionIndex]);
 
-				for (let textureIndex in visualMeshes[regionIndex].usedTextureIndices) {
-					let usedIndex = usedTextureIndices.FindIndex(scope (x) => x == textureIndex);
-					if (usedIndex == -1) {
-						usedTextureIndices.Add(textureIndex);
+			// Skip over this game for now until the issue is resolved
+			if (Emulator.installment == .SpyroTheDragon) { // TODO: Resolve the issue above in "TerrainRegion.bf"
+				visualMeshes = new .[0];
+			} else {
+				visualMeshes = new .[sceneRegionCount];
+
+				Emulator.Address[] sceneDataRegionAddresses = new .[sceneRegionCount];
+				sceneDataRegionArrayAddress.ReadArray(&sceneDataRegionAddresses[0], sceneRegionCount);
+				for (let regionIndex < sceneRegionCount) {
+					visualMeshes[regionIndex] = .(sceneDataRegionAddresses[regionIndex]);
+	
+					for (let textureIndex in visualMeshes[regionIndex].usedTextureIndices) {
+						let usedIndex = usedTextureIndices.FindIndex(scope (x) => x == textureIndex);
+						if (usedIndex == -1) {
+							usedTextureIndices.Add(textureIndex);
+						}
 					}
 				}
+				delete sceneDataRegionAddresses;
 			}
-			delete sceneDataRegionAddresses;
 
 			// Convert any used VRAM textures for previewing
 			for (let usedTextureIndex in usedTextureIndices) {
@@ -351,6 +357,7 @@ namespace SpyroScope {
 						GL.glDepthMask(GL.GL_TRUE);  
 
 						Renderer.whiteTexture.Bind();
+
 					}
 
 					Renderer.BeginDefaultShading();

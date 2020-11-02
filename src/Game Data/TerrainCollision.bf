@@ -105,7 +105,7 @@ namespace SpyroScope {
 
 			triangles = new .[triangleCount];
 			Emulator.Address collisionTriangleArray = ?;
-			Emulator.ReadFromRAM(address + 20, &collisionTriangleArray, 4);
+			Emulator.ReadFromRAM(address + (Emulator.installment == .SpyroTheDragon ? 16 : 20), &collisionTriangleArray, 4);
 			Emulator.ReadFromRAM(collisionTriangleArray, &triangles[0], sizeof(CollisionTriangle) * triangleCount);
 
 			Emulator.Address collisionFlagArray = ?;
@@ -151,7 +151,9 @@ namespace SpyroScope {
 
 						if (overlay == .Flags) {
 							if (flagData.type < 11 /*Emulator.collisionTypes.Count*/) {
-								color = Emulator.collisionTypes[flagData.type].color;
+								// Swap Ice with Supercharge if installment is "Spyro the Dragon" (Spyro 1)
+								let flagType = Emulator.installment == .SpyroTheDragon && flagData.type == 4 ? 2 : flagData.type;
+								color = Emulator.collisionTypes[flagType].color;
 							} else {
 								color = .(255, 0, 255);
 							}
@@ -267,7 +269,7 @@ namespace SpyroScope {
 			animationGroups = new .[count];
 
 			let collisionModifyingGroupPointers = scope Emulator.Address[count];
-			Emulator.ReadFromRAM(deformArrayAddress, &collisionModifyingGroupPointers[0], 4 * count);
+			Emulator.ReadFromRAM(deformArrayAddress, collisionModifyingGroupPointers.CArray(), 4 * count);
 
 			for (let groupIndex < count) {
 				let animationGroup = &animationGroups[groupIndex];

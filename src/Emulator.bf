@@ -23,11 +23,26 @@ namespace SpyroScope {
 
 		public enum SpyroROM {
 			None,
+			SpyroTheDragon_NTSC_U,
+			SpyroTheDragon_NTSC_J,
+			SpyroTheDragon_PAL,
+			RiptosRage_NTSC_U,
+			RiptosRage_NTSC_J,
+			RiptosRage_PAL,
+			YearOfTheDragon_1_0_NTSC_U,
+			YearOfTheDragon_1_1_NTSC_U,
+			YearOfTheDragon_1_0_PAL,
+			YearOfTheDragon_1_1_PAL
+		}
+		public static SpyroROM rom;
+
+		public enum SpyroInstallment {
+			None,
 			SpyroTheDragon,
 			RiptosRage,
 			YearOfTheDragon
 		}
-		public static SpyroROM rom;
+		public static SpyroInstallment installment;
 
 		public struct Address : uint32 {
 			public override void ToString(String strBuffer) {
@@ -56,46 +71,44 @@ namespace SpyroScope {
 
 		// Begin Spyro games information
 
-		public const Address<char8>[3] testAddresses = .(0, (.)0x80066ea8, (.)0x8006c490);
-		public const String[4] gameNames = .(String.Empty, "Spyro the Dragon", "Spyro: Ripto's Rage", "Spyro: Year of the Dragon");
+		public const Address<char8>[10] testAddresses = .((.)0x800103e7/*StD*/, 0, 0, (.)0x80066ea8/*RR*/, 0, 0, (.)0x8006c3b0, (.)0x8006c490/*YotD-1.1*/, 0, 0);
+		public const String[11] gameNames = .(String.Empty, "Spyro the Dragon (NTSC-U)", "Spyro the Dragon (NTSC-J)", "Spyro the Dragon (PAL)", "Spyro: Ripto's Rage (NTSC-U)", "Spyro and Sparx: Tondemo Tours (NTSC-J)", "Spyro: Gateway to Glimmer (PAL)", "Spyro: Year of the Dragon (v1.0 NTSC-U)", "Spyro: Year of the Dragon (v1.1 NTSC-U)", "Spyro: Year of the Dragon (v1.0 PAL)", "Spyro: Year of the Dragon (v1.1 PAL)");
 
-		public const Address<uint32>[4] gameStateAddresses = .(0, 0, (.)0x800681c8, 0);
+		public const Address<uint32>[11] gameStateAddresses = .(0, (.)0x800757d8/*StD*/, 0, 0, (.)0x800681c8/*RR*/, 0, 0, (.)0x8006e344, (.)0x8006e424/*YotD-1.1*/, 0, 0);
 
-		public const Address<VectorInt>[4] spyroPositionAddresses = .(0, 0, (.)0x80069ff0, (.)0x80070408);
-		public const Address<MatrixInt>[4] spyroMatrixAddresses = .(0, 0, (.)0x8006a020, (.)0x80070438);
-		public const Address<VectorInt>[4] spyroIntendedVelocityAddresses = .(0, 0, (.)0x8006a084, (.)0x80070494);
-		public const Address<VectorInt>[4] spyroPhysicsVelocityAddresses = .(0, 0, (.)0x8006a090, (.)0x800704a0);
+		public const Address<VectorInt>[11] spyroPositionAddresses = .(0, (.)0x80078a58/*StD*/, 0, 0, (.)0x80069ff0/*RR*/, 0, 0, (.)0x80070328, (.)0x80070408/*YotD-1.1*/, 0, 0);
+		public const Address<MatrixInt>[11] spyroMatrixAddresses = .(0, (.)0x80078a8c/*StD*/, 0, 0, (.)0x8006a020/*RR*/, 0, 0, (.)0x80070358, (.)0x80070438/*YotD-1.1*/, 0, 0);
+		public const Address<VectorInt>[11] spyroIntendedVelocityAddresses = .(0, (.)0x80078b4c/*StD*/, 0, 0, (.)0x8006a084/*RR*/, 0, 0, (.)0x800703B4, (.)0x80070494/*YotD-1.1*/, 0, 0);
+		public const Address<VectorInt>[11] spyroPhysicsVelocityAddresses = .(0, (.)0x80078b64/*StD*/, 0, 0, (.)0x8006a090/*RR*/, 0, 0, (.)0x800703c0, (.)0x800704a0/*YotD-1.1*/, 0, 0);
 
-		public const Address<Address>[4] objectArrayPointers = .(0, 0, (.)0x80066f14, (.)0x8006c630);
-		public const Address<Address>[4] modelPointers = .(0, 0, (.)0x80068c94, (.)0x8006ef0c);
+		public const Address<Address>[11] objectArrayPointers = .(0, (.)0x80075828/*StD*/, 0, 0, (.)0x80066f14/*RR*/, 0, 0, (.)0x8006c550, (.)0x8006c630/*YotD-1.1*/, 0, 0);
+		public const Address<Address>[11] modelPointers = .(0, 0/*StD*/, 0, 0, (.)0x80068c94/*RR*/, 0, 0, (.)0x8006ee2c, (.)0x8006ef0c/*YotD-1.1*/, 0, 0); //!!
 
-		public const Address<VectorInt>[4] cameraPositionAddress = .(0, 0, (.)0x80067eac, (.)0x8006e100);
-		public const Address<int16[3]>[4] cameraEulerRotationAddress = .(0, 0, (.)0x80067ec8, (.)0x8006e11c);
-		public const Address<MatrixInt>[4] cameraMatrixAddress = .(0, 0, (.)0x80067e98, (.)0x8006e0ec);
+		public const Address<VectorInt>[11] cameraPositionAddress = .(0, (.)0x80076df8/*StD*/, 0, 0, (.)0x80067eac/*RR*/, 0, 0, (.)0x8006e020, (.)0x8006e100/*YotD-1.1*/, 0, 0);
+		public const Address<int16[3]>[11] cameraEulerRotationAddress = .(0, (.)0x80076e1c/*StD*/, 0, 0, (.)0x80067ec8/*RR*/, 0, 0, (.)0x8006e03c, (.)0x8006e11c/*YotD-1.1*/, 0, 0);
+		public const Address<MatrixInt>[11] cameraMatrixAddress = .(0, (.)0x80076de4/*StD*/, 0, 0, (.)0x80067e98/*RR*/, 0, 0, (.)0x8006e00c, (.)0x8006e0ec/*YotD-1.1*/, 0, 0);
 
-		// World
-		public const Address<uint32>[4] currentWorldIdAddress = .(0, 0, (.)0x80066f54, (.)0x8006c66c);
-		public const Address<uint32> currentSubWorldIdAddress = (.)0x8006c6a8; // Exclusive to Spyro: Year of the Dragon
+		public const Address<uint32>[11] currentWorldIdAddress = .(0, (.)0x80075964/*StD*/, 0, 0, (.)0x80066f54/*RR*/, 0, 0, (.)0x8006e58c, (.)0x8006c66c/*YotD-1.1*/, 0, 0);
+		public const Address<uint32>[4] currentSubWorldIdAddress = .((.)0x8006c5c8, (.)0x8006c6a8, (.)0, (.)0); // Exclusive to Spyro: Year of the Dragon.
 
-		public const Address<Address>[4] collisionDataPointers = .(0, 0, (.)0x800673fc, (.)0x8006d150);
-		public const Address<Address>[4] collisionFlagsArrayPointers = .(0, 0, (.)0x800673e8, (.)0x8006d13c);
-		public const Address<Address>[4] collisionDeformDataPointers = .(0, 0, (.)0x80068208, (.)0x8006e464);
+		public const Address<Address>[11] collisionDataPointers = .(0, (.)0x800785d4/*StD*/, 0, 0, (.)0x800673fc/*RR*/, 0, 0, (.)0x8006d070, (.)0x8006d150/*YotD-1.1*/, 0, 0);
+		public const Address<Address>[11] collisionFlagsArrayPointers = .(0, (.)0x800785b8/*StD*/, 0, 0, (.)0x800673e8/*RR*/, 0, 0, (.)0x8006d05c, (.)0x8006d13c/*YotD-1.1*/, 0, 0);
+		public const Address<Address>[11] collisionDeformDataPointers = .(0, (.)0x800785a4/*StD*/, 0, 0, (.)0x80068208/*RR*/, 0, 0, (.)0x8006e384, (.)0x8006e464/*YotD-1.1*/, 0, 0);
 
-		public const Address<Address>[4] sceneRegionPointers = .(0, 0, (.)0x800673d4, (.)0x8006d128);
-		public const Address<Address>[4] sceneRegionDeformPointers = .(0, 0, (.)0x800681f8, (.)0x8006e454);
-		public const Address<Address>[4] waterRegionArrayPointers = .(0, 0, (.)0x800673f0, (.)0x8006d144);
+		public const Address<Address>[11] sceneRegionPointers = .(0, (.)0x800785a8/*StD*/, 0, 0, (.)0x800673d4/*RR*/, 0, 0, 0, (.)0x8006d128/*YotD-1.1*/, 0, 0);
+		public const Address<Address>[11] sceneRegionDeformPointers = .(0, 0/*StD*/, 0, 0, (.)0x800681f8/*RR*/, 0, 0, 0, (.)0x8006e454/*YotD-1.1*/, 0, 0);
+		public const Address<Address>[11] warpingRegionPointers = .(0, 0/*StD*/, 0, 0, (.)0x800673f0/*RR*/, 0, 0, 0, (.)0x8006d144/*YotD-1.1*/, 0, 0);
 
-		public const Address<Address>[4] textureDataPointers = .(0, 0, (.)0x800673f4, (.)0x8006d148);
-		public const Address<Address>[4] textureScrollerPointers = .(0, 0, (.)0x800681e0, (.)0x8006e43c);
+		public const Address<Address>[11] textureDataPointers = .(0, (.)0x800785c4/*StD*/, 0, 0, (.)0x800673f4/*RR*/, 0, 0, 0, (.)0x8006d148/*YotD-1.1*/, 0, 0);
+		public const Address<Address>[11] textureScrollerPointers = .(0, (.)0x8007856c/*StD*/, 0, 0, (.)0x800681e0/*RR*/, 0, 0, 0, (.)0x8006e43c/*YotD-1.1*/, 0, 0);
 
-		public const Address<uint32>[4] deathPlaneHeightsAddresses = .(0, 0, (.)0x80060234, (.)0x800677c8);
-		public const Address<uint32>[4] maxFreeflightHeightsAddresses = .(0, 0, (.)0x800601b4, (.)0x80067728);
+		public const Address<uint32>[11] deathPlaneHeightsAddresses = .(0, (.)0x8006e9a4/*StD*/, 0, 0, (.)0x80060234/*RR*/, 0, 0, (.)0x800676e8, (.)0x800677c8/*YotD-1.1*/, 0, 0);
+		public const Address<uint32>[11] maxFreeflightHeightsAddresses = .(0, 0/*StD*/, 0, 0, (.)0x800601b4/*RR*/, 0, 0, (.)0x80067648, (.)0x80067728/*YotD-1.1*/, 0, 0);
 
-		// Other
-		public const Address<uint32>[4] healthAddresses = .(0, 0, (.)0x8006A248, (.)0x80070688);
+		public const Address<uint32>[11] healthAddresses = .(0, (.)0x80078bbc/*StD*/, 0, 0, (.)0x8006A248/*RR*/, 0, 0, (.)0x800705a8, (.)0x80070688/*YotD-1.1*/, 0, 0);
 
-		public const Address<uint32>[4] gameInputAddress = .(0, 0, (.)0x8001291c, 0);
-		public const uint32[4] gameInputValue = .(0, 0, 0xac2283a0, 0);
+		public const Address<uint32>[11] gameInputAddress = .(0, 0/*StD*/, 0, 0, (.)0x8001291c/*RR*/, 0, 0, 0, (.)0x8003a7a0/*YotD-1.1*/, 0, 0);
+		public const uint32[11] gameInputValue = .(0, 0/*StD*/, 0, 0, 0xac2283a0/*RR*/, 0, 0, 0, 0xae220030/*YotD-1.1*/, 0, 0);
 
 		// Game Values
 		public static uint32 gameState;
@@ -117,7 +130,7 @@ namespace SpyroScope {
 		public static (String label, Renderer.Color color)[11] collisionTypes = .(
 			("Sink", 		.(255, 255, 64)),
 			("Hot", 		.(255, 64, 64)),
-			("Road", 		.(64, 64, 64)),
+			("Supercharge", .(64, 64, 64)),
 			("Trigger", 	.(255, 64, 255)),
 			("Ice", 		.(64, 255, 255)),
 			("Barrier", 	.(128, 128, 255)),
@@ -129,12 +142,12 @@ namespace SpyroScope {
 		);
 		
 		// Function Overrides
-		public const Address<uint32>[4] spyroUpdateAddresses = .(0, 0, (.)0x8001b0c4, (.)0x80055384);		  
-		public const uint32[4] spyroUpdateJumpValue = .(0, 0, 0x0c00a81f, 0x0c00fa18);
-		public const Address<uint32>[4] cameraUpdateAddresses = .(0, 0, (.)0x8001b110, (.)0x800553d0);		  
-		public const uint32[4] cameraUpdateJumpValue = .(0, 0, 0x0c00761f, 0x0c004818);
-		public const Address<uint32>[4] updateAddresses = .(0, 0, (.)0x80011af4, (.)0x80012038);
-		public const uint32[4] updateJumpValue = .(0, 0, 0x0c006c50, 0x0c015524);
+		public const Address<uint32>[11] spyroUpdateAddresses = .(0, (.)0x80033ad8/*StD*/, 0, 0, (.)0x8001b0c4/*RR*/, 0, 0, (.)0x800552f4, (.)0x80055384/*YotD-1.1*/, 0, 0);
+		public const uint32[11] spyroUpdateJumpValue = .(0, 0x0c012880/*StD*/, 0, 0, 0x0c00a81f/*RR*/, 0, 0, 0x0c00fa0f, 0x0c00fa18/*YotD-1.1*/, 0, 0);
+		public const Address<uint32>[11] cameraUpdateAddresses = .(0, (.)0x80037cfc/*StD*/, 0, 0, (.)0x8001b110/*RR*/, 0, 0, (.)0x80055340, (.)0x800553d0/*YotD-1.1*/, 0, 0);
+		public const uint32[11] cameraUpdateJumpValue = .(0, 0x0c00d7ed/*StD*/, 0, 0, 0x0c00761f/*RR*/, 0, 0, 0x0c004813, 0x0c004818/*YotD-1.1*/, 0, 0);
+		public const Address<uint32>[11] updateAddresses = .(0, (.)0x80012230/*StD*/, 0, 0, (.)0x80011af4/*RR*/, 0, 0, (.)0x80012024, (.)0x80012038/*YotD-1.1*/, 0, 0);
+		public const uint32[11] updateJumpValue = .(0, 0x0c00ce17/*StD*/, 0, 0, 0x0c006c50/*RR*/, 0, 0, 0x0c015500, 0x0c015524/*YotD-1.1*/, 0, 0);
 
 		// Code Injections
 		public const Address<uint32> stepperAddress = (.)0x80009000;
@@ -235,7 +248,7 @@ namespace SpyroScope {
 		public static void FindGame() {
 			FetchRAMBaseAddress();
 			
-			for (int i < 3) {
+			for (int i < 10) {
 				let test = scope String();
 				let testPtr = test.PrepareBuffer(5);
 				ReadFromRAM(testAddresses[i], testPtr, 5);
@@ -244,6 +257,27 @@ namespace SpyroScope {
 					rom = (.)(i + 1);
 					break;
 				}
+			}
+
+			switch (rom) {
+				case .SpyroTheDragon_NTSC_U,
+					 .SpyroTheDragon_NTSC_J,
+					 .SpyroTheDragon_PAL:
+					installment = .SpyroTheDragon;
+
+				case .RiptosRage_NTSC_U,
+					 .RiptosRage_NTSC_J,
+					 .RiptosRage_PAL:
+					installment = .RiptosRage;
+
+				case .YearOfTheDragon_1_0_NTSC_U,
+					 .YearOfTheDragon_1_0_PAL,
+					 .YearOfTheDragon_1_1_NTSC_U,
+					 .YearOfTheDragon_1_1_PAL:
+					installment = .YearOfTheDragon;
+
+				default:
+					installment = .None;
 			}
 
 			if (rom != .None) {
@@ -359,7 +393,17 @@ namespace SpyroScope {
 			delete maxFreeflightHeights;
 			delete deathPlaneHeights;
 
-			switch (rom) {
+			switch (Emulator.installment) {
+
+				case .SpyroTheDragon: {
+					// 35 worlds exist, but there is space for 36. (Probably due to short/int reasons.)
+					Emulator.deathPlaneHeights = new .[36];
+					Emulator.maxFreeflightHeights = new .[36];
+
+					deathPlaneHeightsAddresses[(int)rom].ReadArray(&Emulator.deathPlaneHeights[0], 36);
+					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&Emulator.maxFreeflightHeights[0], 36);
+				}
+
 				case .RiptosRage: {
 					// 28 worlds exists but there is space for 32 (probably a power of 2 related thing)
 					deathPlaneHeights = new .[32];
@@ -368,13 +412,16 @@ namespace SpyroScope {
 					deathPlaneHeightsAddresses[(int)rom].ReadArray(&deathPlaneHeights[0], 32);
 					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&maxFreeflightHeights[0], 32);
 				}
-			case .YearOfTheDragon: {
-				deathPlaneHeights = new .[40 * 4];
-				maxFreeflightHeights = new .[40 * 4];
 
-				deathPlaneHeightsAddresses[(int)rom].ReadArray(&deathPlaneHeights[0], 40 * 4);
-				maxFreeflightHeightsAddresses[(int)rom].ReadArray(&maxFreeflightHeights[0], 40);
-			}
+				case .YearOfTheDragon: {
+					// 37 worlds exist, but theres space for 40. (Probably due to short/int reasons.)
+					// Also gets multipled by 4 due to sub worlds, there being a minimum of 4 in each homeworld.
+					Emulator.deathPlaneHeights = new .[40 * 4];
+					Emulator.maxFreeflightHeights = new .[40 * 4];
+
+					deathPlaneHeightsAddresses[(int)rom].ReadArray(&Emulator.deathPlaneHeights[0], 40 * 4);
+					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&Emulator.maxFreeflightHeights[0], 40);
+				}
 				default : {}
 			}
 		}

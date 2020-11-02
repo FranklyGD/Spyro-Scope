@@ -401,9 +401,9 @@ namespace SpyroScope {
 				Emulator.currentWorldIdAddress[(int)Emulator.rom].Read(&currentWorldId);
 
 				uint32 deathHeight;
-				if (Emulator.rom == .YearOfTheDragon) {
+				if (Emulator.installment == .YearOfTheDragon) {
 					uint32 currentSubWorldId = ?;
-					Emulator.currentSubWorldIdAddress.Read(&currentSubWorldId);
+					Emulator.currentSubWorldIdAddress[(int)Emulator.rom - 7].Read(&currentSubWorldId);
 
 					deathHeight = Emulator.deathPlaneHeights[currentWorldId * 4 + currentSubWorldId];
 				} else {
@@ -701,7 +701,8 @@ namespace SpyroScope {
 								let origin = Camera.ScreenPointToOrigin(mousePosition);
 								let ray = Camera.ScreenPointToRay(mousePosition);
 								currentRegionIndex = -1;
-								
+								currentTriangleIndex = -1;
+
 								if (terrain.renderMode == .Collision) {
 									if (GMath.RayMeshIntersect(origin, ray, terrain.collision.mesh, ref distance, ref currentTriangleIndex)) {
 										cursor3DPosition = origin + ray * distance;
@@ -796,6 +797,7 @@ namespace SpyroScope {
 							var closestDistance = float.PositiveInfinity;
 
 							hoveredObjIndex = GetObjectIndexUnderMouse(ref closestDistance);
+
 							if (terrain != null && terrain.collision.overlay == .Deform) {
 								hoveredAnimGroupIndex = GetTerrainAnimationGroupIndexUnderMouse(ref closestDistance);
 								if (hoveredAnimGroupIndex != -1) {
@@ -962,7 +964,7 @@ namespace SpyroScope {
 					modelSets[object.objectTypeID].models[object.modelID].QueueInstance();
 				} else {
 					Emulator.Address modelSetAddress = ?;
-					Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
+					//Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4); // Commented out for now since it was causing issues for Spyro 1, will deal with later.
 
 					if (modelSetAddress != 0 && (int32)modelSetAddress > 0) {
 						modelSets.Add(object.objectTypeID, new .(modelSetAddress));
