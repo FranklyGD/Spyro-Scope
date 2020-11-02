@@ -1,11 +1,9 @@
 using OpenGL;
 
 namespace SpyroScope {
-	struct TextureAnimation {
+	struct TextureScroller {
 		Emulator.Address address;
 		public uint8 textureIndex;
-		
-		public Mesh sourceNearMesh;
 		
 		public struct KeyframeData {
 			public uint8 a, nextFrame, b, verticalOffset;

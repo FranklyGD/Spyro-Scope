@@ -4,12 +4,12 @@ using System.Collections;
 
 namespace SpyroScope {
 	class Terrain {
-		public CollisionTerrain collision = .();
+		public TerrainCollision collision ~ delete _;
 		public TerrainRegion[] visualMeshes;
 		public RegionAnimation[] animations;
 		public static TextureLOD[] texturesLODs;
 		public static Texture terrainTexture;
-		public TextureAnimation[] textureAnimations;
+		public TextureScroller[] textureScrollers;
 
 		public enum RenderMode {
 			Collision,
@@ -20,9 +20,17 @@ namespace SpyroScope {
 		public bool wireframe;
 		public int drawnRegion = -1;
 
-		public ~this() {
-			collision.Dispose();
+		public this() {
+			Emulator.Address address = ?;
+			Emulator.collisionDataPointers[(int)Emulator.rom].Read(&address);
+			Emulator.Address deformAddress = ?;
+			Emulator.collisionDeformDataPointers[(int)Emulator.rom].Read(&deformAddress);
+			collision = new .(address, deformAddress);
 
+			Reload();
+		}
+
+		public ~this() {
 			if (visualMeshes != null) {
 				for (var item in visualMeshes) {
 					item.Dispose();
@@ -38,15 +46,13 @@ namespace SpyroScope {
 			delete animations;
 			delete terrainTexture;
 			delete texturesLODs;
-			delete textureAnimations;
+			delete textureScrollers;
 		}
 
 		public void Reload() {
-			collision.Reload();
-
 			delete terrainTexture;
 			delete texturesLODs;
-			delete textureAnimations;
+			delete textureScrollers;
 
 			uint32[] textureBuffer = new .[(1024 * 4) * 512](0,); // VRAM but four times wider
 
@@ -58,7 +64,7 @@ namespace SpyroScope {
 
 			// Locate scene region data and amount that are present in RAM
 			Emulator.Address<Emulator.Address> sceneDataRegionArrayAddress = ?;
-			let sceneDataRegionArrayPointer = Emulator.sceneDataRegionArrayPointers[(int)Emulator.rom];
+			let sceneDataRegionArrayPointer = Emulator.sceneRegionPointers[(int)Emulator.rom];
 			sceneDataRegionArrayPointer.Read(&sceneDataRegionArrayAddress);
 			uint32 sceneDataRegionCount = ?;
 			Emulator.ReadFromRAM(sceneDataRegionArrayPointer + 4, &sceneDataRegionCount, 4);
@@ -124,21 +130,21 @@ namespace SpyroScope {
 			Texture.Unbind();
 			delete textureBuffer;
 
-			// Animated/Scrolling textures
-			let textureModifyingData = Emulator.textureModifyingDataPointers[(int)Emulator.rom];
-			uint32 textureModifyingDataCount = ?;
-			Emulator.ReadFromRAM(textureModifyingData - 4, &textureModifyingDataCount, 4);
-			textureAnimations = new .[textureModifyingDataCount];
-			if (textureModifyingDataCount > 0) {
-				Emulator.Address<Emulator.Address> textureModifyingDataArrayAddress = ?;
-				textureModifyingData.Read(&textureModifyingDataArrayAddress);
+			// Scrolling textures
+			let textureScrollerPointer = Emulator.textureScrollerPointers[(int)Emulator.rom];
+			uint32 textureScrollerCount = ?;
+			Emulator.ReadFromRAM(textureScrollerPointer - 4, &textureScrollerCount, 4);
+			textureScrollers = new .[textureScrollerCount];
+			if (textureScrollerCount > 0) {
+				Emulator.Address<Emulator.Address> textureScrollerArrayAddress = ?;
+				textureScrollerPointer.Read(&textureScrollerArrayAddress);
 	
-				Emulator.Address[] textureModifyingDataAddresses = new .[textureModifyingDataCount];
-				textureModifyingDataArrayAddress.ReadArray(&textureModifyingDataAddresses[0], textureModifyingDataCount);
-				for (let i < textureModifyingDataCount) {
-					textureAnimations[i] = .(textureModifyingDataAddresses[i]);
+				Emulator.Address[] textureScrollerAddresses = new .[textureScrollerCount];
+				textureScrollerArrayAddress.ReadArray(&textureScrollerAddresses[0], textureScrollerCount);
+				for (let i < textureScrollerCount) {
+					textureScrollers[i] = .(textureScrollerAddresses[i]);
 				}
-				delete textureModifyingDataAddresses;
+				delete textureScrollerAddresses;
 			}
 
 			// Delete animations as the new loaded mesh may be incompatible
@@ -168,8 +174,8 @@ namespace SpyroScope {
 				collision.Update();
 			} else {
 				let terrainAnimationPointerArrayAddressOld = Emulator.terrainAnimationPointerArrayAddress;
-				Emulator.sceneDataRegionAnimationArrayPointers[(int)Emulator.rom].Read(&Emulator.terrainAnimationPointerArrayAddress);
-				if (Emulator.collisionModifyingPointerArrayAddress != 0 && terrainAnimationPointerArrayAddressOld != Emulator.terrainAnimationPointerArrayAddress) {
+				Emulator.sceneRegionDeformPointers[(int)Emulator.rom].Read(&Emulator.terrainAnimationPointerArrayAddress);
+				if (Emulator.collisionDeformPointerArrayAddress != 0 && terrainAnimationPointerArrayAddressOld != Emulator.terrainAnimationPointerArrayAddress) {
 					ReloadAnimations();
 				}
 	
@@ -183,9 +189,9 @@ namespace SpyroScope {
 			if (renderMode == .Near) {
 				float[4][2] triangleUV = ?;
 
-				for (let textureAnimation in textureAnimations) {
-					textureAnimation.Update();
-					let textureIndex = textureAnimation.textureIndex;
+				for (let textureScroller in textureScrollers) {
+					textureScroller.Update();
+					let textureIndex = textureScroller.textureIndex;
 
 					let nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
 					let partialUV = nearQuad.GetVramPartialUV();
@@ -360,7 +366,7 @@ namespace SpyroScope {
 
 		void ReloadAnimations() {
 			uint32 count = ?;
-			Emulator.ReadFromRAM(Emulator.sceneDataRegionAnimationArrayPointers[(int)Emulator.rom] - 4, &count, 4);
+			Emulator.ReadFromRAM(Emulator.sceneRegionDeformPointers[(int)Emulator.rom] - 4, &count, 4);
 			if (count == 0) {
 				return;
 			}

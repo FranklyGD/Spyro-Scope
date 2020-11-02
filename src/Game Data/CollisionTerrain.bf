@@ -2,7 +2,15 @@ using System;
 using System.Collections;
 
 namespace SpyroScope {
-	struct CollisionTerrain {
+	class TerrainCollision {
+		public readonly Emulator.Address address;
+		public readonly Emulator.Address deformArrayAddress;
+
+		public CollisionTriangle[] triangles ~ delete _;
+		public uint32 specialTriangleCount;
+		public uint8[] flagIndices ~ delete _;
+		public Emulator.Address[] collisionFlagPointerArray = new .[0x40] ~ delete _;
+
 		public Mesh mesh;
 
 		public Vector upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
@@ -53,7 +61,14 @@ namespace SpyroScope {
 		}
 		public AnimationGroup[] animationGroups;
 
-		public void Dispose() {
+		public this(Emulator.Address address, Emulator.Address deformAddress) {
+			this.address = address;
+			this.deformArrayAddress = deformAddress;
+
+			Reload();
+		}
+
+		public ~this() {
 			if (animationGroups != null) {
 				for (let item in animationGroups) {
 					item.Dispose();
@@ -65,20 +80,45 @@ namespace SpyroScope {
 			delete collisionTypes;
 		}
 
-		/// Sets the position of the mesh's vertex with the index the game uses
-		public void SetNearVertex(uint8 triangle, VectorInt[3] triangle, bool updateGame = false) {
-			nearVertices[index] = position;
+		/// Sets the position of the mesh's triangle with the index the game uses
+		public void SetNearVertex(int triangleIndex, VectorInt[3] triangle, bool updateGame = false) {
+			triangles[triangleIndex] = CollisionTriangle.Pack(triangle, false);
+
+			let unpackedTriangle = triangles[triangleIndex].Unpack(false);
+			let meshTriangle = (Vector[3]*)&mesh.vertices[triangleIndex * 3];
+			(*meshTriangle)[0] = unpackedTriangle[0].ToVector();
+			(*meshTriangle)[1] = unpackedTriangle[1].ToVector();
+			(*meshTriangle)[2] = unpackedTriangle[2].ToVector();
+			mesh.SetDirty();
 
 			if (updateGame) {
-				let regionPointer = address + 0x1c +
-					((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2 +
-					metadata.nearVertexCount + (int)metadata.nearColorCount * 2) * 4;
-				Emulator.WriteToRAM(regionPointer, &nearVertices[index], (int)triangle * 4);
+				Emulator.Address collisionTriangleArray = ?;
+				Emulator.ReadFromRAM(address + 20, &collisionTriangleArray, 4);
+				Emulator.WriteToRAM(collisionTriangleArray + triangleIndex * sizeof(CollisionTriangle), &triangles[triangleIndex], sizeof(CollisionTriangle));
 			}
 		}
 
-		public void Reload() mut {
-			let vertexCount = Emulator.collisionTriangles.Count * 3;
+		public void Reload() {
+			uint32 triangleCount = ?;
+			Emulator.ReadFromRAM(address, &triangleCount, 4);
+			Emulator.ReadFromRAM(address + 4, &specialTriangleCount, 4);
+
+			triangles = new .[triangleCount];
+			Emulator.Address collisionTriangleArray = ?;
+			Emulator.ReadFromRAM(address + 20, &collisionTriangleArray, 4);
+			Emulator.ReadFromRAM(collisionTriangleArray, &triangles[0], sizeof(CollisionTriangle) * triangleCount);
+
+			Emulator.Address collisionFlagArray = ?;
+
+			flagIndices = new .[triangleCount];
+			Emulator.ReadFromRAM(address + 24, &collisionFlagArray, 4);
+			Emulator.ReadFromRAM(collisionFlagArray, &flagIndices[0], 1 * triangleCount);
+
+			Emulator.ReadFromRAM(Emulator.collisionFlagsArrayPointers[(int)Emulator.rom], &collisionFlagArray, 4);
+			Emulator.ReadFromRAM(collisionFlagArray, &collisionFlagPointerArray[0], 4 * 0x40);
+
+			// Generate Mesh
+			let vertexCount = triangles.Count * 3;
 			Vector[] vertices = new .[vertexCount];
 			Vector[] normals = new .[vertexCount];
 			Renderer.Color4[] colors = new .[vertexCount];
@@ -89,8 +129,8 @@ namespace SpyroScope {
 			upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
 			lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
 
-			for (let triangleIndex < Emulator.collisionTriangles.Count) {
-				let triangle = Emulator.collisionTriangles[triangleIndex];
+			for (let triangleIndex < triangles.Count) {
+				let triangle = triangles[triangleIndex];
 				let unpackedTriangle = triangle.Unpack(false);
 			
 				let normal = Vector.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
@@ -102,8 +142,8 @@ namespace SpyroScope {
 					waterSurfaceTriangles.Add(triangleIndex);
 				}
 
-				if (triangleIndex < Emulator.specialTerrainTriangleCount) {
-					let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
+				if (triangleIndex < specialTriangleCount) {
+					let flagInfo = flagIndices[triangleIndex];
 
 					let flagIndex = flagInfo & 0x3f;
 					if (flagIndex != 0x3f) {
@@ -142,29 +182,13 @@ namespace SpyroScope {
 			delete mesh;
 			mesh = new .(vertices, normals, colors);
 
-			// Delete animations as the new loaded mesh may be incompatible
-			if (animationGroups != null) {
-				for (let item in animationGroups) {
-					item.Dispose();
-				}
-				DeleteAndNullify!(animationGroups);
-			}
+			ReloadDeformGroups();
 
 			ClearColor();
 			ApplyColor();
 		}
 		
-		public void Update() mut {
-			let collisionModifyingPointerArrayAddressOld = Emulator.collisionModifyingPointerArrayAddress;
-			Emulator.ReadFromRAM(Emulator.collisionModifyingDataPointers[(int)Emulator.rom], &Emulator.collisionModifyingPointerArrayAddress, 4);
-			if (Emulator.collisionModifyingPointerArrayAddress != 0 && collisionModifyingPointerArrayAddressOld != Emulator.collisionModifyingPointerArrayAddress) {
-				ReloadAnimationGroups();
-			}
-
-			if (animationGroups == null || animationGroups.Count == 0) {
-				return; // Nothing to update
-			}
-
+		public void Update() {
 			for (let groupIndex < animationGroups.Count) {
 				let animationGroup = animationGroups[groupIndex];
 				let currentKeyframe = animationGroup.CurrentKeyframe;
@@ -219,7 +243,7 @@ namespace SpyroScope {
 			Renderer.BeginWireframe();
 			mesh.Draw();
 
-			if (overlay == .Deform && animationGroups != null) {
+			if (overlay == .Deform) {
 				Renderer.SetTint(.(255,255,0));
 				for	(let animationGroup in animationGroups) {
 					for (let mesh in animationGroup.mesh) {
@@ -229,17 +253,21 @@ namespace SpyroScope {
 			}
 		}
 
-		public void ReloadAnimationGroups() mut {
-			uint32 count = ?;
-			Emulator.ReadFromRAM(Emulator.collisionModifyingDataPointers[(int)Emulator.rom] - 4, &count, 4);
-			if (count == 0) {
-				return;
+		public void ReloadDeformGroups() {
+			if (animationGroups != null) {
+				for (let item in animationGroups) {
+					item.Dispose();
+				}
+				DeleteAndNullify!(animationGroups);
 			}
+
+			uint32 count = ?;
+			Emulator.ReadFromRAM(Emulator.collisionDeformDataPointers[(int)Emulator.rom] - 4, &count, 4);
 			delete animationGroups;
 			animationGroups = new .[count];
 
 			let collisionModifyingGroupPointers = scope Emulator.Address[count];
-			Emulator.ReadFromRAM(Emulator.collisionModifyingPointerArrayAddress, &collisionModifyingGroupPointers[0], 4 * count);
+			Emulator.ReadFromRAM(deformArrayAddress, &collisionModifyingGroupPointers[0], 4 * count);
 
 			for (let groupIndex < count) {
 				let animationGroup = &animationGroups[groupIndex];
@@ -310,7 +338,7 @@ namespace SpyroScope {
 			ClearColor();
 		}
 
-		public void CycleOverlay() mut {
+		public void CycleOverlay() {
 			// Reset colors before highlighting
 			ClearColor();
 
@@ -349,9 +377,9 @@ namespace SpyroScope {
 
 		/// Apply colors based on the flag applied on the triangles
 		void ColorCollisionFlags() {
-			for (int triangleIndex < Emulator.specialTerrainTriangleCount) {
+			for (int triangleIndex < specialTriangleCount) {
 				Renderer.Color color = .(255,255,255);
-				let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
+				let flagInfo = flagIndices[triangleIndex];
 
 				let flagIndex = flagInfo & 0x3f;
 				if (flagIndex != 0x3f) {
@@ -382,9 +410,9 @@ namespace SpyroScope {
 		}
 
 		void ColorCollisionSounds() {
-			for (int triangleIndex < Emulator.specialTerrainTriangleCount) {
+			for (int triangleIndex < specialTriangleCount) {
 				Renderer.Color color = .(255,255,255);
-				let flagInfo = Emulator.collisionFlagsIndices[triangleIndex];
+				let flagInfo = flagIndices[triangleIndex];
 
 				// Terrain Collision Sound
 				// Derived from Spyro: Ripto's Rage [80034f50]
@@ -404,7 +432,7 @@ namespace SpyroScope {
 		}
 
 		void ColorPlatforms() {
-			for (int triangleIndex < Emulator.collisionTriangles.Count) {
+			for (int triangleIndex < triangles.Count) {
 				let normal = Vector.Cross(
 					mesh.vertices[triangleIndex * 3 + 2] - mesh.vertices[triangleIndex * 3 + 0],
 					mesh.vertices[triangleIndex * 3 + 1] - mesh.vertices[triangleIndex * 3 + 0]
@@ -433,7 +461,7 @@ namespace SpyroScope {
 		}
 
 		public (uint32 type, uint32 param) GetCollisionFlagData(uint32 flagIndex) {
-			Emulator.Address flagPointer = Emulator.collisionFlagPointerArray[flagIndex];
+			Emulator.Address flagPointer = collisionFlagPointerArray[flagIndex];
 			(uint32, uint32) data = ?;
 			Emulator.ReadFromRAM(flagPointer, &data, 8);
 			return data;

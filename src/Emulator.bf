@@ -79,14 +79,14 @@ namespace SpyroScope {
 
 		public const Address<Address>[4] collisionDataPointers = .(0, 0, (.)0x800673fc, (.)0x8006d150);
 		public const Address<Address>[4] collisionFlagsArrayPointers = .(0, 0, (.)0x800673e8, (.)0x8006d13c);
-		public const Address<Address>[4] collisionModifyingDataPointers = .(0, 0, (.)0x80068208, (.)0x8006e464);
+		public const Address<Address>[4] collisionDeformDataPointers = .(0, 0, (.)0x80068208, (.)0x8006e464);
 
-		public const Address<Address>[4] sceneDataRegionArrayPointers = .(0, 0, (.)0x800673d4, (.)0x8006d128);
-		public const Address<Address>[4] sceneDataRegionAnimationArrayPointers = .(0, 0, (.)0x800681f8, (.)0x8006e454);
+		public const Address<Address>[4] sceneRegionPointers = .(0, 0, (.)0x800673d4, (.)0x8006d128);
+		public const Address<Address>[4] sceneRegionDeformPointers = .(0, 0, (.)0x800681f8, (.)0x8006e454);
 		public const Address<Address>[4] waterRegionArrayPointers = .(0, 0, (.)0x800673f0, (.)0x8006d144);
 
 		public const Address<Address>[4] textureDataPointers = .(0, 0, (.)0x800673f4, (.)0x8006d148);
-		public const Address<Address>[4] textureModifyingDataPointers = .(0, 0, (.)0x800681e0, (.)0x8006e43c);
+		public const Address<Address>[4] textureScrollerPointers = .(0, 0, (.)0x800681e0, (.)0x8006e43c);
 
 		public const Address<uint32>[4] deathPlaneHeightsAddresses = .(0, 0, (.)0x80060234, (.)0x800677c8);
 		public const Address<uint32>[4] maxFreeflightHeightsAddresses = .(0, 0, (.)0x800601b4, (.)0x80067728);
@@ -111,11 +111,7 @@ namespace SpyroScope {
 
 		public static Address terrainAnimationPointerArrayAddress;
 		public static Address collisionDataAddress;
-		public static Address collisionModifyingPointerArrayAddress;
-		public static List<CollisionTriangle> collisionTriangles = new .() ~ delete _;
-		public static uint32 specialTerrainTriangleCount;
-		public static List<uint8> collisionFlagsIndices = new .() ~ delete _;
-		public static List<Address> collisionFlagPointerArray = new .() ~ delete _;
+		public static Address collisionDeformPointerArrayAddress;
 
 		// Game Constants
 		public static (String label, Renderer.Color color)[11] collisionTypes = .(
@@ -408,33 +404,7 @@ namespace SpyroScope {
 				Thread.Sleep(500); // This is mainly needed for when emulators load snapshots/savestates
 				// as there is a big delay when loading the large data at once
 
-				uint32 triangleCount = ?;
-				ReadFromRAM(newCollisionDataAddress, &triangleCount, 4);
-
-				if (triangleCount > 0x10000) {
-					return;
-				}
 				collisionDataAddress = newCollisionDataAddress;
-
-				ReadFromRAM(collisionDataAddress + 4, &specialTerrainTriangleCount, 4);
-
-				collisionTriangles.Clear();
-				let ptrTriangles = collisionTriangles.GrowUnitialized(triangleCount);
-				Address collisionTriangleArray = ?;
-				ReadFromRAM(collisionDataAddress + 20, &collisionTriangleArray, 4);
-				ReadFromRAM(collisionTriangleArray, ptrTriangles, sizeof(CollisionTriangle) * triangleCount);
-				
-				Address collisionFlagArray = ?;
-
-				collisionFlagsIndices.Clear();
-				let ptrFlagIndices = collisionFlagsIndices.GrowUnitialized(triangleCount);
-				ReadFromRAM(collisionDataAddress + 24, &collisionFlagArray, 4);
-				ReadFromRAM(collisionFlagArray, ptrFlagIndices, 1 * triangleCount);
-
-				collisionFlagPointerArray.Clear();
-				let ptrFlags = collisionFlagPointerArray.GrowUnitialized(0x40);
-				ReadFromRAM(collisionFlagsArrayPointers[(uint)rom], &collisionFlagArray, 4);
-				ReadFromRAM(collisionFlagArray, ptrFlags, 4 * 0x3f);
 
 				OnSceneChanged();
 			}

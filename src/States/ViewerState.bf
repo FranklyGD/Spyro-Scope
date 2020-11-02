@@ -38,7 +38,7 @@ namespace SpyroScope {
 		int currentTriangleIndex = -1;
 
 		// Scene
-		Terrain terrain = new .() ~ delete _;
+		Terrain terrain ~ delete _;
 		bool drawLimits;
 
 		// Objects
@@ -313,14 +313,14 @@ namespace SpyroScope {
 			}
 
 			if (showManipulator) {
-				if (currentObjIndex == -1) {
-					Vector spyroPosition = Emulator.spyroPosition;
-					Translator.Update(spyroPosition, Emulator.spyroBasis.ToMatrixCorrected());
-				} else if (terrain.renderMode == .Collision && currentTriangleIndex > -1) {
-					Translator.Update(terrain.collision., .Identity);
-				} else {
+				if (currentObjIndex > -1) {
 					Moby* moby = &(objectList[currentObjIndex].1);
 					Translator.Update(moby.position, moby.basis);
+				} else if (terrain.renderMode == .Collision && currentTriangleIndex > -1) {
+					Translator.Update(terrain.collision.mesh.vertices[currentTriangleIndex * 3], .Identity);
+				} else {
+					Vector spyroPosition = Emulator.spyroPosition;
+					Translator.Update(spyroPosition, Emulator.spyroBasis.ToMatrixCorrected());
 				}
 			}
 		}
@@ -667,30 +667,34 @@ namespace SpyroScope {
 								Translator.MousePress(mousePosition);
 							}
 
-							if (!Translator.hovered) {
-								if (currentObjIndex != hoveredObjIndex) {
-									currentObjIndex = hoveredObjIndex;
-	
-									Translator.OnDragBegin.Dispose();
-									Translator.OnDragged.Dispose();
-									Translator.OnDragEnd.Dispose();
-	
-									if (currentObjIndex == -1) {
-										Translator.OnDragBegin.Add(new => Emulator.KillSpyroUpdate);
-										Translator.OnDragged.Add(new (position) => { Emulator.spyroPosition = position.ToVectorInt(); });
-										Translator.OnDragEnd.Add(new => Emulator.RestoreSpyroUpdate);
-									} else {
-										Translator.OnDragged.Add(new (position) => {
-											var (address, moby) = objectList[currentObjIndex];
-											moby.position = position.ToVectorInt();
-											address.Write(&moby);
-										});
-									}
+							if (Translator.hovered) {
+								Translator.OnDragBegin.Dispose();
+								Translator.OnDragged.Dispose();
+								Translator.OnDragEnd.Dispose();
+
+								if (currentObjIndex > -1) {
+									Translator.OnDragged.Add(new (position) => {
+										var (address, moby) = objectList[currentObjIndex];
+										moby.position = position.ToVectorInt();
+										address.Write(&moby);
+									});
+								} else if (terrain.renderMode == .Collision && currentTriangleIndex > -1) {
+									Translator.OnDragged.Add(new (position) => {
+										var triangle = terrain.collision.triangles[currentTriangleIndex].Unpack(false);
+										triangle[0] = position.ToVectorInt();
+										terrain.collision.SetNearVertex((.)currentTriangleIndex, triangle, true);
+									});
+								} else {
+									Translator.OnDragBegin.Add(new => Emulator.KillSpyroUpdate);
+									Translator.OnDragged.Add(new (position) => {
+										Emulator.spyroPosition = position.ToVectorInt();
+										Emulator.spyroPositionAddresses[(int)Emulator.rom].Write(&Emulator.spyroPosition);
+									});
+									Translator.OnDragEnd.Add(new => Emulator.RestoreSpyroUpdate);
 								}
-	
-								if (terrain.collision.overlay == .Deform) {
-									currentAnimGroupIndex = hoveredAnimGroupIndex;
-								}
+							} else {
+								currentObjIndex = hoveredObjIndex;
+								currentAnimGroupIndex = hoveredAnimGroupIndex;
 	
 								var distance = float.PositiveInfinity;
 								
@@ -788,15 +792,11 @@ namespace SpyroScope {
 						if (showManipulator && Translator.MouseMove(mousePosition)) {
 							hoveredObjIndex = -1;
 							hoveredAnimGroupIndex = -1;
-
-							if (Translator.dragged) {
-								Emulator.spyroPositionAddresses[(int)Emulator.rom].Write(&Emulator.spyroPosition);
-							}
 						} else {
 							var closestDistance = float.PositiveInfinity;
 
 							hoveredObjIndex = GetObjectIndexUnderMouse(ref closestDistance);
-							if (terrain.collision.overlay == .Deform) {
+							if (terrain != null && terrain.collision.overlay == .Deform) {
 								hoveredAnimGroupIndex = GetTerrainAnimationGroupIndexUnderMouse(ref closestDistance);
 								if (hoveredAnimGroupIndex != -1) {
 									hoveredObjIndex = -1;
@@ -1066,7 +1066,8 @@ namespace SpyroScope {
 
 			Emulator.TakeVRAMSnapshot();
 
-			terrain.Reload();
+			delete terrain;
+			terrain = new .();
 		}
 
 		void PushMessageToFeed(String message) {
@@ -1148,8 +1149,8 @@ namespace SpyroScope {
 		}
 
 		void DrawFlagsOverlay() {
-			if (currentTriangleIndex > -1 && currentTriangleIndex < Emulator.specialTerrainTriangleCount) {
-				let flagInfo = Emulator.collisionFlagsIndices[currentTriangleIndex];
+			if (currentTriangleIndex > -1 && currentTriangleIndex < terrain.collision.specialTriangleCount) {
+				let flagInfo = terrain.collision.flagIndices[currentTriangleIndex];
 				let flagIndex = flagInfo & 0x3f;
 				let flagData = terrain.collision.GetCollisionFlagData(flagIndex);
 	
