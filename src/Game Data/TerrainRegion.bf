@@ -16,6 +16,15 @@ namespace SpyroScope {
 		}
 		public RegionMetadata metadata;
 
+		/// Vertical scale of the near part of the mesh
+		public int verticalScale { get {
+			if (Emulator.installment == .SpyroTheDragon) {
+				return 8;
+			} else {
+				return metadata.verticallyScaledDown ? 2 : 16;
+			}
+		} }
+
 		public Mesh farMesh;
 		public List<uint32> farMeshIndices = new .();
 
@@ -42,7 +51,8 @@ namespace SpyroScope {
 
 			public struct RenderInfo {
 				public uint8 texture, flipSideDepth, a, b;
-
+				
+				public bool transparent { get => texture & 0x80 > 0; }
 				public uint8 textureIndex { get => texture & 0x7f; }
 				public uint8 depthOffset { get => flipSideDepth & 0b0011; }
 				public bool doubleSided { get => flipSideDepth & 0b1000 > 0; }
@@ -173,7 +183,7 @@ namespace SpyroScope {
 						triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
 						triangleUV[3] = .(partialUV.right, partialUV.rightY);
 
-						if (nearQuad.GetAdditiveTransparency()) {
+						if (nearQuad.GetAdditiveTransparency() || regionFace.renderInfo.transparent) {
 							activeVertexList = vertexTransparentList;
 							activeColorList = colorTransparentList;
 							activeUvList = uvTransparentList;
@@ -460,24 +470,12 @@ namespace SpyroScope {
 		}
 		
 		public void DrawNear() {
-			int verticalScale = ?;
-			if (Emulator.installment == .SpyroTheDragon) {
-				verticalScale = 8;
-			} else {
-				verticalScale = metadata.verticallyScaledDown ? 2 : 16;
-			}
 			Matrix scale = .Scale(16, 16, verticalScale);
 			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
 			nearMesh.Draw();
 		}
 
 		public void DrawNearTransparent() {
-			int verticalScale = ?;
-			if (Emulator.installment == .SpyroTheDragon) {
-				verticalScale = 8;
-			} else {
-				verticalScale = metadata.verticallyScaledDown ? 2 : 16;
-			}
 			Matrix scale = .Scale(16, 16, verticalScale);
 			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
 			nearMeshTransparent.Draw();
