@@ -122,7 +122,6 @@ namespace SpyroScope {
 		public static uint32[] deathPlaneHeights ~ delete _;
 		public static uint32[] maxFreeflightHeights ~ delete _;
 
-		public static Address terrainAnimationPointerArrayAddress;
 		public static Address collisionDataAddress;
 		public static Address collisionDeformPointerArrayAddress;
 

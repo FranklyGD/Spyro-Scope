@@ -52,7 +52,7 @@ namespace SpyroScope {
 			public struct RenderInfo {
 				public uint8 texture, flipSideDepth, a, b;
 				
-				public bool transparent { get => texture & 0x80 > 0; }
+				public bool transparent { get => Emulator.installment == .SpyroTheDragon && texture & 0x80 > 0; }
 				public uint8 textureIndex { get => texture & 0x7f; }
 				public uint8 depthOffset { get => flipSideDepth & 0b0011; }
 				public bool doubleSided { get => flipSideDepth & 0b1000 > 0; }
@@ -161,7 +161,7 @@ namespace SpyroScope {
 					triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
 					triangleUV[3] = .(partialUV.right, partialUV.rightY);
 
-					if (nearQuad.GetAdditiveTransparency() || regionFace.renderInfo.transparent) {
+					if (nearQuad.GetTransparency() || regionFace.renderInfo.transparent) {
 						activeVertexList = vertexTransparentList;
 						activeColorList = colorTransparentList;
 						activeUvList = uvTransparentList;

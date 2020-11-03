@@ -384,8 +384,10 @@ namespace SpyroScope {
 			delete animations;
 			animations = new .[count];
 
+			Emulator.Address sceneDeformArray = ?;
+			Emulator.sceneRegionDeformPointers[(int)Emulator.rom].Read(&sceneDeformArray);
 			let animationPointers = scope Emulator.Address[count];
-			Emulator.ReadFromRAM(Emulator.terrainAnimationPointerArrayAddress, animationPointers.CArray(), 4 * count);
+			Emulator.ReadFromRAM(sceneDeformArray, animationPointers.CArray(), 4 * count);
 
 			for (let animationIndex < count) {
 				let animation = &animations[animationIndex];

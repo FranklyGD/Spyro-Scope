@@ -35,7 +35,7 @@ namespace SpyroScope {
 			return (flipRotateRaw & 0b01000000) > 0;
 		}
 
-		public bool GetAdditiveTransparency() {
+		public bool GetTransparency() {
 			return Emulator.installment != .SpyroTheDragon && (flipRotateRaw & 0b10000000) > 0;
 		}
 
