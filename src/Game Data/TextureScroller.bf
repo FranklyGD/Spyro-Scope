@@ -33,12 +33,19 @@ namespace SpyroScope {
 			// Append the missing parts of the scrolling textures to the main decoded one
 			// They only exist against the top edge of the VRAM because of how they are programmed
 
-			let textureLOD = &Terrain.texturesLODs[textureIndex];
-			var quad = &textureLOD.nearQuad;
+			TextureQuad* quad = ?;
+			int quadCount = ?;
+			if (Emulator.installment == .SpyroTheDragon) {
+				quad = &Terrain.texturesLODs1[textureIndex].D1;
+				quadCount = 21;
+			} else {
+				quad = &Terrain.texturesLODs[textureIndex].nearQuad;
+				quadCount = 6;
+			}
 			
 			Terrain.terrainTexture.Bind();
 
-			for (let i < 6) {
+			for (let i < quadCount) {
 				let mode = quad.texturePage & 0x80 > 0;
 				let pixelWidth = mode ? 2 : 1;
 				
@@ -76,6 +83,7 @@ namespace SpyroScope {
 			Texture.Unbind();
 		}
 
+		// Derived from Spyro the Dragon [8002b578]
 		// Derived from Spyro: Ripto's Rage [8002270c]
 		public void Update() {
 			uint8 verticalPosition = ?;
@@ -83,25 +91,37 @@ namespace SpyroScope {
 
 			let quadVerticalPosition = verticalPosition >> 2;
 
-			let textureLOD = &Terrain.texturesLODs[textureIndex];
-			let farQuad = &textureLOD.farQuad;
-			let nearQuad = &textureLOD.nearQuad;
-			farQuad.leftSkew = nearQuad.leftSkew = quadVerticalPosition;
-			farQuad.rightSkew = nearQuad.rightSkew = quadVerticalPosition + 0x1f;
+			if (Emulator.installment == .SpyroTheDragon) {
+				let textureLOD = (TextureQuad*)&Terrain.texturesLODs1[textureIndex];
 
-			var doubleQuadVerticalPosition = verticalPosition >> 1;
-
-			let topLeftQuad = &textureLOD.topLeftQuad;
-			let topRightQuad = &textureLOD.topRightQuad;
-			topLeftQuad.leftSkew = topRightQuad.leftSkew = doubleQuadVerticalPosition;
-			topLeftQuad.rightSkew = topRightQuad.rightSkew = doubleQuadVerticalPosition + 0x1f;
-
-			doubleQuadVerticalPosition = (doubleQuadVerticalPosition + 0x20) & 0x3f;
-
-			let bottomLeftQuad = &textureLOD.bottomLeftQuad;
-			let bottomRightQuad = &textureLOD.bottomRightQuad;
-			bottomLeftQuad.leftSkew = bottomRightQuad.leftSkew = doubleQuadVerticalPosition;
-			bottomLeftQuad.rightSkew = bottomRightQuad.rightSkew = doubleQuadVerticalPosition + 0x1f;
+				textureLOD[0].leftSkew = textureLOD[0].rightSkew = quadVerticalPosition;
+				for (uint8 i < 4) {
+					textureLOD[1 + i].leftSkew = textureLOD[1 + i].rightSkew = ((verticalPosition >> 1) + (i / 2 * 0x20)) & 0x3f;
+				}
+				for (uint8 i < 16) {
+					textureLOD[5 + i].leftSkew = textureLOD[5 + i].rightSkew = (verticalPosition + (i / 4 * 0x20)) & 0x3f;
+				}
+			} else {
+				let textureLOD = &Terrain.texturesLODs[textureIndex];
+				let farQuad = &textureLOD.farQuad;
+				let nearQuad = &textureLOD.nearQuad;
+				farQuad.leftSkew = nearQuad.leftSkew = quadVerticalPosition;
+				farQuad.rightSkew = nearQuad.rightSkew = quadVerticalPosition + 0x1f;
+	
+				var doubleQuadVerticalPosition = verticalPosition >> 1;
+	
+				let topLeftQuad = &textureLOD.topLeftQuad;
+				let topRightQuad = &textureLOD.topRightQuad;
+				topLeftQuad.leftSkew = topRightQuad.leftSkew = doubleQuadVerticalPosition;
+				topLeftQuad.rightSkew = topRightQuad.rightSkew = doubleQuadVerticalPosition + 0x1f;
+	
+				doubleQuadVerticalPosition = (doubleQuadVerticalPosition + 0x20) & 0x3f;
+	
+				let bottomLeftQuad = &textureLOD.bottomLeftQuad;
+				let bottomRightQuad = &textureLOD.bottomRightQuad;
+				bottomLeftQuad.leftSkew = bottomRightQuad.leftSkew = doubleQuadVerticalPosition;
+				bottomLeftQuad.rightSkew = bottomRightQuad.rightSkew = doubleQuadVerticalPosition + 0x1f;
+			}
 		}
 
 		public KeyframeData GetKeyframeData(uint8 keyframeIndex) {

@@ -8,6 +8,7 @@ namespace SpyroScope {
 		public TerrainRegion[] visualMeshes;
 		public RegionAnimation[] animations;
 		public static TextureLOD[] texturesLODs;
+		public static TextureLOD1[] texturesLODs1;
 		public static Texture terrainTexture;
 		public TextureScroller[] textureScrollers;
 
@@ -28,6 +29,7 @@ namespace SpyroScope {
 			collision = new .(address, deformAddress);
 
 			Reload();
+			ReloadAnimations();
 		}
 
 		public ~this() {
@@ -46,21 +48,30 @@ namespace SpyroScope {
 			delete animations;
 			delete terrainTexture;
 			delete texturesLODs;
+			delete texturesLODs1;
 			delete textureScrollers;
 		}
 
 		public void Reload() {
 			delete terrainTexture;
-			delete texturesLODs;
 			delete textureScrollers;
 
 			uint32[] textureBuffer = new .[(1024 * 4) * 512](0,); // VRAM but four times wider
 
 			// Get max amount of possible textures
-			Emulator.Address<TextureLOD> textureDataAddress = ?;
-			Emulator.textureDataPointers[(int)Emulator.rom].Read(&textureDataAddress);
-			texturesLODs = new .[128];
-			textureDataAddress.ReadArray(&texturesLODs[0], 128);
+			if (Emulator.installment == .SpyroTheDragon) {
+				delete texturesLODs1;
+				Emulator.Address<TextureLOD1> textureDataAddress = ?;
+				Emulator.textureDataPointers[(int)Emulator.rom].Read(&textureDataAddress);
+				texturesLODs1 = new .[128];
+				textureDataAddress.ReadArray(&texturesLODs1[0], 128);
+			} else {
+				delete texturesLODs;
+				Emulator.Address<TextureLOD> textureDataAddress = ?;
+				Emulator.textureDataPointers[(int)Emulator.rom].Read(&textureDataAddress);
+				texturesLODs = new .[128];
+				textureDataAddress.ReadArray(&texturesLODs[0], 128);
+			}
 
 			// Locate scene region data and amount that are present in RAM
 			Emulator.Address<Emulator.Address> sceneDataRegionArrayAddress = ?;
@@ -80,33 +91,35 @@ namespace SpyroScope {
 			// Parse all terrain regions
 			let usedTextureIndices = new List<int>(); // Also get all used texture indices while we are at it
 
-			// Skip over this game for now until the issue is resolved
-			if (Emulator.installment == .SpyroTheDragon) { // TODO: Resolve the issue above in "TerrainRegion.bf"
-				visualMeshes = new .[0];
-			} else {
-				visualMeshes = new .[sceneRegionCount];
+			visualMeshes = new .[sceneRegionCount];
 
-				Emulator.Address[] sceneDataRegionAddresses = new .[sceneRegionCount];
-				sceneDataRegionArrayAddress.ReadArray(&sceneDataRegionAddresses[0], sceneRegionCount);
-				for (let regionIndex < sceneRegionCount) {
-					visualMeshes[regionIndex] = .(sceneDataRegionAddresses[regionIndex]);
-	
-					for (let textureIndex in visualMeshes[regionIndex].usedTextureIndices) {
-						let usedIndex = usedTextureIndices.FindIndex(scope (x) => x == textureIndex);
-						if (usedIndex == -1) {
-							usedTextureIndices.Add(textureIndex);
-						}
+			Emulator.Address[] sceneDataRegionAddresses = new .[sceneRegionCount];
+			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegionAddresses[0], sceneRegionCount);
+			for (let regionIndex < sceneRegionCount) {
+				visualMeshes[regionIndex] = .(sceneDataRegionAddresses[regionIndex]);
+
+				for (let textureIndex in visualMeshes[regionIndex].usedTextureIndices) {
+					let usedIndex = usedTextureIndices.FindIndex(scope (x) => x == textureIndex);
+					if (usedIndex == -1) {
+						usedTextureIndices.Add(textureIndex);
 					}
 				}
-				delete sceneDataRegionAddresses;
 			}
+			delete sceneDataRegionAddresses;
 
 			// Convert any used VRAM textures for previewing
 			for (let usedTextureIndex in usedTextureIndices) {
-				let textureLOD = &texturesLODs[usedTextureIndex];
-				var quad = &textureLOD.nearQuad;
+				TextureQuad* quad = ?;
+				int quadCount = ?;
+				if (Emulator.installment == .SpyroTheDragon) {
+					quad = &Terrain.texturesLODs1[usedTextureIndex].D1;
+					quadCount = 5;//21;
+				} else {
+					quad = &Terrain.texturesLODs[usedTextureIndex].nearQuad;
+					quadCount = 6;
+				}
 				
-				for (let i < 6) {
+				for (let i < quadCount) {
 					let mode = quad.texturePage & 0x80 > 0;
 					let pixelWidth = mode ? 2 : 1;
 					let pageCoords = quad.GetPageCoordinates();
@@ -179,12 +192,6 @@ namespace SpyroScope {
 			if (renderMode == .Collision) {
 				collision.Update();
 			} else {
-				let terrainAnimationPointerArrayAddressOld = Emulator.terrainAnimationPointerArrayAddress;
-				Emulator.sceneRegionDeformPointers[(int)Emulator.rom].Read(&Emulator.terrainAnimationPointerArrayAddress);
-				if (Emulator.collisionDeformPointerArrayAddress != 0 && terrainAnimationPointerArrayAddressOld != Emulator.terrainAnimationPointerArrayAddress) {
-					ReloadAnimations();
-				}
-	
 				if (animations != null) {
 					for (let animation in animations) {
 						animation.Update();
@@ -199,9 +206,14 @@ namespace SpyroScope {
 					textureScroller.Update();
 					let textureIndex = textureScroller.textureIndex;
 
-					let nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
+					TextureQuad nearQuad = ?;
+					if (Emulator.installment == .SpyroTheDragon) {
+						nearQuad = Terrain.texturesLODs1[textureIndex].D1;
+					} else {
+						nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
+					}
 					let partialUV = nearQuad.GetVramPartialUV();
-					const let quadSize = TextureLOD.TextureQuad.quadSize;
+					const let quadSize = TextureQuad.quadSize;
 
 					triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
 					triangleUV[1] = .(partialUV.left, partialUV.leftY);
@@ -227,7 +239,7 @@ namespace SpyroScope {
 										triangleUV[(2 - textureRotation) & 3]
 										);
 	
-									if (regionFace.renderInfo.flipped) {
+									if (regionFace.flipped) {
 										terrainRegion.nearMesh.uvs[0 + vertexIndex] = rotatedTriangleUV[2];
 										terrainRegion.nearMesh.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
 										terrainRegion.nearMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[1];
@@ -237,7 +249,7 @@ namespace SpyroScope {
 										terrainRegion.nearMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[2];
 									}
 								} else {
-									if (regionFace.renderInfo.flipped) {
+									if (regionFace.flipped) {
 										Swap!(triangleUV[0], triangleUV[1]);
 										Swap!(triangleUV[2], triangleUV[3]);
 									}
@@ -271,7 +283,7 @@ namespace SpyroScope {
 										triangleUV[(2 - textureRotation) & 3]
 										);
 
-									if (regionFace.renderInfo.flipped) {
+									if (regionFace.flipped) {
 										terrainRegion.nearMeshTransparent.uvs[0 + vertexIndex] = rotatedTriangleUV[2];
 										terrainRegion.nearMeshTransparent.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
 										terrainRegion.nearMeshTransparent.uvs[2 + vertexIndex] = rotatedTriangleUV[1];
@@ -281,7 +293,7 @@ namespace SpyroScope {
 										terrainRegion.nearMeshTransparent.uvs[2 + vertexIndex] = rotatedTriangleUV[2];
 									}
 								} else {
-									if (regionFace.renderInfo.flipped) {
+									if (regionFace.flipped) {
 										Swap!(triangleUV[0], triangleUV[1]);
 										Swap!(triangleUV[2], triangleUV[3]);
 									}
@@ -373,15 +385,17 @@ namespace SpyroScope {
 
 		void ReloadAnimations() {
 			uint32 count = ?;
-			Emulator.ReadFromRAM(Emulator.sceneRegionDeformPointers[(int)Emulator.rom] - 4, &count, 4);
-			if (count == 0) {
-				return;
+			if (Emulator.installment == .SpyroTheDragon) {
+				count = 0; // Ignore animation for now...
+			} else {
+				Emulator.ReadFromRAM(Emulator.sceneRegionDeformPointers[(int)Emulator.rom] - 4, &count, 4);
 			}
+
 			delete animations;
 			animations = new .[count];
 
 			let animationPointers = scope Emulator.Address[count];
-			Emulator.ReadFromRAM(Emulator.terrainAnimationPointerArrayAddress, &animationPointers[0], 4 * count);
+			Emulator.ReadFromRAM(Emulator.terrainAnimationPointerArrayAddress, animationPointers.CArray(), 4 * count);
 
 			for (let animationIndex < count) {
 				let animation = &animations[animationIndex];

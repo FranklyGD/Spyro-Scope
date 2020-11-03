@@ -36,20 +36,20 @@ namespace SpyroScope {
 		public List<int> usedTextureIndices = new .();
 
 		public struct NearFace {
-			public uint8[4] trianglesIndices, colorsIndices, a;
+			public uint8[4] trianglesIndices, colorsIndices, a, b;
 
 			public bool isTriangle { get => trianglesIndices[0] == trianglesIndices[1]; }
 
 			public struct RenderInfo {
-				uint8 texture, flipSideDepth, a, b;
+				public uint8 texture, flipSideDepth, a, b;
 
 				public uint8 textureIndex { get => texture & 0x7f; }
 				public uint8 depthOffset { get => flipSideDepth & 0b0011; }
-				public bool flipped { get => flipSideDepth & 0b0100 > 0; }
 				public bool doubleSided { get => flipSideDepth & 0b1000 > 0; }
-				public uint8 rotation { get => (flipSideDepth & 0b00110000) >> 4; }
+				public uint8 rotation { get => Emulator.installment == .SpyroTheDragon ? flipSideDepth & 0b0011 : (flipSideDepth & 0b00110000) >> 4; }
 			}
-			public RenderInfo renderInfo;
+			public RenderInfo* renderInfo  { get mut => Emulator.installment == .SpyroTheDragon ?  (.)&a: (.)&b; };
+			public bool flipped { get mut => (Emulator.installment == .SpyroTheDragon ? (b[0] & 0b0010) : (renderInfo.flipSideDepth & 0b0100)) > 0; }
 		}
 
 		public this(Emulator.Address address) {
@@ -151,7 +151,7 @@ namespace SpyroScope {
 						var trianglesIndices = regionFace.trianglesIndices;
 						var colorIndices = regionFace.colorsIndices;
 						let textureIndex = regionFace.renderInfo.textureIndex;
-						let flipSide = regionFace.renderInfo.flipped;
+						let flipSide = regionFace.flipped;
 						let textureRotation = regionFace.renderInfo.rotation;
 
 						let usedIndex = usedTextureIndices.FindIndex(scope (x) => x == textureIndex);
@@ -159,9 +159,14 @@ namespace SpyroScope {
 							usedTextureIndices.Add(textureIndex);
 						}
 
-						let nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
+						TextureQuad nearQuad = ?;
+						if (Emulator.installment == .SpyroTheDragon) {
+							nearQuad = Terrain.texturesLODs1[textureIndex].D1;
+						} else {
+							nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
+						}
 						let partialUV = nearQuad.GetVramPartialUV();
-						const let quadSize = TextureLOD.TextureQuad.quadSize;
+						const let quadSize = TextureQuad.quadSize;
 						
 						triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
 						triangleUV[1] = .(partialUV.left, partialUV.leftY);
@@ -316,27 +321,44 @@ namespace SpyroScope {
 	
 					Renderer.Color4[] vertexColors = scope .[colorSize];
 					Emulator.ReadFromRAM(regionPointer + vertexSize * 4, &vertexColors[0], colorSize * 4);
-	
+
+					// Derived from Spyro the Dragon
+					// Vertex Indexing [80026378]
+					// Color Indexing [800264d4]
+
 					// Derived from Spyro: Ripto's Rage
 					// Vertex Indexing [80028e10]
 					// Color Indexing [80028f28]
 					for (let i < faceSize) {
 						uint32 packedTriangleIndex = regionTriangles[i * 2];
 						uint32 packedColorIndex = regionTriangles[i * 2 + 1];
-	
-						triangleIndices[0] = packedTriangleIndex >> 10 & 0x7f; //((packedTriangleIndex >> 7) & 0x3fc) >> 2;
-						triangleIndices[1] = packedTriangleIndex >> 17 & 0x7f; //((packedTriangleIndex >> 14) & 0x3fc) >> 2;
-						triangleIndices[2] = packedTriangleIndex >> 24 & 0x7f; //((packedTriangleIndex >> 21) & 0x3fc) >> 2;
-						triangleIndices[3] = packedTriangleIndex >> 3 & 0x7f; //(packedTriangleIndex & 0x3fc) >> 2;
-	
+
+						if (Emulator.installment == .SpyroTheDragon) {
+							triangleIndices[0] = packedTriangleIndex >> 14 & 0x3f; //((packedTriangleIndex >> 11) & 0x1f8) >> 3;
+							triangleIndices[1] = packedTriangleIndex >> 20 & 0x3f; //((packedTriangleIndex >> 17) & 0x1f8) >> 3;
+							triangleIndices[2] = packedTriangleIndex >> 26 & 0x3f; //((packedTriangleIndex >> 23) & 0x1f8) >> 3;
+							triangleIndices[3] = packedTriangleIndex >> 8 & 0x3f; //((packedTriangleIndex >> 5) & 0x1f8) >> 3;
+						} else {
+							triangleIndices[0] = packedTriangleIndex >> 10 & 0x7f; //((packedTriangleIndex >> 7) & 0x3fc) >> 2;
+							triangleIndices[1] = packedTriangleIndex >> 17 & 0x7f; //((packedTriangleIndex >> 14) & 0x3fc) >> 2;
+							triangleIndices[2] = packedTriangleIndex >> 24 & 0x7f; //((packedTriangleIndex >> 21) & 0x3fc) >> 2;
+							triangleIndices[3] = packedTriangleIndex >> 3 & 0x7f; //(packedTriangleIndex & 0x3fc) >> 2;
+						}
+
 						triangleVertices[0] = UnpackVertex(packedVertices[triangleIndices[0]]);
 						triangleVertices[1] = UnpackVertex(packedVertices[triangleIndices[1]]);
 						triangleVertices[2] = UnpackVertex(packedVertices[triangleIndices[2]]);
-	
-						triangleColors[0] = vertexColors[packedColorIndex >> 11 & 0x7f]; //((packedTriangleColorIndex >> 9) & 0x1fc) >> 2;
-						triangleColors[1] = vertexColors[packedColorIndex >> 18 & 0x7f]; //((packedTriangleColorIndex >> 16) & 0x1fc) >> 2;
-						triangleColors[2] = vertexColors[packedColorIndex >> 25 & 0x7f]; //((packedTriangleColorIndex >> 23) & 0x1fc) >> 2;
-	
+
+						if (Emulator.installment == .SpyroTheDragon) {
+							triangleColors[0] = vertexColors[packedColorIndex >> 14 & 0x3f]; //((packedTriangleIndex >> 12) & 0xfc) >> 2;
+							triangleColors[1] = vertexColors[packedColorIndex >> 20 & 0x3f]; //((packedTriangleIndex >> 18) & 0xfc) >> 2;
+							triangleColors[2] = vertexColors[packedColorIndex >> 26 & 0x3f]; //((packedTriangleIndex >> 24) & 0xfc) >> 2;
+						} else {
+							triangleColors[0] = vertexColors[packedColorIndex >> 11 & 0x7f]; //((packedTriangleColorIndex >> 9) & 0x1fc) >> 2;
+							triangleColors[1] = vertexColors[packedColorIndex >> 18 & 0x7f]; //((packedTriangleColorIndex >> 16) & 0x1fc) >> 2;
+							triangleColors[2] = vertexColors[packedColorIndex >> 25 & 0x7f]; //((packedTriangleColorIndex >> 23) & 0x1fc) >> 2;
+						}
+
 						if (triangleIndices[0] == triangleIndices[3]) {
 							vertexList.Add(triangleVertices[0]);
 							vertexList.Add(triangleVertices[2]);
@@ -351,8 +373,13 @@ namespace SpyroScope {
 							uvList.Add(.(0,0));
 						} else {
 							triangleVertices[3] = UnpackVertex(packedVertices[triangleIndices[3] % packedVertices.Count]);
-							triangleColors[3] = vertexColors[packedColorIndex >> 4 & 0x7f]; //((packedTriangleColorIndex >> 2) & 0x1fc) >> 2;
-	
+							
+							if (Emulator.installment == .SpyroTheDragon) {
+								triangleColors[3] = vertexColors[packedColorIndex >> 8 & 0x3f]; //((packedTriangleColorIndex >> 6) & 0xfc) >> 2;
+							} else {
+								triangleColors[3] = vertexColors[packedColorIndex >> 4 & 0x7f]; //((packedTriangleColorIndex >> 2) & 0x1fc) >> 2;
+							}
+
 							vertexList.Add(triangleVertices[0]);
 							vertexList.Add(triangleVertices[2]);
 							vertexList.Add(triangleVertices[1]);
@@ -427,17 +454,32 @@ namespace SpyroScope {
 		}
 		
 		public void DrawFar() {
-			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(16));
+			Matrix scale = .Scale(16, 16, Emulator.installment == .SpyroTheDragon ? 8 : 16);
+			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
 			farMesh.Draw();
 		}
 		
 		public void DrawNear() {
-			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(16,16, metadata.verticallyScaledDown ? 2 : 16));
+			int verticalScale = ?;
+			if (Emulator.installment == .SpyroTheDragon) {
+				verticalScale = 8;
+			} else {
+				verticalScale = metadata.verticallyScaledDown ? 2 : 16;
+			}
+			Matrix scale = .Scale(16, 16, verticalScale);
+			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
 			nearMesh.Draw();
 		}
 
 		public void DrawNearTransparent() {
-			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(16,16, metadata.verticallyScaledDown ? 2 : 16));
+			int verticalScale = ?;
+			if (Emulator.installment == .SpyroTheDragon) {
+				verticalScale = 8;
+			} else {
+				verticalScale = metadata.verticallyScaledDown ? 2 : 16;
+			}
+			Matrix scale = .Scale(16, 16, verticalScale);
+			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
 			nearMeshTransparent.Draw();
 		}
 	}
