@@ -1,7 +1,7 @@
 using System.Collections;
 
 namespace SpyroScope {
-	struct TerrainRegion {
+	class TerrainRegion {
 		Emulator.Address address;
 
 		// Region Metadata
@@ -25,24 +25,24 @@ namespace SpyroScope {
 			}
 		} }
 
-		public Mesh farMesh;
-		public List<uint32> farMeshIndices = new .();
+		public Mesh farMesh ~ delete _;
+		public List<uint32> farMeshIndices = new .() ~ delete _;
 
 		Vector[] nearVertices;
-		Renderer.Color4[] nearColors;
-		public NearFace[] nearFaces;
+		Renderer.Color4[] nearColors ~ delete _;
+		public NearFace[] nearFaces ~ delete _;
 		
-		public Mesh nearMesh;
-		public List<uint8> nearMesh2GameIndices = new .();
-		public List<int> nearFaceIndices = new .();
-		public List<uint8> nearTextureIndices = new .();
+		public Mesh nearMesh ~ delete _;
+		public List<uint8> nearMesh2GameIndices = new .() ~ delete _;
+		public List<int> nearFaceIndices = new .() ~ delete _;
+		public List<uint8> nearTextureIndices = new .() ~ delete _;
 
-		public Mesh nearMeshTransparent;
-		public List<uint8> nearMesh2GameTransparentIndices = new .();
-		public List<int> nearFaceTransparentIndices = new .();
-		public List<uint8> nearTextureTransparentIndices = new .();
+		public Mesh nearMeshTransparent ~ delete _;
+		public List<uint8> nearMesh2GameTransparentIndices = new .() ~ delete _;
+		public List<int> nearFaceTransparentIndices = new .() ~ delete _;
+		public List<uint8> nearTextureTransparentIndices = new .() ~ delete _;
 
-		public List<int> usedTextureIndices = new .();
+		public List<int> usedTextureIndices = new .() ~ delete _;
 
 		public struct NearFace {
 			public uint8[4] trianglesIndices, colorsIndices, a, b;
@@ -63,32 +63,9 @@ namespace SpyroScope {
 		}
 
 		public this(Emulator.Address address) {
-			this = ?;
 			this.address = address;
 
 			Reload();
-		}
-
-		public void Dispose() mut {
-			address = 0;
-			
-			delete farMesh;
-			delete farMeshIndices;
-
-			delete nearColors;
-			delete nearFaces;
-
-			delete nearMesh;
-			delete nearMesh2GameIndices;
-			delete nearFaceIndices;
-			delete nearTextureIndices;
-
-			delete nearMeshTransparent;
-			delete nearMesh2GameTransparentIndices;
-			delete nearFaceTransparentIndices;
-			delete nearTextureTransparentIndices;
-
-			delete usedTextureIndices;
 		}
 
 		/// Sets the position of the mesh's vertex with the index the game uses
@@ -108,16 +85,18 @@ namespace SpyroScope {
 			}
 		}
 
-		public void Reload() mut {
+		public void Reload() {
 			Emulator.ReadFromRAM(address, &metadata, sizeof(RegionMetadata));
 
 			// Low Poly Count / Far Mesh
 			GenerateMesh(address + 0x1c, metadata.farVertexCount, metadata.farColorCount, metadata.farFaceCount, false);
 			// High Poly Count / Near Mesh
 			GenerateMesh(address + 0x1c + ((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2) * 4, metadata.nearVertexCount, metadata.nearColorCount, metadata.nearFaceCount, true);
+
+			System.Diagnostics.Debug.Assert(nearMeshTransparent != null);
 		}
 
-		void GenerateMesh(Emulator.Address regionPointer, int vertexSize, int colorSize, int faceSize, bool isNear) mut {
+		void GenerateMesh(Emulator.Address regionPointer, int vertexSize, int colorSize, int faceSize, bool isNear) {
 			List<Vector> activeVertexList = ?;
 			List<Renderer.Color> activeColorList = ?;
 			List<float[2]> activeUvList = ?;
@@ -129,291 +108,289 @@ namespace SpyroScope {
 			List<Renderer.Color> colorList = scope .();
 			List<float[2]> uvList = scope .();
 	
-			if (vertexSize > 0) {
-				uint32[] packedVertices = scope .[vertexSize];
-				Emulator.ReadFromRAM(regionPointer, &packedVertices[0], vertexSize * 4);
-				nearVertices = scope .[vertexSize];
-				for (let i < vertexSize) {
-					nearVertices[i] = UnpackVertex(packedVertices[i]);
+			uint32[] packedVertices = scope .[vertexSize];
+			Emulator.ReadFromRAM(regionPointer, packedVertices.CArray(), vertexSize * 4);
+			nearVertices = scope .[vertexSize];
+			for (let i < vertexSize) {
+				nearVertices[i] = UnpackVertex(packedVertices[i]);
+			}
+
+			// Used for swapping around values
+			Vector[4] triangleVertices = ?;
+			Renderer.Color[4] triangleColors = ?;
+			float[4][2] triangleUV = ?;
+
+			if (isNear) {
+				List<Vector> vertexTransparentList = scope .();
+				List<Renderer.Color> colorTransparentList = scope .();
+				List<float[2]> uvTransparentList = scope .();
+
+				nearFaces = new .[faceSize];
+				Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize * 2) * 4, nearFaces.CArray(), faceSize * sizeof(NearFace));
+
+				nearColors = new .[colorSize * 2];
+				Emulator.ReadFromRAM(regionPointer + vertexSize * 4, nearColors.CArray(), colorSize * 2 * 4);
+
+				// Derived from Spyro: Ripto's Rage
+				// Vertex Indexing [80024a00]
+				// Color Indexing [80024c84]
+				for (let i < faceSize) {
+					var regionFace = nearFaces[i];
+					var trianglesIndices = regionFace.trianglesIndices;
+					var colorIndices = regionFace.colorsIndices;
+					let textureIndex = regionFace.renderInfo.textureIndex;
+					let flipSide = regionFace.flipped;
+					let textureRotation = regionFace.renderInfo.rotation;
+
+					let usedIndex = usedTextureIndices.FindIndex(scope (x) => x == textureIndex);
+					if (usedIndex == -1) {
+						usedTextureIndices.Add(textureIndex);
+					}
+
+					TextureQuad nearQuad = ?;
+					if (Emulator.installment == .SpyroTheDragon) {
+						nearQuad = Terrain.texturesLODs1[textureIndex].D1;
+					} else {
+						nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
+					}
+					let partialUV = nearQuad.GetVramPartialUV();
+					const let quadSize = TextureQuad.quadSize;
+					
+					triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
+					triangleUV[1] = .(partialUV.left, partialUV.leftY);
+					triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
+					triangleUV[3] = .(partialUV.right, partialUV.rightY);
+
+					if (nearQuad.GetAdditiveTransparency() || regionFace.renderInfo.transparent) {
+						activeVertexList = vertexTransparentList;
+						activeColorList = colorTransparentList;
+						activeUvList = uvTransparentList;
+						activeNearMeshIndices = nearMesh2GameTransparentIndices;
+						activeNearFaceIndices = nearFaceTransparentIndices;
+						activeNearTextureIndices = nearTextureTransparentIndices;
+					} else {
+						activeVertexList = vertexList;
+						activeColorList = colorList;
+						activeUvList = uvList;
+						activeNearMeshIndices = nearMesh2GameIndices;
+						activeNearFaceIndices = nearFaceIndices;
+						activeNearTextureIndices = nearTextureIndices;
+					}
+
+					if (regionFace.isTriangle) {
+						int first = 1;
+						int second = 3;
+
+						if (flipSide) {
+							first = 3;
+							second = 1;
+						}
+
+						triangleVertices[0] = nearVertices[trianglesIndices[first]];
+						triangleVertices[1] = nearVertices[trianglesIndices[2]];
+						triangleVertices[2] = nearVertices[trianglesIndices[second]];
+						triangleColors[0] = nearColors[colorIndices[first]];
+						triangleColors[1] = nearColors[colorIndices[2]];
+						triangleColors[2] = nearColors[colorIndices[second]];
+						
+						activeNearMeshIndices.Add(trianglesIndices[second]);
+						activeNearMeshIndices.Add(trianglesIndices[2]);
+						activeNearMeshIndices.Add(trianglesIndices[first]);
+
+						activeVertexList.Add(triangleVertices[2]);
+						activeVertexList.Add(triangleVertices[1]);
+						activeVertexList.Add(triangleVertices[0]);
+						
+						activeColorList.Add(triangleColors[2]);
+						activeColorList.Add(triangleColors[1]);
+						activeColorList.Add(triangleColors[0]);
+
+						float[3][2] rotatedTriangleUV = .(
+							triangleUV[(0 - textureRotation) & 3],
+							triangleUV[(1 - textureRotation) & 3],
+							triangleUV[(2 - textureRotation) & 3]
+							);
+
+						if (flipSide) {
+							activeUvList.Add(rotatedTriangleUV[2]);
+							activeUvList.Add(rotatedTriangleUV[0]);
+							activeUvList.Add(rotatedTriangleUV[1]);
+						} else {
+							activeUvList.Add(rotatedTriangleUV[1]);
+							activeUvList.Add(rotatedTriangleUV[0]);
+							activeUvList.Add(rotatedTriangleUV[2]);
+						}
+
+						activeNearFaceIndices.Add(i);
+						activeNearTextureIndices.Add(textureIndex);
+					} else {
+						if (flipSide) {
+							Swap!(trianglesIndices[0], trianglesIndices[1]);
+							Swap!(trianglesIndices[2], trianglesIndices[3]);
+						}
+
+						triangleVertices[0] = nearVertices[trianglesIndices[1]];
+						triangleVertices[1] = nearVertices[trianglesIndices[2]];
+						triangleVertices[2] = nearVertices[trianglesIndices[3]];
+						triangleVertices[3] = nearVertices[trianglesIndices[0]];
+						
+						triangleColors[0] = nearColors[colorIndices[1]];
+						triangleColors[1] = nearColors[colorIndices[2]];
+						triangleColors[2] = nearColors[colorIndices[3]];
+						triangleColors[3] = nearColors[colorIndices[0]];
+
+						if (flipSide) {
+							Swap!(triangleColors[0], triangleColors[3]);
+							Swap!(triangleColors[2], triangleColors[1]);
+							Swap!(triangleUV[0], triangleUV[1]);
+							Swap!(triangleUV[2], triangleUV[3]);
+						}
+
+						activeNearMeshIndices.Add(trianglesIndices[2]);
+						activeNearMeshIndices.Add(trianglesIndices[1]);
+						activeNearMeshIndices.Add(trianglesIndices[3]);
+
+						activeNearMeshIndices.Add(trianglesIndices[3]);
+						activeNearMeshIndices.Add(trianglesIndices[1]);
+						activeNearMeshIndices.Add(trianglesIndices[0]);
+						
+						activeVertexList.Add(triangleVertices[1]);
+						activeVertexList.Add(triangleVertices[0]);
+						activeVertexList.Add(triangleVertices[2]);
+						
+						activeVertexList.Add(triangleVertices[2]);
+						activeVertexList.Add(triangleVertices[0]);
+						activeVertexList.Add(triangleVertices[3]);
+						
+						activeColorList.Add(triangleColors[1]);
+						activeColorList.Add(triangleColors[0]);
+						activeColorList.Add(triangleColors[2]);
+						
+						activeColorList.Add(triangleColors[2]);
+						activeColorList.Add(triangleColors[0]);
+						activeColorList.Add(triangleColors[3]);
+						
+						activeUvList.Add(triangleUV[0]);
+						activeUvList.Add(triangleUV[3]);
+						activeUvList.Add(triangleUV[1]);
+						
+						activeUvList.Add(triangleUV[1]);
+						activeUvList.Add(triangleUV[3]);
+						activeUvList.Add(triangleUV[2]);
+
+						activeNearFaceIndices.Add(i);
+						activeNearFaceIndices.Add(i);
+						activeNearTextureIndices.Add(textureIndex);
+						activeNearTextureIndices.Add(textureIndex);
+					}
 				}
 
-				// Used for swapping around values
-				Vector[4] triangleVertices = ?;
-				Renderer.Color[4] triangleColors = ?;
-				float[4][2] triangleUV = ?;
-	
-				if (isNear) {
-					List<Vector> vertexTransparentList = scope .();
-					List<Renderer.Color> colorTransparentList = scope .();
-					List<float[2]> uvTransparentList = scope .();
+				Vector[] v = new .[vertexTransparentList.Count];
+				Vector[] n = new .[vertexTransparentList.Count];
+				Renderer.Color4[] c = new .[vertexTransparentList.Count];
+				float[][2] u = new .[vertexTransparentList.Count];
 
-					nearFaces = new .[faceSize];
-					Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize * 2) * 4, &nearFaces[0], faceSize * sizeof(NearFace));
-	
-					nearColors = new .[colorSize * 2];
-					Emulator.ReadFromRAM(regionPointer + vertexSize * 4, &nearColors[0], colorSize * 2 * 4);
-	
-					// Derived from Spyro: Ripto's Rage
-					// Vertex Indexing [80024a00]
-					// Color Indexing [80024c84]
-					for (let i < faceSize) {
-						var regionFace = nearFaces[i];
-						var trianglesIndices = regionFace.trianglesIndices;
-						var colorIndices = regionFace.colorsIndices;
-						let textureIndex = regionFace.renderInfo.textureIndex;
-						let flipSide = regionFace.flipped;
-						let textureRotation = regionFace.renderInfo.rotation;
+				for (let i < vertexTransparentList.Count) {
+					v[i] = vertexTransparentList[i];
+					u[i] = uvTransparentList[i];
+					c[i] = colorTransparentList[i];
+				}
 
-						let usedIndex = usedTextureIndices.FindIndex(scope (x) => x == textureIndex);
-						if (usedIndex == -1) {
-							usedTextureIndices.Add(textureIndex);
-						}
+				for (var i = 0; i < vertexTransparentList.Count; i++) {
+					n[i] = .(0,0,1);
+				}
+				
+				nearMeshTransparent = new .(v, u, n, c);
+			} else {
+				uint32[4] triangleIndices = ?;
 
-						TextureQuad nearQuad = ?;
-						if (Emulator.installment == .SpyroTheDragon) {
-							nearQuad = Terrain.texturesLODs1[textureIndex].D1;
-						} else {
-							nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
-						}
-						let partialUV = nearQuad.GetVramPartialUV();
-						const let quadSize = TextureQuad.quadSize;
+				uint32[] regionTriangles = scope .[faceSize * 2];
+				Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize) * 4, &regionTriangles[0], faceSize * 2 * 4);
+
+				Renderer.Color4[] vertexColors = scope .[colorSize];
+				Emulator.ReadFromRAM(regionPointer + vertexSize * 4, &vertexColors[0], colorSize * 4);
+
+				// Derived from Spyro the Dragon
+				// Vertex Indexing [80026378]
+				// Color Indexing [800264d4]
+
+				// Derived from Spyro: Ripto's Rage
+				// Vertex Indexing [80028e10]
+				// Color Indexing [80028f28]
+				for (let i < faceSize) {
+					uint32 packedTriangleIndex = regionTriangles[i * 2];
+					uint32 packedColorIndex = regionTriangles[i * 2 + 1];
+
+					if (Emulator.installment == .SpyroTheDragon) {
+						triangleIndices[0] = packedTriangleIndex >> 14 & 0x3f; //((packedTriangleIndex >> 11) & 0x1f8) >> 3;
+						triangleIndices[1] = packedTriangleIndex >> 20 & 0x3f; //((packedTriangleIndex >> 17) & 0x1f8) >> 3;
+						triangleIndices[2] = packedTriangleIndex >> 26 & 0x3f; //((packedTriangleIndex >> 23) & 0x1f8) >> 3;
+						triangleIndices[3] = packedTriangleIndex >> 8 & 0x3f; //((packedTriangleIndex >> 5) & 0x1f8) >> 3;
+					} else {
+						triangleIndices[0] = packedTriangleIndex >> 10 & 0x7f; //((packedTriangleIndex >> 7) & 0x3fc) >> 2;
+						triangleIndices[1] = packedTriangleIndex >> 17 & 0x7f; //((packedTriangleIndex >> 14) & 0x3fc) >> 2;
+						triangleIndices[2] = packedTriangleIndex >> 24 & 0x7f; //((packedTriangleIndex >> 21) & 0x3fc) >> 2;
+						triangleIndices[3] = packedTriangleIndex >> 3 & 0x7f; //(packedTriangleIndex & 0x3fc) >> 2;
+					}
+
+					triangleVertices[0] = UnpackVertex(packedVertices[triangleIndices[0]]);
+					triangleVertices[1] = UnpackVertex(packedVertices[triangleIndices[1]]);
+					triangleVertices[2] = UnpackVertex(packedVertices[triangleIndices[2]]);
+
+					if (Emulator.installment == .SpyroTheDragon) {
+						triangleColors[0] = vertexColors[packedColorIndex >> 14 & 0x3f]; //((packedTriangleIndex >> 12) & 0xfc) >> 2;
+						triangleColors[1] = vertexColors[packedColorIndex >> 20 & 0x3f]; //((packedTriangleIndex >> 18) & 0xfc) >> 2;
+						triangleColors[2] = vertexColors[packedColorIndex >> 26 & 0x3f]; //((packedTriangleIndex >> 24) & 0xfc) >> 2;
+					} else {
+						triangleColors[0] = vertexColors[packedColorIndex >> 11 & 0x7f]; //((packedTriangleColorIndex >> 9) & 0x1fc) >> 2;
+						triangleColors[1] = vertexColors[packedColorIndex >> 18 & 0x7f]; //((packedTriangleColorIndex >> 16) & 0x1fc) >> 2;
+						triangleColors[2] = vertexColors[packedColorIndex >> 25 & 0x7f]; //((packedTriangleColorIndex >> 23) & 0x1fc) >> 2;
+					}
+
+					if (triangleIndices[0] == triangleIndices[3]) {
+						vertexList.Add(triangleVertices[0]);
+						vertexList.Add(triangleVertices[2]);
+						vertexList.Add(triangleVertices[1]);
 						
-						triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
-						triangleUV[1] = .(partialUV.left, partialUV.leftY);
-						triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
-						triangleUV[3] = .(partialUV.right, partialUV.rightY);
+						colorList.Add(triangleColors[0]);
+						colorList.Add(triangleColors[2]);
+						colorList.Add(triangleColors[1]);
 
-						if (nearQuad.GetAdditiveTransparency() || regionFace.renderInfo.transparent) {
-							activeVertexList = vertexTransparentList;
-							activeColorList = colorTransparentList;
-							activeUvList = uvTransparentList;
-							activeNearMeshIndices = nearMesh2GameTransparentIndices;
-							activeNearFaceIndices = nearFaceTransparentIndices;
-							activeNearTextureIndices = nearTextureTransparentIndices;
-						} else {
-							activeVertexList = vertexList;
-							activeColorList = colorList;
-							activeUvList = uvList;
-							activeNearMeshIndices = nearMesh2GameIndices;
-							activeNearFaceIndices = nearFaceIndices;
-							activeNearTextureIndices = nearTextureIndices;
-						}
-
-						if (regionFace.isTriangle) {
-							int first = 1;
-							int second = 3;
-	
-							if (flipSide) {
-								first = 3;
-								second = 1;
-							}
-
-							triangleVertices[0] = nearVertices[trianglesIndices[first]];
-							triangleVertices[1] = nearVertices[trianglesIndices[2]];
-							triangleVertices[2] = nearVertices[trianglesIndices[second]];
-							triangleColors[0] = nearColors[colorIndices[first]];
-							triangleColors[1] = nearColors[colorIndices[2]];
-							triangleColors[2] = nearColors[colorIndices[second]];
-							
-							activeNearMeshIndices.Add(trianglesIndices[second]);
-							activeNearMeshIndices.Add(trianglesIndices[2]);
-							activeNearMeshIndices.Add(trianglesIndices[first]);
-
-							activeVertexList.Add(triangleVertices[2]);
-							activeVertexList.Add(triangleVertices[1]);
-							activeVertexList.Add(triangleVertices[0]);
-							
-							activeColorList.Add(triangleColors[2]);
-							activeColorList.Add(triangleColors[1]);
-							activeColorList.Add(triangleColors[0]);
-
-							float[3][2] rotatedTriangleUV = .(
-								triangleUV[(0 - textureRotation) & 3],
-								triangleUV[(1 - textureRotation) & 3],
-								triangleUV[(2 - textureRotation) & 3]
-								);
-
-							if (flipSide) {
-								activeUvList.Add(rotatedTriangleUV[2]);
-								activeUvList.Add(rotatedTriangleUV[0]);
-								activeUvList.Add(rotatedTriangleUV[1]);
-							} else {
-								activeUvList.Add(rotatedTriangleUV[1]);
-								activeUvList.Add(rotatedTriangleUV[0]);
-								activeUvList.Add(rotatedTriangleUV[2]);
-							}
-
-							activeNearFaceIndices.Add(i);
-							activeNearTextureIndices.Add(textureIndex);
-						} else {
-							if (flipSide) {
-								Swap!(trianglesIndices[0], trianglesIndices[1]);
-								Swap!(trianglesIndices[2], trianglesIndices[3]);
-							}
-	
-							triangleVertices[0] = nearVertices[trianglesIndices[1]];
-							triangleVertices[1] = nearVertices[trianglesIndices[2]];
-							triangleVertices[2] = nearVertices[trianglesIndices[3]];
-							triangleVertices[3] = nearVertices[trianglesIndices[0]];
-							
-							triangleColors[0] = nearColors[colorIndices[1]];
-							triangleColors[1] = nearColors[colorIndices[2]];
-							triangleColors[2] = nearColors[colorIndices[3]];
-							triangleColors[3] = nearColors[colorIndices[0]];
-	
-							if (flipSide) {
-								Swap!(triangleColors[0], triangleColors[3]);
-								Swap!(triangleColors[2], triangleColors[1]);
-								Swap!(triangleUV[0], triangleUV[1]);
-								Swap!(triangleUV[2], triangleUV[3]);
-							}
-
-							activeNearMeshIndices.Add(trianglesIndices[2]);
-							activeNearMeshIndices.Add(trianglesIndices[1]);
-							activeNearMeshIndices.Add(trianglesIndices[3]);
-
-							activeNearMeshIndices.Add(trianglesIndices[3]);
-							activeNearMeshIndices.Add(trianglesIndices[1]);
-							activeNearMeshIndices.Add(trianglesIndices[0]);
-							
-							activeVertexList.Add(triangleVertices[1]);
-							activeVertexList.Add(triangleVertices[0]);
-							activeVertexList.Add(triangleVertices[2]);
-							
-							activeVertexList.Add(triangleVertices[2]);
-							activeVertexList.Add(triangleVertices[0]);
-							activeVertexList.Add(triangleVertices[3]);
-							
-							activeColorList.Add(triangleColors[1]);
-							activeColorList.Add(triangleColors[0]);
-							activeColorList.Add(triangleColors[2]);
-							
-							activeColorList.Add(triangleColors[2]);
-							activeColorList.Add(triangleColors[0]);
-							activeColorList.Add(triangleColors[3]);
-							
-							activeUvList.Add(triangleUV[0]);
-							activeUvList.Add(triangleUV[3]);
-							activeUvList.Add(triangleUV[1]);
-							
-							activeUvList.Add(triangleUV[1]);
-							activeUvList.Add(triangleUV[3]);
-							activeUvList.Add(triangleUV[2]);
-
-							activeNearFaceIndices.Add(i);
-							activeNearFaceIndices.Add(i);
-							activeNearTextureIndices.Add(textureIndex);
-							activeNearTextureIndices.Add(textureIndex);
-						}
-					}
-
-					Vector[] v = new .[vertexTransparentList.Count];
-					Vector[] n = new .[vertexTransparentList.Count];
-					Renderer.Color4[] c = new .[vertexTransparentList.Count];
-					float[][2] u = new .[vertexTransparentList.Count];
-
-					for (let i < vertexTransparentList.Count) {
-						v[i] = vertexTransparentList[i];
-						u[i] = uvTransparentList[i];
-						c[i] = colorTransparentList[i];
-					}
-
-					for (var i = 0; i < vertexTransparentList.Count; i++) {
-						n[i] = .(0,0,1);
-					}
-					
-					nearMeshTransparent = new .(v, u, n, c);
-				} else {
-					uint32[4] triangleIndices = ?;
-	
-					uint32[] regionTriangles = scope .[faceSize * 2];
-					Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize) * 4, &regionTriangles[0], faceSize * 2 * 4);
-	
-					Renderer.Color4[] vertexColors = scope .[colorSize];
-					Emulator.ReadFromRAM(regionPointer + vertexSize * 4, &vertexColors[0], colorSize * 4);
-
-					// Derived from Spyro the Dragon
-					// Vertex Indexing [80026378]
-					// Color Indexing [800264d4]
-
-					// Derived from Spyro: Ripto's Rage
-					// Vertex Indexing [80028e10]
-					// Color Indexing [80028f28]
-					for (let i < faceSize) {
-						uint32 packedTriangleIndex = regionTriangles[i * 2];
-						uint32 packedColorIndex = regionTriangles[i * 2 + 1];
-
+						uvList.Add(.(0,0));
+						uvList.Add(.(0,0));
+						uvList.Add(.(0,0));
+					} else {
+						triangleVertices[3] = UnpackVertex(packedVertices[triangleIndices[3] % packedVertices.Count]);
+						
 						if (Emulator.installment == .SpyroTheDragon) {
-							triangleIndices[0] = packedTriangleIndex >> 14 & 0x3f; //((packedTriangleIndex >> 11) & 0x1f8) >> 3;
-							triangleIndices[1] = packedTriangleIndex >> 20 & 0x3f; //((packedTriangleIndex >> 17) & 0x1f8) >> 3;
-							triangleIndices[2] = packedTriangleIndex >> 26 & 0x3f; //((packedTriangleIndex >> 23) & 0x1f8) >> 3;
-							triangleIndices[3] = packedTriangleIndex >> 8 & 0x3f; //((packedTriangleIndex >> 5) & 0x1f8) >> 3;
+							triangleColors[3] = vertexColors[packedColorIndex >> 8 & 0x3f]; //((packedTriangleColorIndex >> 6) & 0xfc) >> 2;
 						} else {
-							triangleIndices[0] = packedTriangleIndex >> 10 & 0x7f; //((packedTriangleIndex >> 7) & 0x3fc) >> 2;
-							triangleIndices[1] = packedTriangleIndex >> 17 & 0x7f; //((packedTriangleIndex >> 14) & 0x3fc) >> 2;
-							triangleIndices[2] = packedTriangleIndex >> 24 & 0x7f; //((packedTriangleIndex >> 21) & 0x3fc) >> 2;
-							triangleIndices[3] = packedTriangleIndex >> 3 & 0x7f; //(packedTriangleIndex & 0x3fc) >> 2;
+							triangleColors[3] = vertexColors[packedColorIndex >> 4 & 0x7f]; //((packedTriangleColorIndex >> 2) & 0x1fc) >> 2;
 						}
 
-						triangleVertices[0] = UnpackVertex(packedVertices[triangleIndices[0]]);
-						triangleVertices[1] = UnpackVertex(packedVertices[triangleIndices[1]]);
-						triangleVertices[2] = UnpackVertex(packedVertices[triangleIndices[2]]);
+						vertexList.Add(triangleVertices[0]);
+						vertexList.Add(triangleVertices[2]);
+						vertexList.Add(triangleVertices[1]);
 
-						if (Emulator.installment == .SpyroTheDragon) {
-							triangleColors[0] = vertexColors[packedColorIndex >> 14 & 0x3f]; //((packedTriangleIndex >> 12) & 0xfc) >> 2;
-							triangleColors[1] = vertexColors[packedColorIndex >> 20 & 0x3f]; //((packedTriangleIndex >> 18) & 0xfc) >> 2;
-							triangleColors[2] = vertexColors[packedColorIndex >> 26 & 0x3f]; //((packedTriangleIndex >> 24) & 0xfc) >> 2;
-						} else {
-							triangleColors[0] = vertexColors[packedColorIndex >> 11 & 0x7f]; //((packedTriangleColorIndex >> 9) & 0x1fc) >> 2;
-							triangleColors[1] = vertexColors[packedColorIndex >> 18 & 0x7f]; //((packedTriangleColorIndex >> 16) & 0x1fc) >> 2;
-							triangleColors[2] = vertexColors[packedColorIndex >> 25 & 0x7f]; //((packedTriangleColorIndex >> 23) & 0x1fc) >> 2;
-						}
+						vertexList.Add(triangleVertices[0]);
+						vertexList.Add(triangleVertices[1]);
+						vertexList.Add(triangleVertices[3]);
+						
+						colorList.Add(triangleColors[0]);
+						colorList.Add(triangleColors[2]);
+						colorList.Add(triangleColors[1]);
 
-						if (triangleIndices[0] == triangleIndices[3]) {
-							vertexList.Add(triangleVertices[0]);
-							vertexList.Add(triangleVertices[2]);
-							vertexList.Add(triangleVertices[1]);
-							
-							colorList.Add(triangleColors[0]);
-							colorList.Add(triangleColors[2]);
-							colorList.Add(triangleColors[1]);
-
-							uvList.Add(.(0,0));
-							uvList.Add(.(0,0));
-							uvList.Add(.(0,0));
-						} else {
-							triangleVertices[3] = UnpackVertex(packedVertices[triangleIndices[3] % packedVertices.Count]);
-							
-							if (Emulator.installment == .SpyroTheDragon) {
-								triangleColors[3] = vertexColors[packedColorIndex >> 8 & 0x3f]; //((packedTriangleColorIndex >> 6) & 0xfc) >> 2;
-							} else {
-								triangleColors[3] = vertexColors[packedColorIndex >> 4 & 0x7f]; //((packedTriangleColorIndex >> 2) & 0x1fc) >> 2;
-							}
-
-							vertexList.Add(triangleVertices[0]);
-							vertexList.Add(triangleVertices[2]);
-							vertexList.Add(triangleVertices[1]);
-	
-							vertexList.Add(triangleVertices[0]);
-							vertexList.Add(triangleVertices[1]);
-							vertexList.Add(triangleVertices[3]);
-							
-							colorList.Add(triangleColors[0]);
-							colorList.Add(triangleColors[2]);
-							colorList.Add(triangleColors[1]);
-	
-							colorList.Add(triangleColors[0]);
-							colorList.Add(triangleColors[1]);
-							colorList.Add(triangleColors[3]);
-							
-							uvList.Add(.(0,0));
-							uvList.Add(.(0,0));
-							uvList.Add(.(0,0));
-							
-							uvList.Add(.(0,0));
-							uvList.Add(.(0,0));
-							uvList.Add(.(0,0));
-						}
+						colorList.Add(triangleColors[0]);
+						colorList.Add(triangleColors[1]);
+						colorList.Add(triangleColors[3]);
+						
+						uvList.Add(.(0,0));
+						uvList.Add(.(0,0));
+						uvList.Add(.(0,0));
+						
+						uvList.Add(.(0,0));
+						uvList.Add(.(0,0));
+						uvList.Add(.(0,0));
 					}
 				}
 			}

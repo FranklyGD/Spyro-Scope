@@ -33,12 +33,7 @@ namespace SpyroScope {
 		}
 
 		public ~this() {
-			if (visualMeshes != null) {
-				for (var item in visualMeshes) {
-					item.Dispose();
-				}
-			}
-			delete visualMeshes;
+			DeleteContainerAndItems!(visualMeshes);
 
 			if (animations != null) {
 				for (var item in animations) {
@@ -81,12 +76,7 @@ namespace SpyroScope {
 			Emulator.ReadFromRAM(sceneDataRegionArrayPointer + 4, &sceneRegionCount, 4);
 
 			// Remove any existing parsed data
-			if (visualMeshes != null) {
-				for (var item in visualMeshes) {
-					item.Dispose();
-				}
-				DeleteAndNullify!(visualMeshes);
-			}
+			DeleteContainerAndItems!(visualMeshes);
 
 			// Parse all terrain regions
 			let usedTextureIndices = new List<int>(); // Also get all used texture indices while we are at it
@@ -96,7 +86,7 @@ namespace SpyroScope {
 			Emulator.Address[] sceneDataRegionAddresses = new .[sceneRegionCount];
 			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegionAddresses[0], sceneRegionCount);
 			for (let regionIndex < sceneRegionCount) {
-				visualMeshes[regionIndex] = .(sceneDataRegionAddresses[regionIndex]);
+				visualMeshes[regionIndex] = new .(sceneDataRegionAddresses[regionIndex]);
 
 				for (let textureIndex in visualMeshes[regionIndex].usedTextureIndices) {
 					let usedIndex = usedTextureIndices.FindIndex(scope (x) => x == textureIndex);
