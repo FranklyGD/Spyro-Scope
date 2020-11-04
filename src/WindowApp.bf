@@ -12,6 +12,7 @@ namespace SpyroScope {
 
 		public readonly uint32 id;
 		public static uint width, height;
+		public static (float x, float y) mousePosition;
 
 		public bool closed { get; private set; }
 
@@ -132,6 +133,10 @@ namespace SpyroScope {
 		}
 
 		public void OnEvent(SDL.Event event) {
+			if (event.type == .MouseMotion) {
+				mousePosition = (event.motion.x, event.motion.y);
+			}
+
 			if (state.OnEvent(event)) {
 				return;
 			}

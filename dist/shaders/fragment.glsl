@@ -11,7 +11,7 @@ uniform sampler2D texture0;
 void main() {
     vec4 tex = texture(texture0, uv);
 
-    if (tex.r < 0.001 && tex.g < 0.001 && tex.b < 0.001)
+    if (retroShading > 0.5 && tex.r < 0.001 && tex.g < 0.001 && tex.b < 0.001)
         discard;
 
     float power = (1 + retroShading * 3) * (1 + retroShading * (1 - tex.a) * 3);

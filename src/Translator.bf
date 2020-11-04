@@ -136,14 +136,14 @@ namespace SpyroScope {
 			}
 		}
 
-		public static void MousePress(Vector mousePosition) {
+		public static void MousePress((float x, float y) mousePosition) {
 			if (hovered) {
 				dragged = true;
 				BeginDragged(mousePosition);
 			}
 		}
 
-		public static bool MouseMove(Vector mousePosition) {
+		public static bool MouseMove((float x, float y) mousePosition) {
 			let mouseOrigin = Camera.ScreenPointToOrigin(mousePosition);
 			let mouseRay = Camera.ScreenPointToRay(mousePosition);
 
@@ -244,7 +244,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public static void BeginDragged(Vector mousePosition) {
+		public static void BeginDragged((float x, float y) mousePosition) {
 			referencePosition = position;
 			referenceBasis = basis;
 			

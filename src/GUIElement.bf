@@ -98,7 +98,7 @@ namespace SpyroScope {
 		public virtual void MouseEnter() {}
 		public virtual void MouseExit() {}
 
-		public void MouseUpdate(Vector mousePosition) {
+		public void MouseUpdate((float x, float y) mousePosition) {
 			if (visible &&
 				mousePosition.x > drawn.left &&
 				mousePosition.x < drawn.right &&

@@ -33,7 +33,7 @@ namespace SpyroScope {
 			return size * WindowApp.height / (orthographic ? Camera.size / 2 : (depth * Math.Tan(fov * (Math.PI_f / 180) / 2) * 2));
 		}
 
-		public static Vector ScreenPointToOrigin(Vector screenPosition) {
+		public static Vector ScreenPointToOrigin((float x, float y) screenPosition) {
 			if (orthographic) {
 				let x = 0.5f - (screenPosition.x / WindowApp.width);
 				let y = screenPosition.y / WindowApp.height - 0.5f;
@@ -45,7 +45,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public static Vector ScreenPointToRay(Vector screenPosition) {
+		public static Vector ScreenPointToRay((float x, float y) screenPosition) {
 			if (orthographic) {
 				return -basis.z;
 			} else {
