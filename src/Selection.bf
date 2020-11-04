@@ -22,7 +22,7 @@ namespace SpyroScope {
 			public void Unselect() => OnUnselect();
 		}
 
-		public static List<SelectionTest> selectionTests = new .() ~ delete _;
+		public static List<SelectionTest> selectionTests = new .() ~ DeleteContainerAndItems!(_);
 		static SelectionTest passedTest = null;
 		static SelectionTest passedSelect = null; 
 
