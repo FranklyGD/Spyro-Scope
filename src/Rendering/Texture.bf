@@ -4,7 +4,7 @@ using System;
 
 namespace SpyroScope {
 	class Texture {
-		public uint textureObjectID;
+		public uint32 textureObjectID;
 		public readonly int width;
 		public readonly int height;
 

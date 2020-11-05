@@ -18,7 +18,7 @@ namespace SpyroScope {
 
 		bool IsValid;
 
-		uint vertexArrayObject,
+		uint32 vertexArrayObject,
 		vertexBufferObject,
 		normalBufferObject,
 		colorBufferObject,

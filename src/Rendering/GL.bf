@@ -1,5 +1,9 @@
 using System;
 
+// This file has been generated using MineGame159's OpenGL Loader Generator
+// The generator can be found at: https://github.com/MineGame159/opengl-beef
+// Last generated at November 11, 2020 with parameter "glVersion" as "4.6"
+
 namespace OpenGL {
     class GL {
         public function void* GetProcAddressFunc(StringView procname);
@@ -1402,7 +1406,7 @@ namespace OpenGL {
         public function void GlTexParameteri(uint target, uint pname, int param);
         public static GlTexParameteri glTexParameteri;
 
-        public function void GlTexParameteriv(uint target, uint pname, int* paramss);
+        public function void GlTexParameteriv(uint target, uint pname, int32* paramss);
         public static GlTexParameteriv glTexParameteriv;
 
         public function void GlTexImage1D(uint target, int level, int internalformat, int width, int border, uint format, uint type, void* pixels);
@@ -1486,7 +1490,7 @@ namespace OpenGL {
         public function void GlGetFloatv(uint pname, float* data);
         public static GlGetFloatv glGetFloatv;
 
-        public function void GlGetIntegerv(uint pname, int* data);
+        public function void GlGetIntegerv(uint pname, int32* data);
         public static GlGetIntegerv glGetIntegerv;
 
         public function uint8 GlGetString(uint name);
@@ -1498,13 +1502,13 @@ namespace OpenGL {
         public function void GlGetTexParameterfv(uint target, uint pname, float* paramss);
         public static GlGetTexParameterfv glGetTexParameterfv;
 
-        public function void GlGetTexParameteriv(uint target, uint pname, int* paramss);
+        public function void GlGetTexParameteriv(uint target, uint pname, int32* paramss);
         public static GlGetTexParameteriv glGetTexParameteriv;
 
         public function void GlGetTexLevelParameterfv(uint target, int level, uint pname, float* paramss);
         public static GlGetTexLevelParameterfv glGetTexLevelParameterfv;
 
-        public function void GlGetTexLevelParameteriv(uint target, int level, uint pname, int* paramss);
+        public function void GlGetTexLevelParameteriv(uint target, int level, uint pname, int32* paramss);
         public static GlGetTexLevelParameteriv glGetTexLevelParameteriv;
 
         public function uint8 GlIsEnabled(uint cap);
@@ -1546,10 +1550,10 @@ namespace OpenGL {
         public function void GlBindTexture(uint target, uint texture);
         public static GlBindTexture glBindTexture;
 
-        public function void GlDeleteTextures(int n, uint* textures);
+        public function void GlDeleteTextures(int n, uint32* textures);
         public static GlDeleteTextures glDeleteTextures;
 
-        public function void GlGenTextures(int n, uint* textures);
+        public function void GlGenTextures(int n, uint32* textures);
         public static GlGenTextures glGenTextures;
 
         public function uint8 GlIsTexture(uint texture);
@@ -1597,10 +1601,10 @@ namespace OpenGL {
         public function void GlBlendFuncSeparate(uint sfactorRGB, uint dfactorRGB, uint sfactorAlpha, uint dfactorAlpha);
         public static GlBlendFuncSeparate glBlendFuncSeparate;
 
-        public function void GlMultiDrawArrays(uint mode, int* first, int* count, int drawcount);
+        public function void GlMultiDrawArrays(uint mode, int32* first, int32* count, int drawcount);
         public static GlMultiDrawArrays glMultiDrawArrays;
 
-        public function void GlMultiDrawElements(uint mode, int* count, uint type, void *** indices, int drawcount);
+        public function void GlMultiDrawElements(uint mode, int32* count, uint type, void *** indices, int drawcount);
         public static GlMultiDrawElements glMultiDrawElements;
 
         public function void GlPointParameterf(uint pname, float param);
@@ -1612,7 +1616,7 @@ namespace OpenGL {
         public function void GlPointParameteri(uint pname, int param);
         public static GlPointParameteri glPointParameteri;
 
-        public function void GlPointParameteriv(uint pname, int* paramss);
+        public function void GlPointParameteriv(uint pname, int32* paramss);
         public static GlPointParameteriv glPointParameteriv;
 
         public function void GlBlendColor(float red, float green, float blue, float alpha);
@@ -1621,10 +1625,10 @@ namespace OpenGL {
         public function void GlBlendEquation(uint mode);
         public static GlBlendEquation glBlendEquation;
 
-        public function void GlGenQueries(int n, uint* ids);
+        public function void GlGenQueries(int n, uint32* ids);
         public static GlGenQueries glGenQueries;
 
-        public function void GlDeleteQueries(int n, uint* ids);
+        public function void GlDeleteQueries(int n, uint32* ids);
         public static GlDeleteQueries glDeleteQueries;
 
         public function uint8 GlIsQuery(uint id);
@@ -1636,22 +1640,22 @@ namespace OpenGL {
         public function void GlEndQuery(uint target);
         public static GlEndQuery glEndQuery;
 
-        public function void GlGetQueryiv(uint target, uint pname, int* paramss);
+        public function void GlGetQueryiv(uint target, uint pname, int32* paramss);
         public static GlGetQueryiv glGetQueryiv;
 
-        public function void GlGetQueryObjectiv(uint id, uint pname, int* paramss);
+        public function void GlGetQueryObjectiv(uint id, uint pname, int32* paramss);
         public static GlGetQueryObjectiv glGetQueryObjectiv;
 
-        public function void GlGetQueryObjectuiv(uint id, uint pname, uint* paramss);
+        public function void GlGetQueryObjectuiv(uint id, uint pname, uint32* paramss);
         public static GlGetQueryObjectuiv glGetQueryObjectuiv;
 
         public function void GlBindBuffer(uint target, uint buffer);
         public static GlBindBuffer glBindBuffer;
 
-        public function void GlDeleteBuffers(int n, uint* buffers);
+        public function void GlDeleteBuffers(int n, uint32* buffers);
         public static GlDeleteBuffers glDeleteBuffers;
 
-        public function void GlGenBuffers(int n, uint* buffers);
+        public function void GlGenBuffers(int n, uint32* buffers);
         public static GlGenBuffers glGenBuffers;
 
         public function uint8 GlIsBuffer(uint buffer);
@@ -1672,7 +1676,7 @@ namespace OpenGL {
         public function uint8 GlUnmapBuffer(uint target);
         public static GlUnmapBuffer glUnmapBuffer;
 
-        public function void GlGetBufferParameteriv(uint target, uint pname, int* paramss);
+        public function void GlGetBufferParameteriv(uint target, uint pname, int32* paramss);
         public static GlGetBufferParameteriv glGetBufferParameteriv;
 
         public function void GlGetBufferPointerv(uint target, uint pname, void *** paramss);
@@ -1681,7 +1685,7 @@ namespace OpenGL {
         public function void GlBlendEquationSeparate(uint modeRGB, uint modeAlpha);
         public static GlBlendEquationSeparate glBlendEquationSeparate;
 
-        public function void GlDrawBuffers(int n, uint* bufs);
+        public function void GlDrawBuffers(int n, uint32* bufs);
         public static GlDrawBuffers glDrawBuffers;
 
         public function void GlStencilOpSeparate(uint face, uint sfail, uint dpfail, uint dppass);
@@ -1723,31 +1727,31 @@ namespace OpenGL {
         public function void GlEnableVertexAttribArray(uint index);
         public static GlEnableVertexAttribArray glEnableVertexAttribArray;
 
-        public function void GlGetActiveAttrib(uint program, uint index, int bufSize, int* length, int* size, uint* type, char8* name);
+        public function void GlGetActiveAttrib(uint program, uint index, int bufSize, int32* length, int32* size, uint32* type, char8* name);
         public static GlGetActiveAttrib glGetActiveAttrib;
 
-        public function void GlGetActiveUniform(uint program, uint index, int bufSize, int* length, int* size, uint* type, char8* name);
+        public function void GlGetActiveUniform(uint program, uint index, int bufSize, int32* length, int32* size, uint32* type, char8* name);
         public static GlGetActiveUniform glGetActiveUniform;
 
-        public function void GlGetAttachedShaders(uint program, int maxCount, int* count, uint* shaders);
+        public function void GlGetAttachedShaders(uint program, int maxCount, int32* count, uint32* shaders);
         public static GlGetAttachedShaders glGetAttachedShaders;
 
         public function int GlGetAttribLocation(uint program, char8* name);
         public static GlGetAttribLocation glGetAttribLocation;
 
-        public function void GlGetProgramiv(uint program, uint pname, int* paramss);
+        public function void GlGetProgramiv(uint program, uint pname, int32* paramss);
         public static GlGetProgramiv glGetProgramiv;
 
-        public function void GlGetProgramInfoLog(uint program, int bufSize, int* length, char8* infoLog);
+        public function void GlGetProgramInfoLog(uint program, int bufSize, int32* length, char8* infoLog);
         public static GlGetProgramInfoLog glGetProgramInfoLog;
 
-        public function void GlGetShaderiv(uint shader, uint pname, int* paramss);
+        public function void GlGetShaderiv(uint shader, uint pname, int32* paramss);
         public static GlGetShaderiv glGetShaderiv;
 
-        public function void GlGetShaderInfoLog(uint shader, int bufSize, int* length, char8* infoLog);
+        public function void GlGetShaderInfoLog(uint shader, int bufSize, int32* length, char8* infoLog);
         public static GlGetShaderInfoLog glGetShaderInfoLog;
 
-        public function void GlGetShaderSource(uint shader, int bufSize, int* length, char8* source);
+        public function void GlGetShaderSource(uint shader, int bufSize, int32* length, char8* source);
         public static GlGetShaderSource glGetShaderSource;
 
         public function int GlGetUniformLocation(uint program, char8* name);
@@ -1756,7 +1760,7 @@ namespace OpenGL {
         public function void GlGetUniformfv(uint program, int location, float* paramss);
         public static GlGetUniformfv glGetUniformfv;
 
-        public function void GlGetUniformiv(uint program, int location, int* paramss);
+        public function void GlGetUniformiv(uint program, int location, int32* paramss);
         public static GlGetUniformiv glGetUniformiv;
 
         public function void GlGetVertexAttribdv(uint index, uint pname, double* paramss);
@@ -1765,7 +1769,7 @@ namespace OpenGL {
         public function void GlGetVertexAttribfv(uint index, uint pname, float* paramss);
         public static GlGetVertexAttribfv glGetVertexAttribfv;
 
-        public function void GlGetVertexAttribiv(uint index, uint pname, int* paramss);
+        public function void GlGetVertexAttribiv(uint index, uint pname, int32* paramss);
         public static GlGetVertexAttribiv glGetVertexAttribiv;
 
         public function void GlGetVertexAttribPointerv(uint index, uint pname, void *** pointer);
@@ -1780,7 +1784,7 @@ namespace OpenGL {
         public function void GlLinkProgram(uint program);
         public static GlLinkProgram glLinkProgram;
 
-        public function void GlShaderSource(uint shader, int count, char8** string, int* length);
+        public function void GlShaderSource(uint shader, int count, char8** string, int32* length);
         public static GlShaderSource glShaderSource;
 
         public function void GlUseProgram(uint program);
@@ -1822,16 +1826,16 @@ namespace OpenGL {
         public function void GlUniform4fv(int location, int count, float* value);
         public static GlUniform4fv glUniform4fv;
 
-        public function void GlUniform1iv(int location, int count, int* value);
+        public function void GlUniform1iv(int location, int count, int32* value);
         public static GlUniform1iv glUniform1iv;
 
-        public function void GlUniform2iv(int location, int count, int* value);
+        public function void GlUniform2iv(int location, int count, int32* value);
         public static GlUniform2iv glUniform2iv;
 
-        public function void GlUniform3iv(int location, int count, int* value);
+        public function void GlUniform3iv(int location, int count, int32* value);
         public static GlUniform3iv glUniform3iv;
 
-        public function void GlUniform4iv(int location, int count, int* value);
+        public function void GlUniform4iv(int location, int count, int32* value);
         public static GlUniform4iv glUniform4iv;
 
         public function void GlUniformMatrix2fv(int location, int count, uint8 transpose, float* value);
@@ -1903,7 +1907,7 @@ namespace OpenGL {
         public function void GlVertexAttrib4Nbv(uint index, int8* v);
         public static GlVertexAttrib4Nbv glVertexAttrib4Nbv;
 
-        public function void GlVertexAttrib4Niv(uint index, int* v);
+        public function void GlVertexAttrib4Niv(uint index, int32* v);
         public static GlVertexAttrib4Niv glVertexAttrib4Niv;
 
         public function void GlVertexAttrib4Nsv(uint index, int16* v);
@@ -1915,7 +1919,7 @@ namespace OpenGL {
         public function void GlVertexAttrib4Nubv(uint index, uint8* v);
         public static GlVertexAttrib4Nubv glVertexAttrib4Nubv;
 
-        public function void GlVertexAttrib4Nuiv(uint index, uint* v);
+        public function void GlVertexAttrib4Nuiv(uint index, uint32* v);
         public static GlVertexAttrib4Nuiv glVertexAttrib4Nuiv;
 
         public function void GlVertexAttrib4Nusv(uint index, uint16* v);
@@ -1936,7 +1940,7 @@ namespace OpenGL {
         public function void GlVertexAttrib4fv(uint index, float* v);
         public static GlVertexAttrib4fv glVertexAttrib4fv;
 
-        public function void GlVertexAttrib4iv(uint index, int* v);
+        public function void GlVertexAttrib4iv(uint index, int32* v);
         public static GlVertexAttrib4iv glVertexAttrib4iv;
 
         public function void GlVertexAttrib4s(uint index, int16 x, int16 y, int16 z, int16 w);
@@ -1948,7 +1952,7 @@ namespace OpenGL {
         public function void GlVertexAttrib4ubv(uint index, uint8* v);
         public static GlVertexAttrib4ubv glVertexAttrib4ubv;
 
-        public function void GlVertexAttrib4uiv(uint index, uint* v);
+        public function void GlVertexAttrib4uiv(uint index, uint32* v);
         public static GlVertexAttrib4uiv glVertexAttrib4uiv;
 
         public function void GlVertexAttrib4usv(uint index, uint16* v);
@@ -1981,7 +1985,7 @@ namespace OpenGL {
         public function void GlGetBooleani_v(uint target, uint index, uint8* data);
         public static GlGetBooleani_v glGetBooleani_v;
 
-        public function void GlGetIntegeri_v(uint target, uint index, int* data);
+        public function void GlGetIntegeri_v(uint target, uint index, int32* data);
         public static GlGetIntegeri_v glGetIntegeri_v;
 
         public function void GlEnablei(uint target, uint index);
@@ -2008,7 +2012,7 @@ namespace OpenGL {
         public function void GlTransformFeedbackVaryings(uint program, int count, char8** varyings, uint bufferMode);
         public static GlTransformFeedbackVaryings glTransformFeedbackVaryings;
 
-        public function void GlGetTransformFeedbackVarying(uint program, uint index, int bufSize, int* length, int* size, uint* type, char8* name);
+        public function void GlGetTransformFeedbackVarying(uint program, uint index, int bufSize, int32* length, int32* size, uint32* type, char8* name);
         public static GlGetTransformFeedbackVarying glGetTransformFeedbackVarying;
 
         public function void GlClampColor(uint target, uint clamp);
@@ -2023,10 +2027,10 @@ namespace OpenGL {
         public function void GlVertexAttribIPointer(uint index, int size, uint type, int stride, void* pointer);
         public static GlVertexAttribIPointer glVertexAttribIPointer;
 
-        public function void GlGetVertexAttribIiv(uint index, uint pname, int* paramss);
+        public function void GlGetVertexAttribIiv(uint index, uint pname, int32* paramss);
         public static GlGetVertexAttribIiv glGetVertexAttribIiv;
 
-        public function void GlGetVertexAttribIuiv(uint index, uint pname, uint* paramss);
+        public function void GlGetVertexAttribIuiv(uint index, uint pname, uint32* paramss);
         public static GlGetVertexAttribIuiv glGetVertexAttribIuiv;
 
         public function void GlVertexAttribI1i(uint index, int x);
@@ -2053,28 +2057,28 @@ namespace OpenGL {
         public function void GlVertexAttribI4ui(uint index, uint x, uint y, uint z, uint w);
         public static GlVertexAttribI4ui glVertexAttribI4ui;
 
-        public function void GlVertexAttribI1iv(uint index, int* v);
+        public function void GlVertexAttribI1iv(uint index, int32* v);
         public static GlVertexAttribI1iv glVertexAttribI1iv;
 
-        public function void GlVertexAttribI2iv(uint index, int* v);
+        public function void GlVertexAttribI2iv(uint index, int32* v);
         public static GlVertexAttribI2iv glVertexAttribI2iv;
 
-        public function void GlVertexAttribI3iv(uint index, int* v);
+        public function void GlVertexAttribI3iv(uint index, int32* v);
         public static GlVertexAttribI3iv glVertexAttribI3iv;
 
-        public function void GlVertexAttribI4iv(uint index, int* v);
+        public function void GlVertexAttribI4iv(uint index, int32* v);
         public static GlVertexAttribI4iv glVertexAttribI4iv;
 
-        public function void GlVertexAttribI1uiv(uint index, uint* v);
+        public function void GlVertexAttribI1uiv(uint index, uint32* v);
         public static GlVertexAttribI1uiv glVertexAttribI1uiv;
 
-        public function void GlVertexAttribI2uiv(uint index, uint* v);
+        public function void GlVertexAttribI2uiv(uint index, uint32* v);
         public static GlVertexAttribI2uiv glVertexAttribI2uiv;
 
-        public function void GlVertexAttribI3uiv(uint index, uint* v);
+        public function void GlVertexAttribI3uiv(uint index, uint32* v);
         public static GlVertexAttribI3uiv glVertexAttribI3uiv;
 
-        public function void GlVertexAttribI4uiv(uint index, uint* v);
+        public function void GlVertexAttribI4uiv(uint index, uint32* v);
         public static GlVertexAttribI4uiv glVertexAttribI4uiv;
 
         public function void GlVertexAttribI4bv(uint index, int8* v);
@@ -2089,7 +2093,7 @@ namespace OpenGL {
         public function void GlVertexAttribI4usv(uint index, uint16* v);
         public static GlVertexAttribI4usv glVertexAttribI4usv;
 
-        public function void GlGetUniformuiv(uint program, int location, uint* paramss);
+        public function void GlGetUniformuiv(uint program, int location, uint32* paramss);
         public static GlGetUniformuiv glGetUniformuiv;
 
         public function void GlBindFragDataLocation(uint program, uint color, char8* name);
@@ -2110,34 +2114,34 @@ namespace OpenGL {
         public function void GlUniform4ui(int location, uint v0, uint v1, uint v2, uint v3);
         public static GlUniform4ui glUniform4ui;
 
-        public function void GlUniform1uiv(int location, int count, uint* value);
+        public function void GlUniform1uiv(int location, int count, uint32* value);
         public static GlUniform1uiv glUniform1uiv;
 
-        public function void GlUniform2uiv(int location, int count, uint* value);
+        public function void GlUniform2uiv(int location, int count, uint32* value);
         public static GlUniform2uiv glUniform2uiv;
 
-        public function void GlUniform3uiv(int location, int count, uint* value);
+        public function void GlUniform3uiv(int location, int count, uint32* value);
         public static GlUniform3uiv glUniform3uiv;
 
-        public function void GlUniform4uiv(int location, int count, uint* value);
+        public function void GlUniform4uiv(int location, int count, uint32* value);
         public static GlUniform4uiv glUniform4uiv;
 
-        public function void GlTexParameterIiv(uint target, uint pname, int* paramss);
+        public function void GlTexParameterIiv(uint target, uint pname, int32* paramss);
         public static GlTexParameterIiv glTexParameterIiv;
 
-        public function void GlTexParameterIuiv(uint target, uint pname, uint* paramss);
+        public function void GlTexParameterIuiv(uint target, uint pname, uint32* paramss);
         public static GlTexParameterIuiv glTexParameterIuiv;
 
-        public function void GlGetTexParameterIiv(uint target, uint pname, int* paramss);
+        public function void GlGetTexParameterIiv(uint target, uint pname, int32* paramss);
         public static GlGetTexParameterIiv glGetTexParameterIiv;
 
-        public function void GlGetTexParameterIuiv(uint target, uint pname, uint* paramss);
+        public function void GlGetTexParameterIuiv(uint target, uint pname, uint32* paramss);
         public static GlGetTexParameterIuiv glGetTexParameterIuiv;
 
-        public function void GlClearBufferiv(uint buffer, int drawbuffer, int* value);
+        public function void GlClearBufferiv(uint buffer, int drawbuffer, int32* value);
         public static GlClearBufferiv glClearBufferiv;
 
-        public function void GlClearBufferuiv(uint buffer, int drawbuffer, uint* value);
+        public function void GlClearBufferuiv(uint buffer, int drawbuffer, uint32* value);
         public static GlClearBufferuiv glClearBufferuiv;
 
         public function void GlClearBufferfv(uint buffer, int drawbuffer, float* value);
@@ -2155,16 +2159,16 @@ namespace OpenGL {
         public function void GlBindRenderbuffer(uint target, uint renderbuffer);
         public static GlBindRenderbuffer glBindRenderbuffer;
 
-        public function void GlDeleteRenderbuffers(int n, uint* renderbuffers);
+        public function void GlDeleteRenderbuffers(int n, uint32* renderbuffers);
         public static GlDeleteRenderbuffers glDeleteRenderbuffers;
 
-        public function void GlGenRenderbuffers(int n, uint* renderbuffers);
+        public function void GlGenRenderbuffers(int n, uint32* renderbuffers);
         public static GlGenRenderbuffers glGenRenderbuffers;
 
         public function void GlRenderbufferStorage(uint target, uint internalformat, int width, int height);
         public static GlRenderbufferStorage glRenderbufferStorage;
 
-        public function void GlGetRenderbufferParameteriv(uint target, uint pname, int* paramss);
+        public function void GlGetRenderbufferParameteriv(uint target, uint pname, int32* paramss);
         public static GlGetRenderbufferParameteriv glGetRenderbufferParameteriv;
 
         public function uint8 GlIsFramebuffer(uint framebuffer);
@@ -2173,10 +2177,10 @@ namespace OpenGL {
         public function void GlBindFramebuffer(uint target, uint framebuffer);
         public static GlBindFramebuffer glBindFramebuffer;
 
-        public function void GlDeleteFramebuffers(int n, uint* framebuffers);
+        public function void GlDeleteFramebuffers(int n, uint32* framebuffers);
         public static GlDeleteFramebuffers glDeleteFramebuffers;
 
-        public function void GlGenFramebuffers(int n, uint* framebuffers);
+        public function void GlGenFramebuffers(int n, uint32* framebuffers);
         public static GlGenFramebuffers glGenFramebuffers;
 
         public function uint GlCheckFramebufferStatus(uint target);
@@ -2194,7 +2198,7 @@ namespace OpenGL {
         public function void GlFramebufferRenderbuffer(uint target, uint attachment, uint renderbuffertarget, uint renderbuffer);
         public static GlFramebufferRenderbuffer glFramebufferRenderbuffer;
 
-        public function void GlGetFramebufferAttachmentParameteriv(uint target, uint attachment, uint pname, int* paramss);
+        public function void GlGetFramebufferAttachmentParameteriv(uint target, uint attachment, uint pname, int32* paramss);
         public static GlGetFramebufferAttachmentParameteriv glGetFramebufferAttachmentParameteriv;
 
         public function void GlGenerateMipmap(uint target);
@@ -2209,7 +2213,7 @@ namespace OpenGL {
         public function void GlFramebufferTextureLayer(uint target, uint attachment, uint texture, int level, int layer);
         public static GlFramebufferTextureLayer glFramebufferTextureLayer;
 
-        public function void* GlMapBufferRange(uint target, int offset, int length, uint access);
+        public function void GlMapBufferRange(uint target, int offset, int length, uint access);
         public static GlMapBufferRange glMapBufferRange;
 
         public function void GlFlushMappedBufferRange(uint target, int offset, int length);
@@ -2218,10 +2222,10 @@ namespace OpenGL {
         public function void GlBindVertexArray(uint array);
         public static GlBindVertexArray glBindVertexArray;
 
-        public function void GlDeleteVertexArrays(int n, uint* arrays);
+        public function void GlDeleteVertexArrays(int n, uint32* arrays);
         public static GlDeleteVertexArrays glDeleteVertexArrays;
 
-        public function void GlGenVertexArrays(int n, uint* arrays);
+        public function void GlGenVertexArrays(int n, uint32* arrays);
         public static GlGenVertexArrays glGenVertexArrays;
 
         public function uint8 GlIsVertexArray(uint array);
@@ -2242,22 +2246,22 @@ namespace OpenGL {
         public function void GlCopyBufferSubData(uint readTarget, uint writeTarget, int readOffset, int writeOffset, int size);
         public static GlCopyBufferSubData glCopyBufferSubData;
 
-        public function void GlGetUniformIndices(uint program, int uniformCount, char8** uniformNames, uint* uniformIndices);
+        public function void GlGetUniformIndices(uint program, int uniformCount, char8** uniformNames, uint32* uniformIndices);
         public static GlGetUniformIndices glGetUniformIndices;
 
-        public function void GlGetActiveUniformsiv(uint program, int uniformCount, uint* uniformIndices, uint pname, int* paramss);
+        public function void GlGetActiveUniformsiv(uint program, int uniformCount, uint32* uniformIndices, uint pname, int32* paramss);
         public static GlGetActiveUniformsiv glGetActiveUniformsiv;
 
-        public function void GlGetActiveUniformName(uint program, uint uniformIndex, int bufSize, int* length, char8* uniformName);
+        public function void GlGetActiveUniformName(uint program, uint uniformIndex, int bufSize, int32* length, char8* uniformName);
         public static GlGetActiveUniformName glGetActiveUniformName;
 
         public function uint GlGetUniformBlockIndex(uint program, char8* uniformBlockName);
         public static GlGetUniformBlockIndex glGetUniformBlockIndex;
 
-        public function void GlGetActiveUniformBlockiv(uint program, uint uniformBlockIndex, uint pname, int* paramss);
+        public function void GlGetActiveUniformBlockiv(uint program, uint uniformBlockIndex, uint pname, int32* paramss);
         public static GlGetActiveUniformBlockiv glGetActiveUniformBlockiv;
 
-        public function void GlGetActiveUniformBlockName(uint program, uint uniformBlockIndex, int bufSize, int* length, char8* uniformBlockName);
+        public function void GlGetActiveUniformBlockName(uint program, uint uniformBlockIndex, int bufSize, int32* length, char8* uniformBlockName);
         public static GlGetActiveUniformBlockName glGetActiveUniformBlockName;
 
         public function void GlUniformBlockBinding(uint program, uint uniformBlockIndex, uint uniformBlockBinding);
@@ -2272,7 +2276,7 @@ namespace OpenGL {
         public function void GlDrawElementsInstancedBaseVertex(uint mode, int count, uint type, void* indices, int instancecount, int basevertex);
         public static GlDrawElementsInstancedBaseVertex glDrawElementsInstancedBaseVertex;
 
-        public function void GlMultiDrawElementsBaseVertex(uint mode, int* count, uint type, void *** indices, int drawcount, int* basevertex);
+        public function void GlMultiDrawElementsBaseVertex(uint mode, int32* count, uint type, void *** indices, int drawcount, int32* basevertex);
         public static GlMultiDrawElementsBaseVertex glMultiDrawElementsBaseVertex;
 
         public function void GlProvokingVertex(uint mode);
@@ -2296,7 +2300,7 @@ namespace OpenGL {
         public function void GlGetInteger64v(uint pname, int64* data);
         public static GlGetInteger64v glGetInteger64v;
 
-        public function void GlGetSynciv(void* sync, uint pname, int count, int* length, int* values);
+        public function void GlGetSynciv(void* sync, uint pname, int count, int32* length, int32* values);
         public static GlGetSynciv glGetSynciv;
 
         public function void GlGetInteger64i_v(uint target, uint index, int64* data);
@@ -2326,10 +2330,10 @@ namespace OpenGL {
         public function int GlGetFragDataIndex(uint program, char8* name);
         public static GlGetFragDataIndex glGetFragDataIndex;
 
-        public function void GlGenSamplers(int count, uint* samplers);
+        public function void GlGenSamplers(int count, uint32* samplers);
         public static GlGenSamplers glGenSamplers;
 
-        public function void GlDeleteSamplers(int count, uint* samplers);
+        public function void GlDeleteSamplers(int count, uint32* samplers);
         public static GlDeleteSamplers glDeleteSamplers;
 
         public function uint8 GlIsSampler(uint sampler);
@@ -2341,7 +2345,7 @@ namespace OpenGL {
         public function void GlSamplerParameteri(uint sampler, uint pname, int param);
         public static GlSamplerParameteri glSamplerParameteri;
 
-        public function void GlSamplerParameteriv(uint sampler, uint pname, int* param);
+        public function void GlSamplerParameteriv(uint sampler, uint pname, int32* param);
         public static GlSamplerParameteriv glSamplerParameteriv;
 
         public function void GlSamplerParameterf(uint sampler, uint pname, float param);
@@ -2350,22 +2354,22 @@ namespace OpenGL {
         public function void GlSamplerParameterfv(uint sampler, uint pname, float* param);
         public static GlSamplerParameterfv glSamplerParameterfv;
 
-        public function void GlSamplerParameterIiv(uint sampler, uint pname, int* param);
+        public function void GlSamplerParameterIiv(uint sampler, uint pname, int32* param);
         public static GlSamplerParameterIiv glSamplerParameterIiv;
 
-        public function void GlSamplerParameterIuiv(uint sampler, uint pname, uint* param);
+        public function void GlSamplerParameterIuiv(uint sampler, uint pname, uint32* param);
         public static GlSamplerParameterIuiv glSamplerParameterIuiv;
 
-        public function void GlGetSamplerParameteriv(uint sampler, uint pname, int* paramss);
+        public function void GlGetSamplerParameteriv(uint sampler, uint pname, int32* paramss);
         public static GlGetSamplerParameteriv glGetSamplerParameteriv;
 
-        public function void GlGetSamplerParameterIiv(uint sampler, uint pname, int* paramss);
+        public function void GlGetSamplerParameterIiv(uint sampler, uint pname, int32* paramss);
         public static GlGetSamplerParameterIiv glGetSamplerParameterIiv;
 
         public function void GlGetSamplerParameterfv(uint sampler, uint pname, float* paramss);
         public static GlGetSamplerParameterfv glGetSamplerParameterfv;
 
-        public function void GlGetSamplerParameterIuiv(uint sampler, uint pname, uint* paramss);
+        public function void GlGetSamplerParameterIuiv(uint sampler, uint pname, uint32* paramss);
         public static GlGetSamplerParameterIuiv glGetSamplerParameterIuiv;
 
         public function void GlQueryCounter(uint id, uint target);
@@ -2383,25 +2387,25 @@ namespace OpenGL {
         public function void GlVertexAttribP1ui(uint index, uint type, uint8 normalized, uint value);
         public static GlVertexAttribP1ui glVertexAttribP1ui;
 
-        public function void GlVertexAttribP1uiv(uint index, uint type, uint8 normalized, uint* value);
+        public function void GlVertexAttribP1uiv(uint index, uint type, uint8 normalized, uint32* value);
         public static GlVertexAttribP1uiv glVertexAttribP1uiv;
 
         public function void GlVertexAttribP2ui(uint index, uint type, uint8 normalized, uint value);
         public static GlVertexAttribP2ui glVertexAttribP2ui;
 
-        public function void GlVertexAttribP2uiv(uint index, uint type, uint8 normalized, uint* value);
+        public function void GlVertexAttribP2uiv(uint index, uint type, uint8 normalized, uint32* value);
         public static GlVertexAttribP2uiv glVertexAttribP2uiv;
 
         public function void GlVertexAttribP3ui(uint index, uint type, uint8 normalized, uint value);
         public static GlVertexAttribP3ui glVertexAttribP3ui;
 
-        public function void GlVertexAttribP3uiv(uint index, uint type, uint8 normalized, uint* value);
+        public function void GlVertexAttribP3uiv(uint index, uint type, uint8 normalized, uint32* value);
         public static GlVertexAttribP3uiv glVertexAttribP3uiv;
 
         public function void GlVertexAttribP4ui(uint index, uint type, uint8 normalized, uint value);
         public static GlVertexAttribP4ui glVertexAttribP4ui;
 
-        public function void GlVertexAttribP4uiv(uint index, uint type, uint8 normalized, uint* value);
+        public function void GlVertexAttribP4uiv(uint index, uint type, uint8 normalized, uint32* value);
         public static GlVertexAttribP4uiv glVertexAttribP4uiv;
 
         public function void GlMinSampleShading(float value);
@@ -2485,22 +2489,22 @@ namespace OpenGL {
         public function uint GlGetSubroutineIndex(uint program, uint shadertype, char8* name);
         public static GlGetSubroutineIndex glGetSubroutineIndex;
 
-        public function void GlGetActiveSubroutineUniformiv(uint program, uint shadertype, uint index, uint pname, int* values);
+        public function void GlGetActiveSubroutineUniformiv(uint program, uint shadertype, uint index, uint pname, int32* values);
         public static GlGetActiveSubroutineUniformiv glGetActiveSubroutineUniformiv;
 
-        public function void GlGetActiveSubroutineUniformName(uint program, uint shadertype, uint index, int bufSize, int* length, char8* name);
+        public function void GlGetActiveSubroutineUniformName(uint program, uint shadertype, uint index, int bufSize, int32* length, char8* name);
         public static GlGetActiveSubroutineUniformName glGetActiveSubroutineUniformName;
 
-        public function void GlGetActiveSubroutineName(uint program, uint shadertype, uint index, int bufSize, int* length, char8* name);
+        public function void GlGetActiveSubroutineName(uint program, uint shadertype, uint index, int bufSize, int32* length, char8* name);
         public static GlGetActiveSubroutineName glGetActiveSubroutineName;
 
-        public function void GlUniformSubroutinesuiv(uint shadertype, int count, uint* indices);
+        public function void GlUniformSubroutinesuiv(uint shadertype, int count, uint32* indices);
         public static GlUniformSubroutinesuiv glUniformSubroutinesuiv;
 
-        public function void GlGetUniformSubroutineuiv(uint shadertype, int location, uint* paramss);
+        public function void GlGetUniformSubroutineuiv(uint shadertype, int location, uint32* paramss);
         public static GlGetUniformSubroutineuiv glGetUniformSubroutineuiv;
 
-        public function void GlGetProgramStageiv(uint program, uint shadertype, uint pname, int* values);
+        public function void GlGetProgramStageiv(uint program, uint shadertype, uint pname, int32* values);
         public static GlGetProgramStageiv glGetProgramStageiv;
 
         public function void GlPatchParameteri(uint pname, int value);
@@ -2512,10 +2516,10 @@ namespace OpenGL {
         public function void GlBindTransformFeedback(uint target, uint id);
         public static GlBindTransformFeedback glBindTransformFeedback;
 
-        public function void GlDeleteTransformFeedbacks(int n, uint* ids);
+        public function void GlDeleteTransformFeedbacks(int n, uint32* ids);
         public static GlDeleteTransformFeedbacks glDeleteTransformFeedbacks;
 
-        public function void GlGenTransformFeedbacks(int n, uint* ids);
+        public function void GlGenTransformFeedbacks(int n, uint32* ids);
         public static GlGenTransformFeedbacks glGenTransformFeedbacks;
 
         public function uint8 GlIsTransformFeedback(uint id);
@@ -2539,16 +2543,16 @@ namespace OpenGL {
         public function void GlEndQueryIndexed(uint target, uint index);
         public static GlEndQueryIndexed glEndQueryIndexed;
 
-        public function void GlGetQueryIndexediv(uint target, uint index, uint pname, int* paramss);
+        public function void GlGetQueryIndexediv(uint target, uint index, uint pname, int32* paramss);
         public static GlGetQueryIndexediv glGetQueryIndexediv;
 
         public function void GlReleaseShaderCompiler();
         public static GlReleaseShaderCompiler glReleaseShaderCompiler;
 
-        public function void GlShaderBinary(int count, uint* shaders, uint binaryformat, void* binary, int length);
+        public function void GlShaderBinary(int count, uint32* shaders, uint binaryFormat, void* binary, int length);
         public static GlShaderBinary glShaderBinary;
 
-        public function void GlGetShaderPrecisionFormat(uint shadertype, uint precisiontype, int* range, int* precision);
+        public function void GlGetShaderPrecisionFormat(uint shadertype, uint precisiontype, int32* range, int32* precision);
         public static GlGetShaderPrecisionFormat glGetShaderPrecisionFormat;
 
         public function void GlDepthRangef(float n, float f);
@@ -2557,7 +2561,7 @@ namespace OpenGL {
         public function void GlClearDepthf(float d);
         public static GlClearDepthf glClearDepthf;
 
-        public function void GlGetProgramBinary(uint program, int bufSize, int* length, uint* binaryFormat, void* binary);
+        public function void GlGetProgramBinary(uint program, int bufSize, int32* length, uint32* binaryFormat, void* binary);
         public static GlGetProgramBinary glGetProgramBinary;
 
         public function void GlProgramBinary(uint program, uint binaryFormat, void* binary, int length);
@@ -2578,22 +2582,22 @@ namespace OpenGL {
         public function void GlBindProgramPipeline(uint pipeline);
         public static GlBindProgramPipeline glBindProgramPipeline;
 
-        public function void GlDeleteProgramPipelines(int n, uint* pipelines);
+        public function void GlDeleteProgramPipelines(int n, uint32* pipelines);
         public static GlDeleteProgramPipelines glDeleteProgramPipelines;
 
-        public function void GlGenProgramPipelines(int n, uint* pipelines);
+        public function void GlGenProgramPipelines(int n, uint32* pipelines);
         public static GlGenProgramPipelines glGenProgramPipelines;
 
         public function uint8 GlIsProgramPipeline(uint pipeline);
         public static GlIsProgramPipeline glIsProgramPipeline;
 
-        public function void GlGetProgramPipelineiv(uint pipeline, uint pname, int* paramss);
+        public function void GlGetProgramPipelineiv(uint pipeline, uint pname, int32* paramss);
         public static GlGetProgramPipelineiv glGetProgramPipelineiv;
 
         public function void GlProgramUniform1i(uint program, int location, int v0);
         public static GlProgramUniform1i glProgramUniform1i;
 
-        public function void GlProgramUniform1iv(uint program, int location, int count, int* value);
+        public function void GlProgramUniform1iv(uint program, int location, int count, int32* value);
         public static GlProgramUniform1iv glProgramUniform1iv;
 
         public function void GlProgramUniform1f(uint program, int location, float v0);
@@ -2611,13 +2615,13 @@ namespace OpenGL {
         public function void GlProgramUniform1ui(uint program, int location, uint v0);
         public static GlProgramUniform1ui glProgramUniform1ui;
 
-        public function void GlProgramUniform1uiv(uint program, int location, int count, uint* value);
+        public function void GlProgramUniform1uiv(uint program, int location, int count, uint32* value);
         public static GlProgramUniform1uiv glProgramUniform1uiv;
 
         public function void GlProgramUniform2i(uint program, int location, int v0, int v1);
         public static GlProgramUniform2i glProgramUniform2i;
 
-        public function void GlProgramUniform2iv(uint program, int location, int count, int* value);
+        public function void GlProgramUniform2iv(uint program, int location, int count, int32* value);
         public static GlProgramUniform2iv glProgramUniform2iv;
 
         public function void GlProgramUniform2f(uint program, int location, float v0, float v1);
@@ -2635,13 +2639,13 @@ namespace OpenGL {
         public function void GlProgramUniform2ui(uint program, int location, uint v0, uint v1);
         public static GlProgramUniform2ui glProgramUniform2ui;
 
-        public function void GlProgramUniform2uiv(uint program, int location, int count, uint* value);
+        public function void GlProgramUniform2uiv(uint program, int location, int count, uint32* value);
         public static GlProgramUniform2uiv glProgramUniform2uiv;
 
         public function void GlProgramUniform3i(uint program, int location, int v0, int v1, int v2);
         public static GlProgramUniform3i glProgramUniform3i;
 
-        public function void GlProgramUniform3iv(uint program, int location, int count, int* value);
+        public function void GlProgramUniform3iv(uint program, int location, int count, int32* value);
         public static GlProgramUniform3iv glProgramUniform3iv;
 
         public function void GlProgramUniform3f(uint program, int location, float v0, float v1, float v2);
@@ -2659,13 +2663,13 @@ namespace OpenGL {
         public function void GlProgramUniform3ui(uint program, int location, uint v0, uint v1, uint v2);
         public static GlProgramUniform3ui glProgramUniform3ui;
 
-        public function void GlProgramUniform3uiv(uint program, int location, int count, uint* value);
+        public function void GlProgramUniform3uiv(uint program, int location, int count, uint32* value);
         public static GlProgramUniform3uiv glProgramUniform3uiv;
 
         public function void GlProgramUniform4i(uint program, int location, int v0, int v1, int v2, int v3);
         public static GlProgramUniform4i glProgramUniform4i;
 
-        public function void GlProgramUniform4iv(uint program, int location, int count, int* value);
+        public function void GlProgramUniform4iv(uint program, int location, int count, int32* value);
         public static GlProgramUniform4iv glProgramUniform4iv;
 
         public function void GlProgramUniform4f(uint program, int location, float v0, float v1, float v2, float v3);
@@ -2683,7 +2687,7 @@ namespace OpenGL {
         public function void GlProgramUniform4ui(uint program, int location, uint v0, uint v1, uint v2, uint v3);
         public static GlProgramUniform4ui glProgramUniform4ui;
 
-        public function void GlProgramUniform4uiv(uint program, int location, int count, uint* value);
+        public function void GlProgramUniform4uiv(uint program, int location, int count, uint32* value);
         public static GlProgramUniform4uiv glProgramUniform4uiv;
 
         public function void GlProgramUniformMatrix2fv(uint program, int location, int count, uint8 transpose, float* value);
@@ -2743,7 +2747,7 @@ namespace OpenGL {
         public function void GlValidateProgramPipeline(uint pipeline);
         public static GlValidateProgramPipeline glValidateProgramPipeline;
 
-        public function void GlGetProgramPipelineInfoLog(uint pipeline, int bufSize, int* length, char8* infoLog);
+        public function void GlGetProgramPipelineInfoLog(uint pipeline, int bufSize, int32* length, char8* infoLog);
         public static GlGetProgramPipelineInfoLog glGetProgramPipelineInfoLog;
 
         public function void GlVertexAttribL1d(uint index, double x);
@@ -2785,13 +2789,13 @@ namespace OpenGL {
         public function void GlViewportIndexedfv(uint index, float* v);
         public static GlViewportIndexedfv glViewportIndexedfv;
 
-        public function void GlScissorArrayv(uint first, int count, int* v);
+        public function void GlScissorArrayv(uint first, int count, int32* v);
         public static GlScissorArrayv glScissorArrayv;
 
         public function void GlScissorIndexed(uint index, int left, int bottom, int width, int height);
         public static GlScissorIndexed glScissorIndexed;
 
-        public function void GlScissorIndexedv(uint index, int* v);
+        public function void GlScissorIndexedv(uint index, int32* v);
         public static GlScissorIndexedv glScissorIndexedv;
 
         public function void GlDepthRangeArrayv(uint first, int count, double* v);
@@ -2815,10 +2819,10 @@ namespace OpenGL {
         public function void GlDrawElementsInstancedBaseVertexBaseInstance(uint mode, int count, uint type, void* indices, int instancecount, int basevertex, uint baseinstance);
         public static GlDrawElementsInstancedBaseVertexBaseInstance glDrawElementsInstancedBaseVertexBaseInstance;
 
-        public function void GlGetInternalformativ(uint target, uint internalformat, uint pname, int count, int* paramss);
+        public function void GlGetInternalformativ(uint target, uint internalformat, uint pname, int count, int32* paramss);
         public static GlGetInternalformativ glGetInternalformativ;
 
-        public function void GlGetActiveAtomicCounterBufferiv(uint program, uint bufferIndex, uint pname, int* paramss);
+        public function void GlGetActiveAtomicCounterBufferiv(uint program, uint bufferIndex, uint pname, int32* paramss);
         public static GlGetActiveAtomicCounterBufferiv glGetActiveAtomicCounterBufferiv;
 
         public function void GlBindImageTexture(uint unit, uint texture, int level, uint8 layered, int layer, uint access, uint format);
@@ -2860,7 +2864,7 @@ namespace OpenGL {
         public function void GlFramebufferParameteri(uint target, uint pname, int param);
         public static GlFramebufferParameteri glFramebufferParameteri;
 
-        public function void GlGetFramebufferParameteriv(uint target, uint pname, int* paramss);
+        public function void GlGetFramebufferParameteriv(uint target, uint pname, int32* paramss);
         public static GlGetFramebufferParameteriv glGetFramebufferParameteriv;
 
         public function void GlGetInternalformati64v(uint target, uint internalformat, uint pname, int count, int64* paramss);
@@ -2878,10 +2882,10 @@ namespace OpenGL {
         public function void GlInvalidateBufferData(uint buffer);
         public static GlInvalidateBufferData glInvalidateBufferData;
 
-        public function void GlInvalidateFramebuffer(uint target, int numAttachments, uint* attachments);
+        public function void GlInvalidateFramebuffer(uint target, int numAttachments, uint32* attachments);
         public static GlInvalidateFramebuffer glInvalidateFramebuffer;
 
-        public function void GlInvalidateSubFramebuffer(uint target, int numAttachments, uint* attachments, int x, int y, int width, int height);
+        public function void GlInvalidateSubFramebuffer(uint target, int numAttachments, uint32* attachments, int x, int y, int width, int height);
         public static GlInvalidateSubFramebuffer glInvalidateSubFramebuffer;
 
         public function void GlMultiDrawArraysIndirect(uint mode, void* indirect, int drawcount, int stride);
@@ -2890,16 +2894,16 @@ namespace OpenGL {
         public function void GlMultiDrawElementsIndirect(uint mode, uint type, void* indirect, int drawcount, int stride);
         public static GlMultiDrawElementsIndirect glMultiDrawElementsIndirect;
 
-        public function void GlGetProgramInterfaceiv(uint program, uint programInterface, uint pname, int* paramss);
+        public function void GlGetProgramInterfaceiv(uint program, uint programInterface, uint pname, int32* paramss);
         public static GlGetProgramInterfaceiv glGetProgramInterfaceiv;
 
         public function uint GlGetProgramResourceIndex(uint program, uint programInterface, char8* name);
         public static GlGetProgramResourceIndex glGetProgramResourceIndex;
 
-        public function void GlGetProgramResourceName(uint program, uint programInterface, uint index, int bufSize, int* length, char8* name);
+        public function void GlGetProgramResourceName(uint program, uint programInterface, uint index, int bufSize, int32* length, char8* name);
         public static GlGetProgramResourceName glGetProgramResourceName;
 
-        public function void GlGetProgramResourceiv(uint program, uint programInterface, uint index, int propCount, uint* props, int count, int* length, int* paramss);
+        public function void GlGetProgramResourceiv(uint program, uint programInterface, uint index, int propCount, uint32* props, int count, int32* length, int32* paramss);
         public static GlGetProgramResourceiv glGetProgramResourceiv;
 
         public function int GlGetProgramResourceLocation(uint program, uint programInterface, char8* name);
@@ -2941,7 +2945,7 @@ namespace OpenGL {
         public function void GlVertexBindingDivisor(uint bindingindex, uint divisor);
         public static GlVertexBindingDivisor glVertexBindingDivisor;
 
-        public function void GlDebugMessageControl(uint source, uint type, uint severity, int count, uint* ids, uint8 enabled);
+        public function void GlDebugMessageControl(uint source, uint type, uint severity, int count, uint32* ids, uint8 enabled);
         public static GlDebugMessageControl glDebugMessageControl;
 
         public function void GlDebugMessageInsert(uint source, uint type, uint id, uint severity, int length, char8* buf);
@@ -2950,7 +2954,7 @@ namespace OpenGL {
         public function void GlDebugMessageCallback(function void(uint source, uint type, uint id, uint severity, int length, char8* message, void* userParam) callback, void* userParam);
         public static GlDebugMessageCallback glDebugMessageCallback;
 
-        public function uint GlGetDebugMessageLog(uint count, int bufSize, uint* sources, uint* types, uint* ids, uint* severities, int* lengths, char8* messageLog);
+        public function uint GlGetDebugMessageLog(uint count, int bufSize, uint32* sources, uint32* types, uint32* ids, uint32* severities, int32* lengths, char8* messageLog);
         public static GlGetDebugMessageLog glGetDebugMessageLog;
 
         public function void GlPushDebugGroup(uint source, uint id, int length, char8* message);
@@ -2962,13 +2966,13 @@ namespace OpenGL {
         public function void GlObjectLabel(uint identifier, uint name, int length, char8* label);
         public static GlObjectLabel glObjectLabel;
 
-        public function void GlGetObjectLabel(uint identifier, uint name, int bufSize, int* length, char8* label);
+        public function void GlGetObjectLabel(uint identifier, uint name, int bufSize, int32* length, char8* label);
         public static GlGetObjectLabel glGetObjectLabel;
 
         public function void GlObjectPtrLabel(void* ptr, int length, char8* label);
         public static GlObjectPtrLabel glObjectPtrLabel;
 
-        public function void GlGetObjectPtrLabel(void* ptr, int bufSize, int* length, char8* label);
+        public function void GlGetObjectPtrLabel(void* ptr, int bufSize, int32* length, char8* label);
         public static GlGetObjectPtrLabel glGetObjectPtrLabel;
 
         public function void GlGetPointerv(uint pname, void *** paramss);
@@ -2983,28 +2987,28 @@ namespace OpenGL {
         public function void GlClearTexSubImage(uint texture, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, uint format, uint type, void* data);
         public static GlClearTexSubImage glClearTexSubImage;
 
-        public function void GlBindBuffersBase(uint target, uint first, int count, uint* buffers);
+        public function void GlBindBuffersBase(uint target, uint first, int count, uint32* buffers);
         public static GlBindBuffersBase glBindBuffersBase;
 
-        public function void GlBindBuffersRange(uint target, uint first, int count, uint* buffers, int* offsets, int* sizes);
+        public function void GlBindBuffersRange(uint target, uint first, int count, uint32* buffers, int32* offsets, int32* sizes);
         public static GlBindBuffersRange glBindBuffersRange;
 
-        public function void GlBindTextures(uint first, int count, uint* textures);
+        public function void GlBindTextures(uint first, int count, uint32* textures);
         public static GlBindTextures glBindTextures;
 
-        public function void GlBindSamplers(uint first, int count, uint* samplers);
+        public function void GlBindSamplers(uint first, int count, uint32* samplers);
         public static GlBindSamplers glBindSamplers;
 
-        public function void GlBindImageTextures(uint first, int count, uint* textures);
+        public function void GlBindImageTextures(uint first, int count, uint32* textures);
         public static GlBindImageTextures glBindImageTextures;
 
-        public function void GlBindVertexBuffers(uint first, int count, uint* buffers, int* offsets, int* strides);
+        public function void GlBindVertexBuffers(uint first, int count, uint32* buffers, int32* offsets, int32* strides);
         public static GlBindVertexBuffers glBindVertexBuffers;
 
         public function void GlClipControl(uint origin, uint depth);
         public static GlClipControl glClipControl;
 
-        public function void GlCreateTransformFeedbacks(int n, uint* ids);
+        public function void GlCreateTransformFeedbacks(int n, uint32* ids);
         public static GlCreateTransformFeedbacks glCreateTransformFeedbacks;
 
         public function void GlTransformFeedbackBufferBase(uint xfb, uint index, uint buffer);
@@ -3013,16 +3017,16 @@ namespace OpenGL {
         public function void GlTransformFeedbackBufferRange(uint xfb, uint index, uint buffer, int offset, int size);
         public static GlTransformFeedbackBufferRange glTransformFeedbackBufferRange;
 
-        public function void GlGetTransformFeedbackiv(uint xfb, uint pname, int* param);
+        public function void GlGetTransformFeedbackiv(uint xfb, uint pname, int32* param);
         public static GlGetTransformFeedbackiv glGetTransformFeedbackiv;
 
-        public function void GlGetTransformFeedbacki_v(uint xfb, uint pname, uint index, int* param);
+        public function void GlGetTransformFeedbacki_v(uint xfb, uint pname, uint index, int32* param);
         public static GlGetTransformFeedbacki_v glGetTransformFeedbacki_v;
 
         public function void GlGetTransformFeedbacki64_v(uint xfb, uint pname, uint index, int64* param);
         public static GlGetTransformFeedbacki64_v glGetTransformFeedbacki64_v;
 
-        public function void GlCreateBuffers(int n, uint* buffers);
+        public function void GlCreateBuffers(int n, uint32* buffers);
         public static GlCreateBuffers glCreateBuffers;
 
         public function void GlNamedBufferStorage(uint buffer, int size, void* data, uint flags);
@@ -3055,7 +3059,7 @@ namespace OpenGL {
         public function void GlFlushMappedNamedBufferRange(uint buffer, int offset, int length);
         public static GlFlushMappedNamedBufferRange glFlushMappedNamedBufferRange;
 
-        public function void GlGetNamedBufferParameteriv(uint buffer, uint pname, int* paramss);
+        public function void GlGetNamedBufferParameteriv(uint buffer, uint pname, int32* paramss);
         public static GlGetNamedBufferParameteriv glGetNamedBufferParameteriv;
 
         public function void GlGetNamedBufferParameteri64v(uint buffer, uint pname, int64* paramss);
@@ -3067,7 +3071,7 @@ namespace OpenGL {
         public function void GlGetNamedBufferSubData(uint buffer, int offset, int size, void* data);
         public static GlGetNamedBufferSubData glGetNamedBufferSubData;
 
-        public function void GlCreateFramebuffers(int n, uint* framebuffers);
+        public function void GlCreateFramebuffers(int n, uint32* framebuffers);
         public static GlCreateFramebuffers glCreateFramebuffers;
 
         public function void GlNamedFramebufferRenderbuffer(uint framebuffer, uint attachment, uint renderbuffertarget, uint renderbuffer);
@@ -3085,22 +3089,22 @@ namespace OpenGL {
         public function void GlNamedFramebufferDrawBuffer(uint framebuffer, uint buf);
         public static GlNamedFramebufferDrawBuffer glNamedFramebufferDrawBuffer;
 
-        public function void GlNamedFramebufferDrawBuffers(uint framebuffer, int n, uint* bufs);
+        public function void GlNamedFramebufferDrawBuffers(uint framebuffer, int n, uint32* bufs);
         public static GlNamedFramebufferDrawBuffers glNamedFramebufferDrawBuffers;
 
         public function void GlNamedFramebufferReadBuffer(uint framebuffer, uint src);
         public static GlNamedFramebufferReadBuffer glNamedFramebufferReadBuffer;
 
-        public function void GlInvalidateNamedFramebufferData(uint framebuffer, int numAttachments, uint* attachments);
+        public function void GlInvalidateNamedFramebufferData(uint framebuffer, int numAttachments, uint32* attachments);
         public static GlInvalidateNamedFramebufferData glInvalidateNamedFramebufferData;
 
-        public function void GlInvalidateNamedFramebufferSubData(uint framebuffer, int numAttachments, uint* attachments, int x, int y, int width, int height);
+        public function void GlInvalidateNamedFramebufferSubData(uint framebuffer, int numAttachments, uint32* attachments, int x, int y, int width, int height);
         public static GlInvalidateNamedFramebufferSubData glInvalidateNamedFramebufferSubData;
 
-        public function void GlClearNamedFramebufferiv(uint framebuffer, uint buffer, int drawbuffer, int* value);
+        public function void GlClearNamedFramebufferiv(uint framebuffer, uint buffer, int drawbuffer, int32* value);
         public static GlClearNamedFramebufferiv glClearNamedFramebufferiv;
 
-        public function void GlClearNamedFramebufferuiv(uint framebuffer, uint buffer, int drawbuffer, uint* value);
+        public function void GlClearNamedFramebufferuiv(uint framebuffer, uint buffer, int drawbuffer, uint32* value);
         public static GlClearNamedFramebufferuiv glClearNamedFramebufferuiv;
 
         public function void GlClearNamedFramebufferfv(uint framebuffer, uint buffer, int drawbuffer, float* value);
@@ -3115,13 +3119,13 @@ namespace OpenGL {
         public function uint GlCheckNamedFramebufferStatus(uint framebuffer, uint target);
         public static GlCheckNamedFramebufferStatus glCheckNamedFramebufferStatus;
 
-        public function void GlGetNamedFramebufferParameteriv(uint framebuffer, uint pname, int* param);
+        public function void GlGetNamedFramebufferParameteriv(uint framebuffer, uint pname, int32* param);
         public static GlGetNamedFramebufferParameteriv glGetNamedFramebufferParameteriv;
 
-        public function void GlGetNamedFramebufferAttachmentParameteriv(uint framebuffer, uint attachment, uint pname, int* paramss);
+        public function void GlGetNamedFramebufferAttachmentParameteriv(uint framebuffer, uint attachment, uint pname, int32* paramss);
         public static GlGetNamedFramebufferAttachmentParameteriv glGetNamedFramebufferAttachmentParameteriv;
 
-        public function void GlCreateRenderbuffers(int n, uint* renderbuffers);
+        public function void GlCreateRenderbuffers(int n, uint32* renderbuffers);
         public static GlCreateRenderbuffers glCreateRenderbuffers;
 
         public function void GlNamedRenderbufferStorage(uint renderbuffer, uint internalformat, int width, int height);
@@ -3130,10 +3134,10 @@ namespace OpenGL {
         public function void GlNamedRenderbufferStorageMultisample(uint renderbuffer, int samples, uint internalformat, int width, int height);
         public static GlNamedRenderbufferStorageMultisample glNamedRenderbufferStorageMultisample;
 
-        public function void GlGetNamedRenderbufferParameteriv(uint renderbuffer, uint pname, int* paramss);
+        public function void GlGetNamedRenderbufferParameteriv(uint renderbuffer, uint pname, int32* paramss);
         public static GlGetNamedRenderbufferParameteriv glGetNamedRenderbufferParameteriv;
 
-        public function void GlCreateTextures(uint target, int n, uint* textures);
+        public function void GlCreateTextures(uint target, int n, uint32* textures);
         public static GlCreateTextures glCreateTextures;
 
         public function void GlTextureBuffer(uint texture, uint internalformat, uint buffer);
@@ -3193,13 +3197,13 @@ namespace OpenGL {
         public function void GlTextureParameteri(uint texture, uint pname, int param);
         public static GlTextureParameteri glTextureParameteri;
 
-        public function void GlTextureParameterIiv(uint texture, uint pname, int* paramss);
+        public function void GlTextureParameterIiv(uint texture, uint pname, int32* paramss);
         public static GlTextureParameterIiv glTextureParameterIiv;
 
-        public function void GlTextureParameterIuiv(uint texture, uint pname, uint* paramss);
+        public function void GlTextureParameterIuiv(uint texture, uint pname, uint32* paramss);
         public static GlTextureParameterIuiv glTextureParameterIuiv;
 
-        public function void GlTextureParameteriv(uint texture, uint pname, int* param);
+        public function void GlTextureParameteriv(uint texture, uint pname, int32* param);
         public static GlTextureParameteriv glTextureParameteriv;
 
         public function void GlGenerateTextureMipmap(uint texture);
@@ -3217,22 +3221,22 @@ namespace OpenGL {
         public function void GlGetTextureLevelParameterfv(uint texture, int level, uint pname, float* paramss);
         public static GlGetTextureLevelParameterfv glGetTextureLevelParameterfv;
 
-        public function void GlGetTextureLevelParameteriv(uint texture, int level, uint pname, int* paramss);
+        public function void GlGetTextureLevelParameteriv(uint texture, int level, uint pname, int32* paramss);
         public static GlGetTextureLevelParameteriv glGetTextureLevelParameteriv;
 
         public function void GlGetTextureParameterfv(uint texture, uint pname, float* paramss);
         public static GlGetTextureParameterfv glGetTextureParameterfv;
 
-        public function void GlGetTextureParameterIiv(uint texture, uint pname, int* paramss);
+        public function void GlGetTextureParameterIiv(uint texture, uint pname, int32* paramss);
         public static GlGetTextureParameterIiv glGetTextureParameterIiv;
 
-        public function void GlGetTextureParameterIuiv(uint texture, uint pname, uint* paramss);
+        public function void GlGetTextureParameterIuiv(uint texture, uint pname, uint32* paramss);
         public static GlGetTextureParameterIuiv glGetTextureParameterIuiv;
 
-        public function void GlGetTextureParameteriv(uint texture, uint pname, int* paramss);
+        public function void GlGetTextureParameteriv(uint texture, uint pname, int32* paramss);
         public static GlGetTextureParameteriv glGetTextureParameteriv;
 
-        public function void GlCreateVertexArrays(int n, uint* arrays);
+        public function void GlCreateVertexArrays(int n, uint32* arrays);
         public static GlCreateVertexArrays glCreateVertexArrays;
 
         public function void GlDisableVertexArrayAttrib(uint vaobj, uint index);
@@ -3247,7 +3251,7 @@ namespace OpenGL {
         public function void GlVertexArrayVertexBuffer(uint vaobj, uint bindingindex, uint buffer, int offset, int stride);
         public static GlVertexArrayVertexBuffer glVertexArrayVertexBuffer;
 
-        public function void GlVertexArrayVertexBuffers(uint vaobj, uint first, int count, uint* buffers, int* offsets, int* strides);
+        public function void GlVertexArrayVertexBuffers(uint vaobj, uint first, int count, uint32* buffers, int32* offsets, int32* strides);
         public static GlVertexArrayVertexBuffers glVertexArrayVertexBuffers;
 
         public function void GlVertexArrayAttribBinding(uint vaobj, uint attribindex, uint bindingindex);
@@ -3265,22 +3269,22 @@ namespace OpenGL {
         public function void GlVertexArrayBindingDivisor(uint vaobj, uint bindingindex, uint divisor);
         public static GlVertexArrayBindingDivisor glVertexArrayBindingDivisor;
 
-        public function void GlGetVertexArrayiv(uint vaobj, uint pname, int* param);
+        public function void GlGetVertexArrayiv(uint vaobj, uint pname, int32* param);
         public static GlGetVertexArrayiv glGetVertexArrayiv;
 
-        public function void GlGetVertexArrayIndexediv(uint vaobj, uint index, uint pname, int* param);
+        public function void GlGetVertexArrayIndexediv(uint vaobj, uint index, uint pname, int32* param);
         public static GlGetVertexArrayIndexediv glGetVertexArrayIndexediv;
 
         public function void GlGetVertexArrayIndexed64iv(uint vaobj, uint index, uint pname, int64* param);
         public static GlGetVertexArrayIndexed64iv glGetVertexArrayIndexed64iv;
 
-        public function void GlCreateSamplers(int n, uint* samplers);
+        public function void GlCreateSamplers(int n, uint32* samplers);
         public static GlCreateSamplers glCreateSamplers;
 
-        public function void GlCreateProgramPipelines(int n, uint* pipelines);
+        public function void GlCreateProgramPipelines(int n, uint32* pipelines);
         public static GlCreateProgramPipelines glCreateProgramPipelines;
 
-        public function void GlCreateQueries(uint target, int n, uint* ids);
+        public function void GlCreateQueries(uint target, int n, uint32* ids);
         public static GlCreateQueries glCreateQueries;
 
         public function void GlGetQueryBufferObjecti64v(uint id, uint buffer, uint pname, int offset);
@@ -3319,10 +3323,10 @@ namespace OpenGL {
         public function void GlGetnUniformfv(uint program, int location, int bufSize, float* paramss);
         public static GlGetnUniformfv glGetnUniformfv;
 
-        public function void GlGetnUniformiv(uint program, int location, int bufSize, int* paramss);
+        public function void GlGetnUniformiv(uint program, int location, int bufSize, int32* paramss);
         public static GlGetnUniformiv glGetnUniformiv;
 
-        public function void GlGetnUniformuiv(uint program, int location, int bufSize, uint* paramss);
+        public function void GlGetnUniformuiv(uint program, int location, int bufSize, uint32* paramss);
         public static GlGetnUniformuiv glGetnUniformuiv;
 
         public function void GlReadnPixels(int x, int y, int width, int height, uint format, uint type, int bufSize, void* data);
@@ -3331,7 +3335,7 @@ namespace OpenGL {
         public function void GlTextureBarrier();
         public static GlTextureBarrier glTextureBarrier;
 
-        public function void GlSpecializeShader(uint shader, char8* pEntryPoint, uint numSpecializationConstants, uint* pConstantIndex, uint* pConstantValue);
+        public function void GlSpecializeShader(uint shader, char8* pEntryPoint, uint numSpecializationConstants, uint32* pConstantIndex, uint32* pConstantValue);
         public static GlSpecializeShader glSpecializeShader;
 
         public function void GlMultiDrawArraysIndirectCount(uint mode, void* indirect, int drawcount, int maxdrawcount, int stride);

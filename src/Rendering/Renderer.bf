@@ -47,7 +47,7 @@ namespace SpyroScope {
 		}
 
 		const uint maxGenericBufferLength = 0x6000;
-		static uint vertexArrayObject;
+		static uint32 vertexArrayObject;
 		static uint32[6] bufferID = .(?);
 		static Vector[maxGenericBufferLength] positions;
 		static Vector[maxGenericBufferLength] normals;
@@ -232,10 +232,10 @@ namespace SpyroScope {
 			GL.glShaderSource(shader, 1, &sourceData, null);
 			GL.glCompileShader(shader);
 
-			int status = GL.GL_FALSE;
+			int32 status = GL.GL_FALSE;
 			GL.glGetShaderiv(shader, GL.GL_COMPILE_STATUS, &status);
 			if (status == GL.GL_FALSE) {
-				int length = 0;
+				int32 length = 0;
 				GL.glGetShaderiv(shader, GL.GL_INFO_LOG_LENGTH, &length);
 
 				String message = scope String();
@@ -257,7 +257,7 @@ namespace SpyroScope {
 
 			GL.glLinkProgram(program);
 
-			int status = GL.GL_FALSE;
+			int32 status = GL.GL_FALSE;
 			GL.glGetProgramiv(program, GL.GL_LINK_STATUS, &status);
 			Debug.Assert(status == GL.GL_TRUE, "Program linking failed");
 
@@ -444,11 +444,11 @@ namespace SpyroScope {
 			}
 
 			char8[] buffer = scope .[1024];
-			uint severity = 0;
-			uint source = 0;
-			int messageSize = 0;
-			uint mType = 0;
-			uint id = 0;
+			uint32 severity = 0;
+			uint32 source = 0;
+			int32 messageSize = 0;
+			uint32 mType = 0;
+			uint32 id = 0;
 
 			bool error = false;
 
