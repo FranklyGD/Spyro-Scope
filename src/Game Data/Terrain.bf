@@ -382,11 +382,7 @@ namespace SpyroScope {
 
 		void ReloadAnimations() {
 			uint32 count = ?;
-			if (Emulator.installment == .SpyroTheDragon) {
-				count = 0; // Ignore animation for now...
-			} else {
-				Emulator.ReadFromRAM(Emulator.sceneRegionDeformPointers[(int)Emulator.rom] - 4, &count, 4);
-			}
+			Emulator.ReadFromRAM(Emulator.sceneRegionDeformPointers[(int)Emulator.rom] - 4, &count, 4);
 
 			delete animations;
 			animations = new .[count];

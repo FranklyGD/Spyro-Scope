@@ -66,17 +66,18 @@ namespace SpyroScope {
 			sourceNearMesh = terrainMeshes[regionIndex].nearMesh;
 
 			// Find triangles using these vertices
-			let terrainRegionIndicies = terrainMeshes[regionIndex].nearMesh2GameIndices;
-			List<uint32> nearAnimatedIndices = scope .();
+			let mesh2GameIndices = terrainMeshes[regionIndex].nearMesh2GameIndices;
+			List<uint32> gameVertexIndices = scope .();
 			nearAnimatedTriangles = new .();
-			for (var i = 0; i < terrainRegionIndicies.Count; i += 3) {
-				if (terrainRegionIndicies[i] < vertexCount ||
-					terrainRegionIndicies[i + 1] < vertexCount ||
-					terrainRegionIndicies[i + 2] < vertexCount) {
-
-					nearAnimatedIndices.Add(terrainRegionIndicies[i]);
-					nearAnimatedIndices.Add(terrainRegionIndicies[i + 1]);
-					nearAnimatedIndices.Add(terrainRegionIndicies[i + 2]);
+			for (var i = 0; i < mesh2GameIndices.Count; i += 3) {
+				if (mesh2GameIndices[i] < vertexCount ||
+					mesh2GameIndices[i + 1] < vertexCount ||
+					mesh2GameIndices[i + 2] < vertexCount) {
+						
+					// Include affected triangles and its vertices
+					gameVertexIndices.Add(mesh2GameIndices[i]);
+					gameVertexIndices.Add(mesh2GameIndices[i + 1]);
+					gameVertexIndices.Add(mesh2GameIndices[i + 2]);
 
 					nearAnimatedTriangles.Add(i);
 				}
@@ -106,12 +107,19 @@ namespace SpyroScope {
 				center = (upperBound + lowerBound) / 2;
 				radius = (upperBound - center).Length();
 
-				Vector[] v = new .[nearAnimatedIndices.Count];
-				Vector[] n = new .[nearAnimatedIndices.Count];
-				Renderer.Color4[] c = new .[nearAnimatedIndices.Count];
+				Vector[] v = new .[gameVertexIndices.Count];
+				Vector[] n = new .[gameVertexIndices.Count];
+				Renderer.Color4[] c = new .[gameVertexIndices.Count];
 
-				for (let i < nearAnimatedIndices.Count) {
-					v[i] = vertices[nearAnimatedIndices[i]];
+				for (let i < gameVertexIndices.Count) {
+					let nearIndex = gameVertexIndices[i];
+					if (nearIndex < vertexCount) {
+						v[i] = vertices[nearIndex];
+					} else {
+						// Include the vertices of the affected triangles
+						// even though they are not modified
+						v[i] = sourceNearMesh.vertices[nearAnimatedTriangles[i / 3] + (i % 3)];
+					}
 					c[i] = .(255,255,255);
 					n[i] = .(0,0,1);
 				}
