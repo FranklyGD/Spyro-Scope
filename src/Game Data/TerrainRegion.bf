@@ -35,7 +35,7 @@ namespace SpyroScope {
 		public Mesh nearMesh ~ delete _;
 		public List<uint8> nearMesh2GameIndices = new .() ~ delete _;
 		public List<int> nearFaceIndices = new .() ~ delete _;
-		public List<uint8> nearTextureIndices = new .() ~ delete _;
+		public List<uint8> nearTri2TextureIndices = new .() ~ delete _;
 
 		public Mesh nearMeshTransparent ~ delete _;
 		public List<uint8> nearMesh2GameTransparentIndices = new .() ~ delete _;
@@ -174,7 +174,7 @@ namespace SpyroScope {
 						activeUvList = uvList;
 						activeNearMeshIndices = nearMesh2GameIndices;
 						activeNearFaceIndices = nearFaceIndices;
-						activeNearTextureIndices = nearTextureIndices;
+						activeNearTextureIndices = nearTri2TextureIndices;
 					}
 
 					if (regionFace.isTriangle) {
@@ -305,10 +305,10 @@ namespace SpyroScope {
 				uint32[4] triangleIndices = ?;
 
 				uint32[] regionTriangles = scope .[faceSize * 2];
-				Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize) * 4, &regionTriangles[0], faceSize * 2 * 4);
+				Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize) * 4, regionTriangles.CArray(), faceSize * 2 * 4);
 
 				Renderer.Color4[] vertexColors = scope .[colorSize];
-				Emulator.ReadFromRAM(regionPointer + vertexSize * 4, &vertexColors[0], colorSize * 4);
+				Emulator.ReadFromRAM(regionPointer + vertexSize * 4, vertexColors.CArray(), colorSize * 4);
 
 				// Derived from Spyro the Dragon
 				// Vertex Indexing [80026378]

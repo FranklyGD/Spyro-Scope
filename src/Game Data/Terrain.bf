@@ -205,22 +205,23 @@ namespace SpyroScope {
 					let partialUV = nearQuad.GetVramPartialUV();
 					const let quadSize = TextureQuad.quadSize;
 
-					triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
-					triangleUV[1] = .(partialUV.left, partialUV.leftY);
-					triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
-					triangleUV[3] = .(partialUV.right, partialUV.rightY);
-
 					var opaqueMeshModified = false;
 					var transparentMeshModified = false;
 					for (let terrainRegion in visualMeshes) {
 						// Opaque Update
-						for (var triangleIndex = 0; triangleIndex < terrainRegion.nearTextureIndices.Count; triangleIndex++) {
+						for (var triangleIndex = 0; triangleIndex < terrainRegion.nearTri2TextureIndices.Count; triangleIndex++) {
 							let vertexIndex = triangleIndex * 3;
-							if (terrainRegion.nearTextureIndices[triangleIndex] == textureIndex) {
+							if (terrainRegion.nearTri2TextureIndices[triangleIndex] == textureIndex) {
 								opaqueMeshModified = true;
 
-								TerrainRegion.NearFace regionFace = terrainRegion.nearFaces[terrainRegion.nearFaceIndices[triangleIndex]];
+								let nearFaceIndex = terrainRegion.nearFaceIndices[triangleIndex];
+								TerrainRegion.NearFace regionFace = terrainRegion.nearFaces[nearFaceIndex];
 								let textureRotation = regionFace.renderInfo.rotation;
+
+								triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
+								triangleUV[1] = .(partialUV.left, partialUV.leftY);
+								triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
+								triangleUV[3] = .(partialUV.right, partialUV.rightY);
 
 								if (regionFace.isTriangle) {
 									float[3][2] rotatedTriangleUV = .(
@@ -263,8 +264,14 @@ namespace SpyroScope {
 
 							let vertexIndex = triangleIndex * 3;
 							if (terrainRegion.nearTextureTransparentIndices[triangleIndex] == textureIndex) {
-								TerrainRegion.NearFace regionFace = terrainRegion.nearFaces[terrainRegion.nearFaceTransparentIndices[triangleIndex]];
+								let nearFaceIndex = terrainRegion.nearFaceTransparentIndices[triangleIndex];
+								TerrainRegion.NearFace regionFace = terrainRegion.nearFaces[nearFaceIndex];
 								let textureRotation = regionFace.renderInfo.rotation;
+
+								triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
+								triangleUV[1] = .(partialUV.left, partialUV.leftY);
+								triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
+								triangleUV[3] = .(partialUV.right, partialUV.rightY);
 
 								if (regionFace.isTriangle) {
 									float[3][2] rotatedTriangleUV = .(
