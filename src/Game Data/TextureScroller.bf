@@ -37,7 +37,7 @@ namespace SpyroScope {
 			int quadCount = ?;
 			if (Emulator.installment == .SpyroTheDragon) {
 				quad = &Terrain.texturesLODs1[textureIndex].D1;
-				quadCount = 21;
+				quadCount = 5; // There is technically 21 texture quads, but the last 16 are almost unused
 			} else {
 				quad = &Terrain.texturesLODs[textureIndex].nearQuad;
 				quadCount = 6;

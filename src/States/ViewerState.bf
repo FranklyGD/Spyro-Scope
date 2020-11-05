@@ -888,6 +888,10 @@ namespace SpyroScope {
 		}
 
 		void DrawMoby(Moby object) {
+			if (Emulator.installment == .SpyroTheDragon) {
+				return; // Ignore drawing models for Spyro 1 for now
+			}
+
 			if (object.HasModel) {
 				if (modelSets.ContainsKey(object.objectTypeID)) {
 					let basis = Matrix.Euler(
@@ -901,7 +905,7 @@ namespace SpyroScope {
 					modelSets[object.objectTypeID].models[object.modelID].QueueInstance();
 				} else {
 					Emulator.Address modelSetAddress = ?;
-					//Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4); // Commented out for now since it was causing issues for Spyro 1, will deal with later.
+					Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
 
 					if (modelSetAddress != 0 && (int32)modelSetAddress > 0) {
 						modelSets.Add(object.objectTypeID, new .(modelSetAddress));
