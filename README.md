@@ -16,6 +16,7 @@ It can only support the following as of now:
 
 |Games|
 |-|
+|Spyro the Dragon NTSC U|
 |Spyro: Ripto's Rage NTSC|
 |Spyro: Year of the Dragon NTSC v1.1|
 
@@ -28,24 +29,24 @@ For those new to Github or its new, layout here is the link to [Releases](https:
 * Externally play/pause and step the game's update loop
 * View the levels in sync with the current game's view or separated on its own
 * The ability to move and look around using the game's camera
-* Display the collision mesh each level uses
-* Show each of the triangle's data in the collision mesh color coded of their "material"
-* Visualize deforming or animated pieces of collision mesh
+* Collision Mesh
+	* Show each of the triangle's data in the collision mesh color coded of their "material"
+	* Visualize deforming or pieces of the collision
+* Visual Mesh
+	* Render both their far low-poly mesh and near high-poly mesh
+	* See updating parts of the near mesh including
+		* Deformation of the mesh
+		* Scrolling & Swapping Textures
 * Show height levels where death occurs or the max free flight limit
 * Objects origins and their shapes (only static)
 * Teleport Spyro to the camera's current location
+* Move around Spyro and objects using an editor like tool
 
 ## Usage
 * `Right Mouse Hold` - Rotate View/Camera
 * `Right Mouse Hold + WASD` - Move Camera
 * Move mouse to top-left of window to show menu with toggles and actions with their shortcuts
 * Top middle button controls the game loop, left one Play/Pause while right one Steps (runs one frame)
-
-However, there is one thing to keep in mind when using this program...
-## *One* Major Issue
-Because this program is a separate program that reads memory at a different rate than any of the emulators that read and write to its RAM,
-there is a chance where in the process of reading, it may get invalid or old information that is in the process of being unloaded.
-Because of this, any form of major data changes in the RAM done by the emulator, such as loading into a new level or loading a save state if the emulator provides the ability to, will cause the program to crash. This will happen often if one plans to use save states often.
 
 ## Compiling
 Beef IDE is used to compile the project as the language used is *beeflang*.
