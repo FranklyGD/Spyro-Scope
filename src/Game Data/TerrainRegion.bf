@@ -10,7 +10,7 @@ namespace SpyroScope {
 			public uint16 centerY, centerX, a, centerZ;
 			public uint16 offsetY, offsetX, b, offsetZ;
 			public uint8 farVertexCount, farColorCount, farFaceCount, c;
-			public uint8 nearVertexCount, nearColorCount, nearFaceCount;
+			public uint8 nearVertexCount, nearColorCount, nearFaceCount, warpStart;
 
 			public bool verticallyScaledDown { get => a & 0b1000000000000 > 0; }
 		}

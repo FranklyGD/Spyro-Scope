@@ -184,18 +184,32 @@ namespace SpyroScope {
 				DeleteAndNullify!(animations);
 			}
 
-			/*Emulator.Address waterRegionArrayPointer = ?;
-			Emulator.waterRegionArrayPointers[(int)Emulator.rom].Read(&waterRegionArrayPointer);
+			// Derived from Spyro: Ripto's Rage [80023994] TODO
+			/*float clock = 0;
+
+			Emulator.Address warpingRegionArrayPointer = ?;
+			Emulator.warpingRegionPointers[(int)Emulator.rom].Read(&warpingRegionArrayPointer);
 			uint32 waterRegionOffset = ?;
-			Emulator.ReadFromRAM(waterRegionArrayPointer, &waterRegionOffset, 4);
+			Emulator.ReadFromRAM(warpingRegionArrayPointer, &waterRegionOffset, 4);
+			warpingRegionArrayPointer += waterRegionOffset;
 			uint32 waterRegionCount = ?;
-			Emulator.ReadFromRAM(waterRegionArrayPointer + waterRegionOffset, &waterRegionCount, 4);
-			(uint8 regionIndex, uint8, uint8, uint8)[] waterData = new .[waterRegionCount];
-			if (waterRegionCount > 0) {
-				Emulator.ReadFromRAM(waterRegionArrayPointer + waterRegionOffset + 4, &waterData[0], waterRegionCount * 4);
-				// Must be for the wavy animation
+			Emulator.ReadFromRAM(warpingRegionArrayPointer, &waterRegionCount, 4);
+			uint32[] warpData = new .[waterRegionCount];
+			Emulator.ReadFromRAM(warpingRegionArrayPointer + 4, warpData.CArray(), waterRegionCount * 4);
+			for (let i < waterRegionCount) {
+				let regionIndex = warpData[i] & 0xff;
+				let begin = warpingRegionArrayPointer + (warpData[i] >> 0x10);
+				let end = begin + (warpData[i] >> 6 & 0x3fc);
+				let count = (int)(end - begin) / 4;
+
+				uint32[] dataArray = scope .[count];
+				Emulator.ReadFromRAM(begin, dataArray.CArray(), count);
+				for (let ii < count) {
+					let data = dataArray[ii];
+					visualMeshes[regionIndex].vertices Math.Cos((float)(data + clock) / 128 * Math.PI_f * 2) * 20 + (data >> 0x10) |  & 0xfffffc00;
+				}
 			}
-			delete waterData;*/
+			delete warpData;*/
 		}
 
 		public void Update() {
