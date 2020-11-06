@@ -69,12 +69,43 @@ namespace SpyroScope {
 			}
 		}
 
-		// Begin Spyro games information
+		public const String[8] pointerLabels = .(
+			"Terrain Mesh",
+			"Terrain Deform",
+			"Terrain Collision",
+			"Terrain Collision Flags",
+			"Terrain Collision Deform",
+			"Textures",
+			"Texture Scrollers",
+			"Texture Swappers"
+		);
+		public static Address[8] loadedPointers;
+		public static bool[8] changedPointers;
+		public const Address<Address>[8][11] pointerSets = .(
+			sceneRegionPointers,
+			sceneRegionDeformPointers,
+			collisionDataPointers,
+			collisionFlagsArrayPointers,
+			collisionDeformDataPointers,
+			textureDataPointers,
+			textureScrollerPointers,
+			textureSwapperPointers
+		);
 
+		public enum LoadingStatus {
+			Idle,
+			Loading,
+			Done
+		}
+		public static LoadingStatus loadingStatus;
+
+		// Begin Spyro games information
+		
 		public const Address<char8>[10] testAddresses = .((.)0x800103e7/*StD*/, 0, 0, (.)0x80066ea8/*RR*/, 0, 0, (.)0x8006c3b0, (.)0x8006c490/*YotD-1.1*/, 0, 0);
 		public const String[11] gameNames = .(String.Empty, "Spyro the Dragon (NTSC-U)", "Spyro the Dragon (NTSC-J)", "Spyro the Dragon (PAL)", "Spyro: Ripto's Rage (NTSC-U)", "Spyro and Sparx: Tondemo Tours (NTSC-J)", "Spyro: Gateway to Glimmer (PAL)", "Spyro: Year of the Dragon (v1.0 NTSC-U)", "Spyro: Year of the Dragon (v1.1 NTSC-U)", "Spyro: Year of the Dragon (v1.0 PAL)", "Spyro: Year of the Dragon (v1.1 PAL)");
 
-		public const Address<uint32>[11] gameStateAddresses = .(0, (.)0x800757d8/*StD*/, 0, 0, (.)0x800681c8/*RR*/, 0, 0, (.)0x8006e344, (.)0x8006e424/*YotD-1.1*/, 0, 0);
+		public const Address<int32>[11] gameStateAddresses = .(0, (.)0x800757d8/*StD*/, 0, 0, (.)0x800681c8/*RR*/, 0, 0, (.)0x8006e344, (.)0x8006e424/*YotD-1.1*/, 0, 0);
+		public const Address<int32>[11] loadStateAddresses = .(0, (.)0x80075864/*StD*/, 0, 0, (.)0x80066eec/*RR*/, 0, 0, 0, (.)0x8006c5f8/*YotD-1.1*/, 0, 0);
 
 		public const Address<VectorInt>[11] spyroPositionAddresses = .(0, (.)0x80078a58/*StD*/, 0, 0, (.)0x80069ff0/*RR*/, 0, 0, (.)0x80070328, (.)0x80070408/*YotD-1.1*/, 0, 0);
 		public const Address<MatrixInt>[11] spyroMatrixAddresses = .(0, (.)0x80078a8c/*StD*/, 0, 0, (.)0x8006a020/*RR*/, 0, 0, (.)0x80070358, (.)0x80070438/*YotD-1.1*/, 0, 0);
@@ -112,7 +143,7 @@ namespace SpyroScope {
 		public const uint32[11] gameInputValue = .(0, 0/*StD*/, 0, 0, 0xac2283a0/*RR*/, 0, 0, 0, 0xae220030/*YotD-1.1*/, 0, 0);
 
 		// Game Values
-		public static uint32 gameState;
+		public static int32 gameState, loadState;
 
 		public static VectorInt cameraPosition, spyroPosition;
 		public static VectorInt spyroIntendedVelocity, spyroPhysicsVelocity;
@@ -193,6 +224,7 @@ namespace SpyroScope {
 
 		// Events
 		public static Action OnSceneChanged;
+		public static Action OnSceneChanging;
 
 		public static void FindEmulator() {
 			processHandle.Close();
@@ -242,6 +274,8 @@ namespace SpyroScope {
 
 				emulator = .None;
 				rom = .None;
+			} else {
+				FetchVRAMBaseAddress();
 			}
 		}
 
@@ -281,7 +315,6 @@ namespace SpyroScope {
 			}
 
 			if (rom != .None) {
-				FetchVRAMBaseAddress();
 				FetchStaticData();
 			}
 		}
@@ -314,6 +347,34 @@ namespace SpyroScope {
 			if (Windows.GetExitCodeProcess(processHandle, out exitCode) && exitCode != 259 /*STILL_ACTIVE*/) {
 				emulator = .None;
 				rom = .None;
+			}
+		}
+
+		public static void CheckSources() {
+			for (let i < 8) {
+				Address newLoadedPointer = ?;
+				var pointerSet = pointerSets[i];
+				let pointer = pointerSet[(int)Emulator.rom];
+
+				pointer.Read(&newLoadedPointer);
+				if (!newLoadedPointer.IsNull && loadedPointers[i] != newLoadedPointer) {
+					loadedPointers[i] = newLoadedPointer;
+					changedPointers[i] = true;
+
+					if (loadingStatus == .Idle) {
+						OnSceneChanging();
+					}
+
+					loadingStatus = .Loading;
+				}
+			}
+
+			if (loadingStatus == .Loading && loadState == -1) {
+				loadingStatus = .Done;
+
+				for (let i < 8) {
+					changedPointers[i] = false;
+				}
 			}
 		}
 
@@ -384,6 +445,9 @@ namespace SpyroScope {
 		}
 
 		public static void WriteToRAM(Address address, void* buffer, int size) {
+			if (loadingStatus == .Loading) {
+				return; // Do not try change anything while loading
+			}
 			let rawAddress = RawAddressFromRAM(address);
 			Windows.WriteProcessMemory(processHandle, rawAddress, buffer, size, null);
 		}
@@ -432,8 +496,9 @@ namespace SpyroScope {
 			Windows.ReadProcessMemory(processHandle, (void*)emulatorVRAMBaseAddress, &vramSnapshot[0], 1024 * 512 * 2, null);
 		}
 
-		public static void FetchImportantObjects() {
+		public static void FetchImportantData() {
 			gameStateAddresses[(int)rom].Read(&gameState);
+			loadStateAddresses[(int)rom].Read(&loadState);
 			spyroPositionAddresses[(int)rom].Read(&spyroPosition);
 			spyroMatrixAddresses[(int)rom].Read(&spyroBasis);
 			spyroIntendedVelocityAddresses[(int)rom].Read(&spyroIntendedVelocity);
@@ -445,14 +510,12 @@ namespace SpyroScope {
 
 			//ReadFromRAM((.)0x8006a28c, &collidingTriangle, 4);
 
-			Address newCollisionDataAddress = ?;
-			collisionDataPointers[(int)rom].Read(&newCollisionDataAddress);
-			if (newCollisionDataAddress != 0 && newCollisionDataAddress != collisionDataAddress) {
+			CheckSources();
+			if (loadingStatus == .Done) {
 				Thread.Sleep(500); // This is mainly needed for when emulators load snapshots/savestates
 				// as there is a big delay when loading the large data at once
 
-				collisionDataAddress = newCollisionDataAddress;
-
+				loadingStatus = .Idle;
 				OnSceneChanged();
 			}
 		}

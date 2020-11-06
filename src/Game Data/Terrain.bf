@@ -50,7 +50,7 @@ namespace SpyroScope {
 		}
 
 		public void Reload() {
-			delete terrainTexture;
+			//delete terrainTexture;
 			delete textureScrollers;
 			delete textureSwappers;
 
@@ -58,13 +58,13 @@ namespace SpyroScope {
 
 			// Get max amount of possible textures
 			if (Emulator.installment == .SpyroTheDragon) {
-				delete texturesLODs1;
+				//delete texturesLODs1;
 				Emulator.Address<TextureLOD1> textureDataAddress = ?;
 				Emulator.textureDataPointers[(int)Emulator.rom].Read(&textureDataAddress);
 				texturesLODs1 = new .[128];
 				textureDataAddress.ReadArray(&texturesLODs1[0], 128);
 			} else {
-				delete texturesLODs;
+				//delete texturesLODs;
 				Emulator.Address<TextureLOD> textureDataAddress = ?;
 				Emulator.textureDataPointers[(int)Emulator.rom].Read(&textureDataAddress);
 				texturesLODs = new .[128];
