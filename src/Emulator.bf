@@ -362,7 +362,7 @@ namespace SpyroScope {
 					changedPointers[i] = true;
 
 					if (loadingStatus == .Idle) {
-						OnSceneChanging();
+						OnSceneChanging?.Invoke();
 					}
 
 					loadingStatus = .Loading;
@@ -516,7 +516,7 @@ namespace SpyroScope {
 				// as there is a big delay when loading the large data at once
 
 				loadingStatus = .Idle;
-				OnSceneChanged();
+				OnSceneChanged?.Invoke();
 			}
 		}
 

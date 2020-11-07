@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace SpyroScope {
 	class WindowApp {
 		SDL.Window* window;
-		WindowState state;
+		WindowState state, lastState;
 		List<WindowState> states = new .();
 
 		public readonly uint32 id;
@@ -81,6 +81,12 @@ namespace SpyroScope {
 
 			state.Update();
 
+			if (lastState != state) {
+				// Do not draw immediately, as all the values for drawing have not initialized yet
+				lastState = state;
+				return;
+			}
+
 			GL.glBindTexture(GL.GL_TEXTURE_2D, Renderer.whiteTexture.textureObjectID);
 			Renderer.SetView(Camera.position, Camera.basis);
 			Renderer.SetProjection(WindowApp.viewerProjection);
@@ -104,11 +110,12 @@ namespace SpyroScope {
 			Renderer.Display();
 		}
 
-		public mixin GoToState<T>() where T : WindowState {
+		public void GoToState<T>() where T : WindowState {
 			for	(let state in states) {
 				let test = state is T;
 				if (test) {
 					this.state.Exit();
+					lastState = this.state;
 					this.state = state; 
 					state.Enter();
 					return;

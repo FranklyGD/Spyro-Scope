@@ -14,9 +14,9 @@ namespace SpyroScope {
 		}
 
 		public override void Update() {
-			if (Emulator.rom != .None) {
+			if (!(Emulator.emulator == .None || Emulator.rom == .None)) {
 				if (stopwatch.ElapsedMilliseconds > 3000) {
-					windowApp.GoToState!<ViewerState>();
+					windowApp.GoToState<ViewerState>();
 				}
 			} else if (stopwatch.ElapsedMilliseconds > 1000) {
 				if (Emulator.emulator == .None) {
@@ -47,12 +47,12 @@ namespace SpyroScope {
 				
 				let baseline = WindowApp.height / 2 - WindowApp.font.height * 1.5f;
 				let emulator = Emulator.emulatorNames[(int)Emulator.emulator];
-				let halfWidth = WindowApp.font.CalculateWidth(emulator) / 2;
+				let halfWidth = Math.Round(WindowApp.font.CalculateWidth(emulator) / 2);
 				WindowApp.font.Print(emulator, .(middleWindow - halfWidth, baseline, 0), .(255,255,255));
 			}
 
 			var baseline = (WindowApp.height - WindowApp.font.height) / 2;
-			let halfWidth = WindowApp.font.CalculateWidth(message) / 2;
+			let halfWidth = Math.Round(WindowApp.font.CalculateWidth(message) / 2);
 			WindowApp.font.Print(message, .(middleWindow - halfWidth, baseline, 0), .(255,255,255));
 
 			baseline += WindowApp.font.penLine;

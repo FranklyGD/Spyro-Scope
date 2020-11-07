@@ -288,7 +288,8 @@ namespace SpyroScope {
 			Emulator.FindGame();
 
 			if (Emulator.emulator == .None || Emulator.rom == .None) {
-				windowApp.GoToState!<SetupState>();
+				windowApp.GoToState<SetupState>();
+				return;
 			}
 
 			Emulator.FetchRAMBaseAddress();
@@ -342,7 +343,7 @@ namespace SpyroScope {
 				while (true) {
 					Moby object = ?;
 					objPointer.Read(&object);
-	
+
 					if (object.dataPointer.IsNull) {
 						break;
 					}
