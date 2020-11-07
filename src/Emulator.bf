@@ -274,8 +274,6 @@ namespace SpyroScope {
 
 				emulator = .None;
 				rom = .None;
-			} else {
-				FetchVRAMBaseAddress();
 			}
 		}
 
@@ -315,6 +313,7 @@ namespace SpyroScope {
 			}
 
 			if (rom != .None) {
+				FetchVRAMBaseAddress();
 				FetchStaticData();
 			}
 		}
@@ -347,6 +346,11 @@ namespace SpyroScope {
 			if (Windows.GetExitCodeProcess(processHandle, out exitCode) && exitCode != 259 /*STILL_ACTIVE*/) {
 				emulator = .None;
 				rom = .None;
+
+				for (let i < 8) {
+					loadedPointers[i] = 0;
+					changedPointers[i] = false;
+				}
 			}
 		}
 
