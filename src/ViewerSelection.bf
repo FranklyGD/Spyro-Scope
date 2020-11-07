@@ -22,12 +22,12 @@ namespace SpyroScope {
 		}
 
 		static bool MeshTest(ref float distance) {
-			let origin = Camera.ScreenPointToOrigin(WindowApp.mousePosition);
-			let ray = Camera.ScreenPointToRay(WindowApp.mousePosition);
-
 			if (ViewerState.terrain == null) {
 				return false;
 			}
+
+			let origin = Camera.ScreenPointToOrigin(WindowApp.mousePosition);
+			let ray = Camera.ScreenPointToRay(WindowApp.mousePosition);
 
 			if (ViewerState.terrain.renderMode == .Collision) {
 				if (GMath.RayMeshIntersect(origin, ray, ViewerState.terrain.collision.mesh, ref distance, ref currentTriangleIndex)) {
@@ -156,7 +156,7 @@ namespace SpyroScope {
 		}
 
 		static bool TerrainDeformHoverTest(ref float distance) {
-			if (ViewerState.terrain == null) {
+			if (ViewerState.terrain == null || !(ViewerState.terrain.renderMode == .Collision && ViewerState.terrain.collision.overlay == .Deform)) {
 				return false;
 			}
 

@@ -29,6 +29,7 @@ namespace SpyroScope {
 		public static void Test() {
 			if (passedTest != null) {
 				passedTest.Clear();
+				passedTest = null;
 			}
 
 			var depth = float.PositiveInfinity;

@@ -1151,7 +1151,7 @@ namespace SpyroScope {
 				let flagIndex = flagInfo & 0x3f;
 				let flagData = terrain.collision.GetCollisionFlagData(flagIndex);
 	
-				if (flagData.type < 11) {
+				if (flagData.type == 0 || flagData.type == 3 || flagData.type == 6 || flagData.type == 7) {
 					var screenPosition = Camera.SceneToScreen(cursor3DPosition);
 					screenPosition.x = Math.Floor(screenPosition.x);
 					screenPosition.y = Math.Floor(screenPosition.y);
