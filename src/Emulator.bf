@@ -7,19 +7,20 @@ namespace SpyroScope {
 	static struct Emulator {
 		static Windows.ProcessHandle processHandle;
 		static Windows.HModule moduleHandle; // Also contains the base address directly
-
+		
+		public const String[5] emulatorNames = .(String.Empty, "Nocash PSX", "Bizhawk", "ePSXe", "Mednafen");
 		public enum EmulatorType {
 			None,
 			NocashPSX,
 			Bizhawk,
-			ePSXe
+			ePSXe,
+			Mednafen
 		}
 		public static EmulatorType emulator;
 		static uint emulatorRAMBaseAddress;
 		static uint emulatorVRAMBaseAddress;
 		static public uint16[] vramSnapshot ~ delete _;
 		
-		public const String[4] emulatorNames = .(String.Empty, "Nocash PSX", "Bizhawk", "ePSXe");
 
 		public enum SpyroROM {
 			None,
@@ -247,6 +248,8 @@ namespace SpyroScope {
 						emulator = .Bizhawk;
 					case "ePSXe.exe":
 						emulator = .ePSXe;
+					case "mednafen.exe":
+						emulator = .Mednafen;
 				}
 
 				if (emulator != .None) {
@@ -263,6 +266,8 @@ namespace SpyroScope {
 					moduleHandle = GetModule(processHandle, "ePSXe.exe");
 				case .Bizhawk:
 					moduleHandle = GetModule(processHandle, "octoshock.dll");
+				case .Mednafen:
+					moduleHandle = GetModule(processHandle, "mednafen.exe");
 				default:
 					return;
 			}
@@ -408,6 +413,10 @@ namespace SpyroScope {
 					// Static address
 					emulatorRAMBaseAddress = (.)moduleHandle + 0x00A82020;
 				}
+				case .Mednafen : {
+					// Static address
+					emulatorRAMBaseAddress = (.)moduleHandle + 0x025BC280;
+				}
 
 				case .None: {
 					// Can't do much if you don't have an emulator to work with
@@ -433,6 +442,10 @@ namespace SpyroScope {
 					emulatorVRAMBaseAddress = (.)gpuModuleHandle + 0x00051F80;
 					// NOTE: According to Cheat Engine this should work, however...
 					// the module is not being listed and therefore cannot be found
+				}
+				case .Mednafen : {
+					// Static address
+					emulatorVRAMBaseAddress = (.)moduleHandle + 0x027d0eb8;
 				}
 				default : // Well this is awkward...
 			}
