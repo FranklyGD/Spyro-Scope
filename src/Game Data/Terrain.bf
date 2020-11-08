@@ -36,17 +36,24 @@ namespace SpyroScope {
 		public ~this() {
 			DeleteContainerAndItems!(visualMeshes);
 
-			if (animations != null) {
-				for (var item in animations) {
-					item.Dispose();
-				}
+			for (var item in animations) {
+				item.Dispose();
 			}
 			delete animations;
+
+			for (var item in textureScrollers) {
+				item.Dispose();
+			}
+			delete textureScrollers;
+
+			for (var item in textureSwappers) {
+				item.Dispose();
+			}
+			delete textureSwappers;
+
 			delete terrainTexture;
 			delete texturesLODs;
 			delete texturesLODs1;
-			delete textureScrollers;
-			delete textureSwappers;
 		}
 
 		public void Reload() {
@@ -154,7 +161,7 @@ namespace SpyroScope {
 				Emulator.Address[] textureScrollerAddresses = new .[textureScrollerCount];
 				textureScrollerArrayAddress.ReadArray(&textureScrollerAddresses[0], textureScrollerCount);
 				for (let i < textureScrollerCount) {
-					textureScrollers[i] = .(textureScrollerAddresses[i]);
+					textureScrollers[i] = .(textureScrollerAddresses[i], visualMeshes);
 				}
 				delete textureScrollerAddresses;
 			}
@@ -171,7 +178,7 @@ namespace SpyroScope {
 				Emulator.Address[] textureScrollerAddresses = new .[textureSwapperCount];
 				textureScrollerArrayAddress.ReadArray(&textureScrollerAddresses[0], textureSwapperCount);
 				for (let i < textureSwapperCount) {
-					textureSwappers[i] = .(textureScrollerAddresses[i]);
+					textureSwappers[i] = .(textureScrollerAddresses[i], visualMeshes);
 				}
 				delete textureScrollerAddresses;
 			}
@@ -224,256 +231,12 @@ namespace SpyroScope {
 			}
 
 			if (renderMode == .Near) {
-				float[4][2] triangleUV = ?;
-
 				for (let textureScroller in textureScrollers) {
 					textureScroller.Update();
-					let textureIndex = textureScroller.textureIndex;
-
-					TextureQuad nearQuad = ?;
-					if (Emulator.installment == .SpyroTheDragon) {
-						nearQuad = Terrain.texturesLODs1[textureIndex].D1;
-					} else {
-						nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
-					}
-					let partialUV = nearQuad.GetVramPartialUV();
-					const let quadSize = TextureQuad.quadSize;
-
-					var opaqueMeshModified = false;
-					var transparentMeshModified = false;
-					for (let terrainRegion in visualMeshes) {
-						// Opaque Update
-						for (var triangleIndex = 0; triangleIndex < terrainRegion.nearTri2TextureIndices.Count; triangleIndex++) {
-							let vertexIndex = triangleIndex * 3;
-							if (terrainRegion.nearTri2TextureIndices[triangleIndex] == textureIndex) {
-								opaqueMeshModified = true;
-
-								let nearFaceIndex = terrainRegion.nearFaceIndices[triangleIndex];
-								TerrainRegion.NearFace regionFace = terrainRegion.nearFaces[nearFaceIndex];
-								let textureRotation = regionFace.renderInfo.rotation;
-
-								triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
-								triangleUV[1] = .(partialUV.left, partialUV.leftY);
-								triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
-								triangleUV[3] = .(partialUV.right, partialUV.rightY);
-
-								if (regionFace.isTriangle) {
-									float[3][2] rotatedTriangleUV = .(
-										triangleUV[(0 - textureRotation) & 3],
-										triangleUV[(1 - textureRotation) & 3],
-										triangleUV[(2 - textureRotation) & 3]
-										);
-	
-									if (regionFace.flipped) {
-										terrainRegion.nearMesh.uvs[0 + vertexIndex] = rotatedTriangleUV[2];
-										terrainRegion.nearMesh.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
-										terrainRegion.nearMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[1];
-									} else {
-										terrainRegion.nearMesh.uvs[0 + vertexIndex] = rotatedTriangleUV[1];
-										terrainRegion.nearMesh.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
-										terrainRegion.nearMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[2];
-									}
-								} else {
-									if (regionFace.flipped) {
-										Swap!(triangleUV[0], triangleUV[1]);
-										Swap!(triangleUV[2], triangleUV[3]);
-									}
-
-									terrainRegion.nearMesh.uvs[0 + vertexIndex] = triangleUV[0];
-									terrainRegion.nearMesh.uvs[1 + vertexIndex] = triangleUV[3];
-									terrainRegion.nearMesh.uvs[2 + vertexIndex] = triangleUV[1];
-
-									terrainRegion.nearMesh.uvs[3 + vertexIndex] = triangleUV[1];
-									terrainRegion.nearMesh.uvs[4 + vertexIndex] = triangleUV[3];
-									terrainRegion.nearMesh.uvs[5 + vertexIndex] = triangleUV[2];
-
-									triangleIndex++;
-								}
-							}
-						}
-
-						// Transparent Update
-						for (var triangleIndex = 0; triangleIndex < terrainRegion.nearFaceTransparentIndices.Count; triangleIndex++) {
-							transparentMeshModified = true;
-
-							let vertexIndex = triangleIndex * 3;
-							if (terrainRegion.nearTextureTransparentIndices[triangleIndex] == textureIndex) {
-								let nearFaceIndex = terrainRegion.nearFaceTransparentIndices[triangleIndex];
-								TerrainRegion.NearFace regionFace = terrainRegion.nearFaces[nearFaceIndex];
-								let textureRotation = regionFace.renderInfo.rotation;
-
-								triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
-								triangleUV[1] = .(partialUV.left, partialUV.leftY);
-								triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
-								triangleUV[3] = .(partialUV.right, partialUV.rightY);
-
-								if (regionFace.isTriangle) {
-									float[3][2] rotatedTriangleUV = .(
-										triangleUV[(0 - textureRotation) & 3],
-										triangleUV[(1 - textureRotation) & 3],
-										triangleUV[(2 - textureRotation) & 3]
-										);
-
-									if (regionFace.flipped) {
-										terrainRegion.nearMeshTransparent.uvs[0 + vertexIndex] = rotatedTriangleUV[2];
-										terrainRegion.nearMeshTransparent.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
-										terrainRegion.nearMeshTransparent.uvs[2 + vertexIndex] = rotatedTriangleUV[1];
-									} else {
-										terrainRegion.nearMeshTransparent.uvs[0 + vertexIndex] = rotatedTriangleUV[1];
-										terrainRegion.nearMeshTransparent.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
-										terrainRegion.nearMeshTransparent.uvs[2 + vertexIndex] = rotatedTriangleUV[2];
-									}
-								} else {
-									if (regionFace.flipped) {
-										Swap!(triangleUV[0], triangleUV[1]);
-										Swap!(triangleUV[2], triangleUV[3]);
-									}
-
-									terrainRegion.nearMeshTransparent.uvs[0 + vertexIndex] = triangleUV[0];
-									terrainRegion.nearMeshTransparent.uvs[1 + vertexIndex] = triangleUV[3];
-									terrainRegion.nearMeshTransparent.uvs[2 + vertexIndex] = triangleUV[1];
-
-									terrainRegion.nearMeshTransparent.uvs[3 + vertexIndex] = triangleUV[1];
-									terrainRegion.nearMeshTransparent.uvs[4 + vertexIndex] = triangleUV[3];
-									terrainRegion.nearMeshTransparent.uvs[5 + vertexIndex] = triangleUV[2];
-
-									triangleIndex++;
-								}
-							}
-						}
-
-						if (opaqueMeshModified) {
-							terrainRegion.nearMesh.SetDirty();
-						}
-						if (transparentMeshModified) {
-							terrainRegion.nearMeshTransparent.SetDirty();
-						}
-					}
 				}
 
 				for (let textureSwapper in textureSwappers) {
 					textureSwapper.Update();
-					let textureIndex = textureSwapper.textureIndex;
-
-					TextureQuad nearQuad = ?;
-					if (Emulator.installment == .SpyroTheDragon) {
-						nearQuad = Terrain.texturesLODs1[textureIndex].D1;
-					} else {
-						nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
-					}
-					let partialUV = nearQuad.GetVramPartialUV();
-					const let quadSize = TextureQuad.quadSize;
-
-					var opaqueMeshModified = false;
-					var transparentMeshModified = false;
-					for (let terrainRegion in visualMeshes) {
-						// Opaque Update
-						for (var triangleIndex = 0; triangleIndex < terrainRegion.nearTri2TextureIndices.Count; triangleIndex++) {
-							let vertexIndex = triangleIndex * 3;
-							if (terrainRegion.nearTri2TextureIndices[triangleIndex] == textureIndex) {
-								opaqueMeshModified = true;
-
-								let nearFaceIndex = terrainRegion.nearFaceIndices[triangleIndex];
-								TerrainRegion.NearFace regionFace = terrainRegion.nearFaces[nearFaceIndex];
-								let textureRotation = regionFace.renderInfo.rotation;
-
-								triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
-								triangleUV[1] = .(partialUV.left, partialUV.leftY);
-								triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
-								triangleUV[3] = .(partialUV.right, partialUV.rightY);
-
-								if (regionFace.isTriangle) {
-									float[3][2] rotatedTriangleUV = .(
-										triangleUV[(0 - textureRotation) & 3],
-										triangleUV[(1 - textureRotation) & 3],
-										triangleUV[(2 - textureRotation) & 3]
-										);
-
-									if (regionFace.flipped) {
-										terrainRegion.nearMesh.uvs[0 + vertexIndex] = rotatedTriangleUV[2];
-										terrainRegion.nearMesh.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
-										terrainRegion.nearMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[1];
-									} else {
-										terrainRegion.nearMesh.uvs[0 + vertexIndex] = rotatedTriangleUV[1];
-										terrainRegion.nearMesh.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
-										terrainRegion.nearMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[2];
-									}
-								} else {
-									if (regionFace.flipped) {
-										Swap!(triangleUV[0], triangleUV[1]);
-										Swap!(triangleUV[2], triangleUV[3]);
-									}
-
-									terrainRegion.nearMesh.uvs[0 + vertexIndex] = triangleUV[0];
-									terrainRegion.nearMesh.uvs[1 + vertexIndex] = triangleUV[3];
-									terrainRegion.nearMesh.uvs[2 + vertexIndex] = triangleUV[1];
-
-									terrainRegion.nearMesh.uvs[3 + vertexIndex] = triangleUV[1];
-									terrainRegion.nearMesh.uvs[4 + vertexIndex] = triangleUV[3];
-									terrainRegion.nearMesh.uvs[5 + vertexIndex] = triangleUV[2];
-
-									triangleIndex++;
-								}
-							}
-						}
-
-						// Transparent Update
-						for (var triangleIndex = 0; triangleIndex < terrainRegion.nearFaceTransparentIndices.Count; triangleIndex++) {
-							transparentMeshModified = true;
-
-							let vertexIndex = triangleIndex * 3;
-							if (terrainRegion.nearTextureTransparentIndices[triangleIndex] == textureIndex) {
-								let nearFaceIndex = terrainRegion.nearFaceTransparentIndices[triangleIndex];
-								TerrainRegion.NearFace regionFace = terrainRegion.nearFaces[nearFaceIndex];
-								let textureRotation = regionFace.renderInfo.rotation;
-
-								triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
-								triangleUV[1] = .(partialUV.left, partialUV.leftY);
-								triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
-								triangleUV[3] = .(partialUV.right, partialUV.rightY);
-
-								if (regionFace.isTriangle) {
-									float[3][2] rotatedTriangleUV = .(
-										triangleUV[(0 - textureRotation) & 3],
-										triangleUV[(1 - textureRotation) & 3],
-										triangleUV[(2 - textureRotation) & 3]
-										);
-
-									if (regionFace.flipped) {
-										terrainRegion.nearMeshTransparent.uvs[0 + vertexIndex] = rotatedTriangleUV[2];
-										terrainRegion.nearMeshTransparent.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
-										terrainRegion.nearMeshTransparent.uvs[2 + vertexIndex] = rotatedTriangleUV[1];
-									} else {
-										terrainRegion.nearMeshTransparent.uvs[0 + vertexIndex] = rotatedTriangleUV[1];
-										terrainRegion.nearMeshTransparent.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
-										terrainRegion.nearMeshTransparent.uvs[2 + vertexIndex] = rotatedTriangleUV[2];
-									}
-								} else {
-									if (regionFace.flipped) {
-										Swap!(triangleUV[0], triangleUV[1]);
-										Swap!(triangleUV[2], triangleUV[3]);
-									}
-
-									terrainRegion.nearMeshTransparent.uvs[0 + vertexIndex] = triangleUV[0];
-									terrainRegion.nearMeshTransparent.uvs[1 + vertexIndex] = triangleUV[3];
-									terrainRegion.nearMeshTransparent.uvs[2 + vertexIndex] = triangleUV[1];
-
-									terrainRegion.nearMeshTransparent.uvs[3 + vertexIndex] = triangleUV[1];
-									terrainRegion.nearMeshTransparent.uvs[4 + vertexIndex] = triangleUV[3];
-									terrainRegion.nearMeshTransparent.uvs[5 + vertexIndex] = triangleUV[2];
-
-									triangleIndex++;
-								}
-							}
-						}
-
-						if (opaqueMeshModified) {
-							terrainRegion.nearMesh.SetDirty();
-						}
-						if (transparentMeshModified) {
-							terrainRegion.nearMeshTransparent.SetDirty();
-						}
-					}
 				}
 			}
 

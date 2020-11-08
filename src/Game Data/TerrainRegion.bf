@@ -40,7 +40,7 @@ namespace SpyroScope {
 		public Mesh nearMeshTransparent ~ delete _;
 		public List<uint8> nearMesh2GameTransparentIndices = new .() ~ delete _;
 		public List<int> nearFaceTransparentIndices = new .() ~ delete _;
-		public List<uint8> nearTextureTransparentIndices = new .() ~ delete _;
+		public List<uint8> nearTri2TransparentTextureIndices = new .() ~ delete _;
 
 		public List<int> usedTextureIndices = new .() ~ delete _;
 
@@ -167,7 +167,7 @@ namespace SpyroScope {
 						activeUvList = uvTransparentList;
 						activeNearMeshIndices = nearMesh2GameTransparentIndices;
 						activeNearFaceIndices = nearFaceTransparentIndices;
-						activeNearTextureIndices = nearTextureTransparentIndices;
+						activeNearTextureIndices = nearTri2TransparentTextureIndices;
 					} else {
 						activeVertexList = vertexList;
 						activeColorList = colorList;
