@@ -11,8 +11,9 @@ It can only support the following as of now:
 |Emulators|
 |-|
 |No$PSX 2.0|
-|ePSXe 2.0.5|
+|ePSXe 2.0.5 *(No VRAM Support)*|
 |Bizhawk 2.4.2 (x64)|
+|Mednafen 1.24.3|
 
 |Games|
 |-|
