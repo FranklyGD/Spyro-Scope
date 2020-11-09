@@ -3,7 +3,7 @@ using System;
 namespace SpyroScope {
 	static class GMath {
 		public enum SideIntersect { Front, Back, Both }
-		public static float RayPlaneIntersect(Vector rayOrigin, Vector rayDirection, Vector planeOrigin, Vector planeNormal, SideIntersect side) {
+		public static float RayPlaneIntersect(Vector rayOrigin, Vector rayDirection, Vector planeOrigin, Vector planeNormal, SideIntersect side = .Both) {
 			let originDistance = Vector.Dot(planeOrigin - rayOrigin, planeNormal);
 
 			switch (side) {
@@ -14,10 +14,6 @@ namespace SpyroScope {
 
 			let disalignment = Vector.Dot(rayDirection, planeNormal);
 			return originDistance / disalignment;
-		}
-
-		public static float RayPlaneIntersect(Vector rayOrigin, Vector rayDirection, Vector planeOrigin, Vector planeNormal) {
-			return RayPlaneIntersect(rayOrigin, rayDirection, planeOrigin, planeNormal, .Front);
 		}
 
 		public static float RayTriangleIntersect(Vector rayOrigin, Vector rayDirection, Vector p0, Vector p1, Vector p2, SideIntersect side) {
