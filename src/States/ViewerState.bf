@@ -373,10 +373,6 @@ namespace SpyroScope {
 						}
 					}
 				}
-				
-				if (showManipulator) {
-					Translator.Draw();
-				}
 
 				if (ViewerSelection.currentRegionIndex > 0) {
 					let region = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
@@ -431,6 +427,14 @@ namespace SpyroScope {
 			Renderer.SetModel(.Zero, .Identity);
 			Renderer.SetTint(.(255,255,255));
 			Renderer.Draw();
+
+			Renderer.ClearDepth();
+
+			if (showManipulator) {
+			    Translator.Draw();
+			}
+
+			PrimitiveShape.DrawInstances();
 		}
 
 		public override void DrawGUI() {

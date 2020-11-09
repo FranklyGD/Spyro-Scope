@@ -438,6 +438,10 @@ namespace SpyroScope {
 			vertexCount = vertexOffset = 0;
 		}
 
+		public static void ClearDepth() {
+		    GL.glClear(GL.GL_DEPTH_BUFFER_BIT);
+		}
+
 		public static void CheckForErrors() {
 			if (!enableDebug) {
 				return;
