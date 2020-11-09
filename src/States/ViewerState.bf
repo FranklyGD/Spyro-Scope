@@ -311,7 +311,7 @@ namespace SpyroScope {
 				return;
 			}
 
-			terrain.Update();
+			terrain?.Update();
 
 			if (showManipulator) {
 				if (ViewerSelection.currentObjIndex > -1) {
@@ -327,9 +327,7 @@ namespace SpyroScope {
 		}
 
 		public override void DrawView() {
-			if (terrain != null) {
-				terrain.Draw();
-			}
+			terrain?.Draw();
 
 			if (viewMode != .Game) {
 				DrawGameCameraFrustrum();
