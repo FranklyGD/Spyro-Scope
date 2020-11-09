@@ -435,6 +435,10 @@ namespace SpyroScope {
 			}
 
 			PrimitiveShape.DrawInstances();
+
+			Renderer.SetModel(.Zero, .Identity);
+			Renderer.SetTint(.(255,255,255));
+			Renderer.Draw();
 		}
 
 		public override void DrawGUI() {
