@@ -881,6 +881,9 @@ namespace SpyroScope {
 							case .KpMinus : {
 								terrain.drawnRegion--;
 							}
+							case .V : {
+								windowApp.GoToState<VRAMViewerState>();
+							}
 							default : {}
 						}
 	

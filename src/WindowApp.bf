@@ -47,6 +47,7 @@ namespace SpyroScope {
 			state = new SetupState();
 			states.Add(state);
 			states.Add(new ViewerState());
+			states.Add(new VRAMViewerState());
 
 			// Attempt to find and bind as the window is being opened
 			Emulator.FindEmulator();

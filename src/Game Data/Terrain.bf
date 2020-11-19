@@ -7,11 +7,12 @@ namespace SpyroScope {
 		public TerrainCollision collision ~ delete _;
 		public TerrainRegion[] visualMeshes;
 		public RegionAnimation[] animations;
+		public static int highestUsedTextureIndex = -1;
 		public static TextureLOD[] texturesLODs;
 		public static TextureLOD1[] texturesLODs1;
 		public static Texture terrainTexture;
-		public TextureScroller[] textureScrollers;
-		public TextureSwapper[] textureSwappers;
+		public static TextureScroller[] textureScrollers;
+		public static TextureSwapper[] textureSwappers;
 
 		public enum RenderMode {
 			Collision,
@@ -57,7 +58,6 @@ namespace SpyroScope {
 		}
 
 		public void Reload() {
-			//delete terrainTexture;
 			delete textureScrollers;
 			delete textureSwappers;
 
@@ -89,33 +89,29 @@ namespace SpyroScope {
 			DeleteContainerAndItems!(visualMeshes);
 
 			// Parse all terrain regions
-			let usedTextureIndices = new List<int>(); // Also get all used texture indices while we are at it
-
 			visualMeshes = new .[sceneRegionCount];
 
 			Emulator.Address[] sceneDataRegionAddresses = new .[sceneRegionCount];
 			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegionAddresses[0], sceneRegionCount);
 			for (let regionIndex < sceneRegionCount) {
-				visualMeshes[regionIndex] = new .(sceneDataRegionAddresses[regionIndex]);
+				let region = new TerrainRegion(sceneDataRegionAddresses[regionIndex]);
+				visualMeshes[regionIndex] = region;
 
-				for (let textureIndex in visualMeshes[regionIndex].usedTextureIndices) {
-					let usedIndex = usedTextureIndices.FindIndex(scope (x) => x == textureIndex);
-					if (usedIndex == -1) {
-						usedTextureIndices.Add(textureIndex);
-					}
+				if (region.highestUsedTextureIndex > highestUsedTextureIndex) { 
+					highestUsedTextureIndex = region.highestUsedTextureIndex;
 				}
 			}
 			delete sceneDataRegionAddresses;
 
 			// Convert any used VRAM textures for previewing
-			for (let usedTextureIndex in usedTextureIndices) {
+			for (let textureIndex < highestUsedTextureIndex) {
 				TextureQuad* quad = ?;
 				int quadCount = ?;
 				if (Emulator.installment == .SpyroTheDragon) {
-					quad = &Terrain.texturesLODs1[usedTextureIndex].D1;
+					quad = &Terrain.texturesLODs1[textureIndex].D1;
 					quadCount = 5;//21;
 				} else {
-					quad = &Terrain.texturesLODs[usedTextureIndex].nearQuad;
+					quad = &Terrain.texturesLODs[textureIndex].farQuad;
 					quadCount = 6;
 				}
 				
@@ -137,7 +133,6 @@ namespace SpyroScope {
 					quad++;
 				}
 			}
-			delete usedTextureIndices;
 
 			terrainTexture = new .(1024 * 4, 512, OpenGL.GL.GL_SRGB_ALPHA, OpenGL.GL.GL_RGBA, &textureBuffer[0]);
 			terrainTexture.Bind();
@@ -230,16 +225,7 @@ namespace SpyroScope {
 				}
 			}
 
-			if (renderMode == .Near) {
-				for (let textureScroller in textureScrollers) {
-					textureScroller.Update();
-				}
-
-				for (let textureSwapper in textureSwappers) {
-					textureSwapper.Update();
-				}
-			}
-
+			UpdateTextureInfo(true);
 			
 			for (let terrainRegion in visualMeshes) {
 				terrainRegion.nearMesh.Update();
@@ -319,6 +305,20 @@ namespace SpyroScope {
 
 				*animation = .(animationPointers[animationIndex]);
 				animation.Reload(visualMeshes);
+			}
+		}
+
+		public static void UpdateTextureInfo(bool updateUVs) {
+			for (let textureScroller in textureScrollers) {
+				textureScroller.Update();
+				textureScroller.UpdateUVs(false);
+				textureScroller.UpdateUVs(true);
+			}
+
+			for (let textureSwapper in textureSwappers) {
+				textureSwapper.Update();
+				textureSwapper.UpdateUVs(false);
+				textureSwapper.UpdateUVs(true);
 			}
 		}
 	}

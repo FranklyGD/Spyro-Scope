@@ -42,7 +42,7 @@ namespace SpyroScope {
 		public List<int> nearFaceTransparentIndices = new .() ~ delete _;
 		public List<uint8> nearTri2TransparentTextureIndices = new .() ~ delete _;
 
-		public List<int> usedTextureIndices = new .() ~ delete _;
+		public int highestUsedTextureIndex = -1;
 
 		public struct NearFace {
 			public uint8[4] trianglesIndices, colorsIndices, a, b;
@@ -142,9 +142,8 @@ namespace SpyroScope {
 					let flipSide = regionFace.flipped;
 					let textureRotation = regionFace.renderInfo.rotation;
 
-					let usedIndex = usedTextureIndices.FindIndex(scope (x) => x == textureIndex);
-					if (usedIndex == -1) {
-						usedTextureIndices.Add(textureIndex);
+					if (textureIndex > highestUsedTextureIndex) {
+						highestUsedTextureIndex = textureIndex;
 					}
 
 					TextureQuad nearQuad = ?;

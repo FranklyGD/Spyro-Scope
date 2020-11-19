@@ -139,9 +139,6 @@ namespace SpyroScope {
 			} else {
 				Terrain.texturesLODs[textureIndex] = Terrain.texturesLODs[sourceTextureIndex];
 			}
-
-			UpdateUVs(false);
-			UpdateUVs(true);
 		}
 
 		public KeyframeData GetKeyframeData(uint8 keyframeIndex) {
@@ -149,9 +146,8 @@ namespace SpyroScope {
 			Emulator.ReadFromRAM(address + 8 + ((uint32)keyframeIndex) * 4, &keyframeData, 4);
 			return keyframeData;
 		}
-
 		
-		void UpdateUVs(bool transparent) {
+		public void UpdateUVs(bool transparent) {
 			TextureQuad nearQuad = ?;
 			if (Emulator.installment == .SpyroTheDragon) {
 				nearQuad = Terrain.texturesLODs1[textureIndex].D1;

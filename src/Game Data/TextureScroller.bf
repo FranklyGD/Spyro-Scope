@@ -165,9 +165,6 @@ namespace SpyroScope {
 				bottomLeftQuad.leftSkew = bottomRightQuad.leftSkew = doubleQuadVerticalPosition;
 				bottomLeftQuad.rightSkew = bottomRightQuad.rightSkew = doubleQuadVerticalPosition + 0x1f;
 			}
-
-			UpdateUVs(false);
-			UpdateUVs(true);
 		}
 
 		public KeyframeData GetKeyframeData(uint8 keyframeIndex) {
@@ -176,7 +173,7 @@ namespace SpyroScope {
 			return keyframeData;
 		}
 
-		void UpdateUVs(bool transparent) {
+		public void UpdateUVs(bool transparent) {
 			TextureQuad nearQuad = ?;
 			if (Emulator.installment == .SpyroTheDragon) {
 				nearQuad = Terrain.texturesLODs1[textureIndex].D1;

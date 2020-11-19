@@ -46,6 +46,22 @@ namespace SpyroScope {
 			Renderer.CheckForErrors();
 		}
 
+		public this(int width, int height, int fromFormat, uint toFormat, uint type, void* data) {
+			this.width = width;
+			this.height = height;
+
+			GL.glGenTextures(1, &textureObjectID);
+			GL.glBindTexture(GL.GL_TEXTURE_2D, textureObjectID);
+
+			GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, fromFormat, width, height, 0, toFormat, type, data);
+			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
+			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
+
+			GL.glBindTexture(GL.GL_TEXTURE_2D, 0);
+
+			Renderer.CheckForErrors();
+		}
+
 		public ~this() {
 			GL.glDeleteTextures(1, &textureObjectID);
 		}
