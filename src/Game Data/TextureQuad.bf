@@ -37,6 +37,8 @@ namespace SpyroScope {
 
 		public bool GetTransparency() {
 			return Emulator.installment != .SpyroTheDragon && (flipRotateRaw & 0b10000000) > 0;
+			// For "Spyro the Dragon", the transparency flag for it can be found on a per face basis
+			// Refer to "TerrainRegion.NearFace.RenderInfo" for an implementation of the mentioned above
 		}
 
 		// All terrain quads are 32 by 32,

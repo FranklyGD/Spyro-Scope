@@ -53,6 +53,9 @@ namespace SpyroScope {
 				public uint8 texture, flipSideDepth, a, b;
 				
 				public bool transparent { get => Emulator.installment == .SpyroTheDragon && texture & 0x80 > 0; }
+				// For "Ripto's Rage" and "Year of the Dragon", the transparency flag for it can be found on a per texture basis
+				// Refer to "TextureQuad" for an implementation of the mentioned above
+
 				public uint8 textureIndex { get => texture & 0x7f; }
 				public uint8 depthOffset { get => flipSideDepth & 0b0011; }
 				public bool doubleSided { get => flipSideDepth & 0b1000 > 0; }
