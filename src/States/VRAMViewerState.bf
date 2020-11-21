@@ -145,8 +145,8 @@ namespace SpyroScope {
 						centering.x = WindowApp.width / 2;
 						centering.y = WindowApp.height / 2;
 
-						testPosition.x = (WindowApp.mousePosition.x - centering.x + viewPosition.x) / (expand ? 4 : 1) + (expand ? 512 : 0);
-						testPosition.y = WindowApp.mousePosition.y - centering.y + viewPosition.y;
+						testPosition.x = ((WindowApp.mousePosition.x - centering.x) / scale + viewPosition.x) / (expand ? 4 : 1) + (expand ? 512 : 0);
+						testPosition.y = (WindowApp.mousePosition.y - centering.y) / scale + viewPosition.y;
 					}
 				}
 				case .MouseButtonUp : {
