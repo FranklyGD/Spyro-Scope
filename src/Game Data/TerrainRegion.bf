@@ -95,8 +95,6 @@ namespace SpyroScope {
 			GenerateMesh(address + 0x1c, metadata.farVertexCount, metadata.farColorCount, metadata.farFaceCount, false);
 			// High Poly Count / Near Mesh
 			GenerateMesh(address + 0x1c + ((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2) * 4, metadata.nearVertexCount, metadata.nearColorCount, metadata.nearFaceCount, true);
-
-			System.Diagnostics.Debug.Assert(nearMeshTransparent != null);
 		}
 
 		void GenerateMesh(Emulator.Address regionPointer, int vertexSize, int colorSize, int faceSize, bool isNear) {
