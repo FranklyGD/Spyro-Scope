@@ -46,9 +46,6 @@ namespace SpyroScope {
 			centering.x = WindowApp.width / 2;
 			centering.y = WindowApp.height / 2;
 
-			(float x, float y) workingVRAMOrigin = ?;
-			(float x, float y) workingVRAMscale = ?;
-
 			float top = centering.y - viewPosition.y * scale;
 			float bottom = centering.y + (size.y - viewPosition.y) * scale;
 			float left = centering.x - viewPosition.x * scale;
@@ -169,6 +166,7 @@ namespace SpyroScope {
 						case .V: windowApp.GoToState<ViewerState>();
 						case .Key0: ResetView();
 						case .Key1: ToggleExpandedView();
+						case .Key9: ExportDecodedVRAM();
 						default:
 					}
 				}
@@ -196,6 +194,17 @@ namespace SpyroScope {
 			} else {
 				viewPosition.x = viewPosition.x / 4 + 512;
 			}
+		}
+
+		void ExportDecodedVRAM() {
+			uint32[] vramTextureBuffer = new .[(1024 * 4) * 512](0,);
+			Terrain.terrainTexture.Bind();
+			GL.glGetTexImage(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, &vramTextureBuffer[0]);
+
+			SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&vramTextureBuffer[0], (1024 * 4), 512, 32, 4 * (1024 * 4), 0x000000ff, 0x0000ff00, 0x00ff0000, 0);
+			SDL.SDL_SaveBMP(img, "./decoded_vram.bmp");
+			SDL.FreeSurface(img);
+			delete vramTextureBuffer;
 		}
 	}
 }
