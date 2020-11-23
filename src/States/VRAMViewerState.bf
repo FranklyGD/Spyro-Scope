@@ -15,7 +15,7 @@ namespace SpyroScope {
 		bool expand;
 
 		(float x, float y) viewPosition, testPosition;
-		int hoveredTexturePage;
+		int hoveredTexturePage, hoveredTextureIndex, hoveredTextureQuadIndex;
 		bool panning;
 
 		public override void Enter() {
@@ -54,7 +54,8 @@ namespace SpyroScope {
 			DrawUtilities.Rect(top, bottom, left, right, 0, 1, expand ? 0.5f : 0, 1, raw, .(255,255,255));
 			DrawUtilities.Rect(top, bottom, left, right, 0, 1, expand ? 0.5f : 0, 1, Terrain.terrainTexture, .(255,255,255));
 
-			WindowApp.bitmapFont.Print(scope String() .. AppendF("<{},{}>", testPosition.x, testPosition.y), .Zero, .(255,255,255));
+			WindowApp.bitmapFont.Print(scope String() .. AppendF("<{:0},{:0}>", testPosition.x, testPosition.y), .Zero, .(255,255,255));
+			WindowApp.bitmapFont.Print(scope String() .. AppendF("T-page {}", hoveredTexturePage), .(0, WindowApp.bitmapFont.characterHeight, 0), .(255,255,255));
 
 			if (expand) {
 				size.x *= 2;
@@ -71,7 +72,7 @@ namespace SpyroScope {
 					quadCount = 6;
 				}
 
-				for (let i < quadCount) {
+				for (let quadIndex < quadCount) {
 					let partialUVs = quad.GetVramPartialUV();
 
 					float qtop = top + partialUVs.leftY * size.y * scale;
@@ -84,7 +85,8 @@ namespace SpyroScope {
 					Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,64), .(64,64,64));
 					Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
 
-					switch (i) {
+					let modifiedQuadIndex = quadIndex + (Emulator.installment == .SpyroTheDragon ? 1 : 0);
+					switch (modifiedQuadIndex) {
 						case 0:
 							Renderer.DrawLine(.(qleft + 4, qtop + 4, 0), .(qright - 4, qtop + 4, 0), .(255,64,64), .(255,64,64));
 							Renderer.DrawLine(.(qleft + 4, qbottom - 4, 0), .(qright - 4, qbottom - 4, 0), .(255,64,64), .(255,64,64));
@@ -111,6 +113,32 @@ namespace SpyroScope {
 
 					quad++;
 				}
+			}
+
+			if (hoveredTextureIndex > -1) {
+				TextureQuad* quad = ?;
+				int quadCount = ?;
+				if (Emulator.installment == .SpyroTheDragon) {
+					quad = &Terrain.texturesLODs1[hoveredTextureIndex].D1;
+					quadCount = 5;//21;
+				} else {
+					quad = &Terrain.texturesLODs[hoveredTextureIndex].farQuad;
+					quadCount = 6;
+				}
+				quad += hoveredTextureQuadIndex;
+
+				let partialUVs = quad.GetVramPartialUV();
+
+				float qtop = top + partialUVs.leftY * size.y * scale;
+				float qleft = left + (partialUVs.left - (expand ? 0.5f : 0)) * size.x * scale;
+
+				let clutPosition = quad.GetCLUTCoordinates();
+				(float x, float y) clutPositionNormalized = ((float)(clutPosition.x & 0x3ff) / 1024, (float)(clutPosition.x >> 10 + clutPosition.y) / 512);
+
+				float ctop = top + clutPositionNormalized.y * size.y * scale;
+				float cleft = left + (clutPositionNormalized.x - (expand ? 0.5f : 0)) * size.x * scale;
+				
+				Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
 			}
 		}
 
@@ -147,6 +175,41 @@ namespace SpyroScope {
 
 						testPosition.x = ((WindowApp.mousePosition.x - centering.x) / scale + viewPosition.x) / (expand ? 4 : 1) + (expand ? 512 : 0);
 						testPosition.y = (WindowApp.mousePosition.y - centering.y) / scale + viewPosition.y;
+
+						if (testPosition.x > 0 && testPosition.x < 1024 && testPosition.y > 0 && testPosition.y < 512) {
+							hoveredTexturePage = (.)(testPosition.x / 64) + (.)(testPosition.y / 256) * 16;
+						}
+						hoveredTextureIndex = hoveredTextureQuadIndex = -1;
+
+						for (let textureIndex < Terrain.highestUsedTextureIndex) {
+							TextureQuad* quad = ?;
+							int quadCount = ?;
+							if (Emulator.installment == .SpyroTheDragon) {
+								quad = &Terrain.texturesLODs1[textureIndex].D1;
+								quadCount = 5;//21;
+							} else {
+								quad = &Terrain.texturesLODs[textureIndex].farQuad;
+								quadCount = 6;
+							}
+
+							for (let quadIndex < quadCount) {
+								let pageIndex = quad.GetTPageIndex();
+								let bitMode = (quad.texturePage & 0x80 > 0) ? 2 : 4;
+								(float x, float y) localTestPosition = (testPosition.x - (pageIndex & 0xf) * 64, testPosition.y - (pageIndex >> 4 << 8));
+								if (localTestPosition.x > quad.left / bitMode && localTestPosition.x < ((int)quad.right + 1) / bitMode &&
+									localTestPosition.y > quad.leftSkew && localTestPosition.y < (int)quad.rightSkew + 1) {
+									hoveredTextureIndex = textureIndex;
+									hoveredTextureQuadIndex = quadIndex;
+									break;
+								}
+
+								quad++;
+							}
+
+							if (hoveredTextureIndex > -1) {
+								break;
+							}
+						}
 					}
 				}
 				case .MouseButtonUp : {
@@ -157,9 +220,6 @@ namespace SpyroScope {
 				case .MouseWheel : {
 					scaleMagnitude = Math.Round((scaleMagnitude + 0.1f * (.)event.wheel.y) * 10) / 10;
 				 	scale = Math.Pow(2, scaleMagnitude);
-
-					viewPosition.x = Math.Round(viewPosition.x * scale) / scale;
-					viewPosition.y = Math.Round(viewPosition.y * scale) / scale;
 				}
 				case .KeyDown : {
 					switch (event.key.keysym.scancode) {

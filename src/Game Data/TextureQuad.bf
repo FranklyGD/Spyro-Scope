@@ -3,16 +3,18 @@ using System;
 namespace SpyroScope {
 	[Ordered]
 	public struct TextureQuad {
-		public uint8 left, leftSkew, clutX, clutY, right, rightSkew, texturePage, flipRotateRaw;
+		public uint8 left, leftSkew;
+		public uint16 clut;
+		public uint8 right, rightSkew, texturePage, flipRotateRaw;
 		public const float quadSize = 1f / 16;
 
 		// Used for checking where the quad UVs would line up in VRAM
 		public (float left, float right, float leftY, float rightY) GetVramPartialUV() {
-			let pageCoords = GetPageCoordinates();
+			let tpageCell = GetTPageCell();
 			let subPixels = (texturePage & 0x80 > 0) ? 2 : 4;
 
-			let pageOffsetX = pageCoords.x * 0.0625f;
-			let pageOffsetY = pageCoords.y * 0.5f;
+			let pageOffsetX = tpageCell.x * 0.0625f;
+			let pageOffsetY = tpageCell.y * 0.5f;
 
 			let rightSkewAdjusted = Emulator.installment == .SpyroTheDragon ? rightSkew + 0x1f : rightSkew;
 			return (
@@ -23,8 +25,16 @@ namespace SpyroScope {
 			);
 		}
 
-		public (int x, int y) GetPageCoordinates() {
+		public int GetTPageIndex() {
+			return texturePage & 0x1f;
+		}
+
+		public (int x, int y) GetTPageCell() {
 			return (texturePage & 0xf, (texturePage & 0x10) >> 4);
+		}
+
+		public (int x, int y) GetCLUTCoordinates() {
+			return ((int)(clut & 0x3f) << 4, clut >> 6);
 		}
 
 		public uint8 GetQuadRotation() {
@@ -46,8 +56,8 @@ namespace SpyroScope {
 
 		/// Get a 32x32 pixel texture from the quad
 		public uint32[] GetTextureData() {
-			let pageCoords = GetPageCoordinates();
-			let vramPageCoords = (pageCoords.x * 64) + (pageCoords.y * 256 * 1024);
+			let tpageCoords = GetTPageCell();
+			let vramPageCoords = (tpageCoords.x * 64) + (tpageCoords.y * 256 * 1024);
 			let vramCoords = vramPageCoords + ((int)leftSkew * 1024);
 			// We are going to assuming that the area used in VRAM is always square
 
@@ -55,10 +65,9 @@ namespace SpyroScope {
 			let bitModeMask = (1 << bitMode) - 1;
 			let subPixels = bitMode == 8 ? 2 : 4;
 
-			// The game splits the VRAM into a grid of 64 by 128 possible CLUT locations
-			// The size of each cell is 16x4 that contain all the necessary colors horizontally
-			// and the fade out of saturation vertically when viewed from increasing distance
-			let clutPosition = (int)clutX * 16 + ((int)clutY << 2) * 1024;
+			// The game splits the VRAM into a grid of 64 CLUT starting locations horizontally
+			// The size of each column is 16 pixels that contain all the necessary colors
+			let clutPosition = (int)clut << 4;
 
 			uint32[] pixels = new .[32 * 32](0,);
 			for (let x < 32) {

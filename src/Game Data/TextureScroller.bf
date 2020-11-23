@@ -73,7 +73,7 @@ namespace SpyroScope {
 				let width = 32 * pixelWidth;
 				uint32[] textureBuffer = new .[width * 32];
 
-				let pageCoords = quad.GetPageCoordinates();
+				let tpageCell = quad.GetTPageCell();
 
 				let verticalQuad = mode ? 3 : 2;
 				for (let s < verticalQuad) {
@@ -91,7 +91,7 @@ namespace SpyroScope {
 					delete quadTexture;
 
 					GL.glTexSubImage2D(GL.GL_TEXTURE_2D,
-						0, (pageCoords.x * 64 * 4) + quad.left * pixelWidth, (pageCoords.y * 256) + quad.leftSkew,
+						0, (tpageCell.x * 64 * 4) + quad.left * pixelWidth, (tpageCell.y * 256) + quad.leftSkew,
 						width, 32,
 						GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, &textureBuffer[0]
 					);

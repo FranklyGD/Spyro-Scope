@@ -118,8 +118,8 @@ namespace SpyroScope {
 				for (let i < quadCount) {
 					let mode = quad.texturePage & 0x80 > 0;
 					let pixelWidth = mode ? 2 : 1;
-					let pageCoords = quad.GetPageCoordinates();
-					let vramPageCoords = (pageCoords.x * 64) + ((pageCoords.y * 256) * 1024);
+					let tpageCell = quad.GetTPageCell();
+					let vramPageCoords = (tpageCell.x * 64) + ((tpageCell.y * 256) * 1024);
 					let vramCoords = vramPageCoords * 4 + ((int)quad.left * pixelWidth + (int)quad.leftSkew * 1024 * 4);
 
 					let quadTexture = quad.GetTextureData();
