@@ -65,7 +65,19 @@ namespace SpyroScope {
 				a.Decode();
 				a = scope .(10, 0x20, 4); // Spyro Eyes
 				a.Decode();
-	
+
+				a = scope .(4, 0x57, 1); // Map
+				a.Decode();
+
+				/*a = scope .(1, 0x37, 8); // Objective 1
+				a.Decode();
+				a = scope .(1, 0x3f, 8); // Objective 2
+				a.Decode();*/
+				a = scope .(1, 0x47, 8); // Objective 3
+				a.Decode();
+				a = scope .(1, 0x4f, 8); // Objective 4
+				a.Decode();
+				
 				SpyroFont.Init();
 				SpyroFont.Decode();
 			}
