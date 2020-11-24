@@ -104,7 +104,7 @@ namespace SpyroScope {
 			delete sceneDataRegionAddresses;
 
 			// Convert any used VRAM textures for previewing
-			for (let textureIndex < highestUsedTextureIndex) {
+			for (let textureIndex < highestUsedTextureIndex + 1) {
 				TextureQuad* quad = ?;
 				int quadCount = ?;
 				if (Emulator.installment == .SpyroTheDragon) {
