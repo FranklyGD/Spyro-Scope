@@ -21,7 +21,55 @@ namespace SpyroScope {
 		public override void Enter() {
 			/*Emulator.OnSceneChanged = new => OnSceneChanged;
 			Emulator.OnSceneChanging = new => OnSceneChanging;*/
-			
+
+			Terrain.terrainTexture.Bind();
+
+			if (Emulator.installment == .RiptosRage) {
+				TextureSprite a = ?;
+				a = scope .(0, 0, 10); // Numbers
+				a.Decode();
+				a = scope .(2, 10, 1); // Forward Slash
+				a.Decode();
+	
+				a = scope .(1, 11, 6); // Gem
+				a.Decode();
+				a = scope .(1, 19, 3); // Spirit
+				a.Decode();
+	
+				a = scope .(2, 0x1d, 1); // Colon
+				a.Decode();
+				a = scope .(2, 0x1e, 1); // Period
+				a.Decode();
+	
+				a = scope .(5, 0x16, 1); // Power Bar Top
+				a.Decode();
+				a = scope .(6, 0x1a, 1); // Power Icon BG
+				a.Decode();
+				a = scope .(7, 0x1b, 1); // Power Icon FG
+				a.Decode();
+	
+				a = scope .(5, 0x17, 1); // Power Bar Mid
+				a.Decode();
+				a = scope .(5, 0x18, 1); // Power Bar Bottom
+				a.Decode();
+				a = scope .(5, 0x19, 1); // Power Bar Mid Lit
+				a.Decode();
+	
+				a = scope .(11, 0x24, 4); // Rounded Corners
+				a.Decode();
+	
+				a = scope .(1, 0x1c, 1); // Reticle Circle
+				a.Decode();
+	
+				a = scope .(9, 0x1f, 1); // Spyro Head
+				a.Decode();
+				a = scope .(10, 0x20, 4); // Spyro Eyes
+				a.Decode();
+	
+				SpyroFont.Init();
+				SpyroFont.Decode();
+			}
+
 			OnSceneChanged();
 			ResetView();
 		}
@@ -54,7 +102,7 @@ namespace SpyroScope {
 			DrawUtilities.Rect(top, bottom, left, right, 0, 1, expand ? 0.5f : 0, 1, raw, .(255,255,255));
 			DrawUtilities.Rect(top, bottom, left, right, 0, 1, expand ? 0.5f : 0, 1, Terrain.terrainTexture, .(255,255,255));
 
-			WindowApp.bitmapFont.Print(scope String() .. AppendF("<{:0},{:0}>", testPosition.x, testPosition.y), .Zero, .(255,255,255));
+			WindowApp.bitmapFont.Print(scope String() .. AppendF("<{},{}>", (int)testPosition.x, (int)testPosition.y), .Zero, .(255,255,255));
 			WindowApp.bitmapFont.Print(scope String() .. AppendF("T-page {}", hoveredTexturePage), .(0, WindowApp.bitmapFont.characterHeight, 0), .(255,255,255));
 
 			if (expand) {
