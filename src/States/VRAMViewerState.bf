@@ -10,7 +10,6 @@ namespace SpyroScope {
 		}
 		RenderMode renderMode;
 
-		Texture raw ~ delete _;
 		float scale = 1, scaleMagnitude = 0;
 		bool expand;
 
@@ -21,8 +20,6 @@ namespace SpyroScope {
 		public override void Enter() {
 			/*Emulator.OnSceneChanged = new => OnSceneChanged;
 			Emulator.OnSceneChanging = new => OnSceneChanging;*/
-
-			Terrain.terrainTexture.Bind();
 
 			if (Emulator.installment == .RiptosRage) {
 				TextureSprite a = ?;
@@ -69,14 +66,14 @@ namespace SpyroScope {
 				a = scope .(4, 0x57, 1); // Map
 				a.Decode();
 
-				/*a = scope .(1, 0x37, 8); // Objective 1
+				a = scope .(1, 0x37, 8); // Objective 1
 				a.Decode();
 				a = scope .(1, 0x3f, 8); // Objective 2
-				a.Decode();*/
-				a = scope .(1, 0x47, 8); // Objective 3
+				a.Decode();
+				/*a = scope .(1, 0x47, 8); // Objective 3
 				a.Decode();
 				a = scope .(1, 0x4f, 8); // Objective 4
-				a.Decode();
+				a.Decode();*/
 				
 				SpyroFont.Init();
 				SpyroFont.Decode();
@@ -111,8 +108,8 @@ namespace SpyroScope {
 			float left = centering.x - viewPosition.x * scale;
 			float right = centering.x + (size.x - viewPosition.x) * scale;
 			
-			DrawUtilities.Rect(top, bottom, left, right, 0, 1, expand ? 0.5f : 0, 1, raw, .(255,255,255));
-			DrawUtilities.Rect(top, bottom, left, right, 0, 1, expand ? 0.5f : 0, 1, Terrain.terrainTexture, .(255,255,255));
+			DrawUtilities.Rect(top, bottom, left, right, 0, 1, expand ? 0.5f : 0, 1, VRAM.raw, .(255,255,255));
+			DrawUtilities.Rect(top, bottom, left, right, 0, 1, expand ? 0.5f : 0, 1, VRAM.decoded, .(255,255,255));
 
 			WindowApp.bitmapFont.Print(scope String() .. AppendF("<{},{}>", (int)testPosition.x, (int)testPosition.y), .Zero, .(255,255,255));
 			WindowApp.bitmapFont.Print(scope String() .. AppendF("T-page {}", hoveredTexturePage), .(0, WindowApp.bitmapFont.characterHeight, 0), .(255,255,255));
@@ -203,15 +200,7 @@ namespace SpyroScope {
 		}
 
 		public void OnSceneChanged() {
-			delete raw;
-			raw = new .(1024, 512, OpenGL.GL.GL_SRGB, OpenGL.GL.GL_RGBA, OpenGL.GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &Emulator.vramSnapshot[0]);
-			raw.Bind();
-
-			// Make the textures sample sharp
-			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
-			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-
-			Texture.Unbind();
+			//
 		}
 
 		public override bool OnEvent(SDL2.SDL.Event event) {
@@ -286,7 +275,7 @@ namespace SpyroScope {
 						case .V: windowApp.GoToState<ViewerState>();
 						case .Key0: ResetView();
 						case .Key1: ToggleExpandedView();
-						case .Key9: ExportDecodedVRAM();
+						case .Key9: VRAM.Export();
 						default:
 					}
 				}
@@ -314,17 +303,6 @@ namespace SpyroScope {
 			} else {
 				viewPosition.x = viewPosition.x / 4 + 512;
 			}
-		}
-
-		void ExportDecodedVRAM() {
-			uint32[] vramTextureBuffer = new .[(1024 * 4) * 512](0,);
-			Terrain.terrainTexture.Bind();
-			GL.glGetTexImage(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, &vramTextureBuffer[0]);
-
-			SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&vramTextureBuffer[0], (1024 * 4), 512, 32, 4 * (1024 * 4), 0x000000ff, 0x0000ff00, 0x00ff0000, 0);
-			SDL.SDL_SaveBMP(img, "./decoded_vram.bmp");
-			SDL.FreeSurface(img);
-			delete vramTextureBuffer;
 		}
 	}
 }

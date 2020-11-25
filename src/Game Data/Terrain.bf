@@ -10,7 +10,6 @@ namespace SpyroScope {
 		public static int highestUsedTextureIndex = -1;
 		public static TextureLOD[] texturesLODs;
 		public static TextureLOD1[] texturesLODs1;
-		public static Texture terrainTexture;
 		public static TextureScroller[] textureScrollers;
 		public static TextureSwapper[] textureSwappers;
 
@@ -52,7 +51,6 @@ namespace SpyroScope {
 			}
 			delete textureSwappers;
 
-			delete terrainTexture;
 			delete texturesLODs;
 			delete texturesLODs1;
 		}
@@ -60,8 +58,6 @@ namespace SpyroScope {
 		public void Reload() {
 			delete textureScrollers;
 			delete textureSwappers;
-
-			uint32[] textureBuffer = new .[(1024 * 4) * 512](0,); // VRAM but four times wider
 
 			// Get max amount of possible textures
 			if (Emulator.installment == .SpyroTheDragon) {
@@ -116,33 +112,11 @@ namespace SpyroScope {
 				}
 				
 				for (let i < quadCount) {
-					let mode = quad.texturePage & 0x80 > 0;
-					let pixelWidth = mode ? 2 : 1;
-					let tpageCell = quad.GetTPageCell();
-					let vramPageCoords = (tpageCell.x * 64) + ((tpageCell.y * 256) * 1024);
-					let vramCoords = vramPageCoords * 4 + ((int)quad.left * pixelWidth + (int)quad.leftSkew * 1024 * 4);
+					VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, 32, 32, (quad.texturePage & 0x80 > 0) ? 8 : 4, quad.clut);
 
-					let quadTexture = quad.GetTextureData();
-					let width = mode ? 64 : 32;
-					for (let x < width) {
-						for (let y < 32) {
-							textureBuffer[(vramCoords + x + y * 1024 * 4)] = quadTexture[x / pixelWidth + y * 32];
-						}
-					}
-					delete quadTexture;
 					quad++;
 				}
 			}
-
-			terrainTexture = new .(1024 * 4, 512, OpenGL.GL.GL_SRGB_ALPHA, OpenGL.GL.GL_RGBA, &textureBuffer[0]);
-			terrainTexture.Bind();
-
-			// Make the textures sample sharp
-			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
-			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-
-			Texture.Unbind();
-			delete textureBuffer;
 
 			// Scrolling textures
 			let textureScrollerPointer = Emulator.textureScrollerPointers[(int)Emulator.rom];
@@ -257,7 +231,7 @@ namespace SpyroScope {
 					if (drawnRegion > -1) {
 						visualMeshes[drawnRegion].DrawNear();
 					} else {
-						terrainTexture.Bind();
+						VRAM.decoded.Bind();
 
 						for (let visualMesh in visualMeshes) {
 							visualMesh.DrawNear();

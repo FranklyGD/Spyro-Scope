@@ -22,15 +22,13 @@ namespace SpyroScope {
 				let vertical = fontCharacter.character & 0xe0;
 				let coordy = vertical >> 2 | vertical >> 5;
 
-				let characterTexture = GetTextureData(character);
+				int clut = ?;
+				switch (character) {
+					case 0x3c, 0x3e, 0x7b, 0x7d: clut = 0x4962;
+					default: clut = 0x4922;
+				}
 
-				GL.glTexSubImage2D(GL.GL_TEXTURE_2D,
-					0, ((8) * 64 * 4) + coordx, ((1) * 256) + coordy,
-					12, 9,
-					GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, &characterTexture[0]
-				);
-
-				delete characterTexture;
+				VRAM.Decode(0x18, coordx, coordy, 12, 9, 4, clut);
 			}
 		}
 
@@ -61,7 +59,7 @@ namespace SpyroScope {
 					let texelX = x + coordx;
 
 					// Get the target pixel from the texture
-					let vramPixel = Emulator.vramSnapshot[vramCoords + texelX / 4 + y * 1024];
+					let vramPixel = VRAM.snapshot[vramCoords + texelX / 4 + y * 1024];
 
 					// Retrieve a sub-pixel value from VRAM (4-bit mode) to sample from a CLUT
 					// Each sub-pixel contains a 4 bit value that tells the location of sample
@@ -72,7 +70,7 @@ namespace SpyroScope {
 					// After sampling, the result is a pixel in a color format of BGR555
 					let p = texelX % 4;
 					let clutSample = (((int)vramPixel >> (p * 4)) & 0xf) + clutPosition;
-					let bgr555pixel = Emulator.vramSnapshot[clutSample];
+					let bgr555pixel = VRAM.snapshot[clutSample];
 
 					// Get each 5 bit color channel
 					// |        16-bit pixel       |

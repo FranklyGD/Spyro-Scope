@@ -61,8 +61,6 @@ namespace SpyroScope {
 
 			// Append the missing parts of the scrolling textures to the main decoded one
 
-			Terrain.terrainTexture.Bind();
-
 			for (let textureIndex in usedTextures) {
 				TextureQuad* quad = ?;
 				int quadCount = ?;
@@ -75,30 +73,8 @@ namespace SpyroScope {
 				}
 
 				for (let i < quadCount) {
-					let mode = quad.texturePage & 0x80 > 0;
-					let pixelWidth = mode ? 2 : 1;
-					
-					let width = 32 * pixelWidth;
-					uint32[] textureBuffer = new .[width * 32];
+					VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, 32, 32, (quad.texturePage & 0x80 > 0) ? 8 : 4, quad.clut);
 	
-					let tpageCell = quad.GetTPageCell();
-					let quadTexture = quad.GetTextureData();
-	
-					for (let x < width) {
-						for (let y < 32) {
-							textureBuffer[(x + y * width)] = quadTexture[x / pixelWidth + y * 32];
-						}
-					}
-					
-					delete quadTexture;
-	
-					GL.glTexSubImage2D(GL.GL_TEXTURE_2D,
-						0, (tpageCell.x * 64 * 4) + quad.left * pixelWidth, (tpageCell.y * 256) + quad.leftSkew,
-						width, 32,
-						GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, &textureBuffer[0]
-					);
-	
-					delete textureBuffer;
 					quad++;
 				}
 			}

@@ -5,8 +5,8 @@ using System.Threading;
 
 namespace SpyroScope {
 	static struct Emulator {
-		static Windows.ProcessHandle processHandle;
-		static Windows.HModule moduleHandle; // Also contains the base address directly
+		public static Windows.ProcessHandle processHandle;
+		public static Windows.HModule moduleHandle; // Also contains the base address directly
 		
 		public const String[5] emulatorNames = .(String.Empty, "Nocash PSX", "Bizhawk", "ePSXe", "Mednafen");
 		public enum EmulatorType {
@@ -17,10 +17,8 @@ namespace SpyroScope {
 			Mednafen
 		}
 		public static EmulatorType emulator;
-		static uint emulatorRAMBaseAddress;
-		static uint emulatorVRAMBaseAddress;
-		static public uint16[] vramSnapshot ~ delete _;
-		
+		public static uint RAMBaseAddress;
+		public static uint VRAMBaseAddress;
 
 		public enum SpyroROM {
 			None,
@@ -403,19 +401,19 @@ namespace SpyroScope {
 					uint8* pointer = (uint8*)(void*)0x00491E10;
 					Windows.ReadProcessMemory(processHandle, pointer, &pointer, 4, null);
 					pointer -= 0x1fc;
-					Windows.ReadProcessMemory(processHandle, pointer, &emulatorRAMBaseAddress, 4, null);
+					Windows.ReadProcessMemory(processHandle, pointer, &RAMBaseAddress, 4, null);
 				}
 				case .Bizhawk : {
 					// Static address
-					emulatorRAMBaseAddress = (.)moduleHandle + 0x0030DF90;
+					RAMBaseAddress = (.)moduleHandle + 0x0030DF90;
 				}
 				case .ePSXe : {
 					// Static address
-					emulatorRAMBaseAddress = (.)moduleHandle + 0x00A82020;
+					RAMBaseAddress = (.)moduleHandle + 0x00A82020;
 				}
 				case .Mednafen : {
 					// Static address
-					emulatorRAMBaseAddress = (.)moduleHandle + 0x025BC280;
+					RAMBaseAddress = (.)moduleHandle + 0x025BC280;
 				}
 
 				case .None: {
@@ -430,22 +428,22 @@ namespace SpyroScope {
 					// uint8* pointer = (uint8*)(void*)(moduleHandle + 0x00092784)
 					// No need to use module base address since its always loaded at 0x00400000
 					uint8* pointer = (uint8*)(void*)0x00492784;
-					Windows.ReadProcessMemory(processHandle, pointer, &emulatorVRAMBaseAddress, 4, null);
+					Windows.ReadProcessMemory(processHandle, pointer, &VRAMBaseAddress, 4, null);
 				}
 				case .Bizhawk : {
 					// Static address
-					emulatorVRAMBaseAddress = (.)moduleHandle + 0x005280D0;
+					VRAMBaseAddress = (.)moduleHandle + 0x005280D0;
 				}
 				case .ePSXe : {
 					// Plugin address
 					let gpuModuleHandle = GetModule(processHandle, "gpuPeteOpenGL2.dll");
-					emulatorVRAMBaseAddress = (.)gpuModuleHandle + 0x00051F80;
+					VRAMBaseAddress = (.)gpuModuleHandle + 0x00051F80;
 					// NOTE: According to Cheat Engine this should work, however...
 					// the module is not being listed and therefore cannot be found
 				}
 				case .Mednafen : {
 					// Static address
-					emulatorVRAMBaseAddress = (.)moduleHandle + 0x027d0eb8;
+					VRAMBaseAddress = (.)moduleHandle + 0x027d0eb8;
 				}
 				default : // Well this is awkward...
 			}
@@ -453,7 +451,7 @@ namespace SpyroScope {
 
 		[Inline]
 		public static void* RawAddressFromRAM(Address address) {
-			return ((uint8*)null + emulatorRAMBaseAddress + ((uint32)address & 0x003fffff));
+			return ((uint8*)null + RAMBaseAddress + ((uint32)address & 0x003fffff));
 		}
 
 		public static void ReadFromRAM(Address address, void* buffer, int size) {
@@ -507,11 +505,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public static void TakeVRAMSnapshot() {
-			delete vramSnapshot;
-			vramSnapshot = new .[1024 * 512];
-			Windows.ReadProcessMemory(processHandle, (void*)emulatorVRAMBaseAddress, &vramSnapshot[0], 1024 * 512 * 2, null);
-		}
+		
 
 		public static void FetchImportantData() {
 			gameStateAddresses[(int)rom].Read(&gameState);
