@@ -112,8 +112,8 @@ namespace SpyroScope {
 		}
 
 		
-		public static void Export() {
-			Export("./decoded_vram.bmp", 0, 0, 1024, 512, 4);
+		public static void Export(String file) {
+			Export(file, 0, 0, 1024, 512, 4);
 		}
 	}
 }

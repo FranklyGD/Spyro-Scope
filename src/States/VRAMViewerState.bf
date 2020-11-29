@@ -275,7 +275,24 @@ namespace SpyroScope {
 						case .V: windowApp.GoToState<ViewerState>();
 						case .Key0: ResetView();
 						case .Key1: ToggleExpandedView();
-						case .Key9: VRAM.Export();
+						case .Key9:
+							let dialog = new System.IO.SaveFileDialog();
+							dialog.FileName = "vram_decoded";
+							dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
+							dialog.OverwritePrompt = true;
+							dialog.CheckFileExists = true;
+							dialog.AddExtension = true;
+							dialog.DefaultExt = "bmp";
+
+							switch (dialog.ShowDialog()) {
+								case .Ok(let val):
+									if (val == .OK) {
+										VRAM.Export(dialog.FileNames[0]);
+									}
+								case .Err:
+							}
+
+							delete dialog;
 						default:
 					}
 				}
