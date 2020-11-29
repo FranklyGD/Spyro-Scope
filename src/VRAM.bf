@@ -98,22 +98,36 @@ namespace SpyroScope {
 			delete pixels;
 		}
 
-		public static void Export(String file, int x, int y, int width, int height, int bitmode) {
-			let subPixels = 16 / bitmode;
-			uint16[] textureBuffer = new .[width * subPixels * height];
+		public static void Export(String file, int x, int y, int width, int height, int bitmode, int tpage) {
+			uint16[] vramBuffer = new .[1024 * 4 * 512];
 
 			decoded.Bind();
-			GL.glGetTexImage(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &textureBuffer[0]);
+			GL.glGetTexImage(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &vramBuffer[0]);
+			
+			(int x, int y) tpageCoords = (tpage & 0xf, (tpage & 0x10) >> 4);
+			let vramPagePosition = ((tpageCoords.x * 64) + (tpageCoords.y * 256 * 1024)) * 4;
 
-			SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&textureBuffer[0], (.)(width * subPixels), (.)height, 16, 2 * (.)(width * subPixels), 0x001f, 0x03e0, 0x7c00, 0x8000);
+			let subPixels = 16 / bitmode;
+			let pixelWidth = 4 / subPixels;
+			uint16[] textureBuffer = new .[width * height];
+
+			for (let localx < width) {
+				for (let localy < height) {
+					textureBuffer[localx + localy * width] = vramBuffer[vramPagePosition + (x + localx) * pixelWidth + (y + localy) * 1024 * 4];
+				}
+			}
+			delete vramBuffer;
+			
+			SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&textureBuffer[0], (.)(width), (.)height, 16, 2 * (.)(width), 0x001f, 0x03e0, 0x7c00, 0x8000);
+			delete textureBuffer;
+
 			SDL.SDL_SaveBMP(img, file);
 			SDL.FreeSurface(img);
-			delete textureBuffer;
 		}
 
 		
 		public static void Export(String file) {
-			Export(file, 0, 0, 1024, 512, 4);
+			Export(file, 0, 0, 1024 * 4, 512, 4, 0);
 		}
 	}
 }

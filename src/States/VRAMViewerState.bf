@@ -206,6 +206,36 @@ namespace SpyroScope {
 		public override bool OnEvent(SDL2.SDL.Event event) {
 			switch (event.type) {
 				case .MouseButtonDown : {
+					if (event.button.button == 1) {
+						if (hoveredTextureIndex > -1) {
+							let dialog = new System.IO.SaveFileDialog();
+							dialog.FileName = scope String() .. AppendF("{}_{}", hoveredTextureIndex, hoveredTextureQuadIndex);
+							dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
+							dialog.OverwritePrompt = true;
+							dialog.CheckFileExists = true;
+							dialog.AddExtension = true;
+							dialog.DefaultExt = "bmp";
+	
+							switch (dialog.ShowDialog()) {
+								case .Ok(let val):
+									if (val == .OK) {
+										TextureQuad* quad = ?;
+										if (Emulator.installment == .SpyroTheDragon) {
+											quad = &Terrain.texturesLODs1[hoveredTextureIndex].D1;
+										} else {
+											quad = &Terrain.texturesLODs[hoveredTextureIndex].farQuad;
+										}
+										quad += hoveredTextureQuadIndex;
+										
+										let rightSkewAdjusted = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
+										VRAM.Export(dialog.FileNames[0], quad.left, quad.leftSkew, quad.right - quad.left + 1, rightSkewAdjusted - quad.leftSkew + 1, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.texturePage);
+									}
+								case .Err:
+							}
+	
+							delete dialog;
+						}
+					}
 					if (event.button.button == 3) {
 						panning = true;
 					}
@@ -245,8 +275,9 @@ namespace SpyroScope {
 								let pageIndex = quad.GetTPageIndex();
 								let bitMode = (quad.texturePage & 0x80 > 0) ? 2 : 4;
 								(float x, float y) localTestPosition = (testPosition.x - (pageIndex & 0xf) * 64, testPosition.y - (pageIndex >> 4 << 8));
+								let rightSkewAdjusted = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
 								if (localTestPosition.x > quad.left / bitMode && localTestPosition.x < ((int)quad.right + 1) / bitMode &&
-									localTestPosition.y > quad.leftSkew && localTestPosition.y < (int)quad.rightSkew + 1) {
+									localTestPosition.y > quad.leftSkew && localTestPosition.y < (int)rightSkewAdjusted + 1) {
 									hoveredTextureIndex = textureIndex;
 									hoveredTextureQuadIndex = quadIndex;
 									break;
