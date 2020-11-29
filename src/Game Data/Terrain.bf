@@ -7,7 +7,7 @@ namespace SpyroScope {
 		public TerrainCollision collision ~ delete _;
 		public TerrainRegion[] visualMeshes;
 		public RegionAnimation[] animations;
-		public static int highestUsedTextureIndex = -1;
+		public static List<int> usedTextureIndices = new .() ~ delete _;
 		public static TextureLOD[] texturesLODs;
 		public static TextureLOD1[] texturesLODs1;
 		public static TextureScroller[] textureScrollers;
@@ -56,8 +56,7 @@ namespace SpyroScope {
 		}
 
 		public void Reload() {
-			delete textureScrollers;
-			delete textureSwappers;
+			usedTextureIndices.Clear();
 
 			// Get max amount of possible textures
 			if (Emulator.installment == .SpyroTheDragon) {
@@ -90,17 +89,12 @@ namespace SpyroScope {
 			Emulator.Address[] sceneDataRegionAddresses = new .[sceneRegionCount];
 			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegionAddresses[0], sceneRegionCount);
 			for (let regionIndex < sceneRegionCount) {
-				let region = new TerrainRegion(sceneDataRegionAddresses[regionIndex]);
-				visualMeshes[regionIndex] = region;
-
-				if (region.highestUsedTextureIndex > highestUsedTextureIndex) { 
-					highestUsedTextureIndex = region.highestUsedTextureIndex;
-				}
+				visualMeshes[regionIndex] = new .(sceneDataRegionAddresses[regionIndex]);
 			}
 			delete sceneDataRegionAddresses;
 
 			// Convert any used VRAM textures for previewing
-			for (let textureIndex < highestUsedTextureIndex + 1) {
+			for (let textureIndex in usedTextureIndices) {
 				TextureQuad* quad = ?;
 				int quadCount = ?;
 				if (Emulator.installment == .SpyroTheDragon) {

@@ -143,8 +143,8 @@ namespace SpyroScope {
 					let flipSide = regionFace.flipped;
 					let textureRotation = regionFace.renderInfo.rotation;
 
-					if (textureIndex > highestUsedTextureIndex) {
-						highestUsedTextureIndex = textureIndex;
+					if (!Terrain.usedTextureIndices.Contains(textureIndex)) {
+						Terrain.usedTextureIndices.Add(textureIndex);
 					}
 
 					TextureQuad nearQuad = ?;

@@ -118,7 +118,7 @@ namespace SpyroScope {
 				size.x *= 2;
 			}
 
-			for (let textureIndex < Terrain.highestUsedTextureIndex) {
+			for (let textureIndex in Terrain.usedTextureIndices) {
 				TextureQuad* quad = ?;
 				int quadCount = ?;
 				if (Emulator.installment == .SpyroTheDragon) {
@@ -230,7 +230,7 @@ namespace SpyroScope {
 						}
 						hoveredTextureIndex = hoveredTextureQuadIndex = -1;
 
-						for (let textureIndex < Terrain.highestUsedTextureIndex) {
+						for (let textureIndex in Terrain.usedTextureIndices) {
 							TextureQuad* quad = ?;
 							int quadCount = ?;
 							if (Emulator.installment == .SpyroTheDragon) {

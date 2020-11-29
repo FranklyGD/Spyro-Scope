@@ -62,6 +62,10 @@ namespace SpyroScope {
 			// Append the missing parts of the scrolling textures to the main decoded one
 
 			for (let textureIndex in usedTextures) {
+				if (!Terrain.usedTextureIndices.Contains(textureIndex)) {
+					Terrain.usedTextureIndices.Add(textureIndex);
+				}
+
 				TextureQuad* quad = ?;
 				int quadCount = ?;
 				if (Emulator.installment == .SpyroTheDragon) {

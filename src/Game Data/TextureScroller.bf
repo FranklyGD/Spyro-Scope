@@ -43,6 +43,10 @@ namespace SpyroScope {
 		}
 
 		public void Reload() mut {
+			if (!Terrain.usedTextureIndices.Contains(textureIndex)) {
+				Terrain.usedTextureIndices.Add(textureIndex);
+			}
+
 			affectedTriangles.Clear();
 			affectedTransparentTriangles.Clear();
 
