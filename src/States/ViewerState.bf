@@ -1127,7 +1127,12 @@ namespace SpyroScope {
 			Renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(0,500,0), .(0,255,0), .(0,255,0));
 			Renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(0,0,500), .(0,0,255), .(0,0,255));
 
-			let radius = 0x164;
+			uint32 radius = ?;
+			if (Emulator.installment == .YearOfTheDragon) {
+			    Emulator.collisionRadius[(int)Emulator.rom - 7].Read(&radius);
+			} else {
+			    radius = 0x164;
+			}
 
 			DrawUtilities.WireframeSphere(Emulator.spyroPosition, viewerSpyroBasis, radius, .(32,32,32));
 		}
