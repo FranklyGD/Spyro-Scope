@@ -1,6 +1,7 @@
 using OpenGL;
 using SDL2;
 using System;
+using System.IO;
 
 namespace SpyroScope {
 	class VRAMViewerState : WindowState {
@@ -9,6 +10,13 @@ namespace SpyroScope {
 			Decoded
 		}
 		RenderMode renderMode;
+
+		enum ClickMode {
+			Normal,
+			Export,
+			Alter
+		}
+		ClickMode clickMode;
 
 		float scale = 1, scaleMagnitude = 0;
 		bool expand;
@@ -174,13 +182,10 @@ namespace SpyroScope {
 
 			if (hoveredTextureIndex > -1) {
 				TextureQuad* quad = ?;
-				int quadCount = ?;
 				if (Emulator.installment == .SpyroTheDragon) {
 					quad = &Terrain.texturesLODs1[hoveredTextureIndex].D1;
-					quadCount = 5;//21;
 				} else {
 					quad = &Terrain.texturesLODs[hoveredTextureIndex].farQuad;
-					quadCount = 6;
 				}
 				quad += hoveredTextureQuadIndex;
 
@@ -207,33 +212,151 @@ namespace SpyroScope {
 			switch (event.type) {
 				case .MouseButtonDown : {
 					if (event.button.button == 1) {
-						if (hoveredTextureIndex > -1) {
-							let dialog = new System.IO.SaveFileDialog();
-							dialog.FileName = scope String() .. AppendF("{}_{}", hoveredTextureIndex, hoveredTextureQuadIndex);
-							dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
-							dialog.OverwritePrompt = true;
-							dialog.CheckFileExists = true;
-							dialog.AddExtension = true;
-							dialog.DefaultExt = "bmp";
-	
-							switch (dialog.ShowDialog()) {
-								case .Ok(let val):
-									if (val == .OK) {
-										TextureQuad* quad = ?;
-										if (Emulator.installment == .SpyroTheDragon) {
-											quad = &Terrain.texturesLODs1[hoveredTextureIndex].D1;
-										} else {
-											quad = &Terrain.texturesLODs[hoveredTextureIndex].farQuad;
-										}
-										quad += hoveredTextureQuadIndex;
-										
-										let rightSkewAdjusted = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
-										VRAM.Export(dialog.FileNames[0], quad.left, quad.leftSkew, quad.right - quad.left + 1, rightSkewAdjusted - quad.leftSkew + 1, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.texturePage);
+						switch (clickMode) {
+							case .Normal:
+							case .Export: {
+								if (hoveredTextureIndex > -1) {
+									let dialog = scope System.IO.SaveFileDialog();
+									dialog.FileName = scope String() .. AppendF("{}_{}", hoveredTextureIndex, hoveredTextureQuadIndex);
+									dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
+									dialog.OverwritePrompt = true;
+									dialog.CheckFileExists = true;
+									dialog.AddExtension = true;
+									dialog.DefaultExt = "bmp";
+			
+									switch (dialog.ShowDialog()) {
+										case .Ok(let val):
+											if (val == .OK) {
+												TextureQuad* quad = ?;
+												if (Emulator.installment == .SpyroTheDragon) {
+													quad = &Terrain.texturesLODs1[hoveredTextureIndex].D1;
+												} else {
+													quad = &Terrain.texturesLODs[hoveredTextureIndex].farQuad;
+												}
+												quad += hoveredTextureQuadIndex;
+												
+												let rightSkewAdjusted = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
+												VRAM.Export(dialog.FileNames[0], quad.left, quad.leftSkew, quad.right - quad.left + 1, rightSkewAdjusted - quad.leftSkew + 1, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.texturePage);
+											}
+										case .Err:
 									}
-								case .Err:
+								}
 							}
-	
-							delete dialog;
+							case .Alter: {
+								let dialog = scope OpenFileDialog();
+								dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
+								dialog.CheckFileExists = true;
+
+								switch (dialog.ShowDialog()) {
+									case .Ok(let val):
+										if (val == .OK) {
+											let file = dialog.FileNames[0];
+
+											let surface = SDLImage.Load(file);
+											if (surface != null) {
+												let filePath = file.Split!('\\');
+												let fileNameFull = filePath[filePath.Count - 1];
+												var fileName = scope String();
+												fileNameFull.Substring(0, fileNameFull.Length - 4).ToString(fileName);
+												let fileParams = fileName.Split!('_');
+												
+												if (hoveredTextureIndex > -1) {
+													TextureQuad* quad = ?;
+													if (Emulator.installment == .SpyroTheDragon) {
+														quad = &Terrain.texturesLODs1[hoveredTextureIndex].D1;
+													} else {
+														quad = &Terrain.texturesLODs[hoveredTextureIndex].farQuad;
+													}
+													quad += hoveredTextureQuadIndex;
+
+													switch (fileParams[0]) {
+														case "clut": {
+															let clutPosition = quad.GetCLUTCoordinates();
+
+															uint16[] clutTable = ?;
+															if (fileParams.Count > 1 && (fileParams[1] == "fade" || fileParams[1] == "gradient")) {
+																clutTable = scope uint16[surface.w * 16];
+																for (let x < surface.w) {
+																	let pixel = ((uint8[4]*)surface.pixels)[x];
+
+																	for (let y < 16) {
+																		let fade = (float)y / 16;
+																		let r = (uint16)Math.Lerp((float)pixel[2] / 255 * 31, 16, fade);
+																		let g = (uint16)Math.Lerp((float)pixel[1] / 255 * 31, 16, fade);
+																		let b = (uint16)Math.Lerp((float)pixel[0] / 255 * 31, 16, fade);
+
+																		clutTable[x + y * surface.w] = r | g << 5 | b << 10 | (pixel[3] > 128 ? 0 : 0x8000);
+																	}
+																}
+																VRAM.Write(clutTable, (.)clutPosition.x, (.)clutPosition.y, (.)surface.w, 16);
+															} else {
+																clutTable = scope uint16[surface.w];
+																for (let x < surface.w) {
+																	let pixel = ((uint8[4]*)surface.pixels)[x];
+
+																	let r = (uint16)((float)pixel[2] / 255 * 31);
+																	let g = (uint16)((float)pixel[1] / 255 * 31);
+																	let b = (uint16)((float)pixel[0] / 255 * 31);
+
+																	clutTable[x] = r | g << 5 | b << 10 | (pixel[3] > 128 ? 0 : 0x8000);
+																}
+																VRAM.Write(clutTable, (.)clutPosition.x, (.)clutPosition.y, (.)surface.w, 1);
+															}
+															VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, 32, 31, (quad.texturePage & 0x80 > 0) ? 8 : 4, quad.clut);
+														}
+
+														default: {
+															let tpage = quad.GetTPageCell();
+															let bitmode = (quad.texturePage & 0x8000) > 0 ? 8 : 4;
+															let subPixels = 16 / bitmode;
+															let clutPosition = (int)quad.clut << 4;
+															let colorCount = (uint16)1 << bitmode;
+
+															let modifiedRightSkew = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
+															let width = Math.Min(surface.w, quad.right - quad.left + 1);
+															let height = Math.Min(surface.h, modifiedRightSkew - quad.leftSkew + 1);
+															let quadWidth = (int)Math.Ceiling((float)width / subPixels);
+															let quadPixels = scope uint16[quadWidth * height];
+
+															for (let x < width) {
+																for (let y < height) {
+																	let pixel = ((uint8[4]*)surface.pixels)[x + y * width];
+
+																	uint16 i = 0;
+																	var closest = float.PositiveInfinity;
+
+																	for (let c < colorCount) {
+																		let clutSample = VRAM.snapshot[clutPosition + c];
+
+																		let db = (float)pixel[0] / 255 - (float)(clutSample >> 10 & 0x1f) / 31;
+																		let dg = (float)pixel[1] / 255 - (float)(clutSample >> 5 & 0x1f) / 31;
+																		let dr = (float)pixel[2] / 255 - (float)(clutSample & 0x1f) / 31;
+																		let distance = dr * dr + dg * dg + db * db;
+																		
+																		if ((pixel[3] > 128) == (clutSample >> 15 < 1) && distance < closest) {
+																			i = c;
+																			closest = distance;
+																		}
+																	}
+
+																	let p = x % subPixels;
+																	quadPixels[x / subPixels + y * quadWidth] |= i << (p * bitmode);
+																}
+															}
+
+															VRAM.Write(quadPixels, tpage.x * 64 + (.)(quad.left / subPixels), tpage.y * 256 + quad.leftSkew, (.)quadWidth, (.)height);
+															VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, 32, 31, (quad.texturePage & 0x80 > 0) ? 8 : 4, quad.clut);
+														}
+													}
+												}
+											}
+
+											SDL.FreeSurface(surface);
+										}
+									case .Err:
+								}
+							}
+							default:
 						}
 					}
 					if (event.button.button == 3) {
@@ -303,11 +426,13 @@ namespace SpyroScope {
 				}
 				case .KeyDown : {
 					switch (event.key.keysym.scancode) {
+						case .LCtrl: clickMode = .Export;
+						case .LAlt: clickMode = .Alter;
 						case .V: windowApp.GoToState<ViewerState>();
 						case .Key0: ResetView();
 						case .Key1: ToggleExpandedView();
 						case .Key9:
-							let dialog = new System.IO.SaveFileDialog();
+							let dialog = new SaveFileDialog();
 							dialog.FileName = "vram_decoded";
 							dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
 							dialog.OverwritePrompt = true;
@@ -324,7 +449,13 @@ namespace SpyroScope {
 							}
 
 							delete dialog;
-						default:
+						default: return false;
+					}
+				}
+				case .KeyUp : {
+					switch (event.key.keysym.scancode) {
+						case .LCtrl, .LAlt: clickMode = .Normal;
+						default: return false;
 					}
 				}
 				default: return false;

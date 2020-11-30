@@ -20,6 +20,26 @@ namespace SpyroScope {
 			// Make the textures sample sharp
 			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
 			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
+
+			if (decoded != null) {
+				decoded.Bind();
+
+				uint16[] textureBuffer = new .[(1024 * 4) * 512]; // VRAM but four times wider
+				GL.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, 0, 0, 1024 * 4, 512, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &textureBuffer[0]);
+				delete textureBuffer;
+			}
+		}
+
+		public static void Write(uint16[] buffer, uint x, uint y, uint width, uint height) {
+			raw.Bind();
+
+			for (let localy < height) {
+				for (let localx < width) {
+					snapshot[(int)(x + localx + (y + localy) * 1024)] = buffer[(int)(localx + localy * width)];
+				}
+				Windows.WriteProcessMemory(Emulator.processHandle, (void*)(Emulator.VRAMBaseAddress + (x + (y + localy) * 1024) * 2), &buffer[(int)(localy * width)], (.)width * 2, null);
+			}
+			GL.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, (.)x, (.)y, (.)width, (.)height, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &buffer[0]);
 		}
 
 		public static void Decode(int tpage, int x, int y, int width, int height, int bitmode, int clut) {
@@ -38,7 +58,7 @@ namespace SpyroScope {
 			// The game splits the VRAM into 16 columns of CLUT starting locations
 			// The size of each column is 16 pixels that contain all the necessary colors
 			// or more depending on the bit-mode used to sample the colors in the table
-			let clutPosition = (int)clut << 4;
+			let clutPosition = clut << 4;
 
 			uint16[] pixels = new .[width * pWidth * height];
 			for (let localx < width) {
@@ -103,7 +123,7 @@ namespace SpyroScope {
 
 			decoded.Bind();
 			GL.glGetTexImage(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &vramBuffer[0]);
-			
+
 			(int x, int y) tpageCoords = (tpage & 0xf, (tpage & 0x10) >> 4);
 			let vramPagePosition = ((tpageCoords.x * 64) + (tpageCoords.y * 256 * 1024)) * 4;
 
@@ -117,7 +137,7 @@ namespace SpyroScope {
 				}
 			}
 			delete vramBuffer;
-			
+
 			SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&textureBuffer[0], (.)(width), (.)height, 16, 2 * (.)(width), 0x001f, 0x03e0, 0x7c00, 0x8000);
 			delete textureBuffer;
 
@@ -125,7 +145,7 @@ namespace SpyroScope {
 			SDL.FreeSurface(img);
 		}
 
-		
+
 		public static void Export(String file) {
 			Export(file, 0, 0, 1024 * 4, 512, 4, 0);
 		}
