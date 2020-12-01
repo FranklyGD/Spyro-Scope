@@ -1,10 +1,32 @@
 using OpenGL;
 using SDL2;
 using System;
+using System.Collections;
 using System.IO;
 
 namespace SpyroScope {
 	class VRAMViewerState : WindowState {
+		enum TextureType {
+			Terrain,
+			Object,
+			Sprite
+		}
+
+		enum CLUTType {
+			Normal,
+			Gradient
+		}
+
+		struct CLUTReference {
+			public int location;
+			public int width;
+			public CLUTType type;
+			public TextureType category;
+			public List<int> references;
+		}
+
+		List<CLUTReference> cluts = new .();
+
 		enum RenderMode {
 			Raw,
 			Decoded
@@ -22,8 +44,16 @@ namespace SpyroScope {
 		bool expand;
 
 		(float x, float y) viewPosition, testPosition;
-		int hoveredTexturePage, hoveredTextureIndex, hoveredTextureQuadIndex;
+		int hoveredTexturePage, hoveredTextureIndex, hoveredTextureQuadIndex, hoveredCLUTIndex;
 		bool panning;
+
+		public ~this() {
+			for (let clutReference in cluts) {
+				delete clutReference.references;
+			}
+
+			delete cluts;
+		}
 
 		public override void Enter() {
 			/*Emulator.OnSceneChanged = new => OnSceneChanged;
@@ -180,6 +210,22 @@ namespace SpyroScope {
 				}
 			}
 
+			for (let clutReference in cluts) {
+				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
+				(float x, float y) clutPositionNormalized = ((float)(clutPosition.x & 0x3ff) / 1024, (float)(clutPosition.x >> 10 + clutPosition.y) / 512);
+				(float x, float y) clutOtherPositionNormalized = ((float)(clutPosition.x & 0x3ff + clutReference.width) / 1024, (float)(clutPosition.x >> 10 + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1)) / 512);
+
+				float ctop = top + clutPositionNormalized.y * size.y * scale;
+				float cbottom = top + clutOtherPositionNormalized.y * size.y * scale;
+				float cleft = left + (clutPositionNormalized.x - (expand ? 0.5f : 0)) * size.x * scale;
+				float cright = left + (clutOtherPositionNormalized.x - (expand ? 0.5f : 0)) * size.x * scale;
+
+				Renderer.DrawLine(.(cleft, ctop, 0), .(cright, ctop, 0), .(64,64,64), .(64,64,64));
+				Renderer.DrawLine(.(cleft, cbottom, 0), .(cright, cbottom, 0), .(64,64,64), .(64,64,64));
+				Renderer.DrawLine(.(cleft, ctop, 0), .(cleft, cbottom, 0), .(64,64,64), .(64,64,64));
+				Renderer.DrawLine(.(cright, ctop, 0), .(cright, cbottom, 0), .(64,64,64), .(64,64,64));
+			}
+
 			if (hoveredTextureIndex > -1) {
 				TextureQuad* quad = ?;
 				if (Emulator.installment == .SpyroTheDragon) {
@@ -202,10 +248,73 @@ namespace SpyroScope {
 				
 				Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
 			}
+
+			if (hoveredCLUTIndex > -1) {
+				let clutReference = cluts[hoveredCLUTIndex];
+
+				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
+				(float x, float y) clutPositionNormalized = ((float)(clutPosition.x & 0x3ff) / 1024, (float)(clutPosition.x >> 10 + clutPosition.y) / 512);
+
+				float ctop = top + clutPositionNormalized.y * size.y * scale;
+				float cleft = left + (clutPositionNormalized.x - (expand ? 0.5f : 0)) * size.x * scale;
+
+				for (let quadIndex in clutReference.references) {
+					TextureQuad* quad = ?;
+					if (Emulator.installment == .SpyroTheDragon) {
+						quad = &Terrain.texturesLODs1[0].D1;
+					} else {
+						quad = &Terrain.texturesLODs[0].farQuad;
+					}
+					quad += quadIndex;
+	
+					let partialUVs = quad.GetVramPartialUV();
+	
+					float qtop = top + partialUVs.leftY * size.y * scale;
+					float qleft = left + (partialUVs.left - (expand ? 0.5f : 0)) * size.x * scale;
+	
+					Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
+				}
+			}
 		}
 
 		public void OnSceneChanged() {
-			//
+			for (let clutReference in cluts) {
+				delete clutReference.references;
+			}
+			cluts.Clear();
+
+			for (let textureIndex in Terrain.usedTextureIndices) {
+				TextureQuad* quad = ?;
+				int quadCount = ?;
+				if (Emulator.installment == .SpyroTheDragon) {
+					quad = &Terrain.texturesLODs1[textureIndex].D1;
+					quadCount = 21;
+				} else {
+					quad = &Terrain.texturesLODs[textureIndex].farQuad;
+					quadCount = 6;
+				}
+				
+				for (let quadIndex < quadCount) {
+					let referenceIndex = cluts.FindIndex(scope (x) => x.category == .Terrain && x.type == (quadIndex < (Emulator.installment == .SpyroTheDragon ? 1 : 2) ? .Gradient : .Normal) && x.location == quad.clut);
+
+					if (referenceIndex == -1) {
+						CLUTReference clutReference = ?;
+						clutReference.category = .Terrain;
+						clutReference.type = quadIndex < (Emulator.installment == .SpyroTheDragon ? 1 : 2) ? .Gradient : .Normal;
+						clutReference.location = quad.clut;
+						clutReference.width = (quad.texturePage & 0x80 > 0) ? 256 : 16;
+						clutReference.references = new .();
+
+						clutReference.references.Add(textureIndex * quadCount + quadIndex);
+
+						cluts.Add(clutReference);
+					} else {
+						cluts[referenceIndex].references.Add(textureIndex * quadCount + quadIndex);
+					}
+
+					quad++;
+				}
+			}
 		}
 
 		public override bool OnEvent(SDL2.SDL.Event event) {
@@ -399,14 +508,38 @@ namespace SpyroScope {
 								let bitMode = (quad.texturePage & 0x80 > 0) ? 2 : 4;
 								(float x, float y) localTestPosition = (testPosition.x - (pageIndex & 0xf) * 64, testPosition.y - (pageIndex >> 4 << 8));
 								let rightSkewAdjusted = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
-								if (localTestPosition.x > quad.left / bitMode && localTestPosition.x < ((int)quad.right + 1) / bitMode &&
-									localTestPosition.y > quad.leftSkew && localTestPosition.y < (int)rightSkewAdjusted + 1) {
+
+								if (localTestPosition.x > quad.left / bitMode && localTestPosition.x <= ((int)quad.right + 1) / bitMode &&
+									localTestPosition.y > quad.leftSkew && localTestPosition.y <= (int)rightSkewAdjusted + 1) {
+
 									hoveredTextureIndex = textureIndex;
 									hoveredTextureQuadIndex = quadIndex;
 									break;
 								}
 
 								quad++;
+							}
+
+							if (hoveredTextureIndex > -1) {
+								break;
+							}
+						}
+
+						hoveredCLUTIndex = -1;
+						for (let clutIndex < cluts.Count) {
+							let clutReference = cluts[clutIndex];
+							(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
+
+							let left = clutPosition.x & 0x3ff;
+							let right = left + clutReference.width;
+							let top = clutPosition.x >> 10 + clutPosition.y;
+							let bottom = top + (clutReference.type == .Gradient ? 16 : 1);
+
+							if (testPosition.x > left && testPosition.x <= right &&
+								testPosition.y > top && testPosition.y <= bottom) {
+
+								hoveredCLUTIndex = clutIndex;
+								break;
 							}
 
 							if (hoveredTextureIndex > -1) {
