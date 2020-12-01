@@ -42,6 +42,8 @@ namespace SpyroScope {
 
 		float scale = 1, scaleMagnitude = 0;
 		bool expand;
+		(float x, float y) vramOrigin;
+		(float width, float height) vramSize;
 
 		(float x, float y) viewPosition, testPosition;
 		int hoveredTexturePage, hoveredTextureIndex, hoveredTextureQuadIndex, hoveredCLUTIndex;
@@ -134,27 +136,14 @@ namespace SpyroScope {
 
 		public override void DrawGUI() {
 			let pixelWidth = expand ? 4 : 1;
-			let width = (expand ? 512 : 1024) * pixelWidth;
-			(float x, float y) size = (width, 512);
-
-			(float x, float y) centering = ?;
-			centering.x = WindowApp.width / 2;
-			centering.y = WindowApp.height / 2;
-
-			float top = centering.y - viewPosition.y * scale;
-			float bottom = centering.y + (size.y - viewPosition.y) * scale;
-			float left = centering.x - viewPosition.x * scale;
-			float right = centering.x + (size.x - viewPosition.x) * scale;
+			vramSize.width = (expand ? 512 : 1024) * pixelWidth;
+			vramSize.height = 512;
 			
-			DrawUtilities.Rect(top, bottom, left, right, 0, 1, expand ? 0.5f : 0, 1, VRAM.raw, .(255,255,255));
-			DrawUtilities.Rect(top, bottom, left, right, 0, 1, expand ? 0.5f : 0, 1, VRAM.decoded, .(255,255,255));
-
-			WindowApp.bitmapFont.Print(scope String() .. AppendF("<{},{}>", (int)testPosition.x, (int)testPosition.y), .Zero, .(255,255,255));
-			WindowApp.bitmapFont.Print(scope String() .. AppendF("T-page {}", hoveredTexturePage), .(0, WindowApp.bitmapFont.characterHeight, 0), .(255,255,255));
-
-			if (expand) {
-				size.x *= 2;
-			}
+			let right = vramOrigin.x + vramSize.width * scale;
+			let bottom = vramOrigin.y + vramSize.height * scale;
+			
+			DrawUtilities.Rect(vramOrigin.y, bottom, vramOrigin.x, right, 0, 1, expand ? 0.5f : 0, 1, VRAM.raw, .(255,255,255));
+			DrawUtilities.Rect(vramOrigin.y, bottom, vramOrigin.x, right, 0, 1, expand ? 0.5f : 0, 1, VRAM.decoded, .(255,255,255));
 
 			for (let textureIndex in Terrain.usedTextureIndices) {
 				TextureQuad* quad = ?;
@@ -170,10 +159,8 @@ namespace SpyroScope {
 				for (let quadIndex < quadCount) {
 					let partialUVs = quad.GetVramPartialUV();
 
-					float qtop = top + partialUVs.leftY * size.y * scale;
-					float qbottom = top + partialUVs.rightY * size.y * scale;
-					float qleft = left + (partialUVs.left - (expand ? 0.5f : 0)) * size.x * scale;
-					float qright = left + (partialUVs.right - (expand ? 0.5f : 0)) * size.x * scale;
+					(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
+					(float qright, float qbottom) = UVToScreen(partialUVs.right, partialUVs.rightY);
 
 					Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(64,64,64), .(64,64,64));
 					Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
@@ -212,13 +199,9 @@ namespace SpyroScope {
 
 			for (let clutReference in cluts) {
 				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
-				(float x, float y) clutPositionNormalized = ((float)(clutPosition.x & 0x3ff) / 1024, (float)(clutPosition.x >> 10 + clutPosition.y) / 512);
-				(float x, float y) clutOtherPositionNormalized = ((float)(clutPosition.x & 0x3ff + clutReference.width) / 1024, (float)(clutPosition.x >> 10 + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1)) / 512);
 
-				float ctop = top + clutPositionNormalized.y * size.y * scale;
-				float cbottom = top + clutOtherPositionNormalized.y * size.y * scale;
-				float cleft = left + (clutPositionNormalized.x - (expand ? 0.5f : 0)) * size.x * scale;
-				float cright = left + (clutOtherPositionNormalized.x - (expand ? 0.5f : 0)) * size.x * scale;
+				(float cleft, float ctop) = PixelToScreen(clutPosition.x, clutPosition.x >> 10 + clutPosition.y);
+				(float cright, float cbottom) = PixelToScreen(clutPosition.x + clutReference.width, clutPosition.x >> 10 + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1));
 
 				Renderer.DrawLine(.(cleft, ctop, 0), .(cright, ctop, 0), .(64,64,64), .(64,64,64));
 				Renderer.DrawLine(.(cleft, cbottom, 0), .(cright, cbottom, 0), .(64,64,64), .(64,64,64));
@@ -236,15 +219,10 @@ namespace SpyroScope {
 				quad += hoveredTextureQuadIndex;
 
 				let partialUVs = quad.GetVramPartialUV();
-
-				float qtop = top + partialUVs.leftY * size.y * scale;
-				float qleft = left + (partialUVs.left - (expand ? 0.5f : 0)) * size.x * scale;
+				(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
 
 				let clutPosition = quad.GetCLUTCoordinates();
-				(float x, float y) clutPositionNormalized = ((float)(clutPosition.x & 0x3ff) / 1024, (float)(clutPosition.x >> 10 + clutPosition.y) / 512);
-
-				float ctop = top + clutPositionNormalized.y * size.y * scale;
-				float cleft = left + (clutPositionNormalized.x - (expand ? 0.5f : 0)) * size.x * scale;
+				(float cleft, float ctop) = PixelToScreen(clutPosition.x, clutPosition.x >> 10 + clutPosition.y);
 				
 				Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
 			}
@@ -253,10 +231,7 @@ namespace SpyroScope {
 				let clutReference = cluts[hoveredCLUTIndex];
 
 				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
-				(float x, float y) clutPositionNormalized = ((float)(clutPosition.x & 0x3ff) / 1024, (float)(clutPosition.x >> 10 + clutPosition.y) / 512);
-
-				float ctop = top + clutPositionNormalized.y * size.y * scale;
-				float cleft = left + (clutPositionNormalized.x - (expand ? 0.5f : 0)) * size.x * scale;
+				(float cleft, float ctop) = PixelToScreen(clutPosition.x, clutPosition.x >> 10 + clutPosition.y);
 
 				for (let quadIndex in clutReference.references) {
 					TextureQuad* quad = ?;
@@ -268,13 +243,14 @@ namespace SpyroScope {
 					quad += quadIndex;
 	
 					let partialUVs = quad.GetVramPartialUV();
-	
-					float qtop = top + partialUVs.leftY * size.y * scale;
-					float qleft = left + (partialUVs.left - (expand ? 0.5f : 0)) * size.x * scale;
+					(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
 	
 					Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
 				}
 			}
+
+			WindowApp.bitmapFont.Print(scope String() .. AppendF("<{},{}>", (int)testPosition.x, (int)testPosition.y), .Zero, .(255,255,255));
+			WindowApp.bitmapFont.Print(scope String() .. AppendF("T-page {}", hoveredTexturePage), .(0, WindowApp.bitmapFont.characterHeight, 0), .(255,255,255));
 		}
 
 		public void OnSceneChanged() {
@@ -323,148 +299,8 @@ namespace SpyroScope {
 					if (event.button.button == 1) {
 						switch (clickMode) {
 							case .Normal:
-							case .Export: {
-								if (hoveredTextureIndex > -1) {
-									let dialog = scope System.IO.SaveFileDialog();
-									dialog.FileName = scope String() .. AppendF("{}_{}", hoveredTextureIndex, hoveredTextureQuadIndex);
-									dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
-									dialog.OverwritePrompt = true;
-									dialog.CheckFileExists = true;
-									dialog.AddExtension = true;
-									dialog.DefaultExt = "bmp";
-			
-									switch (dialog.ShowDialog()) {
-										case .Ok(let val):
-											if (val == .OK) {
-												TextureQuad* quad = ?;
-												if (Emulator.installment == .SpyroTheDragon) {
-													quad = &Terrain.texturesLODs1[hoveredTextureIndex].D1;
-												} else {
-													quad = &Terrain.texturesLODs[hoveredTextureIndex].farQuad;
-												}
-												quad += hoveredTextureQuadIndex;
-												
-												let rightSkewAdjusted = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
-												VRAM.Export(dialog.FileNames[0], quad.left, quad.leftSkew, quad.right - quad.left + 1, rightSkewAdjusted - quad.leftSkew + 1, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.texturePage);
-											}
-										case .Err:
-									}
-								}
-							}
-							case .Alter: {
-								let dialog = scope OpenFileDialog();
-								dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
-								dialog.CheckFileExists = true;
-
-								switch (dialog.ShowDialog()) {
-									case .Ok(let val):
-										if (val == .OK) {
-											let file = dialog.FileNames[0];
-
-											let surface = SDLImage.Load(file);
-											if (surface != null) {
-												let filePath = file.Split!('\\');
-												let fileNameFull = filePath[filePath.Count - 1];
-												var fileName = scope String();
-												fileNameFull.Substring(0, fileNameFull.Length - 4).ToString(fileName);
-												let fileParams = fileName.Split!('_');
-												
-												if (hoveredTextureIndex > -1) {
-													TextureQuad* quad = ?;
-													if (Emulator.installment == .SpyroTheDragon) {
-														quad = &Terrain.texturesLODs1[hoveredTextureIndex].D1;
-													} else {
-														quad = &Terrain.texturesLODs[hoveredTextureIndex].farQuad;
-													}
-													quad += hoveredTextureQuadIndex;
-
-													switch (fileParams[0]) {
-														case "clut": {
-															let clutPosition = quad.GetCLUTCoordinates();
-
-															uint16[] clutTable = ?;
-															if (fileParams.Count > 1 && (fileParams[1] == "fade" || fileParams[1] == "gradient")) {
-																clutTable = scope uint16[surface.w * 16];
-																for (let x < surface.w) {
-																	let pixel = ((uint8[4]*)surface.pixels)[x];
-
-																	for (let y < 16) {
-																		let fade = (float)y / 16;
-																		let r = (uint16)Math.Lerp((float)pixel[2] / 255 * 31, 16, fade);
-																		let g = (uint16)Math.Lerp((float)pixel[1] / 255 * 31, 16, fade);
-																		let b = (uint16)Math.Lerp((float)pixel[0] / 255 * 31, 16, fade);
-
-																		clutTable[x + y * surface.w] = r | g << 5 | b << 10 | (pixel[3] > 128 ? 0 : 0x8000);
-																	}
-																}
-																VRAM.Write(clutTable, (.)clutPosition.x, (.)clutPosition.y, (.)surface.w, 16);
-															} else {
-																clutTable = scope uint16[surface.w];
-																for (let x < surface.w) {
-																	let pixel = ((uint8[4]*)surface.pixels)[x];
-
-																	let r = (uint16)((float)pixel[2] / 255 * 31);
-																	let g = (uint16)((float)pixel[1] / 255 * 31);
-																	let b = (uint16)((float)pixel[0] / 255 * 31);
-
-																	clutTable[x] = r | g << 5 | b << 10 | (pixel[3] > 128 ? 0 : 0x8000);
-																}
-																VRAM.Write(clutTable, (.)clutPosition.x, (.)clutPosition.y, (.)surface.w, 1);
-															}
-															VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, 32, 31, (quad.texturePage & 0x80 > 0) ? 8 : 4, quad.clut);
-														}
-
-														default: {
-															let tpage = quad.GetTPageCell();
-															let bitmode = (quad.texturePage & 0x8000) > 0 ? 8 : 4;
-															let subPixels = 16 / bitmode;
-															let clutPosition = (int)quad.clut << 4;
-															let colorCount = (uint16)1 << bitmode;
-
-															let modifiedRightSkew = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
-															let width = Math.Min(surface.w, quad.right - quad.left + 1);
-															let height = Math.Min(surface.h, modifiedRightSkew - quad.leftSkew + 1);
-															let quadWidth = (int)Math.Ceiling((float)width / subPixels);
-															let quadPixels = scope uint16[quadWidth * height];
-
-															for (let x < width) {
-																for (let y < height) {
-																	let pixel = ((uint8[4]*)surface.pixels)[x + y * width];
-
-																	uint16 i = 0;
-																	var closest = float.PositiveInfinity;
-
-																	for (let c < colorCount) {
-																		let clutSample = VRAM.snapshot[clutPosition + c];
-
-																		let db = (float)pixel[0] / 255 - (float)(clutSample >> 10 & 0x1f) / 31;
-																		let dg = (float)pixel[1] / 255 - (float)(clutSample >> 5 & 0x1f) / 31;
-																		let dr = (float)pixel[2] / 255 - (float)(clutSample & 0x1f) / 31;
-																		let distance = dr * dr + dg * dg + db * db;
-																		
-																		if ((pixel[3] > 128) == (clutSample >> 15 < 1) && distance < closest) {
-																			i = c;
-																			closest = distance;
-																		}
-																	}
-
-																	let p = x % subPixels;
-																	quadPixels[x / subPixels + y * quadWidth] |= i << (p * bitmode);
-																}
-															}
-
-															VRAM.Write(quadPixels, tpage.x * 64 + (.)(quad.left / subPixels), tpage.y * 256 + quad.leftSkew, (.)quadWidth, (.)height);
-															VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, 32, 31, (quad.texturePage & 0x80 > 0) ? 8 : 4, quad.clut);
-														}
-													}
-												}
-											}
-
-											SDL.FreeSurface(surface);
-										}
-									case .Err:
-								}
-							}
+							case .Export: Export();
+							case .Alter: Alter();
 							default:
 						}
 					}
@@ -479,13 +315,12 @@ namespace SpyroScope {
 
 						viewPosition.x -= translationX;
 						viewPosition.y -= translationY;
+						
+						vramOrigin.x = WindowApp.width / 2 - viewPosition.x * scale;
+						vramOrigin.y = WindowApp.height / 2 - viewPosition.y * scale;
 					} else {
-						(float x, float y) centering = ?;
-						centering.x = WindowApp.width / 2;
-						centering.y = WindowApp.height / 2;
-
-						testPosition.x = ((WindowApp.mousePosition.x - centering.x) / scale + viewPosition.x) / (expand ? 4 : 1) + (expand ? 512 : 0);
-						testPosition.y = (WindowApp.mousePosition.y - centering.y) / scale + viewPosition.y;
+						testPosition.x = ((WindowApp.mousePosition.x - WindowApp.width / 2) / scale + viewPosition.x) / (expand ? 4 : 1) + (expand ? 512 : 0);
+						testPosition.y = (WindowApp.mousePosition.y - WindowApp.height / 2) / scale + viewPosition.y;
 
 						if (testPosition.x > 0 && testPosition.x < 1024 && testPosition.y > 0 && testPosition.y < 512) {
 							hoveredTexturePage = (.)(testPosition.x / 64) + (.)(testPosition.y / 256) * 16;
@@ -556,6 +391,9 @@ namespace SpyroScope {
 				case .MouseWheel : {
 					scaleMagnitude = Math.Round((scaleMagnitude + 0.1f * (.)event.wheel.y) * 10) / 10;
 				 	scale = Math.Pow(2, scaleMagnitude);
+
+					vramOrigin.x = WindowApp.width / 2 - viewPosition.x * scale;
+					vramOrigin.y = WindowApp.height / 2 - viewPosition.y * scale;
 				}
 				case .KeyDown : {
 					switch (event.key.keysym.scancode) {
@@ -564,24 +402,7 @@ namespace SpyroScope {
 						case .V: windowApp.GoToState<ViewerState>();
 						case .Key0: ResetView();
 						case .Key1: ToggleExpandedView();
-						case .Key9:
-							let dialog = new SaveFileDialog();
-							dialog.FileName = "vram_decoded";
-							dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
-							dialog.OverwritePrompt = true;
-							dialog.CheckFileExists = true;
-							dialog.AddExtension = true;
-							dialog.DefaultExt = "bmp";
-
-							switch (dialog.ShowDialog()) {
-								case .Ok(let val):
-									if (val == .OK) {
-										VRAM.Export(dialog.FileNames[0]);
-									}
-								case .Err:
-							}
-
-							delete dialog;
+						case .Key9: ExportVRAM();
 						default: return false;
 					}
 				}
@@ -615,6 +436,199 @@ namespace SpyroScope {
 			} else {
 				viewPosition.x = viewPosition.x / 4 + 512;
 			}
+
+			vramOrigin.x = WindowApp.width / 2 - viewPosition.x * scale;
+			vramOrigin.y = WindowApp.height / 2 - viewPosition.y * scale;
+		}
+
+		void ExportVRAM() {
+			let dialog = new SaveFileDialog();
+			dialog.FileName = "vram_decoded";
+			dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
+			dialog.OverwritePrompt = true;
+			dialog.CheckFileExists = true;
+			dialog.AddExtension = true;
+			dialog.DefaultExt = "bmp";
+
+			switch (dialog.ShowDialog()) {
+				case .Ok(let val):
+					if (val == .OK) {
+						VRAM.Export(dialog.FileNames[0]);
+					}
+				case .Err:
+			}
+
+			delete dialog;
+		}
+
+		[Inline]
+		(float x, float y) PixelToScreen(float x, float y) {
+			return UVToScreen(x / 1024, y / 512);
+		}
+
+		[Inline]
+		(float x, float y) UVToScreen(float x, float y) {
+			return (vramOrigin.x + (x - (expand ? 0.5f : 0)) * vramSize.width * (expand ? 2 : 1) * scale, vramOrigin.y + y * vramSize.height * scale);
+		}
+
+		void Export() {
+			if (hoveredTextureIndex > -1) {
+				let dialog = scope System.IO.SaveFileDialog();
+				dialog.FileName = scope String() .. AppendF("{}_{}", hoveredTextureIndex, hoveredTextureQuadIndex);
+				dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
+				dialog.OverwritePrompt = true;
+				dialog.CheckFileExists = true;
+				dialog.AddExtension = true;
+				dialog.DefaultExt = "bmp";
+
+				switch (dialog.ShowDialog()) {
+					case .Ok(let val):
+						if (val == .OK) {
+							TextureQuad* quad = ?;
+							if (Emulator.installment == .SpyroTheDragon) {
+								quad = &Terrain.texturesLODs1[hoveredTextureIndex].D1;
+							} else {
+								quad = &Terrain.texturesLODs[hoveredTextureIndex].farQuad;
+							}
+							quad += hoveredTextureQuadIndex;
+							
+							let rightSkewAdjusted = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
+							VRAM.Export(dialog.FileNames[0], quad.left, quad.leftSkew, quad.right - quad.left + 1, rightSkewAdjusted - quad.leftSkew + 1, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.texturePage);
+						}
+					case .Err:
+				}
+			}
+		}
+
+		void Alter() {
+			let dialog = scope OpenFileDialog();
+			dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
+			dialog.CheckFileExists = true;
+
+			switch (dialog.ShowDialog()) {
+				case .Ok(let val):
+					if (val == .OK) {
+						let file = dialog.FileNames[0];
+
+						let surface = SDLImage.Load(file);
+						if (surface != null) {
+							let filePath = file.Split!('\\');
+							let fileNameFull = filePath[filePath.Count - 1];
+							var fileName = scope String();
+							fileNameFull.Substring(0, fileNameFull.Length - 4).ToString(fileName);
+							let fileParams = fileName.Split!('_');
+							
+							if (hoveredTextureIndex > -1) {
+								TextureQuad* quad = ?;
+								if (Emulator.installment == .SpyroTheDragon) {
+									quad = &Terrain.texturesLODs1[hoveredTextureIndex].D1;
+								} else {
+									quad = &Terrain.texturesLODs[hoveredTextureIndex].farQuad;
+								}
+								quad += hoveredTextureQuadIndex;
+
+								switch (fileParams[0]) {
+									case "clut": {
+										let clutPosition = quad.GetCLUTCoordinates();
+
+										uint16[] clutTable = ?;
+										if (fileParams.Count > 1 && (fileParams[1] == "fade" || fileParams[1] == "gradient")) {
+											clutTable = GenerateCLUT!(surface, 16);
+											VRAM.Write(clutTable, (.)clutPosition.x, (.)clutPosition.y, (.)surface.w, 16);
+										} else {
+											clutTable = GenerateCLUT!(surface);
+											VRAM.Write(clutTable, (.)clutPosition.x, (.)clutPosition.y, (.)surface.w, 1);
+										}
+										VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, surface.w, surface.h, (quad.texturePage & 0x80 > 0) ? 8 : 4, quad.clut);
+									}
+
+									default: {
+										let tpage = quad.GetTPageCell();
+										let bitmode = (quad.texturePage & 0x8000) > 0 ? 8 : 4;
+										let subPixels = 16 / bitmode;
+										let clutPosition = (int)quad.clut << 4;
+										let colorCount = (uint16)1 << bitmode;
+
+										let modifiedRightSkew = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
+										let width = Math.Min(surface.w, quad.right - quad.left + 1);
+										let height = Math.Min(surface.h, modifiedRightSkew - quad.leftSkew + 1);
+										let quadWidth = (int)Math.Ceiling((float)width / subPixels);
+										let quadPixels = scope uint16[quadWidth * height];
+
+										for (let x < width) {
+											for (let y < height) {
+												let pixel = ((uint32*)surface.pixels)[x + y * width];
+
+												uint16 i = 0;
+												var closest = float.PositiveInfinity;
+
+												for (let c < colorCount) {
+													let clutSample = VRAM.snapshot[clutPosition + c];
+
+													let dr = (float)(pixel & surface.format.Rmask) / surface.format.Rmask - (float)(clutSample & 0x1f) / 31;
+													let dg = (float)(pixel & surface.format.Gmask) / surface.format.Gmask - (float)(clutSample >> 5 & 0x1f) / 31;
+													let db = (float)(pixel & surface.format.Bmask) / surface.format.Bmask - (float)(clutSample >> 10 & 0x1f) / 31;
+													let distance = dr * dr + dg * dg + db * db;
+													
+													if (((pixel & surface.format.Amask) > 0) == (clutSample >> 15 < 1) && distance < closest) {
+														i = c;
+														closest = distance;
+													}
+												}
+
+												let p = x % subPixels;
+												quadPixels[x / subPixels + y * quadWidth] |= i << (p * bitmode);
+											}
+										}
+
+										VRAM.Write(quadPixels, tpage.x * 64 + (.)(quad.left / subPixels), tpage.y * 256 + quad.leftSkew, (.)quadWidth, (.)height);
+										VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, width, height, (quad.texturePage & 0x80 > 0) ? 8 : 4, quad.clut);
+									}
+								}
+							}
+						}
+
+						SDL.FreeSurface(surface);
+					}
+				case .Err:
+			}
+		}
+
+		mixin GenerateCLUT(SDL.Surface* surface) {
+			let clutTable = scope:mixin uint16[surface.w];
+
+			for (let x < surface.w) {
+				let pixel = ((uint32*)surface.pixels)[x];
+
+				let r = (uint16)((float)(pixel & surface.format.Rmask) / surface.format.Rmask * 31);
+				let g = (uint16)((float)(pixel & surface.format.Gmask) / surface.format.Gmask * 31);
+				let b = (uint16)((float)(pixel & surface.format.Bmask) / surface.format.Bmask * 31);
+
+				clutTable[x] = r | g << 5 | b << 10 | ((pixel / surface.format.Amask) > 0 ? 0 : 0x8000);
+			}
+
+			clutTable
+		}
+		
+		mixin GenerateCLUT(SDL.Surface* surface, int height, bool black = false) {
+			let clutTable = scope:mixin uint16[surface.w * 16];
+			let colorLevel = black ? 0 : 16;
+
+			for (let x < surface.w) {
+				let pixel = ((uint32*)surface.pixels)[x];
+	
+				for (let y < height) {
+					let fade = (float)y / height;
+
+					let r = (uint16)Math.Lerp((float)(pixel & surface.format.Rmask) / surface.format.Rmask * 31, colorLevel, fade);
+					let g = (uint16)Math.Lerp((float)(pixel & surface.format.Gmask) / surface.format.Gmask * 31, colorLevel, fade);
+					let b = (uint16)Math.Lerp((float)(pixel & surface.format.Bmask) / surface.format.Bmask * 31, colorLevel, fade);
+	
+					clutTable[x + y * surface.w] = r | g << 5 | b << 10 | ((pixel / surface.format.Amask) > 0 ? 0 : 0x8000);
+				}
+			}
+
+			clutTable
 		}
 	}
 }
