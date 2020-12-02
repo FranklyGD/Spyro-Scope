@@ -5,6 +5,7 @@ using System;
 namespace SpyroScope {
 	static struct VRAM {
 		static public uint16[] snapshot ~ delete _;
+		static public uint16[] snapshotDecoded ~ delete _;
 		static public Texture raw ~ delete _;
 		static public Texture decoded ~ delete _;
 
@@ -22,11 +23,12 @@ namespace SpyroScope {
 			GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
 
 			if (decoded != null) {
+				delete snapshotDecoded;
+
 				decoded.Bind();
 
-				uint16[] textureBuffer = new .[(1024 * 4) * 512]; // VRAM but four times wider
-				GL.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, 0, 0, 1024 * 4, 512, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &textureBuffer[0]);
-				delete textureBuffer;
+				snapshotDecoded = new .[(1024 * 4) * 512]; // VRAM but four times wider
+				GL.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, 0, 0, 1024 * 4, 512, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &snapshotDecoded[0]);
 			}
 		}
 
@@ -97,15 +99,13 @@ namespace SpyroScope {
 			}
 
 			if (decoded == null) {
-				uint16[] textureBuffer = new .[(1024 * 4) * 512]; // VRAM but four times wider
-				decoded = new .(1024 * 4, 512, GL.GL_SRGB_ALPHA, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &textureBuffer[0]);
+				snapshotDecoded = new .[(1024 * 4) * 512]; // VRAM but four times wider
+				decoded = new .(1024 * 4, 512, GL.GL_SRGB_ALPHA, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &snapshotDecoded[0]);
 				decoded.Bind();
 
 				// Make the textures sample sharp
 				GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
 				GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-
-				delete textureBuffer;
 			}
 
 			decoded.Bind();
@@ -114,16 +114,17 @@ namespace SpyroScope {
 				width * pWidth, height,
 				GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &pixels[0]
 			);
+			
+			for (let localx < width * pWidth) {
+				for (let localy < height) {
+					snapshotDecoded[(tpageCoords.x * 64 * 4) + x * pWidth + localx + ((tpageCoords.y * 256) + y + localy) * 1024 * 4] = pixels[localx + localy * (width * pWidth)];
+				}
+			}
 
 			delete pixels;
 		}
 
 		public static void Export(String file, int x, int y, int width, int height, int bitmode, int tpage) {
-			uint16[] vramBuffer = new .[1024 * 4 * 512];
-
-			decoded.Bind();
-			GL.glGetTexImage(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &vramBuffer[0]);
-
 			(int x, int y) tpageCoords = (tpage & 0xf, (tpage & 0x10) >> 4);
 			let vramPagePosition = ((tpageCoords.x * 64) + (tpageCoords.y * 256 * 1024)) * 4;
 
@@ -133,10 +134,9 @@ namespace SpyroScope {
 
 			for (let localx < width) {
 				for (let localy < height) {
-					textureBuffer[localx + localy * width] = vramBuffer[vramPagePosition + (x + localx) * pixelWidth + (y + localy) * 1024 * 4];
+					textureBuffer[localx + localy * width] = snapshotDecoded[vramPagePosition + (x + localx) * pixelWidth + (y + localy) * 1024 * 4];
 				}
 			}
-			delete vramBuffer;
 
 			SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&textureBuffer[0], (.)(width), (.)height, 16, 2 * (.)(width), 0x001f, 0x03e0, 0x7c00, 0x8000);
 			delete textureBuffer;
