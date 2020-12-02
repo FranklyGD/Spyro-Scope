@@ -6,6 +6,8 @@ using System.IO;
 
 namespace SpyroScope {
 	class VRAMViewerState : WindowState {
+		List<TextureSprite> textureSprites = new .() ~ DeleteContainerAndItems!(_);
+
 		enum TextureType {
 			Terrain,
 			Object,
@@ -46,7 +48,7 @@ namespace SpyroScope {
 		(float width, float height) vramSize;
 
 		(float x, float y) viewPosition, testPosition;
-		int hoveredTexturePage, hoveredTextureIndex, hoveredTextureQuadIndex, hoveredCLUTIndex;
+		int hoveredTexturePage, hoveredTextureIndex, hoveredTextureQuadIndex, hoveredCLUTIndex, hoveredSpriteIndex;
 		bool panning;
 
 		public ~this() {
@@ -60,65 +62,6 @@ namespace SpyroScope {
 		public override void Enter() {
 			/*Emulator.OnSceneChanged = new => OnSceneChanged;
 			Emulator.OnSceneChanging = new => OnSceneChanging;*/
-
-			if (Emulator.installment == .RiptosRage) {
-				TextureSprite a = ?;
-				a = scope .(0, 0, 10); // Numbers
-				a.Decode();
-				a = scope .(2, 10, 1); // Forward Slash
-				a.Decode();
-	
-				a = scope .(1, 11, 6); // Gem
-				a.Decode();
-				a = scope .(1, 19, 3); // Spirit
-				a.Decode();
-	
-				a = scope .(2, 0x1d, 1); // Colon
-				a.Decode();
-				a = scope .(2, 0x1e, 1); // Period
-				a.Decode();
-	
-				a = scope .(5, 0x16, 1); // Power Bar Top
-				a.Decode();
-				a = scope .(6, 0x1a, 1); // Power Icon BG
-				a.Decode();
-				a = scope .(7, 0x1b, 1); // Power Icon FG
-				a.Decode();
-	
-				a = scope .(5, 0x17, 1); // Power Bar Mid
-				a.Decode();
-				a = scope .(5, 0x18, 1); // Power Bar Bottom
-				a.Decode();
-				a = scope .(5, 0x19, 1); // Power Bar Mid Lit
-				a.Decode();
-	
-				a = scope .(11, 0x24, 4); // Rounded Corners
-				a.Decode();
-	
-				a = scope .(1, 0x1c, 1); // Reticle Circle
-				a.Decode();
-	
-				a = scope .(9, 0x1f, 1); // Spyro Head
-				a.Decode();
-				a = scope .(10, 0x20, 4); // Spyro Eyes
-				a.Decode();
-
-				a = scope .(4, 0x57, 1); // Map
-				a.Decode();
-
-				a = scope .(1, 0x37, 8); // Objective 1
-				a.Decode();
-				a = scope .(1, 0x3f, 8); // Objective 2
-				a.Decode();
-				/*a = scope .(1, 0x47, 8); // Objective 3
-				a.Decode();
-				a = scope .(1, 0x4f, 8); // Objective 4
-				a.Decode();*/
-				
-				SpyroFont.Init();
-				SpyroFont.Decode();
-			}
-
 			OnSceneChanged();
 			ResetView();
 		}
@@ -227,25 +170,65 @@ namespace SpyroScope {
 				Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
 			}
 
+			for (let sprite in textureSprites) {
+				for (let frame in sprite.frames) {
+					(float qleft, float qtop) = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
+					(float qright, float qbottom) = UVToScreen(0.5f + (float)((int)frame.x + sprite.width) / (1024 * 4), 0.5f + (float)((int)frame.y + sprite.height) / 512);
+	
+					Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(64,64,64), .(64,64,64));
+					Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
+					Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,64), .(64,64,64));
+					Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
+				}
+			}
+
+			if (hoveredSpriteIndex > -1) {
+				let frame = textureSprites[hoveredSpriteIndex].frames[0];
+
+				(float qleft, float qtop) = PixelToScreen(frame.x / 4 + 512, frame.y + 256);
+				(float cleft, float ctop) = PixelToScreen((frame.clutX & 3) * 16 + 512, frame.clutY + 256);
+				
+				Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
+			}
+
 			if (hoveredCLUTIndex > -1) {
 				let clutReference = cluts[hoveredCLUTIndex];
 
 				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
 				(float cleft, float ctop) = PixelToScreen(clutPosition.x, clutPosition.x >> 10 + clutPosition.y);
 
-				for (let quadIndex in clutReference.references) {
-					TextureQuad* quad = ?;
-					if (Emulator.installment == .SpyroTheDragon) {
-						quad = &Terrain.texturesLODs1[0].D1;
-					} else {
-						quad = &Terrain.texturesLODs[0].farQuad;
+				switch (clutReference.category) {
+					case .Terrain: {
+						for (let quadIndex in clutReference.references) {
+							TextureQuad* quad = ?;
+							if (Emulator.installment == .SpyroTheDragon) {
+								quad = &Terrain.texturesLODs1[0].D1;
+							} else {
+								quad = &Terrain.texturesLODs[0].farQuad;
+							}
+							quad += quadIndex;
+			
+							let partialUVs = quad.GetVramPartialUV();
+							(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
+			
+							Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
+						}
 					}
-					quad += quadIndex;
-	
-					let partialUVs = quad.GetVramPartialUV();
-					(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
-	
-					Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
+					case .Sprite: {
+						if (Emulator.installment != .RiptosRage) {
+							break;
+						}
+
+						for (let spriteIndex in clutReference.references) {
+							let spriteSetIndex = textureSprites.FindIndex(scope (x) => spriteIndex >= x.start && spriteIndex < x.start + x.frames.Count);
+							let spriteSet = textureSprites[spriteSetIndex];
+							
+							(float qleft, float qtop) = UVToScreen(0.5f + (float)spriteSet.frames[0].x / (1024 * 4), 0.5f + (float)spriteSet.frames[0].y / 512);
+
+							Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
+						}
+					}
+					case .Object:
 				}
 			}
 
@@ -291,6 +274,67 @@ namespace SpyroScope {
 					quad++;
 				}
 			}
+
+			if (Emulator.installment == .RiptosRage) {
+				textureSprites.Add(new .(0, 0, 10)); // Numbers
+				textureSprites.Add(new .(2, 10, 1)); // Forward Slash
+
+				textureSprites.Add(new .(1, 11, 6)); // Gem
+				textureSprites.Add(new .(1, 19, 3)); // Spirit
+
+				textureSprites.Add(new .(2, 0x1d, 1)); // Colon
+				textureSprites.Add(new .(2, 0x1e, 1)); // Period
+
+				textureSprites.Add(new .(5, 0x16, 1)); // Power Bar Top
+				textureSprites.Add(new .(6, 0x1a, 1)); // Power Icon BG
+				textureSprites.Add(new .(7, 0x1b, 1)); // Power Icon FG
+
+				textureSprites.Add(new .(5, 0x17, 1)); // Power Bar Mid
+				textureSprites.Add(new .(5, 0x18, 1)); // Power Bar Bottom
+				textureSprites.Add(new .(5, 0x19, 1)); // Power Bar Mid Lit
+
+				textureSprites.Add(new .(11, 0x24, 4)); // Rounded Corners
+
+				textureSprites.Add(new .(1, 0x1c, 1)); // Reticle Circle
+
+				textureSprites.Add(new .(9, 0x1f, 1)); // Spyro Head
+				textureSprites.Add(new .(10, 0x20, 4)); // Spyro Eyes
+
+				textureSprites.Add(new .(4, 0x57, 1)); // Map
+
+				textureSprites.Add(new .(1, 0x37, 8)); // Objective 1
+				textureSprites.Add(new .(1, 0x3f, 8)); // Objective 2
+				/*textureSprites.Add(new .(1, 0x47, 8)); // Objective 3
+				textureSprites.Add(new .(1, 0x4f, 8)); // Objective 4*/
+
+				for (let sprite in textureSprites) {
+					sprite.Decode();
+
+					for (let frameIndex < sprite.frames.Count) {
+						let frame = sprite.frames[frameIndex];
+						let clut = (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020;
+						let referenceIndex = cluts.FindIndex(scope (x) => x.category == .Sprite && x.type == .Normal && x.location == clut);
+
+						if (referenceIndex == -1) {
+							CLUTReference clutReference = ?;
+							clutReference.category = .Sprite;
+							clutReference.type = .Normal;
+							clutReference.location = clut;
+							clutReference.width = 16;
+							clutReference.references = new .();
+
+							clutReference.references.Add(sprite.start + frameIndex);
+
+							cluts.Add(clutReference);
+						} else {
+							cluts[referenceIndex].references.Add(sprite.start + frameIndex);
+						}
+					}
+				}
+
+				SpyroFont.Init();
+				SpyroFont.Decode();
+			}
 		}
 
 		public override bool OnEvent(SDL2.SDL.Event event) {
@@ -325,8 +369,8 @@ namespace SpyroScope {
 						if (testPosition.x > 0 && testPosition.x < 1024 && testPosition.y > 0 && testPosition.y < 512) {
 							hoveredTexturePage = (.)(testPosition.x / 64) + (.)(testPosition.y / 256) * 16;
 						}
-						hoveredTextureIndex = hoveredTextureQuadIndex = -1;
 
+						hoveredTextureIndex = hoveredTextureQuadIndex = -1;
 						for (let textureIndex in Terrain.usedTextureIndices) {
 							TextureQuad* quad = ?;
 							int quadCount = ?;
@@ -357,6 +401,26 @@ namespace SpyroScope {
 
 							if (hoveredTextureIndex > -1) {
 								break;
+							}
+						}
+
+						hoveredSpriteIndex = -1;
+						for (let spriteSetIndex < textureSprites.Count) {
+							let spriteSet = textureSprites[spriteSetIndex];
+							for (let frameIndex < spriteSet.frames.Count) {
+								let frame = spriteSet.frames[frameIndex];
+								(float x, float y) localTestPosition = (testPosition.x - 512, testPosition.y - 256);
+
+								if (localTestPosition.x > frame.x / 4 && localTestPosition.x <= ((int)frame.x + spriteSet.width) / 4 &&
+									localTestPosition.y > frame.y && localTestPosition.y <= ((int)frame.y + spriteSet.height)) {
+
+									hoveredSpriteIndex = spriteSetIndex;
+									break;
+								}
+	
+								if (hoveredSpriteIndex > -1) {
+									break;
+								}
 							}
 						}
 
@@ -424,6 +488,9 @@ namespace SpyroScope {
 
 			viewPosition.x = size.x / 2;
 			viewPosition.y = size.y / 2;
+
+			vramOrigin.x = WindowApp.width / 2 - viewPosition.x * scale;
+			vramOrigin.y = WindowApp.height / 2 - viewPosition.y * scale;
 		}
 
 		void ToggleExpandedView() {
@@ -474,7 +541,7 @@ namespace SpyroScope {
 		void Export() {
 			if (hoveredTextureIndex > -1) {
 				let dialog = scope System.IO.SaveFileDialog();
-				dialog.FileName = scope String() .. AppendF("{}_{}", hoveredTextureIndex, hoveredTextureQuadIndex);
+				dialog.FileName = scope String() .. AppendF("T{}_{}", hoveredTextureIndex, hoveredTextureQuadIndex);
 				dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
 				dialog.OverwritePrompt = true;
 				dialog.CheckFileExists = true;
@@ -498,12 +565,29 @@ namespace SpyroScope {
 					case .Err:
 				}
 			}
+
+			if (hoveredSpriteIndex > -1) {
+				let dialog = scope System.IO.FolderBrowserDialog(.Save);
+
+				switch (dialog.ShowDialog()) {
+					case .Ok(let val):
+						if (val == .OK) {
+							let spriteSet = textureSprites[hoveredSpriteIndex];
+							for (let frameIndex < spriteSet.frames.Count) {
+								let frame = spriteSet.frames[frameIndex];
+								VRAM.Export(scope String() .. AppendF("{}\\S{}.bmp", dialog.SelectedPath, spriteSet.start + frameIndex), frame.x, frame.y, spriteSet.width, spriteSet.height, 4, 0x18);
+							}
+						}
+					case .Err:
+				}
+			}
 		}
 
 		void Alter() {
 			let dialog = scope OpenFileDialog();
 			dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
 			dialog.CheckFileExists = true;
+			dialog.Multiselect = true;
 
 			switch (dialog.ShowDialog()) {
 				case .Ok(let val):
@@ -586,6 +670,68 @@ namespace SpyroScope {
 									}
 								}
 							}
+
+							if (hoveredSpriteIndex > -1) {
+								switch (fileParams[0]) {
+									case "clut": {
+										let spriteSet = textureSprites[hoveredSpriteIndex];
+										for (let frame in spriteSet.frames) {
+											VRAM.Write(GenerateCLUT!(surface), (.)(frame.clutX & 3) * 16 + 512, (.)frame.clutY + 256, (.)surface.w, 1);
+											VRAM.Decode(0x18, frame.x, frame.y, spriteSet.width, spriteSet.height, 4, (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020);
+										}
+									}
+
+									default: {
+										let spriteSet = textureSprites[hoveredSpriteIndex];
+										let frameToReplace = Math.Min(dialog.FileNames.Count, spriteSet.frames.Count);
+										for (let frameIndex < frameToReplace) {
+											let fileFrame = dialog.FileNames[frameIndex];
+
+											let surfaceFrame = SDLImage.Load(fileFrame);
+											let frame = spriteSet.frames[frameIndex];
+
+											let clut = (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020;
+											let clutPosition = clut << 4;
+
+											let width = Math.Min(surfaceFrame.w, spriteSet.width);
+											let height = Math.Min(surfaceFrame.h, spriteSet.height);
+											let quadWidth = (int)Math.Ceiling((float)width / 4);
+											let quadPixels = scope uint16[quadWidth * height];
+
+											for (let x < width) {
+												for (let y < height) {
+													let pixel = *(uint32*)(&((uint8*)surfaceFrame.pixels)[(x + y * width) * surfaceFrame.format.bytesPerPixel]);
+
+													uint16 i = 0;
+													var closest = float.PositiveInfinity;
+
+													for (let c < 16) {
+														let clutSample = VRAM.snapshot[clutPosition + c];
+
+														let dr = (float)(pixel & surfaceFrame.format.Rmask) / surfaceFrame.format.Rmask - (float)(clutSample & 0x1f) / 31;
+														let dg = (float)(pixel & surfaceFrame.format.Gmask) / surfaceFrame.format.Gmask - (float)(clutSample >> 5 & 0x1f) / 31;
+														let db = (float)(pixel & surfaceFrame.format.Bmask) / surfaceFrame.format.Bmask - (float)(clutSample >> 10 & 0x1f) / 31;
+														let distance = dr * dr + dg * dg + db * db;
+														
+														if ((surfaceFrame.format.Amask == 0 || ((pixel & surfaceFrame.format.Amask) > 0)) == (clutSample >> 15 < 1) && distance < closest) {
+															i = (.)c;
+															closest = distance;
+														}
+													}
+
+													let p = x % 4;
+													quadPixels[x / 4 + y * quadWidth] |= i << (p * 4);
+												}
+											}
+
+											VRAM.Write(quadPixels, 512 + (.)(frame.x / 4), 256 + frame.y, (.)quadWidth, (.)height);
+											VRAM.Decode(0x18, frame.x, frame.y, width, height, 4, clut);
+											
+											SDL.FreeSurface(surfaceFrame);
+										}
+									}
+								}
+							}
 						}
 
 						SDL.FreeSurface(surface);
@@ -598,13 +744,13 @@ namespace SpyroScope {
 			let clutTable = scope:mixin uint16[surface.w];
 
 			for (let x < surface.w) {
-				let pixel = ((uint32*)surface.pixels)[x];
+				let pixel = *(uint32*)(&((uint8*)surface.pixels)[x * surface.format.bytesPerPixel]);
 
 				let r = (uint16)((float)(pixel & surface.format.Rmask) / surface.format.Rmask * 31);
 				let g = (uint16)((float)(pixel & surface.format.Gmask) / surface.format.Gmask * 31);
 				let b = (uint16)((float)(pixel & surface.format.Bmask) / surface.format.Bmask * 31);
 
-				clutTable[x] = r | g << 5 | b << 10 | ((pixel / surface.format.Amask) > 0 ? 0 : 0x8000);
+				clutTable[x] = r | g << 5 | b << 10 | (surface.format.Amask == 0 || (pixel / surface.format.Amask) > 0 ? 0 : 0x8000);
 			}
 
 			clutTable
