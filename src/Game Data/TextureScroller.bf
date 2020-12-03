@@ -70,14 +70,9 @@ namespace SpyroScope {
 		
 			for (let i < quadCount) {
 				let verticalQuad = (quad.texturePage & 0x80 > 0) ? 3 : 2;
-				for (let s < verticalQuad) {
-					quad.leftSkew = (uint8)s * 0x20;
-					quad.rightSkew = quad.leftSkew + 0x1f;
-
-					VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, 32, 32, (quad.texturePage & 0x80 > 0) ? 8 : 4, quad.clut);
-				}
-
-				quad++;
+				quad.leftSkew = 0;
+				quad.rightSkew = (uint8)(verticalQuad * 0x20 - 1);
+				quad++.Decode();
 			}
 
 			for (let regionIndex < visualMeshes.Count) {

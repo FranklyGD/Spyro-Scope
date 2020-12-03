@@ -106,9 +106,7 @@ namespace SpyroScope {
 				}
 				
 				for (let i < quadCount) {
-					VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, 32, 32, (quad.texturePage & 0x80 > 0) ? 8 : 4, quad.clut);
-
-					quad++;
+					quad++.Decode();
 				}
 			}
 

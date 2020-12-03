@@ -12,6 +12,12 @@ namespace SpyroScope {
 		public uint8 right, rightSkew, texturePage, flipRotateRaw;
 		public const float quadSize = 1f / 16;
 
+		public int width { get => (int)right - left + 1; }
+		public int height { get {
+			let rightSkewAdjusted = Emulator.installment == .SpyroTheDragon ? rightSkew + 0x1f : rightSkew;
+			return (int)rightSkewAdjusted - leftSkew + 1;
+		} }
+
 		// Used for checking where the quad UVs would line up in VRAM
 		public (float left, float right, float leftY, float rightY) GetVramPartialUV() {
 			let tpageCell = GetTPageCell();
@@ -53,6 +59,13 @@ namespace SpyroScope {
 			return Emulator.installment != .SpyroTheDragon && (flipRotateRaw & 0b10000000) > 0;
 			// For "Spyro the Dragon", the transparency flag for it can be found on a per face basis
 			// Refer to "TerrainRegion.NearFace.RenderInfo" for an implementation of the mentioned above
+		}
+
+		public void Decode() {
+			if (width < 0 || height < 0) {
+				return;
+			}
+			VRAM.Decode(texturePage, left, leftSkew, width, height, (texturePage & 0x80 > 0) ? 8 : 4, clut);
 		}
 	}
 }
