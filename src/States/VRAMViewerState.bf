@@ -610,6 +610,8 @@ namespace SpyroScope {
 									quad = &Terrain.texturesLODs[hoveredTextureIndex].farQuad;
 								}
 								quad += hoveredTextureQuadIndex;
+								
+								let modifiedRightSkew = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
 
 								switch (fileParams[0]) {
 									case "clut": {
@@ -623,50 +625,11 @@ namespace SpyroScope {
 											clutTable = GenerateCLUT!(surface);
 											VRAM.Write(clutTable, (.)clutPosition.x, (.)clutPosition.y, (.)surface.w, 1);
 										}
-										VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, surface.w, surface.h, (quad.texturePage & 0x80 > 0) ? 8 : 4, quad.clut);
+										VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, quad.right - quad.left + 1, modifiedRightSkew - quad.leftSkew + 1, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.clut);
 									}
 
 									default: {
-										let tpage = quad.GetTPageCell();
-										let bitmode = (quad.texturePage & 0x8000) > 0 ? 8 : 4;
-										let subPixels = 16 / bitmode;
-										let clutPosition = (int)quad.clut << 4;
-										let colorCount = (uint16)1 << bitmode;
-
-										let modifiedRightSkew = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
-										let width = Math.Min(surface.w, quad.right - quad.left + 1);
-										let height = Math.Min(surface.h, modifiedRightSkew - quad.leftSkew + 1);
-										let quadWidth = (int)Math.Ceiling((float)width / subPixels);
-										let quadPixels = scope uint16[quadWidth * height];
-
-										for (let x < width) {
-											for (let y < height) {
-												let pixel = ((uint32*)surface.pixels)[x + y * width];
-
-												uint16 i = 0;
-												var closest = float.PositiveInfinity;
-
-												for (let c < colorCount) {
-													let clutSample = VRAM.snapshot[clutPosition + c];
-
-													let dr = (float)(pixel & surface.format.Rmask) / surface.format.Rmask - (float)(clutSample & 0x1f) / 31;
-													let dg = (float)(pixel & surface.format.Gmask) / surface.format.Gmask - (float)(clutSample >> 5 & 0x1f) / 31;
-													let db = (float)(pixel & surface.format.Bmask) / surface.format.Bmask - (float)(clutSample >> 10 & 0x1f) / 31;
-													let distance = dr * dr + dg * dg + db * db;
-													
-													if (((pixel & surface.format.Amask) > 0) == (clutSample >> 15 < 1) && distance < closest) {
-														i = c;
-														closest = distance;
-													}
-												}
-
-												let p = x % subPixels;
-												quadPixels[x / subPixels + y * quadWidth] |= i << (p * bitmode);
-											}
-										}
-
-										VRAM.Write(quadPixels, tpage.x * 64 + (.)(quad.left / subPixels), tpage.y * 256 + quad.leftSkew, (.)quadWidth, (.)height);
-										VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, width, height, (quad.texturePage & 0x80 > 0) ? 8 : 4, quad.clut);
+										AlterVRAM(surface, quad.texturePage, quad.left, quad.leftSkew, quad.right - quad.left + 1, modifiedRightSkew - quad.leftSkew + 1, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.clut);
 									}
 								}
 							}
@@ -690,42 +653,7 @@ namespace SpyroScope {
 											let surfaceFrame = SDLImage.Load(fileFrame);
 											let frame = spriteSet.frames[frameIndex];
 
-											let clut = (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020;
-											let clutPosition = clut << 4;
-
-											let width = Math.Min(surfaceFrame.w, spriteSet.width);
-											let height = Math.Min(surfaceFrame.h, spriteSet.height);
-											let quadWidth = (int)Math.Ceiling((float)width / 4);
-											let quadPixels = scope uint16[quadWidth * height];
-
-											for (let x < width) {
-												for (let y < height) {
-													let pixel = *(uint32*)(&((uint8*)surfaceFrame.pixels)[(x + y * width) * surfaceFrame.format.bytesPerPixel]);
-
-													uint16 i = 0;
-													var closest = float.PositiveInfinity;
-
-													for (let c < 16) {
-														let clutSample = VRAM.snapshot[clutPosition + c];
-
-														let dr = (float)(pixel & surfaceFrame.format.Rmask) / surfaceFrame.format.Rmask - (float)(clutSample & 0x1f) / 31;
-														let dg = (float)(pixel & surfaceFrame.format.Gmask) / surfaceFrame.format.Gmask - (float)(clutSample >> 5 & 0x1f) / 31;
-														let db = (float)(pixel & surfaceFrame.format.Bmask) / surfaceFrame.format.Bmask - (float)(clutSample >> 10 & 0x1f) / 31;
-														let distance = dr * dr + dg * dg + db * db;
-														
-														if ((surfaceFrame.format.Amask == 0 || ((pixel & surfaceFrame.format.Amask) > 0)) == (clutSample >> 15 < 1) && distance < closest) {
-															i = (.)c;
-															closest = distance;
-														}
-													}
-
-													let p = x % 4;
-													quadPixels[x / 4 + y * quadWidth] |= i << (p * 4);
-												}
-											}
-
-											VRAM.Write(quadPixels, 512 + (.)(frame.x / 4), 256 + frame.y, (.)quadWidth, (.)height);
-											VRAM.Decode(0x18, frame.x, frame.y, width, height, 4, clut);
+											AlterVRAM(surfaceFrame, 0x18, frame.x, frame.y, spriteSet.width, spriteSet.height, 4, (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020);
 											
 											SDL.FreeSurface(surfaceFrame);
 										}
@@ -740,17 +668,59 @@ namespace SpyroScope {
 			}
 		}
 
+		void AlterVRAM(SDL.Surface* surface, int texturePage, int textureX, int textureY, int textureWidth, int textureHeight, int bitmode, int clut) {
+			let subPixels = 16 / bitmode;
+			let clutPosition = clut << 4;
+			let colorCount = 1 << bitmode;
+
+			let width = Math.Min(surface.w, textureWidth);
+			let height = Math.Min(surface.h, textureHeight);
+			let quadWidth = (int)Math.Ceiling((float)width / subPixels);
+			let quadPixels = scope uint16[quadWidth * height];
+
+			for (let x < width) {
+				for (let y < height) {
+					let pixel = GetPixelFromSurface!(surface, x + y * width);
+
+					uint16 i = 0;
+					var closest = float.PositiveInfinity;
+
+					for (let c < colorCount) {
+						let clutSample = VRAM.snapshot[clutPosition + c];
+
+						if ((GetAlphaValue!(pixel, surface.format.Amask) > 0.5f) == (clutSample >> 15 < 1)) {
+							let dr = GetChannelValue!(pixel, surface.format.Rmask) - (float)(clutSample & 0x1f) / 31;
+							let dg = GetChannelValue!(pixel, surface.format.Gmask) - (float)(clutSample >> 5 & 0x1f) / 31;
+							let db = GetChannelValue!(pixel, surface.format.Bmask) - (float)(clutSample >> 10 & 0x1f) / 31;
+							let distance = dr * dr + dg * dg + db * db;
+							
+							if (distance < closest) {
+								i = (.)c;
+								closest = distance;
+							}
+						}
+					}
+
+					let p = x % subPixels;
+					quadPixels[x / subPixels + y * quadWidth] |= i << (p * subPixels);
+				}
+			}
+
+			VRAM.Write(quadPixels, (.)((texturePage & 0xf) * 64 + textureX / subPixels), (.)((texturePage >> 4 & 0x1) * 256 + textureY), (.)quadWidth, (.)height);
+			VRAM.Decode(texturePage, textureX, textureY, width, height, subPixels, clut);
+		}
+
 		mixin GenerateCLUT(SDL.Surface* surface) {
 			let clutTable = scope:mixin uint16[surface.w];
 
 			for (let x < surface.w) {
-				let pixel = *(uint32*)(&((uint8*)surface.pixels)[x * surface.format.bytesPerPixel]);
+				let pixel = GetPixelFromSurface!(surface, x);
 
-				let r = (uint16)((float)(pixel & surface.format.Rmask) / surface.format.Rmask * 31);
-				let g = (uint16)((float)(pixel & surface.format.Gmask) / surface.format.Gmask * 31);
-				let b = (uint16)((float)(pixel & surface.format.Bmask) / surface.format.Bmask * 31);
+				let r = (uint16)(GetChannelValue!(pixel, surface.format.Rmask) * 31);
+				let g = (uint16)(GetChannelValue!(pixel, surface.format.Gmask) * 31);
+				let b = (uint16)(GetChannelValue!(pixel, surface.format.Bmask) * 31);
 
-				clutTable[x] = r | g << 5 | b << 10 | (surface.format.Amask == 0 || (pixel / surface.format.Amask) > 0 ? 0 : 0x8000);
+				clutTable[x] = r | g << 5 | b << 10 | (GetAlphaValue!(pixel, surface.format.Amask) > 0.5f ? 0 : 0x8000);
 			}
 
 			clutTable
@@ -761,20 +731,43 @@ namespace SpyroScope {
 			let colorLevel = black ? 0 : 16;
 
 			for (let x < surface.w) {
-				let pixel = ((uint32*)surface.pixels)[x];
+				let pixel = GetPixelFromSurface!(surface, x);
 	
 				for (let y < height) {
-					let fade = (float)y / height;
+					uint16 outR, outG, outB = ?;
+					float inR = GetChannelValue!(pixel, surface.format.Rmask);
+					float inG = GetChannelValue!(pixel, surface.format.Rmask);
+					float inB = GetChannelValue!(pixel, surface.format.Rmask);
 
-					let r = (uint16)Math.Lerp((float)(pixel & surface.format.Rmask) / surface.format.Rmask * 31, colorLevel, fade);
-					let g = (uint16)Math.Lerp((float)(pixel & surface.format.Gmask) / surface.format.Gmask * 31, colorLevel, fade);
-					let b = (uint16)Math.Lerp((float)(pixel & surface.format.Bmask) / surface.format.Bmask * 31, colorLevel, fade);
+					if (inR == 0 && inG == 0 && inB == 0) {
+						// Extend the black colored pixels
+						outR = outG = outB = 0;
+					} else {
+						// Fade to the desired color
+						let fadeAmount = (float)y / height;
 	
-					clutTable[x + y * surface.w] = r | g << 5 | b << 10 | ((pixel / surface.format.Amask) > 0 ? 0 : 0x8000);
+						outR = (uint16)Math.Lerp(GetChannelValue!(pixel, surface.format.Rmask) * 31, colorLevel, fadeAmount);
+						outG = (uint16)Math.Lerp(GetChannelValue!(pixel, surface.format.Gmask) * 31, colorLevel, fadeAmount);
+					 	outB = (uint16)Math.Lerp(GetChannelValue!(pixel, surface.format.Bmask) * 31, colorLevel, fadeAmount);
+					}
+	
+					clutTable[x + y * surface.w] = outR | outG << 5 | outB << 10 | (GetAlphaValue!(pixel, surface.format.Amask) > 0.5f ? 0 : 0x8000);
 				}
 			}
 
 			clutTable
+		}
+
+		mixin GetPixelFromSurface(SDL.Surface* surface, int pixelIndex) {
+			*(uint32*)(&((uint8*)surface.pixels)[pixelIndex * surface.format.bytesPerPixel])
+		}
+
+		mixin GetChannelValue(uint32 pixel, uint32 mask) {
+			mask > 0 ? (float)(pixel & mask) / mask : 0
+		}
+
+		mixin GetAlphaValue(uint32 pixel, uint32 alphaMask) {
+			alphaMask > 0 ? (float)(pixel & alphaMask) / alphaMask : 1
 		}
 	}
 }
