@@ -33,11 +33,11 @@ namespace SpyroScope {
 			return texturePage & 0x1f;
 		}
 
-		public (uint x, uint y) GetTPageCell() {
+		public (int x, int y) GetTPageCell() {
 			return (texturePage & 0xf, (texturePage & 0x10) >> 4);
 		}
 
-		public (uint x, uint y) GetCLUTCoordinates() {
+		public (int x, int y) GetCLUTCoordinates() {
 			return ((clut & 0x3f) << 4, clut >> 6);
 		}
 

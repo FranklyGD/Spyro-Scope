@@ -17,8 +17,8 @@ namespace SpyroScope {
 			Mednafen
 		}
 		public static EmulatorType emulator;
-		public static uint RAMBaseAddress;
-		public static uint VRAMBaseAddress;
+		public static int RAMBaseAddress;
+		public static int VRAMBaseAddress;
 
 		public enum SpyroROM {
 			None,

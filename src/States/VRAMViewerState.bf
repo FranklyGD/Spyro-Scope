@@ -620,10 +620,10 @@ namespace SpyroScope {
 										uint16[] clutTable = ?;
 										if (fileParams.Count > 1 && (fileParams[1] == "fade" || fileParams[1] == "gradient")) {
 											clutTable = GenerateCLUT!(surface, 16);
-											VRAM.Write(clutTable, (.)clutPosition.x, (.)clutPosition.y, (.)surface.w, 16);
+											VRAM.Write(clutTable, clutPosition.x, clutPosition.y, surface.w, 16);
 										} else {
 											clutTable = GenerateCLUT!(surface);
-											VRAM.Write(clutTable, (.)clutPosition.x, (.)clutPosition.y, (.)surface.w, 1);
+											VRAM.Write(clutTable, clutPosition.x, clutPosition.y, surface.w, 1);
 										}
 										VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, quad.right - quad.left + 1, modifiedRightSkew - quad.leftSkew + 1, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.clut);
 									}
@@ -639,7 +639,7 @@ namespace SpyroScope {
 									case "clut": {
 										let spriteSet = textureSprites[hoveredSpriteIndex];
 										for (let frame in spriteSet.frames) {
-											VRAM.Write(GenerateCLUT!(surface), (.)(frame.clutX & 3) * 16 + 512, (.)frame.clutY + 256, (.)surface.w, 1);
+											VRAM.Write(GenerateCLUT!(surface), (frame.clutX & 3) * 16 + 512, frame.clutY + 256, surface.w, 1);
 											VRAM.Decode(0x18, frame.x, frame.y, spriteSet.width, spriteSet.height, 4, (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020);
 										}
 									}
@@ -706,7 +706,7 @@ namespace SpyroScope {
 				}
 			}
 
-			VRAM.Write(quadPixels, (.)((texturePage & 0xf) * 64 + textureX / subPixels), (.)((texturePage >> 4 & 0x1) * 256 + textureY), (.)quadWidth, (.)height);
+			VRAM.Write(quadPixels, ((texturePage & 0xf) * 64 + textureX / subPixels), ((texturePage >> 4 & 0x1) * 256 + textureY), quadWidth, height);
 			VRAM.Decode(texturePage, textureX, textureY, width, height, subPixels, clut);
 		}
 

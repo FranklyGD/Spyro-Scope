@@ -32,23 +32,23 @@ namespace SpyroScope {
 			}
 		}
 
-		public static void Write(uint16[] buffer, uint x, uint y, uint width, uint height) {
+		public static void Write(uint16[] buffer, int x, int y, int width, int height) {
 			raw.Bind();
 
 			for (let localy < height) {
 				for (let localx < width) {
-					snapshot[(int)(x + localx + (y + localy) * 1024)] = buffer[(int)(localx + localy * width)];
+					snapshot[x + localx + (y + localy) * 1024] = buffer[localx + localy * width];
 				}
-				Windows.WriteProcessMemory(Emulator.processHandle, (void*)(Emulator.VRAMBaseAddress + (x + (y + localy) * 1024) * 2), &buffer[(int)(localy * width)], (.)width * 2, null);
+				Windows.WriteProcessMemory(Emulator.processHandle, (void*)(Emulator.VRAMBaseAddress + (x + (y + localy) * 1024) * 2), &buffer[(int)(localy * width)], width * 2, null);
 			}
-			GL.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, (.)x, (.)y, (.)width, (.)height, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &buffer[0]);
+			GL.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, x, y, width, height, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &buffer[0]);
 		}
 
 		public static void Decode(int tpage, int x, int y, int width, int height, int bitmode, int clut) {
-			(int x, int y) tpageCoords = (tpage & 0xf, (tpage & 0x10) >> 4);
+			(int x, int y) tpageCoords = ((tpage & 0xf) * 64, ((tpage & 0x10) >> 4) * 256);
 
 			// Pixel index from T-Page
-			let vramPagePosition = (tpageCoords.x * 64) + (tpageCoords.y * 256 * 1024);
+			let vramPagePosition = tpageCoords.x + tpageCoords.y * 1024;
 
 			// Pixel index from starting row
 			let vramPosition = vramPagePosition + ((int)y * 1024);
@@ -110,14 +110,14 @@ namespace SpyroScope {
 
 			decoded.Bind();
 			GL.glTexSubImage2D(GL.GL_TEXTURE_2D,
-				0, (tpageCoords.x * 64 * 4) + x * pWidth, (tpageCoords.y * 256) + y,
+				0, tpageCoords.x * 4 + x * pWidth, tpageCoords.y + y,
 				width * pWidth, height,
 				GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &pixels[0]
 			);
 			
 			for (let localx < width * pWidth) {
 				for (let localy < height) {
-					snapshotDecoded[(tpageCoords.x * 64 * 4) + x * pWidth + localx + ((tpageCoords.y * 256) + y + localy) * 1024 * 4] = pixels[localx + localy * (width * pWidth)];
+					snapshotDecoded[tpageCoords.x * 4 + x * pWidth + localx + (tpageCoords.y + y + localy) * 1024 * 4] = pixels[localx + localy * (width * pWidth)];
 				}
 			}
 
