@@ -8,8 +8,7 @@ namespace SpyroScope {
 		public TerrainRegion[] visualMeshes;
 		public RegionAnimation[] animations;
 		public static List<int> usedTextureIndices = new .() ~ delete _;
-		public static TextureLOD[] texturesLODs;
-		public static TextureLOD1[] texturesLODs1;
+		public static TextureQuad[] textureInfos;
 		public static TextureScroller[] textureScrollers;
 		public static TextureSwapper[] textureSwappers;
 
@@ -51,27 +50,11 @@ namespace SpyroScope {
 			}
 			delete textureSwappers;
 
-			delete texturesLODs;
-			delete texturesLODs1;
+			delete textureInfos;
 		}
 
 		public void Reload() {
 			usedTextureIndices.Clear();
-
-			// Get max amount of possible textures
-			if (Emulator.installment == .SpyroTheDragon) {
-				//delete texturesLODs1;
-				Emulator.Address<TextureLOD1> textureDataAddress = ?;
-				Emulator.textureDataPointers[(int)Emulator.rom].Read(&textureDataAddress);
-				texturesLODs1 = new .[128];
-				textureDataAddress.ReadArray(&texturesLODs1[0], 128);
-			} else {
-				//delete texturesLODs;
-				Emulator.Address<TextureLOD> textureDataAddress = ?;
-				Emulator.textureDataPointers[(int)Emulator.rom].Read(&textureDataAddress);
-				texturesLODs = new .[128];
-				textureDataAddress.ReadArray(&texturesLODs[0], 128);
-			}
 
 			// Locate scene region data and amount that are present in RAM
 			Emulator.Address<Emulator.Address> sceneDataRegionArrayAddress = ?;
@@ -89,26 +72,11 @@ namespace SpyroScope {
 			Emulator.Address[] sceneDataRegionAddresses = new .[sceneRegionCount];
 			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegionAddresses[0], sceneRegionCount);
 			for (let regionIndex < sceneRegionCount) {
-				visualMeshes[regionIndex] = new .(sceneDataRegionAddresses[regionIndex]);
+				let region = new TerrainRegion(sceneDataRegionAddresses[regionIndex]);
+				region.GetUsedTextures();
+				visualMeshes[regionIndex] = region;
 			}
 			delete sceneDataRegionAddresses;
-
-			// Convert any used VRAM textures for previewing
-			for (let textureIndex in usedTextureIndices) {
-				TextureQuad* quad = ?;
-				int quadCount = ?;
-				if (Emulator.installment == .SpyroTheDragon) {
-					quad = &Terrain.texturesLODs1[textureIndex].D1;
-					quadCount = 5;//21;
-				} else {
-					quad = &Terrain.texturesLODs[textureIndex].farQuad;
-					quadCount = 6;
-				}
-				
-				for (let i < quadCount) {
-					quad++.Decode();
-				}
-			}
 
 			// Scrolling textures
 			let textureScrollerPointer = Emulator.textureScrollerPointers[(int)Emulator.rom];
@@ -127,7 +95,7 @@ namespace SpyroScope {
 				delete textureScrollerAddresses;
 			}
 
-			// Scrolling textures
+			// Swapping textures
 			let textureSwapperPointer = Emulator.textureSwapperPointers[(int)Emulator.rom];
 			uint32 textureSwapperCount = ?;
 			Emulator.ReadFromRAM(textureSwapperPointer - 4, &textureSwapperCount, 4);
@@ -139,9 +107,47 @@ namespace SpyroScope {
 				Emulator.Address[] textureScrollerAddresses = new .[textureSwapperCount];
 				textureScrollerArrayAddress.ReadArray(&textureScrollerAddresses[0], textureSwapperCount);
 				for (let i < textureSwapperCount) {
-					textureSwappers[i] = .(textureScrollerAddresses[i], visualMeshes);
+					let swapper = TextureSwapper(textureScrollerAddresses[i], visualMeshes);
+					swapper.GetUsedTextures();
+					textureSwappers[i] = swapper;
 				}
 				delete textureScrollerAddresses;
+			}
+
+			// Get max amount of possible textures
+			var highestUsedIndex = -1;
+			for (let textureIndex in usedTextureIndices) {
+				if (textureIndex > highestUsedIndex) {
+					highestUsedIndex = textureIndex;
+				}
+			}
+
+			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+
+			let totalQuadCount = (highestUsedIndex + 1) * quadCount;
+			Emulator.Address<TextureQuad> textureDataAddress = ?;
+			Emulator.textureDataPointers[(int)Emulator.rom].Read(&textureDataAddress);
+			textureInfos = new .[totalQuadCount];
+			textureDataAddress.ReadArray(&textureInfos[0], totalQuadCount);
+
+			for (let regionIndex < sceneRegionCount) {
+				visualMeshes[regionIndex].Reload();
+			}
+			
+			for (let scrollerIndex < textureScrollerCount) {
+				textureScrollers[scrollerIndex].Reload();
+			}
+
+			for (let swapperIndex < textureSwapperCount) {
+				textureSwappers[swapperIndex].Reload();
+			}
+
+			// Convert any used VRAM textures for previewing
+			let quadDecodeCount = Emulator.installment == .SpyroTheDragon ? 5 : 6;
+			for (let textureIndex in usedTextureIndices) {
+				for (let i < quadDecodeCount) {
+					Terrain.textureInfos[textureIndex * quadCount + i].Decode();
+				}
 			}
 
 			// Delete animations as the new loaded mesh may be incompatible

@@ -27,7 +27,6 @@ namespace SpyroScope {
 
 			this.address = address;
 			this.visualMeshes = visualMeshes;
-			Reload();
 		}
 
 		public void Dispose() {
@@ -50,38 +49,6 @@ namespace SpyroScope {
 				return;
 			
 			Emulator.ReadFromRAM(address + 4, &textureIndex, 1);
-
-			// Analyze frames
-			uint8 keyframe = 0;
-			List<uint8> usedTextures = scope .();
-			while (usedTextures.Count == 0 && keyframe > 0) {
-				let keyframeData = GetKeyframeData(keyframe);
-				usedTextures.Add(keyframeData.textureIndex);
-			}
-
-			// Append the missing parts of the scrolling textures to the main decoded one
-
-			for (let textureIndex in usedTextures) {
-				if (!Terrain.usedTextureIndices.Contains(textureIndex)) {
-					Terrain.usedTextureIndices.Add(textureIndex);
-				}
-
-				TextureQuad* quad = ?;
-				int quadCount = ?;
-				if (Emulator.installment == .SpyroTheDragon) {
-					quad = &Terrain.texturesLODs1[textureIndex].D1;
-					quadCount = 5; // There is technically 21 texture quads, but the last 16 are almost unused
-				} else {
-					quad = &Terrain.texturesLODs[textureIndex].nearQuad;
-					quadCount = 6;
-				}
-
-				for (let i < quadCount) {
-					quad++.Decode();
-				}
-			}
-			
-			Texture.Unbind();
 
 			for (let regionIndex < visualMeshes.Count) {
 				let terrainRegion = visualMeshes[regionIndex];
@@ -106,16 +73,31 @@ namespace SpyroScope {
 			}
 		}
 
+		public void GetUsedTextures() {
+			uint8 keyframe = 0;
+			List<uint8> usedTextures = scope .();
+			while (usedTextures.Count == 0 || keyframe > 0) {
+				let keyframeData = GetKeyframeData(keyframe);
+				usedTextures.Add(keyframeData.textureIndex);
+				keyframe = keyframeData.nextFrame;
+			}
+
+			for (let textureIndex in usedTextures) {
+				if (!Terrain.usedTextureIndices.Contains(textureIndex)) {
+					Terrain.usedTextureIndices.Add(textureIndex);
+				}
+			}
+		}
+
 		// Derived from Spyro the Dragon [8002b578]
 		// Derived from Spyro: Ripto's Rage [8002270c]
 		public void Update() {
 			uint8 sourceTextureIndex = ?;
 			Emulator.ReadFromRAM(address + 8 + (int)CurrentKeyframe * 4 + 3, &sourceTextureIndex, 1);
-
-			if (Emulator.installment == .SpyroTheDragon) {
-				Terrain.texturesLODs1[textureIndex] = Terrain.texturesLODs1[sourceTextureIndex];
-			} else {
-				Terrain.texturesLODs[textureIndex] = Terrain.texturesLODs[sourceTextureIndex];
+			
+			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+			for (let i < quadCount) {
+				Terrain.textureInfos[(int)textureIndex * quadCount + i] = Terrain.textureInfos[(int)sourceTextureIndex * quadCount + i];
 			}
 		}
 
@@ -126,13 +108,13 @@ namespace SpyroScope {
 		}
 		
 		public void UpdateUVs(bool transparent) {
-			TextureQuad nearQuad = ?;
-			if (Emulator.installment == .SpyroTheDragon) {
-				nearQuad = Terrain.texturesLODs1[textureIndex].D1;
-			} else {
-				nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
+			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+			TextureQuad* quad = &Terrain.textureInfos[(int)textureIndex * quadCount];
+			if (Emulator.installment != .SpyroTheDragon) {
+				quad++;
 			}
-			let partialUV = nearQuad.GetVramPartialUV();
+
+			let partialUV = quad.GetVramPartialUV();
 
 			float[4][2] triangleUV = ?;
 

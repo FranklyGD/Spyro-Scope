@@ -67,8 +67,8 @@ namespace SpyroScope {
 
 		public this(Emulator.Address address) {
 			this.address = address;
-
-			Reload();
+			
+			Emulator.ReadFromRAM(address, &metadata, sizeof(RegionMetadata));
 		}
 
 		/// Sets the position of the mesh's vertex with the index the game uses
@@ -89,12 +89,24 @@ namespace SpyroScope {
 		}
 
 		public void Reload() {
-			Emulator.ReadFromRAM(address, &metadata, sizeof(RegionMetadata));
-
 			// Low Poly Count / Far Mesh
 			GenerateMesh(address + 0x1c, metadata.farVertexCount, metadata.farColorCount, metadata.farFaceCount, false);
 			// High Poly Count / Near Mesh
 			GenerateMesh(address + 0x1c + ((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2) * 4, metadata.nearVertexCount, metadata.nearColorCount, metadata.nearFaceCount, true);
+		}
+
+		public void GetUsedTextures() {
+			Emulator.Address regionPointer = address + 0x1c + ((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2) * 4;
+			nearFaces = scope .[metadata.nearFaceCount];
+			Emulator.ReadFromRAM(regionPointer + ((int)metadata.nearVertexCount + (int)metadata.nearColorCount * 2) * 4, nearFaces.CArray(), (int)metadata.nearFaceCount * sizeof(NearFace));
+
+			for (let i < metadata.nearFaceCount) {
+				let textureIndex = nearFaces[i].renderInfo.textureIndex;
+
+				if (!Terrain.usedTextureIndices.Contains(textureIndex)) {
+					Terrain.usedTextureIndices.Add(textureIndex);
+				}
+			}
 		}
 
 		void GenerateMesh(Emulator.Address regionPointer, int vertexSize, int colorSize, int faceSize, bool isNear) {
@@ -143,17 +155,12 @@ namespace SpyroScope {
 					let flipSide = regionFace.flipped;
 					let textureRotation = regionFace.renderInfo.rotation;
 
-					if (!Terrain.usedTextureIndices.Contains(textureIndex)) {
-						Terrain.usedTextureIndices.Add(textureIndex);
+					let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+					TextureQuad* quad = &Terrain.textureInfos[textureIndex * quadCount];
+					if (Emulator.installment != .SpyroTheDragon) {
+						quad++;
 					}
-
-					TextureQuad nearQuad = ?;
-					if (Emulator.installment == .SpyroTheDragon) {
-						nearQuad = Terrain.texturesLODs1[textureIndex].D1;
-					} else {
-						nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
-					}
-					let partialUV = nearQuad.GetVramPartialUV();
+					let partialUV = quad.GetVramPartialUV();
 					const let quadSize = TextureQuad.quadSize;
 					
 					triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
@@ -161,7 +168,7 @@ namespace SpyroScope {
 					triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
 					triangleUV[3] = .(partialUV.right, partialUV.rightY);
 
-					if (nearQuad.GetTransparency() || regionFace.renderInfo.transparent) {
+					if (quad.GetTransparency() || regionFace.renderInfo.transparent) {
 						activeVertexList = vertexTransparentList;
 						activeColorList = colorTransparentList;
 						activeUvList = uvTransparentList;

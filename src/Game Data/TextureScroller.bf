@@ -27,7 +27,6 @@ namespace SpyroScope {
 
 			this.address = address;
 			this.visualMeshes = visualMeshes;
-			Reload();
 		}
 
 		public void Dispose() {
@@ -58,21 +57,14 @@ namespace SpyroScope {
 			// Append the missing parts of the scrolling textures to the main decoded one
 			// They only exist against the top edge of the VRAM because of how they are programmed
 
-			TextureQuad* quad = ?;
-			int quadCount = ?;
-			if (Emulator.installment == .SpyroTheDragon) {
-				quad = &Terrain.texturesLODs1[textureIndex].D1;
-				quadCount = 5; // There is technically 21 texture quads, but the last 16 are almost unused
-			} else {
-				quad = &Terrain.texturesLODs[textureIndex].nearQuad;
-				quadCount = 6;
-			}
-		
+			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 			for (let i < quadCount) {
+				let quad = (TextureQuad*)&Terrain.textureInfos[textureIndex * quadCount + i];
+
 				let verticalQuad = (quad.texturePage & 0x80 > 0) ? 3 : 2;
 				quad.leftSkew = 0;
 				quad.rightSkew = (uint8)(verticalQuad * 0x20 - 1);
-				quad++.Decode();
+				quad.Decode();
 			}
 
 			for (let regionIndex < visualMeshes.Count) {
@@ -107,7 +99,7 @@ namespace SpyroScope {
 			let quadVerticalPosition = verticalPosition >> 2;
 
 			if (Emulator.installment == .SpyroTheDragon) {
-				let textureLOD = (TextureQuad*)&Terrain.texturesLODs1[textureIndex];
+				let textureLOD = (TextureQuad*)&Terrain.textureInfos[(int)textureIndex * 21];
 
 				textureLOD[0].leftSkew = textureLOD[0].rightSkew = quadVerticalPosition;
 				for (uint8 i < 4) {
@@ -117,7 +109,7 @@ namespace SpyroScope {
 					textureLOD[5 + i].leftSkew = textureLOD[5 + i].rightSkew = (verticalPosition + (i / 4 * 0x20)) & 0x3f;
 				}
 			} else {
-				let textureLOD = &Terrain.texturesLODs[textureIndex];
+				let textureLOD = (TextureLOD*)&Terrain.textureInfos[(int)textureIndex * 6];
 				let farQuad = &textureLOD.farQuad;
 				let nearQuad = &textureLOD.nearQuad;
 				farQuad.leftSkew = nearQuad.leftSkew = quadVerticalPosition;
@@ -146,13 +138,13 @@ namespace SpyroScope {
 		}
 
 		public void UpdateUVs(bool transparent) {
-			TextureQuad nearQuad = ?;
-			if (Emulator.installment == .SpyroTheDragon) {
-				nearQuad = Terrain.texturesLODs1[textureIndex].D1;
-			} else {
-				nearQuad = Terrain.texturesLODs[textureIndex].nearQuad;
+			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+			TextureQuad* quad = &Terrain.textureInfos[textureIndex * quadCount];
+			if (Emulator.installment != .SpyroTheDragon) {
+				quad++;
 			}
-			let partialUV = nearQuad.GetVramPartialUV();
+			
+			let partialUV = quad.GetVramPartialUV();
 
 			float[4][2] triangleUV = ?;
 

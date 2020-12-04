@@ -569,12 +569,13 @@ namespace SpyroScope {
 					}
 	
 					let face = &visualMesh.nearFaces[faceIndex];
-					TextureQuad* textureInfo = ?;
-					if (Emulator.installment == .SpyroTheDragon) {
-						textureInfo = (.)&Terrain.texturesLODs1[face.renderInfo.textureIndex];
-					} else {
-						textureInfo = (.)&Terrain.texturesLODs[face.renderInfo.textureIndex].nearQuad;
+					
+					let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+					TextureQuad* textureInfo = &Terrain.textureInfos[face.renderInfo.textureIndex * quadCount];
+					if (Emulator.installment != .SpyroTheDragon) {
+						textureInfo++;
 					}
+					
 					const let quadSize = TextureQuad.quadSize;
 					
 					DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 256, 490, .(0,0,0,128));

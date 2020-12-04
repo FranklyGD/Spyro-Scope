@@ -49,7 +49,7 @@ namespace SpyroScope {
 		(float width, float height) vramSize;
 
 		(float x, float y) viewPosition, testPosition;
-		int hoveredTexturePage, hoveredTextureIndex, hoveredTextureQuadIndex, hoveredCLUTIndex, hoveredSpriteIndex = -1;
+		int hoveredTexturePage, hoveredTextureIndex, hoveredCLUTIndex, hoveredSpriteIndex = -1;
 		bool panning;
 
 		public ~this() {
@@ -90,17 +90,10 @@ namespace SpyroScope {
 			DrawUtilities.Rect(vramOrigin.y, bottom, vramOrigin.x, right, 0, 1, expand ? 0.5f : 0, 1, VRAM.decoded, .(255,255,255));
 
 			for (let textureIndex in Terrain.usedTextureIndices) {
-				TextureQuad* quad = ?;
-				int quadCount = ?;
-				if (Emulator.installment == .SpyroTheDragon) {
-					quad = &Terrain.texturesLODs1[textureIndex].D1;
-					quadCount = 5;//21;
-				} else {
-					quad = &Terrain.texturesLODs[textureIndex].farQuad;
-					quadCount = 6;
-				}
+				let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 
 				for (let quadIndex < quadCount) {
+					let quad =  Terrain.textureInfos[textureIndex * quadCount + quadIndex];
 					let partialUVs = quad.GetVramPartialUV();
 
 					(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
@@ -136,8 +129,6 @@ namespace SpyroScope {
 							Renderer.DrawLine(.(qleft, qbottom - 4, 0), .(qright - 4, qbottom - 4, 0), .(64,64,255), .(64,64,255));
 							Renderer.DrawLine(.(qright - 4, qtop, 0), .(qright - 4, qbottom - 4, 0), .(64,64,255), .(64,64,255));
 					}
-
-					quad++;
 				}
 			}
 
@@ -166,13 +157,7 @@ namespace SpyroScope {
 			}
 
 			if (hoveredTextureIndex > -1) {
-				TextureQuad* quad = ?;
-				if (Emulator.installment == .SpyroTheDragon) {
-					quad = &Terrain.texturesLODs1[hoveredTextureIndex].D1;
-				} else {
-					quad = &Terrain.texturesLODs[hoveredTextureIndex].farQuad;
-				}
-				quad += hoveredTextureQuadIndex;
+				let quad = Terrain.textureInfos[hoveredTextureIndex];
 
 				let partialUVs = quad.GetVramPartialUV();
 				(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
@@ -225,13 +210,7 @@ namespace SpyroScope {
 				switch (clutReference.category) {
 					case .Terrain: {
 						for (let quadIndex in clutReference.references) {
-							TextureQuad* quad = ?;
-							if (Emulator.installment == .SpyroTheDragon) {
-								quad = &Terrain.texturesLODs1[0].D1;
-							} else {
-								quad = &Terrain.texturesLODs[0].farQuad;
-							}
-							quad += quadIndex;
+							let quad = Terrain.textureInfos[quadIndex];
 			
 							let partialUVs = quad.GetVramPartialUV();
 							(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
@@ -268,17 +247,11 @@ namespace SpyroScope {
 			cluts.Clear();
 
 			for (let textureIndex in Terrain.usedTextureIndices) {
-				TextureQuad* quad = ?;
-				int quadCount = ?;
-				if (Emulator.installment == .SpyroTheDragon) {
-					quad = &Terrain.texturesLODs1[textureIndex].D1;
-					quadCount = 21;
-				} else {
-					quad = &Terrain.texturesLODs[textureIndex].farQuad;
-					quadCount = 6;
-				}
+				let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 				
 				for (let quadIndex < quadCount) {
+					let i = textureIndex * quadCount + quadIndex;
+					let quad = Terrain.textureInfos[i];
 					let referenceIndex = cluts.FindIndex(scope (x) => x.category == .Terrain && x.type == (quadIndex < (Emulator.installment == .SpyroTheDragon ? 1 : 2) ? .Gradient : .Normal) && x.location == quad.clut);
 
 					if (referenceIndex == -1) {
@@ -289,14 +262,11 @@ namespace SpyroScope {
 						clutReference.width = (quad.texturePage & 0x80 > 0) ? 256 : 16;
 						clutReference.references = new .();
 
-						clutReference.references.Add(textureIndex * quadCount + quadIndex);
-
+						clutReference.references.Add(i);
 						cluts.Add(clutReference);
 					} else {
-						cluts[referenceIndex].references.Add(textureIndex * quadCount + quadIndex);
+						cluts[referenceIndex].references.Add(i);
 					}
-
-					quad++;
 				}
 			}
 
@@ -350,7 +320,6 @@ namespace SpyroScope {
 								clutReference.references = new .();
 	
 								clutReference.references.Add(sprite.start + frameIndex);
-	
 								cluts.Add(clutReference);
 							} else {
 								cluts[referenceIndex].references.Add(sprite.start + frameIndex);
@@ -406,19 +375,13 @@ namespace SpyroScope {
 							hoveredTexturePage = (.)(testPosition.x / 64) + (.)(testPosition.y / 256) * 16;
 						}
 
-						hoveredTextureIndex = hoveredTextureQuadIndex = -1;
+						hoveredTextureIndex = -1;
+						let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 						for (let textureIndex in Terrain.usedTextureIndices) {
-							TextureQuad* quad = ?;
-							int quadCount = ?;
-							if (Emulator.installment == .SpyroTheDragon) {
-								quad = &Terrain.texturesLODs1[textureIndex].D1;
-								quadCount = 5;//21;
-							} else {
-								quad = &Terrain.texturesLODs[textureIndex].farQuad;
-								quadCount = 6;
-							}
-
 							for (let quadIndex < quadCount) {
+								let i = textureIndex * quadCount + quadIndex;
+								let quad = Terrain.textureInfos[i];
+
 								let pageIndex = quad.GetTPageIndex();
 								let bitMode = (quad.texturePage & 0x80 > 0) ? 2 : 4;
 								(float x, float y) localTestPosition = (testPosition.x - (pageIndex & 0xf) * 64, testPosition.y - (pageIndex >> 4 << 8));
@@ -427,12 +390,9 @@ namespace SpyroScope {
 								if (localTestPosition.x > quad.left / bitMode && localTestPosition.x <= ((int)quad.right + 1) / bitMode &&
 									localTestPosition.y > quad.leftSkew && localTestPosition.y <= (int)rightSkewAdjusted + 1) {
 
-									hoveredTextureIndex = textureIndex;
-									hoveredTextureQuadIndex = quadIndex;
+									hoveredTextureIndex = i;
 									break;
 								}
-
-								quad++;
 							}
 
 							if (hoveredTextureIndex > -1) {
@@ -592,7 +552,7 @@ namespace SpyroScope {
 		void Export() {
 			if (hoveredTextureIndex > -1) {
 				let dialog = scope System.IO.SaveFileDialog();
-				dialog.FileName = scope String() .. AppendF("T{}_{}", hoveredTextureIndex, hoveredTextureQuadIndex);
+				dialog.FileName = scope String() .. AppendF("T{}", hoveredTextureIndex);
 				dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
 				dialog.OverwritePrompt = true;
 				dialog.CheckFileExists = true;
@@ -602,14 +562,7 @@ namespace SpyroScope {
 				switch (dialog.ShowDialog()) {
 					case .Ok(let val):
 						if (val == .OK) {
-							TextureQuad* quad = ?;
-							if (Emulator.installment == .SpyroTheDragon) {
-								quad = &Terrain.texturesLODs1[hoveredTextureIndex].D1;
-							} else {
-								quad = &Terrain.texturesLODs[hoveredTextureIndex].farQuad;
-							}
-							quad += hoveredTextureQuadIndex;
-							
+							let quad = Terrain.textureInfos[hoveredTextureIndex];
 							VRAM.Export(dialog.FileNames[0], quad.left, quad.leftSkew, quad.width, quad.height, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.texturePage);
 						}
 					case .Err:
@@ -653,13 +606,7 @@ namespace SpyroScope {
 							let fileParams = fileName.Split!('_');
 							
 							if (hoveredTextureIndex > -1) {
-								TextureQuad* quad = ?;
-								if (Emulator.installment == .SpyroTheDragon) {
-									quad = &Terrain.texturesLODs1[hoveredTextureIndex].D1;
-								} else {
-									quad = &Terrain.texturesLODs[hoveredTextureIndex].farQuad;
-								}
-								quad += hoveredTextureQuadIndex;
+								let quad = Terrain.textureInfos[hoveredTextureIndex];
 
 								switch (fileParams[0]) {
 									case "clut": {
