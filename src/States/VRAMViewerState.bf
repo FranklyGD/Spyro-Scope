@@ -8,6 +8,7 @@ namespace SpyroScope {
 	class VRAMViewerState : WindowState {
 		List<TextureSprite> textureSprites = new .() ~ DeleteContainerAndItems!(_);
 		TextureQuad[] textureSprites3 = new .[45] ~ delete _;
+		int blinkerTime = 0;
 
 		enum TextureType {
 			Terrain,
@@ -50,6 +51,7 @@ namespace SpyroScope {
 
 		(float x, float y) viewPosition, testPosition;
 		int hoveredTexturePage, hoveredTextureIndex, hoveredCLUTIndex, hoveredSpriteIndex = -1;
+		int selectedTexturePage, selectedTextureIndex, selectedCLUTIndex, selectedSpriteIndex = -1;
 		bool panning;
 
 		public ~this() {
@@ -76,6 +78,7 @@ namespace SpyroScope {
 
 		public override void Update() {
 			Terrain.UpdateTextureInfo(false);
+			blinkerTime = (blinkerTime + 1) % 50;
 		}
 
 		public override void DrawGUI() {
@@ -93,7 +96,8 @@ namespace SpyroScope {
 				let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 
 				for (let quadIndex < quadCount) {
-					let quad =  Terrain.textureInfos[textureIndex * quadCount + quadIndex];
+					let i = textureIndex * quadCount + quadIndex;
+					let quad = Terrain.textureInfos[i];
 					let partialUVs = quad.GetVramPartialUV();
 
 					(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
@@ -103,6 +107,14 @@ namespace SpyroScope {
 					Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
 					Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,64), .(64,64,64));
 					Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
+
+					if (blinkerTime < 30) {
+						if (i == selectedTextureIndex) {
+							DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
+						} else if (selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].category == .Terrain && cluts[selectedCLUTIndex].references.Contains(i)) {
+							DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,0,0,64));
+						}
+					}
 
 					let modifiedQuadIndex = quadIndex + (Emulator.installment == .SpyroTheDragon ? 1 : 0);
 					switch (modifiedQuadIndex) {
@@ -143,8 +155,9 @@ namespace SpyroScope {
 				Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,64), .(64,64,64));
 				Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
 			}
-
-			for (let clutReference in cluts) {
+			
+			for (let CLUTIndex < cluts.Count) {
+				let clutReference = cluts[CLUTIndex];
 				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
 
 				(float cleft, float ctop) = PixelToScreen(clutPosition.x, clutPosition.x >> 10 + clutPosition.y);
@@ -154,6 +167,16 @@ namespace SpyroScope {
 				Renderer.DrawLine(.(cleft, cbottom, 0), .(cright, cbottom, 0), .(64,64,64), .(64,64,64));
 				Renderer.DrawLine(.(cleft, ctop, 0), .(cleft, cbottom, 0), .(64,64,64), .(64,64,64));
 				Renderer.DrawLine(.(cright, ctop, 0), .(cright, cbottom, 0), .(64,64,64), .(64,64,64));
+				
+				if (blinkerTime < 30) {
+					if (CLUTIndex == selectedCLUTIndex) {
+						DrawUtilities.Rect(ctop, cbottom, cleft, cright, .(255,255,255,64));
+					} else if (selectedTextureIndex > -1 && clutReference.category == .Terrain && clutReference.references.Contains(selectedTextureIndex)) {
+						DrawUtilities.Rect(ctop, cbottom, cleft, cright, .(255,0,0,64));
+					} else if (selectedSpriteIndex > -1 && clutReference.category == .Sprite && clutReference.references.Contains(textureSprites[selectedSpriteIndex].start)) {
+						DrawUtilities.Rect(ctop, cbottom, cleft, cright, .(255,0,0,64));
+					}
+				}
 			}
 
 			if (hoveredTextureIndex > -1) {
@@ -168,15 +191,27 @@ namespace SpyroScope {
 				Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
 			}
 
-			for (let sprite in textureSprites) {
-				for (let frame in sprite.frames) {
-					(float qleft, float qtop) = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
-					(float qright, float qbottom) = UVToScreen(0.5f + (float)((int)frame.x + sprite.width) / (1024 * 4), 0.5f + (float)((int)frame.y + sprite.height) / 512);
-	
-					Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(64,64,64), .(64,64,64));
-					Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
-					Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,64), .(64,64,64));
-					Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
+			if (Emulator.installment == .RiptosRage) {
+				for (let spriteSetIndex < textureSprites.Count) {
+					let sprite = textureSprites[spriteSetIndex];
+
+					for (let frame in sprite.frames) {
+						(float qleft, float qtop) = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
+						(float qright, float qbottom) = UVToScreen(0.5f + (float)((int)frame.x + sprite.width) / (1024 * 4), 0.5f + (float)((int)frame.y + sprite.height) / 512);
+		
+						Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(64,64,64), .(64,64,64));
+						Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
+						Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,64), .(64,64,64));
+						Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
+						
+						if (blinkerTime < 30) {
+							if (spriteSetIndex == selectedSpriteIndex) {
+								DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
+							} else if (selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].category == .Sprite && cluts[selectedCLUTIndex].references[0] >= sprite.start && cluts[selectedCLUTIndex].references[0] < sprite.start + sprite.frames.Count) {
+								DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,0,0,64));
+							}
+						}
+					}
 				}
 			}
 
@@ -347,10 +382,14 @@ namespace SpyroScope {
 				case .MouseButtonDown : {
 					if (event.button.button == 1) {
 						switch (clickMode) {
-							case .Normal:
+							case .Normal: {
+								blinkerTime = 0;
+								selectedTextureIndex = hoveredTextureIndex;
+								selectedCLUTIndex = hoveredCLUTIndex;
+								selectedSpriteIndex = hoveredSpriteIndex;
+							}
 							case .Export: Export();
 							case .Alter: Alter();
-							default:
 						}
 					}
 					if (event.button.button == 3) {
