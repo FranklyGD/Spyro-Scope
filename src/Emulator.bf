@@ -361,7 +361,7 @@ namespace SpyroScope {
 			for (let i < 8) {
 				Address newLoadedPointer = ?;
 				var pointerSet = pointerSets[i];
-				let pointer = pointerSet[(int)Emulator.rom];
+				let pointer = pointerSet[(int)rom];
 
 				pointer.Read(&newLoadedPointer);
 				if (!newLoadedPointer.IsNull && loadedPointers[i] != newLoadedPointer) {
@@ -473,15 +473,15 @@ namespace SpyroScope {
 			delete maxFreeflightHeights;
 			delete deathPlaneHeights;
 
-			switch (Emulator.installment) {
+			switch (installment) {
 
 				case .SpyroTheDragon: {
 					// 35 worlds exist, but there is space for 36. (Probably due to short/int reasons.)
-					Emulator.deathPlaneHeights = new .[36];
-					Emulator.maxFreeflightHeights = new .[36];
+					deathPlaneHeights = new .[36];
+					maxFreeflightHeights = new .[36];
 
-					deathPlaneHeightsAddresses[(int)rom].ReadArray(&Emulator.deathPlaneHeights[0], 36);
-					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&Emulator.maxFreeflightHeights[0], 36);
+					deathPlaneHeightsAddresses[(int)rom].ReadArray(&deathPlaneHeights[0], 36);
+					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&maxFreeflightHeights[0], 36);
 				}
 
 				case .RiptosRage: {
@@ -496,11 +496,11 @@ namespace SpyroScope {
 				case .YearOfTheDragon: {
 					// 37 worlds exist, but theres space for 40. (Probably due to short/int reasons.)
 					// Also gets multipled by 4 due to sub worlds, there being a minimum of 4 in each homeworld.
-					Emulator.deathPlaneHeights = new .[40 * 4];
-					Emulator.maxFreeflightHeights = new .[40 * 4];
+					deathPlaneHeights = new .[40 * 4];
+					maxFreeflightHeights = new .[40 * 4];
 
-					deathPlaneHeightsAddresses[(int)rom].ReadArray(&Emulator.deathPlaneHeights[0], 40 * 4);
-					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&Emulator.maxFreeflightHeights[0], 40);
+					deathPlaneHeightsAddresses[(int)rom].ReadArray(&deathPlaneHeights[0], 40 * 4);
+					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&maxFreeflightHeights[0], 40);
 				}
 				default : {}
 			}
