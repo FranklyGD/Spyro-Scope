@@ -4,14 +4,13 @@ namespace SpyroScope {
 	static struct DrawUtilities {
 		[Inline]
 		public static void Axis(Vector position, Matrix basis) {
-			let squareAngle = Math.PI_f / 2;
-			Renderer.SetModel(position + basis.x * 0.5f, basis * .Euler(0, -squareAngle, 0) * .Scale(0.1f,0.1f,1));
+			Renderer.SetModel(position + basis.x * 0.5f, basis * .(.(0,0,0.1f),.(0,0.1f,0),.(-1,0,0)));
 			Renderer.SetTint(.(255,0,0));
 			PrimitiveShape.cylinder.QueueInstance();
-			Renderer.SetModel(position + basis.y * 0.5f, basis * .Euler(squareAngle, 0, 0) * .Scale(0.1f,0.1f,1));
+			Renderer.SetModel(position + basis.y * 0.5f, basis * .(.(0.1f,0,0),.(0,0,0.1f),.(0,-1,0)));
 			Renderer.SetTint(.(0,255,0));
 			PrimitiveShape.cylinder.QueueInstance();
-			Renderer.SetModel(position + basis.z * 0.5f, basis * .Scale(0.1f,0.1f,1));
+			Renderer.SetModel(position + basis.z * 0.5f, basis * .(.(0.1f,0,0),.(0,0.1f,0),.(0,0,1)));
 			Renderer.SetTint(.(0,0,255));
 			PrimitiveShape.cylinder.QueueInstance();
 		}
