@@ -124,6 +124,7 @@ namespace SpyroScope {
 		public const Address<Address>[11] collisionDataPointers = .(0, (.)0x800785d4/*StD*/, 0, 0, (.)0x800673fc/*RR*/, 0, 0, (.)0x8006d070, (.)0x8006d150/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] collisionFlagsArrayPointers = .(0, (.)0x800785b8/*StD*/, 0, 0, (.)0x800673e8/*RR*/, 0, 0, (.)0x8006d05c, (.)0x8006d13c/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] collisionDeformDataPointers = .(0, (.)0x800785a4/*StD*/, 0, 0, (.)0x80068208/*RR*/, 0, 0, (.)0x8006e384, (.)0x8006e464/*YotD-1.1*/, 0, 0);
+		public const Address<uint32>[4] collisionRadius = .((.)0x8007036c, (.)0x8007044c, (.)0, (.)0); // Exclusive to Spyro: Year of the Dragon.
 
 		public const Address<Address>[11] sceneRegionPointers = .(0, (.)0x800785a8/*StD*/, 0, 0, (.)0x800673d4/*RR*/, 0, 0, 0, (.)0x8006d128/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] sceneRegionDeformPointers = .(0, (.)0x80078584/*StD*/, 0, 0, (.)0x800681f8/*RR*/, 0, 0, 0, (.)0x8006e454/*YotD-1.1*/, 0, 0);
