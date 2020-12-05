@@ -9,6 +9,7 @@ namespace SpyroScope {
 		List<TextureSprite> textureSprites = new .() ~ DeleteContainerAndItems!(_);
 		TextureQuad[] textureSprites3 = new .[45] ~ delete _;
 		int blinkerTime = 0;
+		bool spritesDecoded;
 
 		enum TextureType {
 			Terrain,
@@ -50,9 +51,14 @@ namespace SpyroScope {
 		(float width, float height) vramSize;
 
 		(float x, float y) viewPosition, testPosition;
-		int hoveredTexturePage, hoveredTextureIndex, hoveredCLUTIndex, hoveredSpriteIndex = -1;
-		int selectedTexturePage, selectedTextureIndex, selectedCLUTIndex, selectedSpriteIndex = -1;
+		int hoveredTexturePage = -1, hoveredTextureIndex = -1, hoveredCLUTIndex = -1, hoveredSpriteIndex = -1;
+		int selectedTexturePage = -1, selectedTextureIndex = -1, selectedCLUTIndex = -1, selectedSpriteIndex = -1;
 		bool panning;
+
+		public this() {
+			Emulator.OnSceneChanged.Add(new => OnSceneChanged);
+			VRAM.OnSnapshotTaken.Add(new () => { spritesDecoded = false; });
+		}
 
 		public ~this() {
 			for (let clutReference in cluts) {
@@ -63,22 +69,22 @@ namespace SpyroScope {
 		}
 
 		public override void Enter() {
-			/*Emulator.OnSceneChanged = new => OnSceneChanged;
-			Emulator.OnSceneChanging = new => OnSceneChanging;*/
-			OnSceneChanged();
 			ResetView();
 		}
 
 		public override void Exit() {
-			/*delete Emulator.OnSceneChanged;
-			delete Emulator.OnSceneChanging;*/
-
-
+			
 		}
 
 		public override void Update() {
+			Emulator.FetchImportantData();
+
 			Terrain.UpdateTextureInfo(false);
 			blinkerTime = (blinkerTime + 1) % 50;
+
+			if (VRAM.upToDate) {
+				Decode();
+			}
 		}
 
 		public override void DrawGUI() {
@@ -88,9 +94,11 @@ namespace SpyroScope {
 			
 			let right = vramOrigin.x + vramSize.width * scale;
 			let bottom = vramOrigin.y + vramSize.height * scale;
-			
-			DrawUtilities.Rect(vramOrigin.y, bottom, vramOrigin.x, right, 0, 1, expand ? 0.5f : 0, 1, VRAM.raw, .(255,255,255));
-			DrawUtilities.Rect(vramOrigin.y, bottom, vramOrigin.x, right, 0, 1, expand ? 0.5f : 0, 1, VRAM.decoded, .(255,255,255));
+
+			if (VRAM.upToDate) {
+				DrawUtilities.Rect(vramOrigin.y, bottom, vramOrigin.x, right, 0, 1, expand ? 0.5f : 0, 1, VRAM.raw, .(255,255,255));
+				DrawUtilities.Rect(vramOrigin.y, bottom, vramOrigin.x, right, 0, 1, expand ? 0.5f : 0, 1, VRAM.decoded, .(255,255,255));
+			}
 
 			for (let textureIndex in Terrain.usedTextureIndices) {
 				let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
@@ -273,6 +281,10 @@ namespace SpyroScope {
 
 			WindowApp.bitmapFont.Print(scope String() .. AppendF("<{},{}>", (int)testPosition.x, (int)testPosition.y), .Zero, .(255,255,255));
 			WindowApp.bitmapFont.Print(scope String() .. AppendF("T-page {}", hoveredTexturePage), .(0, WindowApp.bitmapFont.characterHeight, 0), .(255,255,255));
+
+			if (!spritesDecoded) {
+				DrawLoadingOverlay();
+			}
 		}
 
 		public void OnSceneChanged() {
@@ -307,6 +319,8 @@ namespace SpyroScope {
 
 			switch (Emulator.installment) {
 				case .RiptosRage: {
+					DeleteAndClearItems!(textureSprites);
+
 					textureSprites.Add(new .(0, 0, 10)); // Numbers
 					textureSprites.Add(new .(2, 10, 1)); // Forward Slash
 	
@@ -339,8 +353,6 @@ namespace SpyroScope {
 					textureSprites.Add(new .(1, 0x4f, 8)); // Objective 4*/
 	
 					for (let sprite in textureSprites) {
-						sprite.Decode();
-	
 						for (let frameIndex < sprite.frames.Count) {
 							let frame = sprite.frames[frameIndex];
 							let clut = (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020;
@@ -366,15 +378,11 @@ namespace SpyroScope {
 					Emulator.Address<TextureQuad> spriteArrayPointer = ?;
 					Emulator.ReadFromRAM((.)0x8006c868, &spriteArrayPointer, 4);
 					spriteArrayPointer.ReadArray(&textureSprites3[0], 45);
-					for (let sprite in textureSprites3) {
-						sprite.Decode();
-					}
 				}
 				default:
 			} 
 
 			SpyroFont.Init();
-			SpyroFont.Decode();
 		}
 
 		public override bool OnEvent(SDL2.SDL.Event event) {
@@ -824,6 +832,39 @@ namespace SpyroScope {
 
 		mixin GetAlphaValue(uint32 pixel, uint32 alphaMask) {
 			alphaMask > 0 ? (float)(pixel & alphaMask) / alphaMask : 1
+		}
+
+		void Decode() {
+			if (!ViewerState.terrain.decoded) {
+				ViewerState.terrain.Decode();
+			}
+
+			if (!spritesDecoded) {
+				if (Emulator.installment == .RiptosRage) {
+					for (let sprite in textureSprites) {
+						sprite.Decode();
+					}
+				} else {
+					for (let sprite in textureSprites3) {
+						sprite.Decode();
+					}
+				}
+				
+				SpyroFont.Decode();
+
+				spritesDecoded = true;
+			}
+		}
+
+		void DrawLoadingOverlay() {
+			// Darken everything
+			DrawUtilities.Rect(0,WindowApp.height,0,WindowApp.width, .(0,0,0,192));
+
+			let message = "Waiting for Unpause...";
+			var halfWidth = Math.Round(WindowApp.font.CalculateWidth(message) / 2);
+			var baseline = (WindowApp.height - WindowApp.font.height) / 2;
+			let middleWindow = WindowApp.width / 2;
+			WindowApp.font.Print(message, .(middleWindow - halfWidth, baseline, 0), .(255,255,255));
 		}
 	}
 }

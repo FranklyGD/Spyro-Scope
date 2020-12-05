@@ -54,19 +54,6 @@ namespace SpyroScope {
 			
 			Emulator.ReadFromRAM(address + 4, &textureIndex, 1);
 
-			// Append the missing parts of the scrolling textures to the main decoded one
-			// They only exist against the top edge of the VRAM because of how they are programmed
-
-			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
-			for (let i < quadCount) {
-				let quad = (TextureQuad*)&Terrain.textureInfos[textureIndex * quadCount + i];
-
-				let verticalQuad = (quad.texturePage & 0x80 > 0) ? 3 : 2;
-				quad.leftSkew = 0;
-				quad.rightSkew = (uint8)(verticalQuad * 0x20 - 1);
-				quad.Decode();
-			}
-
 			for (let regionIndex < visualMeshes.Count) {
 				let terrainRegion = visualMeshes[regionIndex];
 
@@ -87,6 +74,18 @@ namespace SpyroScope {
 						affectedTransparentTriangles[(.)regionIndex].Add(triangleIndex);
 					}
 				}
+			}
+		}
+
+		public void Decode() {
+			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+			for (let i < quadCount) {
+				let quad = (TextureQuad*)&Terrain.textureInfos[textureIndex * quadCount + i];
+
+				let verticalQuad = (quad.texturePage & 0x80 > 0) ? 3 : 2;
+				quad.leftSkew = 0;
+				quad.rightSkew = (uint8)(verticalQuad * 0x20 - 1);
+				quad.Decode();
 			}
 		}
 

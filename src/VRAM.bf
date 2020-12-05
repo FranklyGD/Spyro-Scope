@@ -4,10 +4,13 @@ using System;
 
 namespace SpyroScope {
 	static struct VRAM {
+		static public bool upToDate;
 		static public uint16[] snapshot ~ delete _;
 		static public uint16[] snapshotDecoded ~ delete _;
 		static public Texture raw ~ delete _;
 		static public Texture decoded ~ delete _;
+
+		static public Event<delegate void()> OnSnapshotTaken ~ _.Dispose();
 
 		public static void TakeSnapshot() {
 			delete snapshot;
@@ -30,6 +33,10 @@ namespace SpyroScope {
 				snapshotDecoded = new .[(1024 * 4) * 512]; // VRAM but four times wider
 				GL.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, 0, 0, 1024 * 4, 512, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &snapshotDecoded[0]);
 			}
+
+			upToDate = true;
+
+			OnSnapshotTaken();
 		}
 
 		public static void Write(uint16[] buffer, int x, int y, int width, int height) {

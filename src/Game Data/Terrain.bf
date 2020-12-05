@@ -20,6 +20,7 @@ namespace SpyroScope {
 		public RenderMode renderMode = .Collision;
 		public bool wireframe;
 		public int drawnRegion = -1;
+		public bool decoded;
 
 		public this() {
 			Emulator.Address address = ?;
@@ -142,13 +143,7 @@ namespace SpyroScope {
 				textureSwappers[swapperIndex].Reload();
 			}
 
-			// Convert any used VRAM textures for previewing
-			let quadDecodeCount = Emulator.installment == .SpyroTheDragon ? 5 : 6;
-			for (let textureIndex in usedTextureIndices) {
-				for (let i < quadDecodeCount) {
-					Terrain.textureInfos[textureIndex * quadCount + i].Decode();
-				}
-			}
+			
 
 			// Delete animations as the new loaded mesh may be incompatible
 			if (animations != null) {
@@ -184,6 +179,24 @@ namespace SpyroScope {
 				}
 			}
 			delete warpData;*/
+		}
+
+		public void Decode() {
+			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+
+			// Convert any used VRAM textures for previewing
+			let quadDecodeCount = Emulator.installment == .SpyroTheDragon ? 5 : 6;
+			for (let textureIndex in usedTextureIndices) {
+				for (let i < quadDecodeCount) {
+					Terrain.textureInfos[textureIndex * quadCount + i].Decode();
+				}
+			}
+
+			for (let scrollerIndex < textureScrollers.Count) {
+				textureScrollers[scrollerIndex].Decode();
+			}
+
+			decoded = true;
 		}
 
 		public void Update() {
@@ -229,7 +242,7 @@ namespace SpyroScope {
 					if (drawnRegion > -1) {
 						visualMeshes[drawnRegion].DrawNear();
 					} else {
-						VRAM.decoded.Bind();
+						VRAM.decoded?.Bind();
 
 						for (let visualMesh in visualMeshes) {
 							visualMesh.DrawNear();

@@ -252,6 +252,9 @@ namespace SpyroScope {
 					button.[Friend]texture = button.normalTexture;
 				}
 			}
+
+			Emulator.OnSceneChanged.Add(new => OnSceneChanged);
+			Emulator.OnSceneChanging.Add(new => OnSceneChanging);
 		}
 
 		public ~this() {
@@ -268,9 +271,6 @@ namespace SpyroScope {
 		}
 
 		public override void Enter() {
-			Emulator.OnSceneChanged = new => OnSceneChanged;
-			Emulator.OnSceneChanging = new => OnSceneChanging;
-			
 			togglePauseButton.iconTexture = Emulator.PausedMode ? playTexture : pauseTexture;
 			toggleList[4].button.value = teleportButton.enabled = Emulator.CameraMode;
 			if (Emulator.CameraMode) {
@@ -279,22 +279,25 @@ namespace SpyroScope {
 		}
 
 		public override void Exit() {
-			delete Emulator.OnSceneChanged;
-			delete Emulator.OnSceneChanging;
+
 		}
 
 		public override void Update() {
 			Emulator.CheckEmulatorStatus();
 			Emulator.FindGame();
 
+			// If there is no emulator or relevant game present, return to the setup screen
 			if (Emulator.emulator == .None || Emulator.rom == .None) {
 				windowApp.GoToState<SetupState>();
 				return;
 			}
 
-			Emulator.FetchRAMBaseAddress();
 			Emulator.FetchImportantData();
-			
+
+			if (!terrain.decoded && VRAM.upToDate) {
+				terrain.Decode();
+			}
+
 			UpdateView();
 
 			cornerMenuInterp = Math.MoveTo(cornerMenuInterp, cornerMenuVisible ? 1 : 0, 0.1f);
@@ -628,6 +631,15 @@ namespace SpyroScope {
 				}
 			}
 
+			if (terrain.renderMode == .Near && !terrain.decoded) {
+				let message = "Waiting for Unpause...";
+				var halfWidth = Math.Round(WindowApp.font.CalculateWidth(message) / 2);
+				let middleWindow = WindowApp.width / 2;
+				let xOrigin = middleWindow - halfWidth;
+				DrawUtilities.Rect(64, 64 + WindowApp.font.height, xOrigin, xOrigin + WindowApp.font.CalculateWidth(message) + 4, .(0,0,0, 192));
+				WindowApp.font.Print(message, .(middleWindow - halfWidth, 64, 0), .(255,255,255));
+			}
+
 			// Begin window relative position UI
 			if (!cornerMenuVisible) {
 				DrawMessageFeed();
@@ -672,24 +684,7 @@ namespace SpyroScope {
 			}
 
 			if (Emulator.loadingStatus == .Loading) {
-				// Darken everything
-				DrawUtilities.Rect(0,WindowApp.height,0,WindowApp.width, .(0,0,0,192));
-
-				let loadingMessage = "Loading...";
-				var halfWidth = Math.Round(WindowApp.font.CalculateWidth(loadingMessage) / 2);
-				var baseline = WindowApp.height / 2 - WindowApp.font.height;
-				let middleWindow = WindowApp.width / 2;
-				WindowApp.font.Print(loadingMessage, .(middleWindow - halfWidth, baseline, 0), .(255,255,255));
-
-				var line = 0;
-				for (let i < 8) {
-					if (!Emulator.changedPointers[i]) {
-						halfWidth = WindowApp.fontSmall.CalculateWidth(Emulator.pointerLabels[i]) / 2;
-						baseline = WindowApp.height / 2 + (.)(WindowApp.fontSmall.height * line);
-						WindowApp.fontSmall.Print(Emulator.pointerLabels[i], .(Math.Round(middleWindow - halfWidth), baseline, 0), .(255,255,255));
-						line++;
-					}
-				}
+				DrawLoadingOverlay();
 			}
 		}
 
@@ -1062,8 +1057,6 @@ namespace SpyroScope {
 		}
 
 		void OnSceneChanged() {
-			VRAM.TakeSnapshot();
-
 			Terrain.RenderMode lastMode = .Collision;
 			TerrainCollision.Overlay lastOverlay = .None;
 			if (terrain != null) {
@@ -1199,6 +1192,27 @@ namespace SpyroScope {
 				DrawUtilities.Rect((.)WindowApp.height - (bottomPadding + 16), (.)WindowApp.height - bottomPadding, leftPadding, leftPadding + 16, color);
 
 				WindowApp.bitmapFont.Print(label, .(leftPadding + 24, (.)WindowApp.height - (bottomPadding + 15), 0), .(255,255,255));
+			}
+		}
+
+		void DrawLoadingOverlay() {
+			// Darken everything
+			DrawUtilities.Rect(0,WindowApp.height,0,WindowApp.width, .(0,0,0,192));
+
+			let loadingMessage = "Loading...";
+			var halfWidth = Math.Round(WindowApp.font.CalculateWidth(loadingMessage) / 2);
+			var baseline = WindowApp.height / 2 - WindowApp.font.height;
+			let middleWindow = WindowApp.width / 2;
+			WindowApp.font.Print(loadingMessage, .(middleWindow - halfWidth, baseline, 0), .(255,255,255));
+
+			var line = 0;
+			for (let i < 8) {
+				if (!Emulator.changedPointers[i]) {
+					halfWidth = WindowApp.fontSmall.CalculateWidth(Emulator.pointerLabels[i]) / 2;
+					baseline = WindowApp.height / 2 + (.)(WindowApp.fontSmall.height * line);
+					WindowApp.fontSmall.Print(Emulator.pointerLabels[i], .(Math.Round(middleWindow - halfWidth), baseline, 0), .(255,255,255));
+					line++;
+				}
 			}
 		}
 

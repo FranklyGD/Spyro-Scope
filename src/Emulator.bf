@@ -222,8 +222,8 @@ namespace SpyroScope {
 		} }
 
 		// Events
-		public static Action OnSceneChanged;
-		public static Action OnSceneChanging;
+		public static Event<delegate void()> OnSceneChanged ~ _.Dispose();
+		public static Event<delegate void()> OnSceneChanging ~ _.Dispose();
 
 		public static void FindEmulator() {
 			processHandle.Close();
@@ -369,7 +369,7 @@ namespace SpyroScope {
 					changedPointers[i] = true;
 
 					if (loadingStatus == .Idle) {
-						OnSceneChanging?.Invoke();
+						OnSceneChanging();
 					}
 
 					loadingStatus = .Loading;
@@ -382,6 +382,7 @@ namespace SpyroScope {
 				for (let i < 8) {
 					changedPointers[i] = false;
 				}
+				VRAM.upToDate = false;
 			}
 		}
 
@@ -527,7 +528,11 @@ namespace SpyroScope {
 				// as there is a big delay when loading the large data at once
 
 				loadingStatus = .Idle;
-				OnSceneChanged?.Invoke();
+				OnSceneChanged();
+			}
+
+			if (!VRAM.upToDate && gameState != (installment == .SpyroTheDragon ? 2 : 4)) {
+				VRAM.TakeSnapshot();
 			}
 		}
 
