@@ -27,6 +27,8 @@ namespace SpyroScope {
 
 			this.address = address;
 			this.visualMeshes = visualMeshes;
+
+			Emulator.ReadFromRAM(address + 4, &textureIndex, 1);
 		}
 
 		public void Dispose() {
@@ -42,17 +44,11 @@ namespace SpyroScope {
 		}
 
 		public void Reload() mut {
-			if (!Terrain.usedTextureIndices.Contains(textureIndex)) {
-				Terrain.usedTextureIndices.Add(textureIndex);
-			}
-
 			affectedTriangles.Clear();
 			affectedTransparentTriangles.Clear();
 
 			if (address.IsNull)
 				return;
-			
-			Emulator.ReadFromRAM(address + 4, &textureIndex, 1);
 
 			for (let regionIndex < visualMeshes.Count) {
 				let terrainRegion = visualMeshes[regionIndex];
@@ -74,6 +70,12 @@ namespace SpyroScope {
 						affectedTransparentTriangles[(.)regionIndex].Add(triangleIndex);
 					}
 				}
+			}
+		}
+
+		public void GetUsedTextures() {
+			if (!Terrain.usedTextureIndices.Contains(textureIndex)) {
+				Terrain.usedTextureIndices.Add(textureIndex);
 			}
 		}
 

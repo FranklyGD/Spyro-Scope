@@ -91,7 +91,9 @@ namespace SpyroScope {
 				Emulator.Address[] textureScrollerAddresses = new .[textureScrollerCount];
 				textureScrollerArrayAddress.ReadArray(&textureScrollerAddresses[0], textureScrollerCount);
 				for (let i < textureScrollerCount) {
-					textureScrollers[i] = .(textureScrollerAddresses[i], visualMeshes);
+					let scroller = TextureScroller(textureScrollerAddresses[i], visualMeshes);
+					scroller.GetUsedTextures();
+					textureScrollers[i] = scroller;
 				}
 				delete textureScrollerAddresses;
 			}
