@@ -162,11 +162,11 @@ namespace SpyroScope {
 					}
 					let partialUV = quad.GetVramPartialUV();
 					const let quadSize = TextureQuad.quadSize;
-					
-					triangleUV[0] = .(partialUV.right, partialUV.rightY - quadSize);
-					triangleUV[1] = .(partialUV.left, partialUV.leftY);
-					triangleUV[2] = .(partialUV.left, partialUV.leftY + quadSize);
-					triangleUV[3] = .(partialUV.right, partialUV.rightY);
+
+					triangleUV[0] = .(partialUV.left, partialUV.leftY + quadSize);
+					triangleUV[1] = .(partialUV.right, partialUV.rightY);
+					triangleUV[2] = .(partialUV.right, partialUV.rightY - quadSize);
+					triangleUV[3] = .(partialUV.left, partialUV.leftY);
 
 					if (quad.GetTransparency() || regionFace.renderInfo.transparent) {
 						activeVertexList = vertexTransparentList;
@@ -185,105 +185,66 @@ namespace SpyroScope {
 					}
 
 					if (regionFace.isTriangle) {
-						int first = 1;
-						int second = 3;
-
-						if (flipSide) {
-							first = 3;
-							second = 1;
-						}
-
-						triangleVertices[0] = nearVertices[trianglesIndices[first]];
-						triangleVertices[1] = nearVertices[trianglesIndices[2]];
-						triangleVertices[2] = nearVertices[trianglesIndices[second]];
-						triangleColors[0] = nearColors[colorIndices[first]];
-						triangleColors[1] = nearColors[colorIndices[2]];
-						triangleColors[2] = nearColors[colorIndices[second]];
-						
-						activeNearMeshIndices.Add(trianglesIndices[second]);
-						activeNearMeshIndices.Add(trianglesIndices[2]);
-						activeNearMeshIndices.Add(trianglesIndices[first]);
-
-						activeVertexList.Add(triangleVertices[2]);
-						activeVertexList.Add(triangleVertices[1]);
-						activeVertexList.Add(triangleVertices[0]);
-						
-						activeColorList.Add(triangleColors[2]);
-						activeColorList.Add(triangleColors[1]);
-						activeColorList.Add(triangleColors[0]);
-
-						float[3][2] rotatedTriangleUV = .(
+						float[4][2] rotatedTriangleUV = .((?),
 							triangleUV[(0 - textureRotation) & 3],
-							triangleUV[(1 - textureRotation) & 3],
-							triangleUV[(2 - textureRotation) & 3]
-							);
+							triangleUV[(2 - textureRotation) & 3],
+							triangleUV[(3 - textureRotation) & 3]
+						);
 
-						if (flipSide) {
-							activeUvList.Add(rotatedTriangleUV[2]);
-							activeUvList.Add(rotatedTriangleUV[0]);
-							activeUvList.Add(rotatedTriangleUV[1]);
-						} else {
-							activeUvList.Add(rotatedTriangleUV[1]);
-							activeUvList.Add(rotatedTriangleUV[0]);
-							activeUvList.Add(rotatedTriangleUV[2]);
-						}
+						int8[2] indexSwap = flipSide ? .(1,3) : .(3,1);
+
+						activeNearMeshIndices.Add(trianglesIndices[indexSwap[0]]);
+						activeNearMeshIndices.Add(trianglesIndices[2]);
+						activeNearMeshIndices.Add(trianglesIndices[indexSwap[1]]);
+
+						activeVertexList.Add(nearVertices[trianglesIndices[indexSwap[0]]]);
+						activeVertexList.Add(nearVertices[trianglesIndices[2]]);
+						activeVertexList.Add(nearVertices[trianglesIndices[indexSwap[1]]]);
+
+						activeColorList.Add(nearColors[colorIndices[indexSwap[0]]]);
+						activeColorList.Add(nearColors[colorIndices[2]]);
+						activeColorList.Add(nearColors[colorIndices[indexSwap[1]]]);
+
+						activeUvList.Add(rotatedTriangleUV[indexSwap[0]]);
+						activeUvList.Add(rotatedTriangleUV[2]);
+						activeUvList.Add(rotatedTriangleUV[indexSwap[1]]);
 
 						activeNearFaceIndices.Add(i);
 						activeNearTextureIndices.Add(textureIndex);
 					} else {
-						if (flipSide) {
-							Swap!(trianglesIndices[0], trianglesIndices[1]);
-							Swap!(trianglesIndices[2], trianglesIndices[3]);
-						}
+						int8[4] indexSwap = flipSide ? .(2,1,3,0) : .(1,2,0,3);
 
-						triangleVertices[0] = nearVertices[trianglesIndices[1]];
-						triangleVertices[1] = nearVertices[trianglesIndices[2]];
-						triangleVertices[2] = nearVertices[trianglesIndices[3]];
-						triangleVertices[3] = nearVertices[trianglesIndices[0]];
-						
-						triangleColors[0] = nearColors[colorIndices[1]];
-						triangleColors[1] = nearColors[colorIndices[2]];
-						triangleColors[2] = nearColors[colorIndices[3]];
-						triangleColors[3] = nearColors[colorIndices[0]];
-
-						if (flipSide) {
-							Swap!(triangleColors[0], triangleColors[3]);
-							Swap!(triangleColors[2], triangleColors[1]);
-							Swap!(triangleUV[0], triangleUV[1]);
-							Swap!(triangleUV[2], triangleUV[3]);
-						}
+						activeNearMeshIndices.Add(trianglesIndices[indexSwap[0]]);
+						activeNearMeshIndices.Add(trianglesIndices[0]);
+						activeNearMeshIndices.Add(trianglesIndices[indexSwap[1]]);
 
 						activeNearMeshIndices.Add(trianglesIndices[2]);
-						activeNearMeshIndices.Add(trianglesIndices[1]);
-						activeNearMeshIndices.Add(trianglesIndices[3]);
+						activeNearMeshIndices.Add(trianglesIndices[indexSwap[2]]);
+						activeNearMeshIndices.Add(trianglesIndices[indexSwap[3]]);
 
-						activeNearMeshIndices.Add(trianglesIndices[3]);
-						activeNearMeshIndices.Add(trianglesIndices[1]);
-						activeNearMeshIndices.Add(trianglesIndices[0]);
+						activeVertexList.Add(nearVertices[trianglesIndices[indexSwap[0]]]);
+						activeVertexList.Add(nearVertices[trianglesIndices[0]]);
+						activeVertexList.Add(nearVertices[trianglesIndices[indexSwap[1]]]);
+
+						activeVertexList.Add(nearVertices[trianglesIndices[2]]);
+						activeVertexList.Add(nearVertices[trianglesIndices[indexSwap[2]]]);
+						activeVertexList.Add(nearVertices[trianglesIndices[indexSwap[3]]]);
+
+						activeColorList.Add(nearColors[colorIndices[indexSwap[0]]]);
+						activeColorList.Add(nearColors[colorIndices[0]]);
+						activeColorList.Add(nearColors[colorIndices[indexSwap[1]]]);
+
+						activeColorList.Add(nearColors[colorIndices[2]]);
+						activeColorList.Add(nearColors[colorIndices[indexSwap[2]]]);
+						activeColorList.Add(nearColors[colorIndices[indexSwap[3]]]);
 						
-						activeVertexList.Add(triangleVertices[1]);
-						activeVertexList.Add(triangleVertices[0]);
-						activeVertexList.Add(triangleVertices[2]);
-						
-						activeVertexList.Add(triangleVertices[2]);
-						activeVertexList.Add(triangleVertices[0]);
-						activeVertexList.Add(triangleVertices[3]);
-						
-						activeColorList.Add(triangleColors[1]);
-						activeColorList.Add(triangleColors[0]);
-						activeColorList.Add(triangleColors[2]);
-						
-						activeColorList.Add(triangleColors[2]);
-						activeColorList.Add(triangleColors[0]);
-						activeColorList.Add(triangleColors[3]);
-						
+						activeUvList.Add(triangleUV[indexSwap[0]]);
 						activeUvList.Add(triangleUV[0]);
-						activeUvList.Add(triangleUV[3]);
-						activeUvList.Add(triangleUV[1]);
-						
-						activeUvList.Add(triangleUV[1]);
-						activeUvList.Add(triangleUV[3]);
+						activeUvList.Add(triangleUV[indexSwap[1]]);
+
 						activeUvList.Add(triangleUV[2]);
+						activeUvList.Add(triangleUV[indexSwap[2]]);
+						activeUvList.Add(triangleUV[indexSwap[3]]);
 
 						activeNearFaceIndices.Add(i);
 						activeNearFaceIndices.Add(i);

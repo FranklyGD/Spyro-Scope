@@ -132,40 +132,33 @@ namespace SpyroScope {
 					TerrainRegion.NearFace regionFace = terrainRegion.nearFaces[nearFaceIndex];
 					let textureRotation = regionFace.renderInfo.rotation;
 
-					triangleUV[0] = .(partialUV.right, partialUV.rightY - TextureQuad.quadSize);
-					triangleUV[1] = .(partialUV.left, partialUV.leftY);
-					triangleUV[2] = .(partialUV.left, partialUV.leftY + TextureQuad.quadSize);
-					triangleUV[3] = .(partialUV.right, partialUV.rightY);
+					triangleUV[0] = .(partialUV.left, partialUV.leftY + TextureQuad.quadSize);
+					triangleUV[1] = .(partialUV.right, partialUV.rightY);
+					triangleUV[2] = .(partialUV.right, partialUV.rightY - TextureQuad.quadSize);
+					triangleUV[3] = .(partialUV.left, partialUV.leftY);
 
 					if (regionFace.isTriangle) {
-						float[3][2] rotatedTriangleUV = .(
+						float[4][2] rotatedTriangleUV = .((?),
 							triangleUV[(0 - textureRotation) & 3],
-							triangleUV[(1 - textureRotation) & 3],
-							triangleUV[(2 - textureRotation) & 3]
-							);
+							triangleUV[(2 - textureRotation) & 3],
+							triangleUV[(3 - textureRotation) & 3]
+						);
 
-						if (regionFace.flipped) {
-							regionMesh.uvs[0 + vertexIndex] = rotatedTriangleUV[2];
-							regionMesh.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
-							regionMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[1];
-						} else {
-							regionMesh.uvs[0 + vertexIndex] = rotatedTriangleUV[1];
-							regionMesh.uvs[1 + vertexIndex] = rotatedTriangleUV[0];
-							regionMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[2];
-						}
+						int8[2] indexSwap = regionFace.flipped ? .(1,3) : .(3,1);
+
+						regionMesh.uvs[0 + vertexIndex] = rotatedTriangleUV[indexSwap[0]];
+						regionMesh.uvs[1 + vertexIndex] = rotatedTriangleUV[2];
+						regionMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[indexSwap[1]];
 					} else {
-						if (regionFace.flipped) {
-							Swap!(triangleUV[0], triangleUV[1]);
-							Swap!(triangleUV[2], triangleUV[3]);
-						}
+						int8[4] indexSwap = regionFace.flipped ? .(2,1,3,0) : .(1,2,0,3);
 
-						regionMesh.uvs[0 + vertexIndex] = triangleUV[0];
-						regionMesh.uvs[1 + vertexIndex] = triangleUV[3];
-						regionMesh.uvs[2 + vertexIndex] = triangleUV[1];
+						regionMesh.uvs[0 + vertexIndex] = triangleUV[indexSwap[0]];
+						regionMesh.uvs[1 + vertexIndex] = triangleUV[0];
+						regionMesh.uvs[2 + vertexIndex] = triangleUV[indexSwap[1]];
 
-						regionMesh.uvs[3 + vertexIndex] = triangleUV[1];
-						regionMesh.uvs[4 + vertexIndex] = triangleUV[3];
-						regionMesh.uvs[5 + vertexIndex] = triangleUV[2];
+						regionMesh.uvs[3 + vertexIndex] = triangleUV[2];
+						regionMesh.uvs[4 + vertexIndex] = triangleUV[indexSwap[2]];
+						regionMesh.uvs[5 + vertexIndex] = triangleUV[indexSwap[3]];
 
 						i++;
 					}
