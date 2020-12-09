@@ -234,7 +234,9 @@ namespace SpyroScope {
 			
 			for (let terrainRegion in visualMeshes) {
 				terrainRegion.nearMesh.Update();
+				terrainRegion.nearMeshSubdivided.Update();
 				terrainRegion.nearMeshTransparent.Update();
+				terrainRegion.nearMeshTransparentSubdivided.Update();
 			}
 		}
 

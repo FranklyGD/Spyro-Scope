@@ -109,33 +109,39 @@ namespace SpyroScope {
 		
 		public void UpdateUVs(bool transparent) {
 			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
-			TextureQuad* quad = &Terrain.textureInfos[(int)textureIndex * quadCount];
+			TextureQuad* quad = &Terrain.textureInfos[textureIndex * quadCount];
 			if (Emulator.installment != .SpyroTheDragon) {
 				quad++;
 			}
 
-			let partialUV = quad.GetVramPartialUV();
+			float[4 * 5][2] triangleUV = ?;
+			for (let qi < 5) {
+				let partialUV = quad.GetVramPartialUV();
 
-			float[4][2] triangleUV = ?;
+				let offset = qi * 4;
+				triangleUV[0 + offset] = .(partialUV.left, partialUV.rightY);
+				triangleUV[1 + offset] = .(partialUV.right, partialUV.rightY);
+				triangleUV[2 + offset] = .(partialUV.right, partialUV.leftY);
+				triangleUV[3 + offset] = .(partialUV.left, partialUV.leftY);
+
+				quad++;
+			}
 
 			let affectedTriangles = transparent ? affectedTransparentTriangles : affectedTriangles;
 			for (let affectedRegionTriPair in affectedTriangles) {
 				let terrainRegion = visualMeshes[affectedRegionTriPair.key];
 				let faceIndices = transparent ? terrainRegion.nearFaceTransparentIndices : terrainRegion.nearFaceIndices;
 				let regionMesh = transparent ? terrainRegion.nearMeshTransparent : terrainRegion.nearMesh;
+				let regionMeshSubdivided = transparent ? terrainRegion.nearMeshTransparentSubdivided : terrainRegion.nearMeshSubdivided;
 
 				for (var i < affectedRegionTriPair.value.Count) {
 					let triangleIndex = affectedRegionTriPair.value[i];
 					let vertexIndex = triangleIndex * 3;
+					let subdividedVertexIndex = triangleIndex * 3 * 4;
 
 					let nearFaceIndex = faceIndices[triangleIndex];
 					TerrainRegion.NearFace regionFace = terrainRegion.nearFaces[nearFaceIndex];
 					let textureRotation = regionFace.renderInfo.rotation;
-
-					triangleUV[0] = .(partialUV.left, partialUV.rightY);
-					triangleUV[1] = .(partialUV.right, partialUV.rightY);
-					triangleUV[2] = .(partialUV.right, partialUV.leftY);
-					triangleUV[3] = .(partialUV.left, partialUV.leftY);
 
 					if (regionFace.isTriangle) {
 						float[4][2] rotatedTriangleUV = .((?),
@@ -149,6 +155,30 @@ namespace SpyroScope {
 						regionMesh.uvs[0 + vertexIndex] = rotatedTriangleUV[indexSwap[0]];
 						regionMesh.uvs[1 + vertexIndex] = rotatedTriangleUV[2];
 						regionMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[indexSwap[1]];
+
+						for (let ti < 3) {
+							let offset = (1 + ti) * 4;
+
+							rotatedTriangleUV = .((?),
+								triangleUV[((3 - (textureRotation)) & 3) + offset],
+								triangleUV[((2 - (textureRotation)) & 3) + offset],
+								triangleUV[((0 - (textureRotation)) & 3) + offset]
+							);
+
+							regionMeshSubdivided.uvs[0 + (ti * 3) + subdividedVertexIndex] = rotatedTriangleUV[indexSwap[1]];
+							regionMeshSubdivided.uvs[1 + (ti * 3) + subdividedVertexIndex] = rotatedTriangleUV[2];
+							regionMeshSubdivided.uvs[2 + (ti * 3) + subdividedVertexIndex] = rotatedTriangleUV[indexSwap[0]];
+						}
+
+						rotatedTriangleUV = .((?),
+							triangleUV[((0 - (textureRotation)) & 3) + 4],
+							triangleUV[((2 - (textureRotation)) & 3) + 4],
+							triangleUV[((1 - (textureRotation)) & 3) + 4],
+						);
+
+						regionMeshSubdivided.uvs[0 + (3 * 3) + subdividedVertexIndex] = rotatedTriangleUV[indexSwap[1]];
+						regionMeshSubdivided.uvs[1 + (3 * 3) + subdividedVertexIndex] = rotatedTriangleUV[2];
+						regionMeshSubdivided.uvs[2 + (3 * 3) + subdividedVertexIndex] = rotatedTriangleUV[indexSwap[0]];
 					} else {
 						int8[4] indexSwap = regionFace.flipped ? .(1,0,3,2) : .(0,1,2,3);
 
@@ -160,11 +190,24 @@ namespace SpyroScope {
 						regionMesh.uvs[4 + vertexIndex] = triangleUV[0];
 						regionMesh.uvs[5 + vertexIndex] = triangleUV[indexSwap[3]];
 
+						for (let qi < 4) {
+							let offset = (1 + qi) * 4;
+						
+							regionMeshSubdivided.uvs[0 + (qi * 6) + subdividedVertexIndex] = triangleUV[indexSwap[0] + offset];
+							regionMeshSubdivided.uvs[1 + (qi * 6) + subdividedVertexIndex] = triangleUV[2 + offset];
+							regionMeshSubdivided.uvs[2 + (qi * 6) + subdividedVertexIndex] = triangleUV[indexSwap[1] + offset];
+
+							regionMeshSubdivided.uvs[3 + (qi * 6) + subdividedVertexIndex] = triangleUV[indexSwap[2] + offset];
+							regionMeshSubdivided.uvs[4 + (qi * 6) + subdividedVertexIndex] = triangleUV[0 + offset];
+							regionMeshSubdivided.uvs[5 + (qi * 6) + subdividedVertexIndex] = triangleUV[indexSwap[3] + offset];
+						}
+
 						i++;
 					}
 				}
 				
 				regionMesh.SetDirty();
+				regionMeshSubdivided.SetDirty();
 			}
 		} 
 	}
