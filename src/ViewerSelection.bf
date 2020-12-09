@@ -43,7 +43,7 @@ namespace SpyroScope {
 					let transformedOrigin = (origin - .((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16)) * transform;
 					let transformedRay = ray * transform;
 
-					if (ViewerState.terrain.renderMode == .Near) {
+					if (ViewerState.terrain.renderMode == .NearLQ) {
 						if (GMath.RayMeshIntersect(transformedOrigin, transformedRay, visualMesh.nearMesh, ref distance, ref hoveredTriangleIndex)) {
 							hoveredRegionIndex = i;
 							hoveredRegionTransparent = false;
