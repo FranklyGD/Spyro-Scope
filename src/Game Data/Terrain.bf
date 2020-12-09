@@ -14,8 +14,9 @@ namespace SpyroScope {
 
 		public enum RenderMode {
 			Collision,
-			Near,
-			Far
+			Far,
+			NearLQ,
+			NearHQ
 		}
 		public RenderMode renderMode = .Collision;
 		public bool wireframe;
@@ -80,6 +81,13 @@ namespace SpyroScope {
 			delete sceneDataRegionAddresses;
 
 			// Scrolling textures
+			if (textureScrollers != null) {
+				for (let item in textureScrollers) {
+					item.Dispose();
+				}
+				delete textureScrollers;
+			}
+
 			let textureScrollerPointer = Emulator.textureScrollerPointers[(int)Emulator.rom];
 			uint32 textureScrollerCount = ?;
 			Emulator.ReadFromRAM(textureScrollerPointer - 4, &textureScrollerCount, 4);
@@ -99,6 +107,13 @@ namespace SpyroScope {
 			}
 
 			// Swapping textures
+			if (textureSwappers != null) {
+				for (let item in textureSwappers) {
+					item.Dispose();
+				}
+				delete textureSwappers;
+			}
+
 			let textureSwapperPointer = Emulator.textureSwapperPointers[(int)Emulator.rom];
 			uint32 textureSwapperCount = ?;
 			Emulator.ReadFromRAM(textureSwapperPointer - 4, &textureSwapperCount, 4);
@@ -125,6 +140,9 @@ namespace SpyroScope {
 				}
 			}
 
+			if (textureInfos != null) {
+				delete textureInfos;
+			}
 			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 
 			let totalQuadCount = (highestUsedIndex + 1) * quadCount;
@@ -238,7 +256,7 @@ namespace SpyroScope {
 						}
 					}
 				}
-				case .Near : {
+				case .NearLQ : {
 					Renderer.BeginRetroShading();
 
 					if (drawnRegion > -1) {
@@ -266,6 +284,34 @@ namespace SpyroScope {
 
 					Renderer.BeginDefaultShading();
 				}
+				case .NearHQ : {
+					Renderer.BeginRetroShading();
+	
+					if (drawnRegion > -1) {
+						visualMeshes[drawnRegion].DrawNear();
+					} else {
+						VRAM.decoded?.Bind();
+	
+						for (let visualMesh in visualMeshes) {
+							visualMesh.DrawNearSubdivided();
+						}
+						
+						GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
+						GL.glDepthMask(GL.GL_FALSE);  
+	
+						for (let visualMesh in visualMeshes) {
+							visualMesh.DrawNearTransparentSubdivided();
+						}
+	
+						GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+						GL.glDepthMask(GL.GL_TRUE);  
+	
+						Renderer.whiteTexture.Bind();
+	
+					}
+	
+					Renderer.BeginDefaultShading();
+				}
 				case .Collision : {
 					collision.Draw(wireframe);
 				}
@@ -275,7 +321,7 @@ namespace SpyroScope {
 			Renderer.BeginSolid();
 		}
 
-		void ReloadAnimations() {
+		public void ReloadAnimations() {
 			uint32 count = ?;
 			Emulator.ReadFromRAM(Emulator.sceneRegionDeformPointers[(int)Emulator.rom] - 4, &count, 4);
 

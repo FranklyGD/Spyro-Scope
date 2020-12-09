@@ -33,11 +33,13 @@ namespace SpyroScope {
 		public NearFace[] nearFaces ~ delete _;
 		
 		public Mesh nearMesh ~ delete _;
+		public Mesh nearMeshSubdivided ~ delete _;
 		public List<uint8> nearMesh2GameIndices = new .() ~ delete _;
 		public List<int> nearFaceIndices = new .() ~ delete _;
 		public List<uint8> nearTri2TextureIndices = new .() ~ delete _;
 
 		public Mesh nearMeshTransparent ~ delete _;
+		public Mesh nearMeshTransparentSubdivided ~ delete _;
 		public List<uint8> nearMesh2GameTransparentIndices = new .() ~ delete _;
 		public List<int> nearFaceTransparentIndices = new .() ~ delete _;
 		public List<uint8> nearTri2TransparentTextureIndices = new .() ~ delete _;
@@ -223,6 +225,11 @@ namespace SpyroScope {
 			List<Vector> activeVertexList = ?;
 			List<Renderer.Color> activeColorList = ?;
 			List<float[2]> activeUvList = ?;
+			
+			List<Vector> activeVertexSubList = ?;
+			List<Renderer.Color> activeColorSubList = ?;
+			List<float[2]> activeUvSubList = ?;
+
 			List<uint8> activeNearMeshIndices = ?;
 			List<int> activeNearFaceIndices = ?;
 			List<uint8> activeNearTextureIndices = ?;
@@ -235,8 +242,6 @@ namespace SpyroScope {
 			}
 
 			// Used for swapping around values
-			Vector[4] triangleVertices = ?;
-			Renderer.Color[4] triangleColors = ?;
 			float[4][2] triangleUV = ?;
 
 			List<Vector> vertexList = scope .();
@@ -246,6 +251,14 @@ namespace SpyroScope {
 			List<Vector> vertexTransparentList = scope .();
 			List<Renderer.Color> colorTransparentList = scope .();
 			List<float[2]> uvTransparentList = scope .();
+
+			List<Vector> vertexSubList = scope .();
+			List<Renderer.Color> colorSubList = scope .();
+			List<float[2]> uvSubList = scope .();
+
+			List<Vector> vertexTransparentSubList = scope .();
+			List<Renderer.Color> colorTransparentSubList = scope .();
+			List<float[2]> uvTransparentSubList = scope .();
 
 			nearFaces = new .[faceSize];
 			Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize * 2) * 4, nearFaces.CArray(), faceSize * sizeof(NearFace));
@@ -262,25 +275,26 @@ namespace SpyroScope {
 				var colorIndices = regionFace.colorsIndices;
 				let textureIndex = regionFace.renderInfo.textureIndex;
 				let flipSide = regionFace.flipped;
-				let textureRotation = regionFace.renderInfo.rotation;
+				var textureRotation = regionFace.renderInfo.rotation;
 
 				let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
-				TextureQuad* quad = &Terrain.textureInfos[textureIndex * quadCount];
-				if (Emulator.installment != .SpyroTheDragon) {
-					quad++;
-				}
-				let partialUV = quad.GetVramPartialUV();
-				const let quadSize = TextureQuad.quadSize;
+				TextureQuad* quad = ?;
+				TextureQuad* quadSet = &Terrain.textureInfos[textureIndex * quadCount];
+				quad = quadSet = Emulator.installment == .SpyroTheDragon ? quadSet : quadSet + 1;
+				var partialUV = quad.GetVramPartialUV();
 
-				triangleUV[0] = .(partialUV.left, partialUV.leftY + quadSize);
+				triangleUV[0] = .(partialUV.left, partialUV.rightY);
 				triangleUV[1] = .(partialUV.right, partialUV.rightY);
-				triangleUV[2] = .(partialUV.right, partialUV.rightY - quadSize);
+				triangleUV[2] = .(partialUV.right, partialUV.leftY);
 				triangleUV[3] = .(partialUV.left, partialUV.leftY);
 
 				if (quad.GetTransparency() || regionFace.renderInfo.transparent) {
 					activeVertexList = vertexTransparentList;
 					activeColorList = colorTransparentList;
 					activeUvList = uvTransparentList;
+					activeVertexSubList = vertexTransparentSubList;
+					activeColorSubList = colorTransparentSubList;
+					activeUvSubList = uvTransparentSubList;
 					activeNearMeshIndices = nearMesh2GameTransparentIndices;
 					activeNearFaceIndices = nearFaceTransparentIndices;
 					activeNearTextureIndices = nearTri2TransparentTextureIndices;
@@ -288,13 +302,17 @@ namespace SpyroScope {
 					activeVertexList = vertexList;
 					activeColorList = colorList;
 					activeUvList = uvList;
+					activeVertexSubList = vertexSubList;
+					activeColorSubList = colorSubList;
+					activeUvSubList = uvSubList;
 					activeNearMeshIndices = nearMesh2GameIndices;
 					activeNearFaceIndices = nearFaceIndices;
 					activeNearTextureIndices = nearTri2TextureIndices;
 				}
 
 				if (regionFace.isTriangle) {
-					float[4][2] rotatedTriangleUV = .((?),
+					// Low quality textures
+					float[3][2] rotatedTriangleUV = .(
 						triangleUV[(0 - textureRotation) & 3],
 						triangleUV[(2 - textureRotation) & 3],
 						triangleUV[(3 - textureRotation) & 3]
@@ -314,46 +332,222 @@ namespace SpyroScope {
 					activeColorList.Add(nearColors[colorIndices[2]]);
 					activeColorList.Add(nearColors[colorIndices[indexSwap[1]]]);
 
+					indexSwap[0]--;
+					indexSwap[1]--;
+
 					activeUvList.Add(rotatedTriangleUV[indexSwap[0]]);
-					activeUvList.Add(rotatedTriangleUV[2]);
+					activeUvList.Add(rotatedTriangleUV[1]);
 					activeUvList.Add(rotatedTriangleUV[indexSwap[1]]);
+
+					// High quality textures
+					Vector[5] midpoints = ?;
+					midpoints[0] = (nearVertices[trianglesIndices[1]] + nearVertices[trianglesIndices[2]]) / 2;
+					midpoints[1] = (nearVertices[trianglesIndices[2]] + nearVertices[trianglesIndices[3]]) / 2;
+					midpoints[2] = (nearVertices[trianglesIndices[3]] + nearVertices[trianglesIndices[1]]) / 2;
+
+					Renderer.Color[5] midcolors = ?;
+					midcolors[0] = Renderer.Color.Lerp(nearColors[colorIndices[1]], nearColors[colorIndices[2]], 0.5f);
+					midcolors[1] = Renderer.Color.Lerp(nearColors[colorIndices[2]], nearColors[colorIndices[3]], 0.5f);
+					midcolors[2] = Renderer.Color.Lerp(nearColors[colorIndices[3]], nearColors[colorIndices[1]], 0.5f);
+
+					Vector[4][3] subQuadVertices = .(
+						(nearVertices[trianglesIndices[3]], midpoints[1], midpoints[2]),
+						(midpoints[1], nearVertices[trianglesIndices[2]], midpoints[0]),
+						(midpoints[2], midpoints[0], nearVertices[trianglesIndices[1]]),
+						(midpoints[2], midpoints[1], midpoints[0])
+					);
+
+					Renderer.Color[4][3] subQuadColors = .(
+						(nearColors[colorIndices[3]], midcolors[1], midcolors[2]),
+						(midcolors[1], nearColors[colorIndices[2]], midcolors[0]),
+						(midcolors[2], midcolors[0], nearColors[colorIndices[1]]),
+						(midcolors[2], midcolors[1], midcolors[0])
+					);
+
+					const uint8[4][3] rotationOrder = .(
+						(0,1,2),
+						(1,3,0),
+						(3,2,1),
+						(2,0,3)
+					);
+					let subQuadIndexRotation = rotationOrder[textureRotation];
+
+					// Corner triangles
+					for (let ti < 3) {
+						activeVertexSubList.Add(subQuadVertices[ti][indexSwap[1]]);
+						activeVertexSubList.Add(subQuadVertices[ti][1]);
+						activeVertexSubList.Add(subQuadVertices[ti][indexSwap[0]]);
+
+						activeColorSubList.Add(subQuadColors[ti][indexSwap[1]]);
+						activeColorSubList.Add(subQuadColors[ti][1]);
+						activeColorSubList.Add(subQuadColors[ti][indexSwap[0]]);
+
+						quad = quadSet + 1 + subQuadIndexRotation[ti];
+						partialUV = quad.GetVramPartialUV();
+						let quadRotation = quad.GetQuadRotation();
+
+						triangleUV[0] = .(partialUV.left, partialUV.rightY);
+						triangleUV[1] = .(partialUV.right, partialUV.rightY);
+						triangleUV[2] = .(partialUV.right, partialUV.leftY);
+						triangleUV[3] = .(partialUV.left, partialUV.leftY);
+
+						rotatedTriangleUV = .(
+							triangleUV[(3 - (textureRotation + quadRotation)) & 3],
+							triangleUV[(2 - (textureRotation + quadRotation)) & 3],
+							triangleUV[(0 - (textureRotation + quadRotation)) & 3]
+						);
+						
+						activeUvSubList.Add(rotatedTriangleUV[indexSwap[1]]);
+						activeUvSubList.Add(rotatedTriangleUV[1]);
+						activeUvSubList.Add(rotatedTriangleUV[indexSwap[0]]);
+					}
+
+					// Center triangle
+					activeVertexSubList.Add(subQuadVertices[3][indexSwap[1]]);
+					activeVertexSubList.Add(subQuadVertices[3][1]);
+					activeVertexSubList.Add(subQuadVertices[3][indexSwap[0]]);
+
+					activeColorSubList.Add(subQuadColors[3][indexSwap[1]]);
+					activeColorSubList.Add(subQuadColors[3][1]);
+					activeColorSubList.Add(subQuadColors[3][indexSwap[0]]);
+
+					quad = quadSet + 1 + subQuadIndexRotation[0];
+					partialUV = quad.GetVramPartialUV();
+					let quadRotation = quad.GetQuadRotation();
+
+					triangleUV[0] = .(partialUV.left, partialUV.rightY);
+					triangleUV[1] = .(partialUV.right, partialUV.rightY);
+					triangleUV[2] = .(partialUV.right, partialUV.leftY);
+					triangleUV[3] = .(partialUV.left, partialUV.leftY);
+
+					rotatedTriangleUV = .(
+						triangleUV[(0 - (textureRotation + quadRotation)) & 3],
+						triangleUV[(2 - (textureRotation + quadRotation)) & 3],
+						triangleUV[(1 - (textureRotation + quadRotation)) & 3]
+					);
+
+					activeUvSubList.Add(rotatedTriangleUV[indexSwap[1]]);
+					activeUvSubList.Add(rotatedTriangleUV[1]);
+					activeUvSubList.Add(rotatedTriangleUV[indexSwap[0]]);
 
 					activeNearFaceIndices.Add(i);
 					activeNearTextureIndices.Add(textureIndex);
 				} else {
-					int8[4] indexSwap = flipSide ? .(2,1,3,0) : .(1,2,0,3);
+					// Low quality textures
+					int8[4] indexSwap = flipSide ? .(1,0,3,2) : .(0,1,2,3);
 
 					activeNearMeshIndices.Add(trianglesIndices[indexSwap[0]]);
-					activeNearMeshIndices.Add(trianglesIndices[0]);
-					activeNearMeshIndices.Add(trianglesIndices[indexSwap[1]]);
-
 					activeNearMeshIndices.Add(trianglesIndices[2]);
+					activeNearMeshIndices.Add(trianglesIndices[indexSwap[1]]);
+					
 					activeNearMeshIndices.Add(trianglesIndices[indexSwap[2]]);
+					activeNearMeshIndices.Add(trianglesIndices[0]);
 					activeNearMeshIndices.Add(trianglesIndices[indexSwap[3]]);
 
 					activeVertexList.Add(nearVertices[trianglesIndices[indexSwap[0]]]);
-					activeVertexList.Add(nearVertices[trianglesIndices[0]]);
-					activeVertexList.Add(nearVertices[trianglesIndices[indexSwap[1]]]);
-
 					activeVertexList.Add(nearVertices[trianglesIndices[2]]);
+					activeVertexList.Add(nearVertices[trianglesIndices[indexSwap[1]]]);
+					
 					activeVertexList.Add(nearVertices[trianglesIndices[indexSwap[2]]]);
+					activeVertexList.Add(nearVertices[trianglesIndices[0]]);
 					activeVertexList.Add(nearVertices[trianglesIndices[indexSwap[3]]]);
 
 					activeColorList.Add(nearColors[colorIndices[indexSwap[0]]]);
-					activeColorList.Add(nearColors[colorIndices[0]]);
-					activeColorList.Add(nearColors[colorIndices[indexSwap[1]]]);
-
 					activeColorList.Add(nearColors[colorIndices[2]]);
+					activeColorList.Add(nearColors[colorIndices[indexSwap[1]]]);
+					
 					activeColorList.Add(nearColors[colorIndices[indexSwap[2]]]);
+					activeColorList.Add(nearColors[colorIndices[0]]);
 					activeColorList.Add(nearColors[colorIndices[indexSwap[3]]]);
 					
 					activeUvList.Add(triangleUV[indexSwap[0]]);
-					activeUvList.Add(triangleUV[0]);
-					activeUvList.Add(triangleUV[indexSwap[1]]);
-
 					activeUvList.Add(triangleUV[2]);
+					activeUvList.Add(triangleUV[indexSwap[1]]);
+					
 					activeUvList.Add(triangleUV[indexSwap[2]]);
+					activeUvList.Add(triangleUV[0]);
 					activeUvList.Add(triangleUV[indexSwap[3]]);
+					
+					// High quality textures
+					Vector[5] midpoints = ?;
+					midpoints[0] = (nearVertices[trianglesIndices[0]] + nearVertices[trianglesIndices[3]]) / 2;
+					midpoints[1] = (nearVertices[trianglesIndices[1]] + nearVertices[trianglesIndices[2]]) / 2;
+					midpoints[2] = (nearVertices[trianglesIndices[2]] + nearVertices[trianglesIndices[3]]) / 2;
+					midpoints[3] = (nearVertices[trianglesIndices[0]] + nearVertices[trianglesIndices[1]]) / 2;
+					midpoints[4] = (midpoints[0] + midpoints[1]) / 2;
+
+					Renderer.Color[5] midcolors = ?;
+					midcolors[0] = Renderer.Color.Lerp(nearColors[colorIndices[0]], nearColors[colorIndices[3]], 0.5f);
+					midcolors[1] = Renderer.Color.Lerp(nearColors[colorIndices[1]], nearColors[colorIndices[2]], 0.5f);
+					midcolors[2] = Renderer.Color.Lerp(nearColors[colorIndices[2]], nearColors[colorIndices[3]], 0.5f);
+					midcolors[3] = Renderer.Color.Lerp(nearColors[colorIndices[0]], nearColors[colorIndices[1]], 0.5f);
+					midcolors[4] = Renderer.Color.Lerp(midcolors[0], midcolors[1], 0.5f);
+
+					Vector[4][4] subQuadVertices = .(
+						.(midpoints[0], midpoints[4], midpoints[2], nearVertices[trianglesIndices[3]]),
+						.(midpoints[4], midpoints[1], nearVertices[trianglesIndices[2]], midpoints[2]),
+						.(nearVertices[trianglesIndices[0]], midpoints[3], midpoints[4], midpoints[0]),
+						.(midpoints[3], nearVertices[trianglesIndices[1]], midpoints[1], midpoints[4]),
+					);
+
+					Renderer.Color[4][4] subQuadColors = .(
+						.(midcolors[0], midcolors[4], midcolors[2], nearColors[colorIndices[3]]),
+						.(midcolors[4], midcolors[1], nearColors[colorIndices[2]], midcolors[2]),
+						.(nearColors[colorIndices[0]], midcolors[3], midcolors[4], midcolors[0]),
+						.(midcolors[3], nearColors[colorIndices[1]], midcolors[1], midcolors[4]),
+					);
+
+					for (let qi < 4) {
+						activeVertexSubList.Add(subQuadVertices[qi][indexSwap[0]]);
+						activeVertexSubList.Add(subQuadVertices[qi][2]);
+						activeVertexSubList.Add(subQuadVertices[qi][indexSwap[1]]);
+						
+						activeVertexSubList.Add(subQuadVertices[qi][indexSwap[2]]);
+						activeVertexSubList.Add(subQuadVertices[qi][0]);
+						activeVertexSubList.Add(subQuadVertices[qi][indexSwap[3]]);
+
+						activeColorSubList.Add(subQuadColors[qi][indexSwap[0]]);
+						activeColorSubList.Add(subQuadColors[qi][2]);
+						activeColorSubList.Add(subQuadColors[qi][indexSwap[1]]);
+
+						activeColorSubList.Add(subQuadColors[qi][indexSwap[2]]);
+						activeColorSubList.Add(subQuadColors[qi][0]);
+						activeColorSubList.Add(subQuadColors[qi][indexSwap[3]]);
+
+						quad++;
+						partialUV = quad.GetVramPartialUV();
+						let quadRotation = quad.GetQuadRotation();
+						let quadFlip = quad.GetFlip();
+
+						triangleUV[0] = .(partialUV.left, partialUV.rightY);
+						triangleUV[1] = .(partialUV.right, partialUV.rightY);
+						triangleUV[2] = .(partialUV.right, partialUV.leftY);
+						triangleUV[3] = .(partialUV.left, partialUV.leftY);
+
+						float[4][2] rotatedTriangleUV = .(
+							triangleUV[(0 - quadRotation) & 3],
+							triangleUV[(1 - quadRotation) & 3],
+							triangleUV[(2 - quadRotation) & 3],
+							triangleUV[(3 - quadRotation) & 3]
+						);
+
+						if (quadFlip) {
+							if (Emulator.installment == .SpyroTheDragon) {
+								Swap!(rotatedTriangleUV[0], rotatedTriangleUV[1]);
+								Swap!(rotatedTriangleUV[2], rotatedTriangleUV[3]);
+							} else {
+								Swap!(rotatedTriangleUV[0], rotatedTriangleUV[2]);
+							}
+						}
+						
+						activeUvSubList.Add(rotatedTriangleUV[indexSwap[0]]);
+						activeUvSubList.Add(rotatedTriangleUV[2]);
+						activeUvSubList.Add(rotatedTriangleUV[indexSwap[1]]);
+	
+						activeUvSubList.Add(rotatedTriangleUV[indexSwap[2]]);
+						activeUvSubList.Add(rotatedTriangleUV[0]);
+						activeUvSubList.Add(rotatedTriangleUV[indexSwap[3]]);
+					}
 
 					activeNearFaceIndices.Add(i);
 					activeNearFaceIndices.Add(i);
@@ -376,6 +570,20 @@ namespace SpyroScope {
 
 			nearMesh = new .(v, u, n, c);
 
+			v = new .[vertexSubList.Count];
+			n = new .[vertexSubList.Count];
+			c = new .[vertexSubList.Count];
+			u = new .[vertexSubList.Count];
+			
+			for (let i < vertexSubList.Count) {
+				v[i] = vertexSubList[i];
+				n[i] = .(0,0,1);
+				c[i] = colorSubList[i];
+				u[i] = uvSubList[i];
+			}
+			
+			nearMeshSubdivided = new .(v, u, n, c);
+
 			v = new .[vertexTransparentList.Count];
 			n = new .[vertexTransparentList.Count];
 			c = new .[vertexTransparentList.Count];
@@ -389,6 +597,20 @@ namespace SpyroScope {
 			}
 
 			nearMeshTransparent = new .(v, u, n, c);
+
+			v = new .[vertexTransparentSubList.Count];
+			n = new .[vertexTransparentSubList.Count];
+			c = new .[vertexTransparentSubList.Count];
+			u = new .[vertexTransparentSubList.Count];
+
+			for (let i < vertexTransparentSubList.Count) {
+				v[i] = vertexTransparentSubList[i];
+				n[i] = .(0,0,1);
+				c[i] = colorTransparentSubList[i];
+				u[i] = uvTransparentSubList[i];
+			}
+
+			nearMeshTransparentSubdivided = new .(v, u, n, c);
 		}
 	
 		// Derived from Spyro: Ripto's Rage
@@ -430,6 +652,18 @@ namespace SpyroScope {
 			Matrix scale = .Scale(16, 16, verticalScale);
 			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
 			nearMeshTransparent.Draw();
+		}
+
+		public void DrawNearSubdivided() {
+			Matrix scale = .Scale(16, 16, verticalScale);
+			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
+			nearMeshSubdivided.Draw();
+		}
+
+		public void DrawNearTransparentSubdivided() {
+			Matrix scale = .Scale(16, 16, verticalScale);
+			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
+			nearMeshTransparentSubdivided.Draw();
 		}
 	}
 }

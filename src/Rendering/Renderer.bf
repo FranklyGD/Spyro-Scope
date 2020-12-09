@@ -23,6 +23,10 @@ namespace SpyroScope {
 			public static implicit operator Color(Color4 color) {
 				return .(color.r, color.g, color.b);
 			}
+
+			public static Color Lerp(Color bg, Color fg, float alpha) {
+				return .((.)Math.Lerp(bg.r, fg.r, alpha), (.)Math.Lerp(bg.g, fg.g, alpha), (.)Math.Lerp(bg.b, fg.b, alpha));
+			}
 		}
 
 		public struct Color4 {

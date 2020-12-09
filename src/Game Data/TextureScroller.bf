@@ -44,7 +44,13 @@ namespace SpyroScope {
 		}
 
 		public void Reload() mut {
+			for (let pair in affectedTriangles) {
+				delete pair.value;
+			}
 			affectedTriangles.Clear();
+			for (let pair in affectedTransparentTriangles) {
+				delete pair.value;
+			}
 			affectedTransparentTriangles.Clear();
 
 			if (address.IsNull)
@@ -163,9 +169,9 @@ namespace SpyroScope {
 					TerrainRegion.NearFace regionFace = terrainRegion.nearFaces[nearFaceIndex];
 					let textureRotation = regionFace.renderInfo.rotation;
 
-					triangleUV[0] = .(partialUV.left, partialUV.leftY + TextureQuad.quadSize);
+					triangleUV[0] = .(partialUV.left, partialUV.rightY);
 					triangleUV[1] = .(partialUV.right, partialUV.rightY);
-					triangleUV[2] = .(partialUV.right, partialUV.rightY - TextureQuad.quadSize);
+					triangleUV[2] = .(partialUV.right, partialUV.leftY);
 					triangleUV[3] = .(partialUV.left, partialUV.leftY);
 
 					if (regionFace.isTriangle) {
@@ -181,14 +187,14 @@ namespace SpyroScope {
 						regionMesh.uvs[1 + vertexIndex] = rotatedTriangleUV[2];
 						regionMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[indexSwap[1]];
 					} else {
-						int8[4] indexSwap = regionFace.flipped ? .(2,1,3,0) : .(1,2,0,3);
+						int8[4] indexSwap = regionFace.flipped ? .(1,0,3,2) : .(0,1,2,3);
 
 						regionMesh.uvs[0 + vertexIndex] = triangleUV[indexSwap[0]];
-						regionMesh.uvs[1 + vertexIndex] = triangleUV[0];
+						regionMesh.uvs[1 + vertexIndex] = triangleUV[2];
 						regionMesh.uvs[2 + vertexIndex] = triangleUV[indexSwap[1]];
 
-						regionMesh.uvs[3 + vertexIndex] = triangleUV[2];
-						regionMesh.uvs[4 + vertexIndex] = triangleUV[indexSwap[2]];
+						regionMesh.uvs[3 + vertexIndex] = triangleUV[indexSwap[2]];
+						regionMesh.uvs[4 + vertexIndex] = triangleUV[0];
 						regionMesh.uvs[5 + vertexIndex] = triangleUV[indexSwap[3]];
 
 						i++;

@@ -48,11 +48,12 @@ namespace SpyroScope {
 		}
 
 		public uint8 GetQuadRotation() {
-			return (flipRotateRaw & 0b00110000) >> 4;
+			return Emulator.installment == .SpyroTheDragon ? 0 : (flipRotateRaw & 0b00110000) >> 4;
 		}
 
-		public bool GetDiagonalFlip() {
+		public bool GetFlip() {
 			return (flipRotateRaw & 0b01000000) > 0;
+			// Horizontal flip for "Spyro the Dragon", across the diagonal for the others
 		}
 
 		public bool GetTransparency() {

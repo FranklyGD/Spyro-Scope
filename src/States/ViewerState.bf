@@ -165,9 +165,9 @@ namespace SpyroScope {
 				ViewerSelection.currentTriangleIndex = -1;
 			});
 			viewButton3.OnActuated.Add(new () => {
-				viewButton3.enabled = cycleTerrainOverlayButton.enabled = false;
+				/*viewButton3.enabled =*/ cycleTerrainOverlayButton.enabled = false;
 				viewButton2.enabled = viewButton1.enabled = true;
-				terrain.renderMode = .Near;
+				terrain.renderMode = terrain.renderMode == .NearLQ ? .NearHQ : .NearLQ;
 				ViewerSelection.currentTriangleIndex = -1;
 			});
 
@@ -555,7 +555,7 @@ namespace SpyroScope {
 							}
 						}
 					}
-				} else if (terrain.renderMode == .Near && ViewerSelection.currentRegionIndex > -1 && ViewerSelection.currentTriangleIndex > -1) {
+				} else if (terrain.renderMode == .NearLQ && ViewerSelection.currentRegionIndex > -1 && ViewerSelection.currentTriangleIndex > -1) {
 					let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
 					let metadata = visualMesh.metadata;
 					
@@ -631,7 +631,7 @@ namespace SpyroScope {
 				}
 			}
 
-			if (terrain.renderMode == .Near && !terrain.decoded) {
+			if (terrain.renderMode == .NearLQ && !terrain.decoded) {
 				let message = "Waiting for Unpause...";
 				var halfWidth = Math.Round(WindowApp.font.CalculateWidth(message) / 2);
 				let middleWindow = WindowApp.width / 2;
@@ -879,6 +879,9 @@ namespace SpyroScope {
 							}
 							case .V : {
 								windowApp.GoToState<VRAMViewerState>();
+							}
+							case .R : {
+								Reload();
 							}
 							default : {}
 						}
@@ -1338,6 +1341,11 @@ namespace SpyroScope {
 			Emulator.spyroPosition = Camera.position.ToVectorInt();
 			Emulator.spyroPositionAddresses[(int)Emulator.rom].Write(&Emulator.spyroPosition);
 			PushMessageToFeed("Teleported Spyro to Game Camera");
+		}
+
+		void Reload() {
+			terrain.Reload();
+			terrain.ReloadAnimations();
 		}
 	}
 }
