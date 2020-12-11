@@ -9,7 +9,7 @@ namespace SpyroScope {
 		public Vector center;
 		public float radius;
 
-		public Mesh sourceNearMesh;
+		public TerrainRegion region;
 		public Mesh[] nearMeshStates;
 		public List<int> nearAnimatedTriangles;
 
@@ -36,11 +36,13 @@ namespace SpyroScope {
 			delete nearAnimatedTriangles;
 		}
 
-		public void Reload(TerrainRegion[] terrainMeshes) mut {
+		public void Reload(TerrainRegion[] terrainRegions) mut {
 			if (address.IsNull)
 				return;
 
 			Emulator.ReadFromRAM(address + 4, &regionIndex, 2);
+			region = terrainRegions[regionIndex];
+
 			Emulator.ReadFromRAM(address + 6, &count, 2);
 
 			uint32 vertexDataOffset = ?;
@@ -63,23 +65,44 @@ namespace SpyroScope {
 			let stateCount = highestUsedState + 1;
 			let vertexCount = count / 4;
 
-			sourceNearMesh = terrainMeshes[regionIndex].nearMesh;
-
 			// Find triangles using these vertices
-			let mesh2GameIndices = terrainMeshes[regionIndex].nearMesh2GameIndices;
+			let mesh2GameIndices = region.nearMesh2GameIndices;
 			List<uint32> gameVertexIndices = scope .();
 			nearAnimatedTriangles = new .();
 			for (var i = 0; i < mesh2GameIndices.Count; i += 3) {
-				if (mesh2GameIndices[i] < vertexCount ||
-					mesh2GameIndices[i + 1] < vertexCount ||
-					mesh2GameIndices[i + 2] < vertexCount) {
-						
-					// Include affected triangles and its vertices
-					gameVertexIndices.Add(mesh2GameIndices[i]);
-					gameVertexIndices.Add(mesh2GameIndices[i + 1]);
-					gameVertexIndices.Add(mesh2GameIndices[i + 2]);
+				if (region.nearFaces[region.nearFaceIndices[i / 3]].isTriangle) {
+					if (mesh2GameIndices[i] < vertexCount ||
+						mesh2GameIndices[i + 1] < vertexCount ||
+						mesh2GameIndices[i + 2] < vertexCount) {
+							
+						// Include affected triangles and its vertices
+						gameVertexIndices.Add(mesh2GameIndices[i]);
+						gameVertexIndices.Add(mesh2GameIndices[i + 1]);
+						gameVertexIndices.Add(mesh2GameIndices[i + 2]);
+	
+						nearAnimatedTriangles.Add(i);
+					}
+				} else {
+					if (mesh2GameIndices[i] < vertexCount ||
+						mesh2GameIndices[i + 1] < vertexCount ||
+						mesh2GameIndices[i + 2] < vertexCount ||
+						mesh2GameIndices[i + 3] < vertexCount ||
+						mesh2GameIndices[i + 4] < vertexCount ||
+						mesh2GameIndices[i + 5] < vertexCount) {
 
-					nearAnimatedTriangles.Add(i);
+						gameVertexIndices.Add(mesh2GameIndices[i]);
+						gameVertexIndices.Add(mesh2GameIndices[i + 1]);
+						gameVertexIndices.Add(mesh2GameIndices[i + 2]);
+
+						gameVertexIndices.Add(mesh2GameIndices[i + 3]);
+						gameVertexIndices.Add(mesh2GameIndices[i + 4]);
+						gameVertexIndices.Add(mesh2GameIndices[i + 5]);
+
+						nearAnimatedTriangles.Add(i);
+						nearAnimatedTriangles.Add(i + 3);
+					}
+					
+					i += 3;
 				}
 			}
 
@@ -118,7 +141,7 @@ namespace SpyroScope {
 					} else {
 						// Include the vertices of the affected triangles
 						// even though they are not modified
-						v[i] = sourceNearMesh.vertices[nearAnimatedTriangles[i / 3] + (i % 3)];
+						v[i] = region.nearMesh.vertices[nearAnimatedTriangles[i / 3] + (i % 3)];
 					}
 					c[i] = .(255,255,255);
 					n[i] = .(0,0,1);
@@ -144,10 +167,86 @@ namespace SpyroScope {
 				Vector fromVertex = nearMeshStates[keyframeData.fromState].vertices[i];
 				Vector toVertex = nearMeshStates[keyframeData.toState].vertices[i];
 				
-				sourceNearMesh.vertices[nearAnimatedTriangles[i / 3] + (i % 3)] = fromVertex + (toVertex - fromVertex) * interpolation;
+				region.nearMesh.vertices[nearAnimatedTriangles[i / 3] + (i % 3)] = fromVertex + (toVertex - fromVertex) * interpolation;
 			}
 
-			sourceNearMesh.SetDirty();
+			for (var i < nearAnimatedTriangles.Count) {
+				let triangleIndex = nearAnimatedTriangles[i];
+				
+				Vector* vertices = &region.nearMesh.vertices[triangleIndex];
+
+				var regionFace = region.nearFaces[region.nearFaceIndices[triangleIndex / 3]];
+				if (regionFace.isTriangle) {
+					Vector[5] midpoints = ?;
+					midpoints[0] = (vertices[0] + vertices[1]) / 2; // Top
+					midpoints[1] = (vertices[1] + vertices[2]) / 2; // Diagonal
+					midpoints[2] = (vertices[2] + vertices[0]) / 2; // Left
+
+					Vector[4][3] subQuadVertices = .(
+						(midpoints[2], midpoints[0], vertices[0]),
+						(midpoints[1], vertices[1], midpoints[0]),
+						(vertices[2], midpoints[1], midpoints[2]),
+						(midpoints[2], midpoints[1], midpoints[0])
+					);
+
+					if (regionFace.flipped) {
+						Swap!(subQuadVertices[1], subQuadVertices[2]);
+					}
+
+					// Corner triangles
+					vertices = &region.nearMeshSubdivided.vertices[triangleIndex * 4];
+					for (let ti < 3) {
+						let offset = ti * 3;
+
+						vertices[0 + offset] = subQuadVertices[ti][2];
+						vertices[1 + offset] = subQuadVertices[ti][1];
+						vertices[2 + offset] = subQuadVertices[ti][0];
+					}
+					
+					// Center triangle
+					vertices[9] = subQuadVertices[3][2];
+					vertices[10] = subQuadVertices[3][1];
+					vertices[11] = subQuadVertices[3][0];
+				} else {
+
+					// High quality textures
+					Vector[5] midpoints = ?;
+					midpoints[0] = (vertices[3] + vertices[4]) / 2; // Top
+					midpoints[1] = (vertices[0] + vertices[1]) / 2; // Bottom
+					midpoints[2] = (vertices[3] + vertices[5]) / 2; // Left
+					midpoints[3] = (vertices[0] + vertices[2]) / 2; // Right
+					midpoints[4] = (midpoints[0] + midpoints[1]) / 2;
+
+					Vector[4][4] subQuadVertices = .(
+						.(midpoints[2], midpoints[4], midpoints[0], vertices[3]),
+						.(midpoints[4], midpoints[3], vertices[2], midpoints[0]),
+						.(vertices[5], midpoints[1], midpoints[4], midpoints[2]),
+						.(midpoints[1], vertices[0], midpoints[3], midpoints[4]),
+					);
+
+					if (regionFace.flipped) {
+						Swap!(subQuadVertices[1], subQuadVertices[2]);
+					}
+
+					vertices = &region.nearMeshSubdivided.vertices[triangleIndex * 4];
+					for (let qi < 4) {
+						let offset = qi * 6;
+
+						vertices[0 + offset] = subQuadVertices[qi][3];
+						vertices[1 + offset] = subQuadVertices[qi][2];
+						vertices[2 + offset] = subQuadVertices[qi][0];
+
+						vertices[3 + offset] = subQuadVertices[qi][0];
+						vertices[4 + offset] = subQuadVertices[qi][2];
+						vertices[5 + offset] = subQuadVertices[qi][1];
+					}
+
+					i++;
+				}
+			}
+
+			region.nearMesh.SetDirty();
+			region.nearMeshSubdivided.SetDirty();
 		}
 
 		public KeyframeData GetKeyframeData(uint8 keyframeIndex) {

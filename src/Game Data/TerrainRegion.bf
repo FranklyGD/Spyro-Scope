@@ -323,51 +323,56 @@ namespace SpyroScope {
 						triangleUV[(3 - textureRotation) & 3]
 					);
 
-					int8[2] indexSwap = flipSide ? .(1,3) : .(3,1);
-
-					indices[0] = trianglesIndices[indexSwap[0]];
-					indices[1] = trianglesIndices[2];
+					int8[2] indexSwap = flipSide ? .(1,2) : .(2,1);
+					
+					indices[0] = trianglesIndices[3];
+					indices[1] = trianglesIndices[indexSwap[0]];
 					indices[2] = trianglesIndices[indexSwap[1]];
 
-					vertices[0] = nearVertices[trianglesIndices[indexSwap[0]]];
-					vertices[1] = nearVertices[trianglesIndices[2]];
-					vertices[2] = nearVertices[trianglesIndices[indexSwap[1]]];
-
-					colors[0] = nearColors[colorIndices[indexSwap[0]]];
-					colors[1] = nearColors[colorIndices[2]];
+					vertices[0] = nearVertices[indices[0]];
+					vertices[1] = nearVertices[indices[1]];
+					vertices[2] = nearVertices[indices[2]];
+					
+					colors[0] = nearColors[colorIndices[3]];
+					colors[1] = nearColors[colorIndices[indexSwap[0]]];
 					colors[2] = nearColors[colorIndices[indexSwap[1]]];
 
 					indexSwap[0]--;
 					indexSwap[1]--;
-
-					uvs[0] = rotatedTriangleUV[indexSwap[0]];
-					uvs[1] = rotatedTriangleUV[1];
+					
+					uvs[0] = rotatedTriangleUV[2];
+					uvs[1] = rotatedTriangleUV[indexSwap[0]];
 					uvs[2] = rotatedTriangleUV[indexSwap[1]];
 
 					// High quality textures
 					Vector[5] midpoints = ?;
-					midpoints[0] = (nearVertices[trianglesIndices[1]] + nearVertices[trianglesIndices[2]]) / 2;
-					midpoints[1] = (nearVertices[trianglesIndices[2]] + nearVertices[trianglesIndices[3]]) / 2;
-					midpoints[2] = (nearVertices[trianglesIndices[3]] + nearVertices[trianglesIndices[1]]) / 2;
+					midpoints[0] = (vertices[0] + vertices[1]) / 2; // Top
+					midpoints[1] = (vertices[1] + vertices[2]) / 2; // Diagonal
+					midpoints[2] = (vertices[2] + vertices[0]) / 2; // Left
 
 					Renderer.Color[5] midcolors = ?;
-					midcolors[0] = Renderer.Color.Lerp(nearColors[colorIndices[1]], nearColors[colorIndices[2]], 0.5f);
-					midcolors[1] = Renderer.Color.Lerp(nearColors[colorIndices[2]], nearColors[colorIndices[3]], 0.5f);
-					midcolors[2] = Renderer.Color.Lerp(nearColors[colorIndices[3]], nearColors[colorIndices[1]], 0.5f);
+					midcolors[0] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f);
+					midcolors[1] = Renderer.Color.Lerp(colors[1], colors[2], 0.5f);
+					midcolors[2] = Renderer.Color.Lerp(colors[2], colors[0], 0.5f);
 
 					Vector[4][3] subQuadVertices = .(
-						(nearVertices[trianglesIndices[3]], midpoints[1], midpoints[2]),
-						(midpoints[1], nearVertices[trianglesIndices[2]], midpoints[0]),
-						(midpoints[2], midpoints[0], nearVertices[trianglesIndices[1]]),
+						(midpoints[2], midpoints[0], vertices[0]),
+						(midpoints[1], vertices[1], midpoints[0]),
+						(vertices[2], midpoints[1], midpoints[2]),
 						(midpoints[2], midpoints[1], midpoints[0])
 					);
 
 					Renderer.Color[4][3] subQuadColors = .(
-						(nearColors[colorIndices[3]], midcolors[1], midcolors[2]),
-						(midcolors[1], nearColors[colorIndices[2]], midcolors[0]),
-						(midcolors[2], midcolors[0], nearColors[colorIndices[1]]),
+						(midcolors[2], midcolors[0], colors[0]),
+						(midcolors[1], colors[1], midcolors[0]),
+						(colors[2], midcolors[1], midcolors[2]),
 						(midcolors[2], midcolors[1], midcolors[0])
 					);
+
+					if (flipSide) {
+						Swap!(subQuadVertices[1], subQuadVertices[2]);
+						Swap!(subQuadColors[1], subQuadColors[2]);
+					}
 
 					const uint8[4][3] rotationOrder = .(
 						(0,1,2),
@@ -378,18 +383,25 @@ namespace SpyroScope {
 					let subQuadIndexRotation = rotationOrder[textureRotation];
 
 					// Corner triangles
-					for (let ti < 3) {
-						activeVertexSubList.Add(subQuadVertices[ti][indexSwap[1]]);
-						activeVertexSubList.Add(subQuadVertices[ti][1]);
-						activeVertexSubList.Add(subQuadVertices[ti][indexSwap[0]]);
+					vertices = activeVertexSubList.GrowUnitialized(12);
+					colors = activeColorSubList.GrowUnitialized(12);
+					uvs = activeUvSubList.GrowUnitialized(12);
 
-						activeColorSubList.Add(subQuadColors[ti][indexSwap[1]]);
-						activeColorSubList.Add(subQuadColors[ti][1]);
-						activeColorSubList.Add(subQuadColors[ti][indexSwap[0]]);
+					for (let ti < 3) {
+						let offset = ti * 3;
+
+						vertices[0 + offset] = subQuadVertices[ti][2];
+						vertices[1 + offset] = subQuadVertices[ti][1];
+						vertices[2 + offset] = subQuadVertices[ti][0];
+
+						colors[0 + offset] = subQuadColors[ti][2];
+						colors[1 + offset] = subQuadColors[ti][1];
+						colors[2 + offset] = subQuadColors[ti][0];
 
 						quad = quadSet + 1 + subQuadIndexRotation[ti];
 						partialUV = quad.GetVramPartialUV();
 						let quadRotation = quad.GetQuadRotation();
+						let quadFlip = quad.GetFlip();
 
 						triangleUV[0] = .(partialUV.left, partialUV.rightY);
 						triangleUV[1] = .(partialUV.right, partialUV.rightY);
@@ -397,29 +409,34 @@ namespace SpyroScope {
 						triangleUV[3] = .(partialUV.left, partialUV.leftY);
 
 						rotatedTriangleUV = .(
-							triangleUV[(3 - (textureRotation + quadRotation)) & 3],
+							triangleUV[(0 - (textureRotation + quadRotation)) & 3],
 							triangleUV[(2 - (textureRotation + quadRotation)) & 3],
-							triangleUV[(0 - (textureRotation + quadRotation)) & 3]
+							triangleUV[(3 - (textureRotation + quadRotation)) & 3]
 						);
 						
-						activeUvSubList.Add(rotatedTriangleUV[indexSwap[1]]);
-						activeUvSubList.Add(rotatedTriangleUV[1]);
-						activeUvSubList.Add(rotatedTriangleUV[indexSwap[0]]);
+						if (flipSide ^ quadFlip) {
+							Swap!(rotatedTriangleUV[0], rotatedTriangleUV[1]);
+						}
+						
+						uvs[0 + offset] = rotatedTriangleUV[2];
+						uvs[1 + offset] = rotatedTriangleUV[1];
+						uvs[2 + offset] = rotatedTriangleUV[0];
 					}
 
 					// Center triangle
-					activeVertexSubList.Add(subQuadVertices[3][indexSwap[1]]);
-					activeVertexSubList.Add(subQuadVertices[3][1]);
-					activeVertexSubList.Add(subQuadVertices[3][indexSwap[0]]);
+					vertices[9] = subQuadVertices[3][2];
+					vertices[10] = subQuadVertices[3][1];
+					vertices[11] = subQuadVertices[3][0];
 
-					activeColorSubList.Add(subQuadColors[3][indexSwap[1]]);
-					activeColorSubList.Add(subQuadColors[3][1]);
-					activeColorSubList.Add(subQuadColors[3][indexSwap[0]]);
+					colors[9] = subQuadColors[3][2];
+					colors[10] = subQuadColors[3][1];
+					colors[11] = subQuadColors[3][0];
 
 					quad = quadSet + 1 + subQuadIndexRotation[0];
 					partialUV = quad.GetVramPartialUV();
 					let quadRotation = quad.GetQuadRotation();
-
+					let quadFlip = quad.GetFlip();
+					
 					triangleUV[0] = .(partialUV.left, partialUV.rightY);
 					triangleUV[1] = .(partialUV.right, partialUV.rightY);
 					triangleUV[2] = .(partialUV.right, partialUV.leftY);
@@ -427,13 +444,17 @@ namespace SpyroScope {
 
 					rotatedTriangleUV = .(
 						triangleUV[(0 - (textureRotation + quadRotation)) & 3],
+						triangleUV[(1 - (textureRotation + quadRotation)) & 3],
 						triangleUV[(2 - (textureRotation + quadRotation)) & 3],
-						triangleUV[(1 - (textureRotation + quadRotation)) & 3]
 					);
 
-					activeUvSubList.Add(rotatedTriangleUV[indexSwap[1]]);
-					activeUvSubList.Add(rotatedTriangleUV[1]);
-					activeUvSubList.Add(rotatedTriangleUV[indexSwap[0]]);
+					if (flipSide ^ quadFlip) {
+						Swap!(rotatedTriangleUV[0], rotatedTriangleUV[2]);
+					}
+
+					uvs[9] = rotatedTriangleUV[2];
+					uvs[10] = rotatedTriangleUV[1];
+					uvs[11] = rotatedTriangleUV[0];
 
 					activeNearFaceIndices.Add(i);
 					activeNearTextureIndices.Add(textureIndex);
@@ -468,8 +489,6 @@ namespace SpyroScope {
 					}
 
 					// High quality textures
-					indexSwap = flipSide ? .(2,0) : .(0,2);
-
 					Vector[5] midpoints = ?;
 					midpoints[0] = (vertices[3] + vertices[4]) / 2; // Top
 					midpoints[1] = (vertices[0] + vertices[1]) / 2; // Bottom
@@ -528,10 +547,6 @@ namespace SpyroScope {
 						triangleUV[2] = .(partialUV.right, partialUV.leftY);
 						triangleUV[3] = .(partialUV.left, partialUV.leftY);
 
-						if (flipSide) {
-							Swap!(triangleUV[0], triangleUV[2]);
-						}
-
 						colors[0 + offset] = subQuadColors[qi][3];
 						colors[1 + offset] = subQuadColors[qi][2];
 						colors[2 + offset] = subQuadColors[qi][0];
@@ -547,13 +562,8 @@ namespace SpyroScope {
 							triangleUV[(3 - quadRotation) & 3]
 						);
 
-						if (quadFlip) {
-							if (Emulator.installment == .SpyroTheDragon) {
-								Swap!(rotatedTriangleUV[0], rotatedTriangleUV[1]);
-								Swap!(rotatedTriangleUV[2], rotatedTriangleUV[3]);
-							} else {
-								Swap!(rotatedTriangleUV[0], rotatedTriangleUV[2]);
-							}
+						if (flipSide ^ quadFlip) {
+							Swap!(rotatedTriangleUV[0], rotatedTriangleUV[2]);
 						}
 						
 						uvs[0 + offset] = rotatedTriangleUV[3];
