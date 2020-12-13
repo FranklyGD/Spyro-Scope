@@ -1,7 +1,11 @@
+using SDL2;
 using System.Collections;
 
 namespace SpyroScope {
 	class GUIElement {
+		public static SDL.SDL_Cursor* arrow;
+		public static SDL.SDL_Cursor* Ibeam;
+
 		public static bool debug;
 		public struct Rect {
 			public float left;
@@ -36,6 +40,12 @@ namespace SpyroScope {
 
 		public static GUIElement hoveredElement;
 		public static GUIElement pressedElement;
+		public static GUIElement selectedElement;
+
+		public static void Init() {
+			arrow = SDL.CreateSystemCursor(.SDL_SYSTEM_CURSOR_ARROW);
+			Ibeam = SDL.CreateSystemCursor(.SDL_SYSTEM_CURSOR_IBEAM);
+		}
 
 		public static void SetActiveGUI(List<GUIElement> GUI) {
 			activeGUI = GUI;
@@ -47,6 +57,58 @@ namespace SpyroScope {
 
 		public static void PopParent() {
 			parentStack.PopBack();
+		}
+
+		public static void GUIUpdate() {
+			for (let element in activeGUI) {
+				element.Update();
+			}
+		}
+
+		public static bool GUIEvent(SDL.Event event) {
+			let input = selectedElement as Input;
+			if (input != null && input.Input(event)) {
+				return true;
+			}
+
+			switch (event.type) {
+				case .MouseMotion: return GUIMouseUpdate(WindowApp.mousePosition);
+				case .MouseButtonUp: return GUIMouseRelease(event.button.button);
+				case .MouseButtonDown: return GUIMousePress(event.button.button);
+				default: return false;
+			}
+		}
+
+		static bool GUIMousePress(uint8 button) {
+			selectedElement = hoveredElement;
+			if (hoveredElement != null) {
+				pressedElement = .hoveredElement;
+				pressedElement.Pressed();
+				return true;
+			}
+			return false;
+		}
+
+		static bool GUIMouseRelease(uint8 button) {
+			if (pressedElement != null) { // Focus was on GUI
+				pressedElement.Unpressed();
+				pressedElement = null;
+				return true;
+			}
+			return false;
+		}
+
+		static bool GUIMouseUpdate((float x, float y) mousePosition) {
+			let lastHoveredElement = hoveredElement;
+			hoveredElement = null;
+			for (let element in activeGUI) {
+				element.MouseUpdate(WindowApp.mousePosition);
+			}
+			if (lastHoveredElement != hoveredElement) {
+				lastHoveredElement?.MouseExit();
+				hoveredElement?.MouseEnter();
+			}
+			return hoveredElement != null;
 		}
 
 		public this() {
@@ -92,11 +154,11 @@ namespace SpyroScope {
 			);
 		}
 
-		public virtual void Update() {}
-		public virtual void Pressed() {}
-		public virtual void Unpressed() {}
-		public virtual void MouseEnter() {}
-		public virtual void MouseExit() {}
+		protected virtual void Update() {}
+		protected virtual void Pressed() {}
+		protected virtual void Unpressed() {}
+		protected virtual void MouseEnter() {}
+		protected virtual void MouseExit() {}
 
 		public void MouseUpdate((float x, float y) mousePosition) {
 			if (visible &&

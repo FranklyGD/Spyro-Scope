@@ -61,6 +61,8 @@ namespace SpyroScope {
 			state.Enter();
 
 			windowApp = this;
+
+			GUIElement.Init();
 		}
 
 		public ~this() {
@@ -79,7 +81,8 @@ namespace SpyroScope {
 
 		public void Run() {
 			Renderer.Clear();
-
+			
+			GUIElement.GUIUpdate();
 			state.Update();
 
 			if (lastState != state) {
@@ -145,7 +148,7 @@ namespace SpyroScope {
 				mousePosition = (event.motion.x, event.motion.y);
 			}
 
-			if (state.OnEvent(event)) {
+			if (GUIElement.GUIEvent(event) || state.OnEvent(event)) {
 				return;
 			}
 

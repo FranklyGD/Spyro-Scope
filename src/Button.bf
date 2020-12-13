@@ -47,12 +47,12 @@ namespace SpyroScope {
 			}
 		}
 
-		public override void Pressed() {
+		protected override void Pressed() {
 			color = pressedColor;
 			texture = pressedTexture;
 		}
 
-		public override void Unpressed() {
+		protected override void Unpressed() {
 			texture = normalTexture;
 			if (hoveredElement == this) {
 				color = hoveredColor;
@@ -60,12 +60,12 @@ namespace SpyroScope {
 				color = normalColor;
 			}
 
-			if (pressedElement == this && enabled) {
+			if (hoveredElement == this && enabled) {
 				OnActuated();
 			}
 		}
 
-		public override void MouseEnter() {
+		protected override void MouseEnter() {
 			if (pressedElement == this) {
 				color = pressedColor;
 				texture = pressedTexture;
@@ -75,7 +75,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public override void MouseExit() {
+		protected override void MouseExit() {
 			if (pressedElement == this) {
 				color = hoveredColor;
 				texture = normalTexture;

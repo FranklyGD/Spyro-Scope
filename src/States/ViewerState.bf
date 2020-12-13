@@ -40,9 +40,11 @@ namespace SpyroScope {
 		List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
 		Button togglePauseButton, stepButton, cycleTerrainOverlayButton, teleportButton;
-
+		
 		Texture normalButtonTexture = new .("images/ui/button_normal.png") ~ delete _; 
 		Texture pressedButtonTexture = new .("images/ui/button_pressed.png") ~ delete _;
+		Texture normalInputTexture = new .("images/ui/input_normal.png") ~ delete _; 
+		Texture activeInputTexture = new .("images/ui/input_active.png") ~ delete _;
 
 		Texture playTexture = new .("images/ui/play.png") ~ delete _; 
 		Texture pauseTexture = new .("images/ui/pause.png") ~ delete _; 
@@ -79,6 +81,13 @@ namespace SpyroScope {
 		public this() {
 			ViewerSelection.Init();
 			GUIElement.SetActiveGUI(guiElements);
+
+			Input testInput = new .();
+			testInput.anchor = .(0.5f, 0.5f, 0, 0);
+			testInput.offset = .(-64,64,0,24);
+			testInput.offset.Shift(0, 64);
+			testInput.normalTexture = normalInputTexture;
+			testInput.activeTexture = activeInputTexture;
 
 			togglePauseButton = new .();
 
@@ -182,7 +191,7 @@ namespace SpyroScope {
 				toggleList[i].button = button;
 			}
 
-			toggleList[1].button.Pressed();
+			toggleList[1].button.Toggle();
 
 			toggleList[0].button.OnActuated.Add(new () => {ToggleWireframe(toggleList[0].button.value);});
 			toggleList[1].button.OnActuated.Add(new () => {ToggleOrigins(toggleList[1].button.value);});
@@ -305,10 +314,6 @@ namespace SpyroScope {
 
 			sideInspectorInterp = Math.MoveTo(sideInspectorInterp, sideInspectorVisible ? 1 : 0, 0.1f);
 			sideInspector.offset = .(-300 * sideInspectorInterp,0,0,0);
-			
-			for (let element in guiElements) {
-				element.Update();
-			}
 
 			if (Emulator.loadingStatus == .Loading || Emulator.gameState > 0) {
 				return;
@@ -688,54 +693,49 @@ namespace SpyroScope {
 			}
 		}
 
-		public override bool OnEvent(SDL2.SDL.Event event) {
+		public override bool OnEvent(SDL.Event event) {
 			switch (event.type) {
 				case .MouseButtonDown : {
-					if (GUIElement.hoveredElement != null) {
-						GUIElement.pressedElement = .hoveredElement;
-						GUIElement.pressedElement.Pressed();
-					} else {
-						if (event.button.button == 3) {
-							SDL.SetRelativeMouseMode(viewMode != .Map);
-							cameraHijacked = true;
-							if (viewMode == .Game && !Emulator.CameraMode) {
-								toggleList[4].button.Pressed();
-							}
+					if (event.button.button == 3) {
+						SDL.SetRelativeMouseMode(viewMode != .Map);
+						cameraHijacked = true;
+						if (viewMode == .Game && !Emulator.CameraMode) {
+							toggleList[4].button.Toggle();
 						}
-						if (event.button.button == 1) {
-							if (showManipulator) {
-								Translator.MousePress(WindowApp.mousePosition);
-								if (Translator.hovered) {
-									Translator.OnDragBegin.Dispose();
-									Translator.OnDragged.Dispose();
-									Translator.OnDragEnd.Dispose();
-	
-									if (ViewerSelection.currentObjIndex > -1) {
-										Translator.OnDragged.Add(new (position) => {
-											var (address, moby) = objectList[ViewerSelection.currentObjIndex];
-											moby.position = position.ToVectorInt();
-											address.Write(&moby);
-										});
-									} else if (terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
-										Translator.OnDragged.Add(new (position) => {
-											var triangle = terrain.collision.triangles[ViewerSelection.currentTriangleIndex].Unpack(false);
-											triangle[0] = position.ToVectorInt();
-											terrain.collision.SetNearVertex((.)ViewerSelection.currentTriangleIndex, triangle, true);
-										});
-									} else {
-										Translator.OnDragBegin.Add(new => Emulator.KillSpyroUpdate);
-										Translator.OnDragged.Add(new (position) => {
-											Emulator.spyroPosition = position.ToVectorInt();
-											Emulator.spyroPositionAddresses[(int)Emulator.rom].Write(&Emulator.spyroPosition);
-										});
-										Translator.OnDragEnd.Add(new => Emulator.RestoreSpyroUpdate);
-									}
+					}
+					if (event.button.button == 1) {
+						if (showManipulator) {
+							Translator.MousePress(WindowApp.mousePosition);
+							if (Translator.hovered) {
+								Translator.OnDragBegin.Dispose();
+								Translator.OnDragged.Dispose();
+								Translator.OnDragEnd.Dispose();
+
+								if (ViewerSelection.currentObjIndex > -1) {
+									Translator.OnDragged.Add(new (position) => {
+										var (address, moby) = objectList[ViewerSelection.currentObjIndex];
+										moby.position = position.ToVectorInt();
+										address.Write(&moby);
+									});
+								} else if (terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
+									Translator.OnDragged.Add(new (position) => {
+										var triangle = terrain.collision.triangles[ViewerSelection.currentTriangleIndex].Unpack(false);
+										triangle[0] = position.ToVectorInt();
+										terrain.collision.SetNearVertex((.)ViewerSelection.currentTriangleIndex, triangle, true);
+									});
+								} else {
+									Translator.OnDragBegin.Add(new => Emulator.KillSpyroUpdate);
+									Translator.OnDragged.Add(new (position) => {
+										Emulator.spyroPosition = position.ToVectorInt();
+										Emulator.spyroPositionAddresses[(int)Emulator.rom].Write(&Emulator.spyroPosition);
+									});
+									Translator.OnDragEnd.Add(new => Emulator.RestoreSpyroUpdate);
 								}
 							}
+						}
 
-							if (!(showManipulator && Translator.hovered)) {
-								Selection.Select();
-							}
+						if (!(showManipulator && Translator.hovered)) {
+							Selection.Select();
 						}
 					}
 				}
@@ -777,16 +777,6 @@ namespace SpyroScope {
 							cornerMenuVisible = sideInspectorVisible = false;
 						}
 
-						let lastHoveredElement = GUIElement.hoveredElement;
-						GUIElement.hoveredElement = null;
-						for (let element in guiElements) {
-							element.MouseUpdate(WindowApp.mousePosition);
-						}
-						if (lastHoveredElement != GUIElement.hoveredElement) {
-							lastHoveredElement?.MouseExit();
-							GUIElement.hoveredElement?.MouseEnter();
-						}
-
 						if (showManipulator && Translator.MouseMove(WindowApp.mousePosition)) {
 							Selection.Clear();
 						} else if (Emulator.loadingStatus != .Loading && Emulator.gameState == 0) {
@@ -795,15 +785,10 @@ namespace SpyroScope {
 					}
 				}
 				case .MouseButtonUp : {
-					if (GUIElement.pressedElement != null) { // Focus was on GUI
-						GUIElement.pressedElement.Unpressed();
-						GUIElement.pressedElement = null;
-					} else {
-						if (event.button.button == 3) {	
-							SDL.SetRelativeMouseMode(false);
-							cameraHijacked = false;
-							cameraMotion = .(0,0,0);
-						}
+					if (event.button.button == 3) {	
+						SDL.SetRelativeMouseMode(false);
+						cameraHijacked = false;
+						cameraMotion = .(0,0,0);
 					}
 
 					Translator.MouseRelease();
@@ -831,10 +816,10 @@ namespace SpyroScope {
 								cameraMotion *= 8;
 							}
 							case .M : {
-								toggleList[0].button.Pressed();
+								toggleList[0].button.Toggle();
 							}
 							case .O : {
-								toggleList[1].button.Pressed();
+								toggleList[1].button.Toggle();
 							}
 							case .L : {
 								CycleTerrainOverlay();
@@ -849,13 +834,13 @@ namespace SpyroScope {
 								}
 							}
 							case .C : {
-								toggleList[4].button.Pressed();
+								toggleList[4].button.Toggle();
 							}
 							case .H : {
-								toggleList[3].button.Pressed();
+								toggleList[3].button.Toggle();
 							}
 							case .I : {
-								toggleList[2].button.Pressed();
+								toggleList[2].button.Toggle();
 
 								/*// Does not currently work as intended
 								if (Emulator.InputMode) {
@@ -868,7 +853,7 @@ namespace SpyroScope {
 							}
 							case .E : {
 								if (!Translator.dragged) {
-									toggleList[7].button.Pressed();
+									toggleList[7].button.OnActuated();
 								}
 							}
 							case .KpPlus : {
