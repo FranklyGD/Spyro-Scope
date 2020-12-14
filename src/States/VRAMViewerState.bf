@@ -168,8 +168,8 @@ namespace SpyroScope {
 				let clutReference = cluts[CLUTIndex];
 				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
 
-				(float cleft, float ctop) = PixelToScreen(clutPosition.x, clutPosition.x >> 10 + clutPosition.y);
-				(float cright, float cbottom) = PixelToScreen(clutPosition.x + clutReference.width, clutPosition.x >> 10 + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1));
+				(float cleft, float ctop) = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
+				(float cright, float cbottom) = PixelToScreen(clutPosition.x + clutReference.width, (clutPosition.x >> 10) + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1));
 
 				Renderer.DrawLine(.(cleft, ctop, 0), .(cright, ctop, 0), .(64,64,64), .(64,64,64));
 				Renderer.DrawLine(.(cleft, cbottom, 0), .(cright, cbottom, 0), .(64,64,64), .(64,64,64));
@@ -194,7 +194,7 @@ namespace SpyroScope {
 				(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
 
 				let clutPosition = quad.GetCLUTCoordinates();
-				(float cleft, float ctop) = PixelToScreen(clutPosition.x, clutPosition.x >> 10 + clutPosition.y);
+				(float cleft, float ctop) = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
 				
 				Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
 			}
@@ -238,7 +238,7 @@ namespace SpyroScope {
 					(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
 
 					let clutPosition = quad.GetCLUTCoordinates();
-					(float cleft, float ctop) = PixelToScreen(clutPosition.x, clutPosition.x >> 10 + clutPosition.y);
+					(float cleft, float ctop) = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
 					
 					Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
 				}
@@ -248,7 +248,7 @@ namespace SpyroScope {
 				let clutReference = cluts[hoveredCLUTIndex];
 
 				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
-				(float cleft, float ctop) = PixelToScreen(clutPosition.x, clutPosition.x >> 10 + clutPosition.y);
+				(float cleft, float ctop) = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
 
 				switch (clutReference.category) {
 					case .Terrain: {
@@ -489,7 +489,7 @@ namespace SpyroScope {
 
 							let left = clutPosition.x & 0x3ff;
 							let right = left + clutReference.width;
-							let top = clutPosition.x >> 10 + clutPosition.y;
+							let top = (clutPosition.x >> 10) + clutPosition.y;
 							let bottom = top + (clutReference.type == .Gradient ? 16 : 1);
 
 							if (testPosition.x > left && testPosition.x <= right &&

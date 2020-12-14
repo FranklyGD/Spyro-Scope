@@ -49,7 +49,7 @@ namespace SpyroScope {
 			Emulator.ReadFromRAM(address + 8, &vertexDataOffset, 4);
 
 			// Analyze the animation
-			uint32 keyframeCount = vertexDataOffset >> 3 - 1; // triangleDataOffset / 8
+			uint32 keyframeCount = (vertexDataOffset >> 3) - 1; // triangleDataOffset / 8
 			uint8 highestUsedState = 0;
 			for (let keyframeIndex < keyframeCount) {
 				(uint8 fromState, uint8 toState) s = ?;
@@ -70,7 +70,7 @@ namespace SpyroScope {
 			List<uint32> gameVertexIndices = scope .();
 			nearAnimatedTriangles = new .();
 			for (var i = 0; i < mesh2GameIndices.Count; i += 3) {
-				if (region.nearFaces[region.nearFaceIndices[i / 3]].isTriangle) {
+				if (region.GetNearFace(region.nearFaceIndices[i / 3]).isTriangle) {
 					if (mesh2GameIndices[i] < vertexCount ||
 						mesh2GameIndices[i + 1] < vertexCount ||
 						mesh2GameIndices[i + 2] < vertexCount) {
@@ -175,7 +175,7 @@ namespace SpyroScope {
 				
 				Vector* vertices = &region.nearMesh.vertices[triangleIndex];
 
-				var regionFace = region.nearFaces[region.nearFaceIndices[triangleIndex / 3]];
+				var regionFace = region.GetNearFace(region.nearFaceIndices[triangleIndex / 3]);
 				if (regionFace.isTriangle) {
 					Vector[5] midpoints = ?;
 					midpoints[0] = (vertices[0] + vertices[1]) / 2; // Top

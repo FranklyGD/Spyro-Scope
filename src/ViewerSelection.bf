@@ -152,7 +152,7 @@ namespace SpyroScope {
 		}
 
 		static bool TerrainDeformHoverTest(ref float distance) {
-			if (!(Terrain.renderMode == .Collision && Terrain.collision.overlay == .Deform)) {
+			if (!(Terrain.renderMode == .Collision && Terrain.collision?.overlay == .Deform)) {
 				return false;
 			}
 

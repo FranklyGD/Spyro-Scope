@@ -285,7 +285,7 @@ namespace SpyroScope {
 				Emulator.ReadFromRAM(animationGroup.dataPointer + 8, &triangleDataOffset, 4);
 
 				// Analyze the animation
-				uint32 keyframeCount = triangleDataOffset >> 3 - 1; // triangleDataOffset / 8
+				uint32 keyframeCount = (triangleDataOffset >> 3) - 1; // triangleDataOffset / 8
 				uint8 highestUsedState = 0;
 				for (let keyframeIndex < keyframeCount) {
 					(uint8 fromState, uint8 toState) s = ?;
