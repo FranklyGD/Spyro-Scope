@@ -30,7 +30,7 @@ namespace SpyroScope {
 
 		Vector[] nearVertices;
 		Renderer.Color4[] nearColors ~ delete _;
-		public NearFace[] nearFaces ~ delete _;
+		NearFace[] nearFaces ~ delete _;
 		
 		public Mesh nearMesh ~ delete _;
 		public Mesh nearMeshSubdivided ~ delete _;
@@ -58,13 +58,31 @@ namespace SpyroScope {
 				// For "Ripto's Rage" and "Year of the Dragon", the transparency flag for it can be found on a per texture basis
 				// Refer to "TextureQuad" for an implementation of the mentioned above
 
-				public uint8 textureIndex { get => texture & 0x7f; }
-				public uint8 depthOffset { get => flipSideDepth & 0b0011; }
-				public bool doubleSided { get => flipSideDepth & 0b1000 > 0; }
-				public uint8 rotation { get => Emulator.installment == .SpyroTheDragon ? flipSideDepth & 0b0011 : (flipSideDepth & 0b00110000) >> 4; }
+				public uint8 textureIndex { get => BitEdit.Get!(texture, 0x7f); set mut => BitEdit.Set!(texture, value, 0x7f); }
+				public uint8 depthOffset { get => BitEdit.Get!(flipSideDepth, 0b0011); set mut => BitEdit.Set!(flipSideDepth, value, 0b0011); }
+				public bool doubleSided { get => BitEdit.Get!(flipSideDepth, 0b1000) > 0; set mut => BitEdit.Set!(flipSideDepth, value, 0b1000); }
+				public uint8 rotation {
+					get => Emulator.installment == .SpyroTheDragon ? BitEdit.Get!(flipSideDepth, 0b0011) : BitEdit.Get!(flipSideDepth, 0b00110000) >> 4;
+					set mut {
+						if (Emulator.installment == .SpyroTheDragon) {
+							BitEdit.Set!(flipSideDepth, value, 0b0011);
+						} else {
+							BitEdit.Set!(flipSideDepth, value << 4, 0b00110000);
+						}
+					}
+				}
 			}
 			public RenderInfo* renderInfo  { get mut => Emulator.installment == .SpyroTheDragon ?  (.)&a: (.)&b; };
-			public bool flipped { get mut => (Emulator.installment == .SpyroTheDragon ? (b[0] & 0b0010) : (renderInfo.flipSideDepth & 0b0100)) > 0; }
+			public bool flipped {
+				get mut => Emulator.installment == .SpyroTheDragon ? BitEdit.Get!(b[0], 0b0010) > 0: BitEdit.Get!(renderInfo.flipSideDepth, 0b0100) > 0;
+				set mut {
+					if (Emulator.installment == .SpyroTheDragon) {
+						BitEdit.Set!(b[0], value, 0b0010);
+					} else {
+						BitEdit.Set!(renderInfo.flipSideDepth, value, 0b0100);
+					}
+				}
+			}
 		}
 
 		public this(Emulator.Address address) {
@@ -751,16 +769,50 @@ namespace SpyroScope {
 			}
 		}
 
-		public NearFace GetNearFace(int faceIndex) {
-			NearFace face = ?;
+		public NearFace* GetNearFace(int faceIndex) {
+			return &nearFaces[faceIndex];
+		}
+
+		public void SetNearFace(NearFace* face, int faceIndex) {
 			Emulator.Address<NearFace> faceAddress = (.)address + 0x1c +
 				((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2 + // Pass over all far data
 				(int)metadata.nearVertexCount + (int)metadata.nearColorCount * 2 + // Pass over previous near data
 				faceIndex * 4) * 4;// Index the face
-			Emulator.ReadFromRAM(faceAddress, &face, sizeof(NearFace));
-			return face;
+			Emulator.WriteToRAM(faceAddress, face, sizeof(NearFace));
+			nearFaces[faceIndex] = *face;
+
+			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+			TextureQuad* quad = &Terrain.textureInfos[face.renderInfo.textureIndex * quadCount];
+			if (Emulator.installment != .SpyroTheDragon) {
+				quad++;
+			}
+
+			float[4 * 5][2] triangleUV = ?;
+			for (let qi < 5) {
+				let partialUV = quad.GetVramPartialUV();
+
+				let offset = qi * 4;
+				triangleUV[0 + offset] = .(partialUV.left, partialUV.rightY);
+				triangleUV[1 + offset] = .(partialUV.right, partialUV.rightY);
+				triangleUV[2 + offset] = .(partialUV.right, partialUV.leftY);
+				triangleUV[3 + offset] = .(partialUV.left, partialUV.leftY);
+
+				quad++;
+			}
+
+			let transparent = Emulator.installment == .SpyroTheDragon ? quad.GetTransparency() : face.renderInfo.transparent;
+
+			let affectedTriangles = scope List<int>();
+			let faceIndices = transparent ? nearFaceTransparentIndices : nearFaceIndices;
+			for (let i < faceIndices.Count) {
+				let fi = faceIndices[i];
+				if (fi == faceIndex) {
+					affectedTriangles.Add(i);
+				}
+			}
+			UpdateUVs(affectedTriangles, triangleUV, transparent);
 		}
-		
+
 		public void DrawFar() {
 			Matrix scale = .Scale(16, 16, Emulator.installment == .SpyroTheDragon ? 8 : 16);
 			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);

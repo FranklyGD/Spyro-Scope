@@ -6,7 +6,10 @@ namespace SpyroScope {
 		public static SDL.SDL_Cursor* arrow;
 		public static SDL.SDL_Cursor* Ibeam;
 
+		static bool ignoreMotion;
+
 		public static bool debug;
+
 		public struct Rect {
 			public float left;
 			public float right;
@@ -72,9 +75,21 @@ namespace SpyroScope {
 			}
 
 			switch (event.type) {
-				case .MouseMotion: return GUIMouseUpdate(WindowApp.mousePosition);
-				case .MouseButtonUp: return GUIMouseRelease(event.button.button);
-				case .MouseButtonDown: return GUIMousePress(event.button.button);
+				case .MouseMotion: return !ignoreMotion && GUIMouseUpdate(WindowApp.mousePosition);
+				case .MouseButtonUp:
+					if (GUIMouseRelease(event.button.button)) {
+						return true;
+					} else {
+						ignoreMotion = false;
+						return false;
+					}
+				case .MouseButtonDown:
+					if (GUIMousePress(event.button.button)) {
+						return true;
+					} else {
+						ignoreMotion = true;
+						return false;
+					}
 				default: return false;
 			}
 		}

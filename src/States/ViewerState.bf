@@ -77,17 +77,14 @@ namespace SpyroScope {
 		);
 
 		Toggle pinInspectorButton;
+		
+		GUIElement faceMenu;
+		Input textureIndexInput, rotationInput, depthOffsetInput;
+		Toggle mirrorToggle, doubleSidedToggle;
 
 		public this() {
 			ViewerSelection.Init();
 			GUIElement.SetActiveGUI(guiElements);
-
-			Input testInput = new .();
-			testInput.anchor = .(0.5f, 0.5f, 0, 0);
-			testInput.offset = .(-64,64,0,24);
-			testInput.offset.Shift(0, 64);
-			testInput.normalTexture = normalInputTexture;
-			testInput.activeTexture = activeInputTexture;
 
 			togglePauseButton = new .();
 
@@ -108,7 +105,7 @@ namespace SpyroScope {
 			stepButton.iconTexture = stepTexture;
 			stepButton.OnActuated.Add(new => Step);
 
-			cornerMenu = new GUIElement();
+			cornerMenu = new .();
 			cornerMenu.offset = .(0,260,0,200);
 			GUIElement.PushParent(cornerMenu);
 
@@ -221,7 +218,7 @@ namespace SpyroScope {
 
 			GUIElement.PopParent();
 			
-			sideInspector = new GUIElement();
+			sideInspector = new .();
 			sideInspector.anchor = .(1,1,0,1);
 			sideInspector.offset = .(-300,0,0,0);
 			GUIElement.PushParent(sideInspector);
@@ -251,6 +248,139 @@ namespace SpyroScope {
 			copyMobyDataAddress.pressedTexture = pressedButtonTexture;
 			copyMobyDataAddress.text = "Copy";
 			copyMobyDataAddress.OnActuated.Add(new () => { SDL.SetClipboardText(scope String() .. AppendF("{}", (objectList[ViewerSelection.currentObjIndex].1).dataPointer)); });
+
+			GUIElement.PopParent();
+
+			faceMenu = new .();
+			faceMenu.anchor = .(0, 0, 1, 1);
+			faceMenu.offset = .(0,490,-256,0);
+			faceMenu.visible = false;
+			GUIElement.PushParent(faceMenu);
+
+			textureIndexInput = new .();
+			textureIndexInput.anchor = .(0, 0, 1, 1);
+			textureIndexInput.offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
+			textureIndexInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -5 + 1);
+			textureIndexInput.normalTexture = normalInputTexture;
+			textureIndexInput.activeTexture = activeInputTexture;
+			textureIndexInput.OnValidate = new () => {
+				if (int.Parse(textureIndexInput.text) case .Ok(let val)) {
+					let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+					if (val * quadCount < Terrain.textureInfos.Count) {
+						if (faceMenu.visible) {
+							let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+							int faceIndex = ?;
+							if (ViewerSelection.currentRegionTransparent) {
+								faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
+							} else {
+								faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
+							}
+							let face = visualMesh.GetNearFace(faceIndex);
+							face.renderInfo.textureIndex = (.)val;
+							visualMesh.SetNearFace(face, faceIndex);
+						}
+
+						return true;
+					}
+				}
+				return false;
+			};
+
+			rotationInput = new .();
+			rotationInput.anchor = .(0, 0, 1, 1);
+			rotationInput.offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
+			rotationInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -4 + 1);
+			rotationInput.normalTexture = normalInputTexture;
+			rotationInput.activeTexture = activeInputTexture;
+			rotationInput.OnValidate = new () => {
+				if (int.Parse(rotationInput.text) case .Ok(let val)) {
+					if ((terrain.renderMode == .NearLQ || terrain.renderMode == .NearHQ) && ViewerSelection.currentRegionIndex > -1 && ViewerSelection.currentTriangleIndex > -1) {
+						let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+						int faceIndex = ?;
+						if (ViewerSelection.currentRegionTransparent) {
+							faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
+						} else {
+							faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
+						}
+						let face = visualMesh.GetNearFace(faceIndex);
+						face.renderInfo.rotation = (.)val;
+						visualMesh.SetNearFace(face, faceIndex);
+					}
+
+					return true;
+				}
+				return false;
+			};
+
+			depthOffsetInput = new .();
+			depthOffsetInput.anchor = .(0, 0, 1, 1);
+			depthOffsetInput.offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
+			depthOffsetInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -2 + 1);
+			depthOffsetInput.normalTexture = normalInputTexture;
+			depthOffsetInput.activeTexture = activeInputTexture;
+			depthOffsetInput.OnValidate = new () => {
+				if (int.Parse(depthOffsetInput.text) case .Ok(let val)) {
+					if (faceMenu.visible) {
+						let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+						int faceIndex = ?;
+						if (ViewerSelection.currentRegionTransparent) {
+							faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
+						} else {
+							faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
+						}
+						let face = visualMesh.GetNearFace(faceIndex);
+						face.renderInfo.depthOffset = (.)val;
+						visualMesh.SetNearFace(face, faceIndex);
+					}
+
+					return true;
+				}
+				return false;
+			};
+
+			mirrorToggle = new .();
+			mirrorToggle.anchor = .(0, 0, 1, 1);
+			mirrorToggle.offset = .(0,16,0,16);
+			mirrorToggle.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -3 + 2);
+			mirrorToggle.normalTexture = normalButtonTexture;
+			mirrorToggle.pressedTexture = pressedButtonTexture;
+			mirrorToggle.toggleIconTexture = toggledTexture;
+			mirrorToggle.OnActuated.Add(new () => {
+				if (faceMenu.visible) {
+					let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+					int faceIndex = ?;
+					if (ViewerSelection.currentRegionTransparent) {
+						faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
+					} else {
+						faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
+					}
+					let face = visualMesh.GetNearFace(faceIndex);
+					face.flipped = mirrorToggle.value;
+					visualMesh.SetNearFace(face, faceIndex);
+				}
+			});
+
+			doubleSidedToggle = new .();
+			doubleSidedToggle.anchor = .(0, 0, 1, 1);
+			doubleSidedToggle.offset = .(0,16,0,16);
+			doubleSidedToggle.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -1 + 2);
+			doubleSidedToggle.normalTexture = normalButtonTexture;
+			doubleSidedToggle.pressedTexture = pressedButtonTexture;
+			doubleSidedToggle.toggleIconTexture = toggledTexture;
+			doubleSidedToggle.OnActuated.Add(new () => {
+				if (faceMenu.visible) {
+					let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+					int faceIndex = ?;
+					if (ViewerSelection.currentRegionTransparent) {
+						faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
+					} else {
+						faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
+					}
+					let face = visualMesh.GetNearFace(faceIndex);
+					face.renderInfo.doubleSided = doubleSidedToggle.value;
+					visualMesh.SetNearFace(face, faceIndex);
+				}
+			});
 
 			GUIElement.PopParent();
 
@@ -317,6 +447,24 @@ namespace SpyroScope {
 
 			if (Emulator.loadingStatus == .Loading || Emulator.gameState > 0) {
 				return;
+			}
+
+			if (faceMenu.visible) {
+				let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+				int faceIndex = ?;
+				if (ViewerSelection.currentRegionTransparent) {
+					faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
+				} else {
+					faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
+				}
+
+				let face = visualMesh.GetNearFace(faceIndex);
+				
+				textureIndexInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.textureIndex));
+				rotationInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.rotation));
+				depthOffsetInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.depthOffset));
+				mirrorToggle.SetValue(face.flipped);
+				doubleSidedToggle.SetValue(face.renderInfo.doubleSided);
 			}
 
 			terrain?.Update();
@@ -560,7 +708,7 @@ namespace SpyroScope {
 							}
 						}
 					}
-				} else if (terrain.renderMode == .NearLQ && ViewerSelection.currentRegionIndex > -1 && ViewerSelection.currentTriangleIndex > -1) {
+				} else if (faceMenu.visible) {
 					let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
 					let metadata = visualMesh.metadata;
 					
@@ -576,7 +724,7 @@ namespace SpyroScope {
 						faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
 					}
 	
-					let face = &visualMesh.nearFaces[faceIndex];
+					let face = visualMesh.GetNearFace(faceIndex);
 					
 					let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 					TextureQuad* textureInfo = &Terrain.textureInfos[face.renderInfo.textureIndex * quadCount];
@@ -590,25 +738,26 @@ namespace SpyroScope {
 	
 					var partialUV = textureInfo[0].GetVramPartialUV();
 					DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 0,128, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
-	
-					partialUV = textureInfo[1].GetVramPartialUV();
-					DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height - 64, 128,128 + 64, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
-	
-					partialUV = textureInfo[2].GetVramPartialUV();
-					DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height - 64, 128 + 64,128 + 128, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
-	
-					partialUV = textureInfo[3].GetVramPartialUV();
-					DrawUtilities.Rect(WindowApp.height - 64, WindowApp.height, 128,128 + 64, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
-	
-					partialUV = textureInfo[4].GetVramPartialUV();
-					DrawUtilities.Rect(WindowApp.height - 64, WindowApp.height, 128 + 64, 256, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
+
+					const uint[4][2] offsets = .(
+						(128, 64),
+						(128 + 64, 64),
+						(128, 0),
+						(128 + 64, 0)
+					);
+					for (let qi < 4) {
+						let offset = offsets[qi];
+
+						partialUV = textureInfo[1 + qi].GetVramPartialUV();
+						DrawUtilities.Rect(WindowApp.height - (offset[1] + 64), WindowApp.height - offset[1], offset[0], offset[0] + 64, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
+					}
 					
 					WindowApp.bitmapFont.Print(scope String() .. AppendF("Face Index: {}", faceIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 6, 0), .(255,255,255));
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Tex Index: {}", face.renderInfo.textureIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 5, 0), .(255,255,255));
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Rotation: {}", face.renderInfo.rotation), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 4, 0), .(255,255,255));
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Mirror: {}", face.flipped), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 3, 0), .(255,255,255));
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Depth Offset: {}", face.renderInfo.depthOffset), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 2, 0), .(255,255,255));
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Double Sided: {}", face.renderInfo.doubleSided), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight, 0), .(255,255,255));
+					WindowApp.bitmapFont.Print(scope String() .. Append("Tex Index"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 5, 0), .(255,255,255));
+					WindowApp.bitmapFont.Print(scope String() .. Append("Rotation"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 4, 0), .(255,255,255));
+					WindowApp.bitmapFont.Print(scope String() .. Append("Mirror"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 3, 0), .(255,255,255));
+					WindowApp.bitmapFont.Print(scope String() .. Append("Depth Offset"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 2, 0), .(255,255,255));
+					WindowApp.bitmapFont.Print(scope String() .. Append("Double Sided"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight, 0), .(255,255,255));
 	
 				} else if (terrain.drawnRegion > -1) {
 					// Background
@@ -737,6 +886,8 @@ namespace SpyroScope {
 						if (!(showManipulator && Translator.hovered)) {
 							Selection.Select();
 						}
+
+						faceMenu.visible = (terrain.renderMode == .NearLQ || terrain.renderMode == .NearHQ) && ViewerSelection.currentRegionIndex > -1 && ViewerSelection.currentTriangleIndex > -1;
 					}
 				}
 				case .MouseMotion : {

@@ -6,17 +6,20 @@ namespace SpyroScope {
 
 		protected override void Unpressed() {
 			if (hoveredElement == this && enabled) {
-				value = !value;
-				iconTexture = value ? toggleIconTexture : null;
+				SetValue(!value);
 			}
 
 			base.Unpressed();
 		}
 
 		public void Toggle() {
-			value = !value;
-			iconTexture = value ? toggleIconTexture : null;
+			SetValue(!value);
 			OnActuated();
+		}
+
+		public void SetValue(bool value) {
+			iconTexture = value ? toggleIconTexture : null;
+			this.value = value;
 		}
 	}
 }

@@ -49,8 +49,10 @@ namespace SpyroScope {
 			var cursorPos = 0f;
 			if (text != null && !text.IsEmpty) {
 				WindowApp.fontSmall.Print(text, .(textStartX, vcenter - halfHeight, 0), .(0,0,0));
-				
-				cursorPos = WindowApp.fontSmall.CalculateWidth(.(text,0,cursor));
+
+				if (selectedElement == this) {
+					cursorPos = WindowApp.fontSmall.CalculateWidth(.(text,0,cursor));
+				}
 			}
 
 			if (selectedElement == this) {
@@ -117,11 +119,22 @@ namespace SpyroScope {
 			SDL.SetCursor(arrow);
 		}
 
+		protected override void Pressed() {
+			cursor = text.Length;
+		}
+
 		void CheckText() {
-			if (OnValidate == null || OnValidate.Invoke()) {
+			if (OnValidate == null || OnValidate()) {
 				lastValidText.Set(text);
 				OnChanged();
 			}
+		}
+
+		public void SetValidText(StringView validText) {
+			if (selectedElement != this) {
+				text.Set(validText);
+			}
+			lastValidText.Set(validText);
 		}
 	}
 }
