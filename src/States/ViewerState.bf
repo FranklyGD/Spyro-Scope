@@ -253,7 +253,7 @@ namespace SpyroScope {
 
 			faceMenu = new .();
 			faceMenu.anchor = .(0, 0, 1, 1);
-			faceMenu.offset = .(0,490,-256,0);
+			faceMenu.offset = .(0,490,-128,0);
 			faceMenu.visible = false;
 			GUIElement.PushParent(faceMenu);
 
