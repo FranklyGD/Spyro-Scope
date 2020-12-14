@@ -29,7 +29,7 @@ namespace SpyroScope {
 			Emulator.Address deformAddress = ?;
 			Emulator.collisionDeformDataPointers[(int)Emulator.rom].Read(&deformAddress);
 			collision = new .(address, deformAddress);
-
+			
 			Reload();
 			ReloadAnimations();
 		}
@@ -45,14 +45,14 @@ namespace SpyroScope {
 			for (var item in textureScrollers) {
 				item.Dispose();
 			}
-			delete textureScrollers;
+			DeleteAndNullify!(textureScrollers);
 
 			for (var item in textureSwappers) {
 				item.Dispose();
 			}
-			delete textureSwappers;
+			DeleteAndNullify!(textureSwappers);
 
-			delete textureInfos;
+			DeleteAndNullify!(textureInfos);
 		}
 
 		public void Reload() {
