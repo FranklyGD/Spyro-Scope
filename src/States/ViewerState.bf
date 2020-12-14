@@ -26,7 +26,6 @@ namespace SpyroScope {
 		bool showManipulator = false;
 
 		// Scene
-		public static Terrain terrain ~ delete _;
 		bool drawLimits;
 
 		// Objects
@@ -160,21 +159,20 @@ namespace SpyroScope {
 			viewButton1.OnActuated.Add(new () => {
 				viewButton1.enabled = false;
 				viewButton2.enabled = viewButton3.enabled = cycleTerrainOverlayButton.enabled = true;
-				terrain.renderMode = .Collision;
+				Terrain.renderMode = .Collision;
 				ViewerSelection.currentTriangleIndex = -1;
 				ViewerSelection.currentRegionIndex = -1;
 			});
 			viewButton2.OnActuated.Add(new () => {
 				viewButton2.enabled = cycleTerrainOverlayButton.enabled = false;
 				viewButton1.enabled = viewButton3.enabled = true;
-				terrain.renderMode = .Far;
+				Terrain.renderMode = .Far;
 				ViewerSelection.currentTriangleIndex = -1;
 			});
 			viewButton3.OnActuated.Add(new () => {
 				/*viewButton3.enabled =*/ cycleTerrainOverlayButton.enabled = false;
 				viewButton2.enabled = viewButton1.enabled = true;
-				terrain.renderMode = terrain.renderMode == .NearLQ ? .NearHQ : .NearLQ;
-				ViewerSelection.currentTriangleIndex = -1;
+				Terrain.renderMode = Terrain.renderMode == .NearLQ ? .NearHQ : .NearLQ;
 			});
 
 			for (let i < toggleList.Count) {
@@ -268,7 +266,7 @@ namespace SpyroScope {
 					let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 					if (val * quadCount < Terrain.textureInfos.Count) {
 						if (faceMenu.visible) {
-							let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+							let visualMesh = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
 							int faceIndex = ?;
 							if (ViewerSelection.currentRegionTransparent) {
 								faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
@@ -294,8 +292,8 @@ namespace SpyroScope {
 			rotationInput.activeTexture = activeInputTexture;
 			rotationInput.OnValidate = new () => {
 				if (int.Parse(rotationInput.text) case .Ok(let val)) {
-					if ((terrain.renderMode == .NearLQ || terrain.renderMode == .NearHQ) && ViewerSelection.currentRegionIndex > -1 && ViewerSelection.currentTriangleIndex > -1) {
-						let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+					if ((Terrain.renderMode == .NearLQ || Terrain.renderMode == .NearHQ) && ViewerSelection.currentRegionIndex > -1 && ViewerSelection.currentTriangleIndex > -1) {
+						let visualMesh = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
 						int faceIndex = ?;
 						if (ViewerSelection.currentRegionTransparent) {
 							faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
@@ -321,7 +319,7 @@ namespace SpyroScope {
 			depthOffsetInput.OnValidate = new () => {
 				if (int.Parse(depthOffsetInput.text) case .Ok(let val)) {
 					if (faceMenu.visible) {
-						let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+						let visualMesh = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
 						int faceIndex = ?;
 						if (ViewerSelection.currentRegionTransparent) {
 							faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
@@ -347,7 +345,7 @@ namespace SpyroScope {
 			mirrorToggle.toggleIconTexture = toggledTexture;
 			mirrorToggle.OnActuated.Add(new () => {
 				if (faceMenu.visible) {
-					let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+					let visualMesh = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
 					int faceIndex = ?;
 					if (ViewerSelection.currentRegionTransparent) {
 						faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
@@ -369,7 +367,7 @@ namespace SpyroScope {
 			doubleSidedToggle.toggleIconTexture = toggledTexture;
 			doubleSidedToggle.OnActuated.Add(new () => {
 				if (faceMenu.visible) {
-					let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+					let visualMesh = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
 					int faceIndex = ?;
 					if (ViewerSelection.currentRegionTransparent) {
 						faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
@@ -397,6 +395,8 @@ namespace SpyroScope {
 		}
 
 		public ~this() {
+			Terrain.Clear();
+
 			for (let modelSet in modelSets.Values) {
 				delete modelSet;
 			}
@@ -433,8 +433,8 @@ namespace SpyroScope {
 
 			Emulator.FetchImportantData();
 
-			if (!terrain.decoded && VRAM.upToDate) {
-				terrain.Decode();
+			if (!Terrain.decoded && VRAM.upToDate) {
+				Terrain.Decode();
 			}
 
 			UpdateView();
@@ -450,7 +450,7 @@ namespace SpyroScope {
 			}
 
 			if (faceMenu.visible) {
-				let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+				let visualMesh = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
 				int faceIndex = ?;
 				if (ViewerSelection.currentRegionTransparent) {
 					faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
@@ -467,14 +467,14 @@ namespace SpyroScope {
 				doubleSidedToggle.SetValue(face.renderInfo.doubleSided);
 			}
 
-			terrain?.Update();
+			Terrain.Update();
 
 			if (showManipulator) {
 				if (ViewerSelection.currentObjIndex > -1) {
 					Moby* moby = &(objectList[ViewerSelection.currentObjIndex].1);
 					Translator.Update(moby.position, moby.basis);
-				} else if (terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
-					Translator.Update(terrain.collision.mesh.vertices[ViewerSelection.currentTriangleIndex * 3], .Identity);
+				} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
+					Translator.Update(Terrain.collision.mesh.vertices[ViewerSelection.currentTriangleIndex * 3], .Identity);
 				} else {
 					Vector spyroPosition = Emulator.spyroPosition;
 					Translator.Update(spyroPosition, Emulator.spyroBasis.ToMatrixCorrected());
@@ -483,7 +483,7 @@ namespace SpyroScope {
 		}
 
 		public override void DrawView() {
-			terrain?.Draw();
+			Terrain.Draw();
 
 			if (viewMode != .Game) {
 				DrawGameCameraFrustrum();
@@ -531,7 +531,7 @@ namespace SpyroScope {
 				}
 
 				if (ViewerSelection.currentRegionIndex > 0) {
-					let region = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+					let region = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
 					DrawUtilities.Axis(.((int)region.metadata.centerX * 16, (int)region.metadata.centerY * 16, (int)region.metadata.centerZ * 16), .Scale(1000));
 				}
 			}
@@ -655,117 +655,115 @@ namespace SpyroScope {
 				}
 			}
 
-			if (terrain != null) {
-				if (terrain.renderMode == .Collision) {
-					if (terrain.collision.overlay == .Flags) {
-						DrawFlagsOverlay();
-					} else if (terrain.collision.overlay == .Deform) {
-						if (ViewerSelection.hoveredAnimGroupIndex != -1) {
-							let hoveredAnimGroup = terrain.collision.animationGroups[ViewerSelection.hoveredAnimGroupIndex];
-							// Begin overlays
-							var screenPosition = Camera.SceneToScreen(hoveredAnimGroup.center);
-							if (screenPosition.z > 0) { // Must be in front of view
-								let screenSize = Camera.SceneSizeToScreenSize(hoveredAnimGroup.radius - 50, screenPosition.z);
-								screenPosition.z = 0;
-								DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(128,64,16));
-							}
+			if (Terrain.renderMode == .Collision) {
+				if (Terrain.collision.overlay == .Flags) {
+					DrawFlagsOverlay();
+				} else if (Terrain.collision.overlay == .Deform) {
+					if (ViewerSelection.hoveredAnimGroupIndex != -1) {
+						let hoveredAnimGroup = Terrain.collision.animationGroups[ViewerSelection.hoveredAnimGroupIndex];
+						// Begin overlays
+						var screenPosition = Camera.SceneToScreen(hoveredAnimGroup.center);
+						if (screenPosition.z > 0) { // Must be in front of view
+							let screenSize = Camera.SceneSizeToScreenSize(hoveredAnimGroup.radius - 50, screenPosition.z);
+							screenPosition.z = 0;
+							DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(128,64,16));
 						}
-	
-						if (ViewerSelection.currentAnimGroupIndex != -1) {
-							let animationGroup = terrain.collision.animationGroups[ViewerSelection.currentAnimGroupIndex];
+					}
+
+					if (ViewerSelection.currentAnimGroupIndex != -1) {
+						let animationGroup = Terrain.collision.animationGroups[ViewerSelection.currentAnimGroupIndex];
+						var screenPosition = Camera.SceneToScreen(animationGroup.center);
+						if (screenPosition.z > 0) { // Must be in front of view
+							let screenSize = Camera.SceneSizeToScreenSize(animationGroup.radius, screenPosition.z);
+							screenPosition.z = 0;
+							DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(16,16,0));
+						}
+
+						let leftPaddingBG = 4;
+						let bottomPaddingBG = 4;
+
+						// Background
+						let backgroundHeight = 18 * 6;
+						DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 14 + 8,
+							.(0,0,0,192));
+
+						// Content
+						let currentKeyframe = animationGroup.CurrentKeyframe;
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("Group Index {}", ViewerSelection.currentAnimGroupIndex), .(8, (.)WindowApp.height - (18 * 5 + 8 + 15), 0), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("Keyframe {}", (uint)currentKeyframe), .(8, (.)WindowApp.height - (18 * 4 + 8 + 15), 0), .(255,255,255));
+						let keyframeData = animationGroup.GetKeyframeData(currentKeyframe);
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("Flag {}", (uint)keyframeData.flag), .(8, (.)WindowApp.height - (18 * 3 + 8 + 15), 0), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("Interp. {}", (uint)keyframeData.interpolation), .(8, (.)WindowApp.height - (18 * 2 + 8 + 15), 0), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("From State {}", (uint)keyframeData.fromState), .(8, (.)WindowApp.height - (18 * 1 + 8 + 15), 0), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("To State {}", (uint)keyframeData.toState), .(8, (.)WindowApp.height - (18 * 0 + 8 + 15), 0), .(255,255,255));
+					} else if (Terrain.collision.animationGroups != null) {
+						for (let animationGroup in Terrain.collision.animationGroups) {
 							var screenPosition = Camera.SceneToScreen(animationGroup.center);
 							if (screenPosition.z > 0) { // Must be in front of view
 								let screenSize = Camera.SceneSizeToScreenSize(animationGroup.radius, screenPosition.z);
 								screenPosition.z = 0;
 								DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(16,16,0));
 							}
-	
-							let leftPaddingBG = 4;
-							let bottomPaddingBG = 4;
-	
-							// Background
-							let backgroundHeight = 18 * 6;
-							DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 14 + 8,
-								.(0,0,0,192));
-	
-							// Content
-							let currentKeyframe = animationGroup.CurrentKeyframe;
-							WindowApp.bitmapFont.Print(scope String() .. AppendF("Group Index {}", ViewerSelection.currentAnimGroupIndex), .(8, (.)WindowApp.height - (18 * 5 + 8 + 15), 0), .(255,255,255));
-							WindowApp.bitmapFont.Print(scope String() .. AppendF("Keyframe {}", (uint)currentKeyframe), .(8, (.)WindowApp.height - (18 * 4 + 8 + 15), 0), .(255,255,255));
-							let keyframeData = animationGroup.GetKeyframeData(currentKeyframe);
-							WindowApp.bitmapFont.Print(scope String() .. AppendF("Flag {}", (uint)keyframeData.flag), .(8, (.)WindowApp.height - (18 * 3 + 8 + 15), 0), .(255,255,255));
-							WindowApp.bitmapFont.Print(scope String() .. AppendF("Interp. {}", (uint)keyframeData.interpolation), .(8, (.)WindowApp.height - (18 * 2 + 8 + 15), 0), .(255,255,255));
-							WindowApp.bitmapFont.Print(scope String() .. AppendF("From State {}", (uint)keyframeData.fromState), .(8, (.)WindowApp.height - (18 * 1 + 8 + 15), 0), .(255,255,255));
-							WindowApp.bitmapFont.Print(scope String() .. AppendF("To State {}", (uint)keyframeData.toState), .(8, (.)WindowApp.height - (18 * 0 + 8 + 15), 0), .(255,255,255));
-						} else if (terrain.collision.animationGroups != null) {
-							for (let animationGroup in terrain.collision.animationGroups) {
-								var screenPosition = Camera.SceneToScreen(animationGroup.center);
-								if (screenPosition.z > 0) { // Must be in front of view
-									let screenSize = Camera.SceneSizeToScreenSize(animationGroup.radius, screenPosition.z);
-									screenPosition.z = 0;
-									DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(16,16,0));
-								}
-							}
 						}
 					}
-				} else if (faceMenu.visible) {
-					let visualMesh = terrain.visualMeshes[ViewerSelection.currentRegionIndex];
-					let metadata = visualMesh.metadata;
-					
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", ViewerSelection.currentRegionIndex), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 11, 0), .(255,255,255));
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Center: <{},{},{}>", (int)metadata.centerX * 16, (int)metadata.centerY * 16, (int)metadata.centerZ * 16), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 10, 0), .(255,255,255));
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Offset: <{},{},{}>", (int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 9, 0), .(255,255,255));
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Scaled Vertically: {}", metadata.verticallyScaledDown), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 8, 0), .(255,255,255));
-	
-					int faceIndex = ?;
-					if (ViewerSelection.currentRegionTransparent) {
-						faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
-					} else {
-						faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
-					}
-	
-					let face = visualMesh.GetNearFace(faceIndex);
-					
-					let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
-					TextureQuad* textureInfo = &Terrain.textureInfos[face.renderInfo.textureIndex * quadCount];
-					if (Emulator.installment != .SpyroTheDragon) {
-						textureInfo++;
-					}
-					
-					const let quadSize = TextureQuad.quadSize;
-					
-					DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 256, 490, .(0,0,0,128));
-	
-					var partialUV = textureInfo[0].GetVramPartialUV();
-					DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 0,128, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
-
-					const uint[4][2] offsets = .(
-						(128, 64),
-						(128 + 64, 64),
-						(128, 0),
-						(128 + 64, 0)
-					);
-					for (let qi < 4) {
-						let offset = offsets[qi];
-
-						partialUV = textureInfo[1 + qi].GetVramPartialUV();
-						DrawUtilities.Rect(WindowApp.height - (offset[1] + 64), WindowApp.height - offset[1], offset[0], offset[0] + 64, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
-					}
-					
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Face Index: {}", faceIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 6, 0), .(255,255,255));
-					WindowApp.bitmapFont.Print(scope String() .. Append("Tex Index"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 5, 0), .(255,255,255));
-					WindowApp.bitmapFont.Print(scope String() .. Append("Rotation"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 4, 0), .(255,255,255));
-					WindowApp.bitmapFont.Print(scope String() .. Append("Mirror"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 3, 0), .(255,255,255));
-					WindowApp.bitmapFont.Print(scope String() .. Append("Depth Offset"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 2, 0), .(255,255,255));
-					WindowApp.bitmapFont.Print(scope String() .. Append("Double Sided"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight, 0), .(255,255,255));
-	
-				} else if (terrain.drawnRegion > -1) {
-					// Background
-					DrawUtilities.Rect((.)WindowApp.height - (26), WindowApp.height - 4, 4, 4 + 12 * 8 + 36,
-						.(0,0,0,192));
-	
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Region {}", terrain.drawnRegion), .(8, (.)WindowApp.height - (8 + 15), 0), .(255,255,255));
 				}
+			} else if (faceMenu.visible) {
+				let visualMesh = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+				let metadata = visualMesh.metadata;
+				
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", ViewerSelection.currentRegionIndex), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 11, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Center: <{},{},{}>", (int)metadata.centerX * 16, (int)metadata.centerY * 16, (int)metadata.centerZ * 16), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 10, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Offset: <{},{},{}>", (int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 9, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Scaled Vertically: {}", metadata.verticallyScaledDown), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 8, 0), .(255,255,255));
+
+				int faceIndex = ?;
+				if (ViewerSelection.currentRegionTransparent) {
+					faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
+				} else {
+					faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
+				}
+
+				let face = visualMesh.GetNearFace(faceIndex);
+				
+				let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+				TextureQuad* textureInfo = &Terrain.textureInfos[face.renderInfo.textureIndex * quadCount];
+				if (Emulator.installment != .SpyroTheDragon) {
+					textureInfo++;
+				}
+				
+				const let quadSize = TextureQuad.quadSize;
+				
+				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 256, 490, .(0,0,0,128));
+
+				var partialUV = textureInfo[0].GetVramPartialUV();
+				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 0,128, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
+
+				const uint[4][2] offsets = .(
+					(128, 64),
+					(128 + 64, 64),
+					(128, 0),
+					(128 + 64, 0)
+				);
+				for (let qi < 4) {
+					let offset = offsets[qi];
+
+					partialUV = textureInfo[1 + qi].GetVramPartialUV();
+					DrawUtilities.Rect(WindowApp.height - (offset[1] + 64), WindowApp.height - offset[1], offset[0], offset[0] + 64, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
+				}
+				
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Face Index: {}", faceIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 6, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Tex Index"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 5, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Rotation"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 4, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Mirror"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 3, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Depth Offset"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 2, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Double Sided"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight, 0), .(255,255,255));
+
+			} else if (Terrain.drawnRegion > -1) {
+				// Background
+				DrawUtilities.Rect((.)WindowApp.height - (26), WindowApp.height - 4, 4, 4 + 12 * 8 + 36,
+					.(0,0,0,192));
+
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region {}", Terrain.drawnRegion), .(8, (.)WindowApp.height - (8 + 15), 0), .(255,255,255));
 			}
 
 			if (!Translator.hovered) {
@@ -785,7 +783,7 @@ namespace SpyroScope {
 				}
 			}
 
-			if (terrain.renderMode == .NearLQ && !terrain.decoded) {
+			if (Terrain.renderMode == .NearLQ && !Terrain.decoded) {
 				let message = "Waiting for Unpause...";
 				var halfWidth = Math.Round(WindowApp.font.CalculateWidth(message) / 2);
 				let middleWindow = WindowApp.width / 2;
@@ -866,11 +864,11 @@ namespace SpyroScope {
 										moby.position = position.ToVectorInt();
 										address.Write(&moby);
 									});
-								} else if (terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
+								} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
 									Translator.OnDragged.Add(new (position) => {
-										var triangle = terrain.collision.triangles[ViewerSelection.currentTriangleIndex].Unpack(false);
+										var triangle = Terrain.collision.triangles[ViewerSelection.currentTriangleIndex].Unpack(false);
 										triangle[0] = position.ToVectorInt();
-										terrain.collision.SetNearVertex((.)ViewerSelection.currentTriangleIndex, triangle, true);
+										Terrain.collision.SetNearVertex((.)ViewerSelection.currentTriangleIndex, triangle, true);
 									});
 								} else {
 									Translator.OnDragBegin.Add(new => Emulator.KillSpyroUpdate);
@@ -887,7 +885,7 @@ namespace SpyroScope {
 							Selection.Select();
 						}
 
-						faceMenu.visible = (terrain.renderMode == .NearLQ || terrain.renderMode == .NearHQ) && ViewerSelection.currentRegionIndex > -1 && ViewerSelection.currentTriangleIndex > -1;
+						faceMenu.visible = (Terrain.renderMode == .NearLQ || Terrain.renderMode == .NearHQ) && ViewerSelection.currentRegionIndex > -1 && ViewerSelection.currentTriangleIndex > -1;
 					}
 				}
 				case .MouseMotion : {
@@ -1008,10 +1006,10 @@ namespace SpyroScope {
 								}
 							}
 							case .KpPlus : {
-								terrain.drawnRegion++;
+								Terrain.drawnRegion++;
 							}
 							case .KpMinus : {
-								terrain.drawnRegion--;
+								Terrain.drawnRegion--;
 							}
 							case .V : {
 								windowApp.GoToState<VRAMViewerState>();
@@ -1196,18 +1194,8 @@ namespace SpyroScope {
 		}
 
 		void OnSceneChanged() {
-			Terrain.RenderMode lastMode = .Collision;
-			TerrainCollision.Overlay lastOverlay = .None;
-			if (terrain != null) {
-				lastMode = terrain.renderMode;
-				lastOverlay = terrain.collision.overlay;
-				
-				delete terrain;
-			}
-
-			terrain = new .();
-			terrain.renderMode = lastMode;
-			terrain.collision.SetOverlay(lastOverlay);
+			Terrain.Clear();
+			Terrain.Load();
 		}
 
 		void PushMessageToFeed(String message) {
@@ -1294,10 +1282,10 @@ namespace SpyroScope {
 		}
 
 		void DrawFlagsOverlay() {
-			if (ViewerSelection.currentTriangleIndex > -1 && ViewerSelection.currentTriangleIndex < terrain.collision.specialTriangleCount) {
-				let flagInfo = terrain.collision.flagIndices[ViewerSelection.currentTriangleIndex];
+			if (ViewerSelection.currentTriangleIndex > -1 && ViewerSelection.currentTriangleIndex < Terrain.collision.specialTriangleCount) {
+				let flagInfo = Terrain.collision.flagIndices[ViewerSelection.currentTriangleIndex];
 				let flagIndex = flagInfo & 0x3f;
-				let flagData = terrain.collision.GetCollisionFlagData(flagIndex);
+				let flagData = Terrain.collision.GetCollisionFlagData(flagIndex);
 	
 				if (flagData.type == 0 || flagData.type == 3 || flagData.type == 6 || flagData.type == 7) {
 					var screenPosition = Camera.SceneToScreen(cursor3DPosition);
@@ -1318,13 +1306,13 @@ namespace SpyroScope {
 			let bottomPaddingBG = 4;
 
 			// Background
-			let backgroundHeight = 18 * terrain.collision.collisionTypes.Count + 2;
+			let backgroundHeight = 18 * Terrain.collision.collisionTypes.Count + 2;
 			DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
 				.(0,0,0,192));
 
 			// Content
-			for (let i < terrain.collision.collisionTypes.Count) {
-				let flag = terrain.collision.collisionTypes[i];
+			for (let i < Terrain.collision.collisionTypes.Count) {
+				let flag = Terrain.collision.collisionTypes[i];
 				String label = scope String() .. AppendF("Unknown {}", flag);
 				Renderer.Color color = .(255, 0, 255);
 				if (flag < 11 /*Emulator.collisionTypes.Count*/) {
@@ -1378,7 +1366,7 @@ namespace SpyroScope {
 		}
 
 		void ToggleWireframe(bool toggle) {
-			terrain.wireframe = toggle;
+			Terrain.wireframe = toggle;
 			PushMessageToFeed("Toggled Wireframe");
 		}
 
@@ -1405,8 +1393,8 @@ namespace SpyroScope {
 
 				WindowApp.viewerProjection = Camera.projection;
 			} else if (viewMode != .Map && mode == .Map)  {
-				let upperBound = terrain.collision.upperBound;
-				let lowerBound = terrain.collision.lowerBound;
+				let upperBound = Terrain.collision.upperBound;
+				let lowerBound = Terrain.collision.lowerBound;
 
 				Camera.orthographic = true;
 				Camera.near = 0;
@@ -1455,14 +1443,14 @@ namespace SpyroScope {
 		}
 
 		void CycleTerrainOverlay() {
-			if (terrain.collision.overlay == .Deform) {
+			if (Terrain.collision.overlay == .Deform) {
 				ViewerSelection.currentAnimGroupIndex = -1;
 			}
 
-			terrain.collision.CycleOverlay();
+			Terrain.collision.CycleOverlay();
 
 			String overlayType;
-			switch (terrain.collision.overlay) {
+			switch (Terrain.collision.overlay) {
 				case .None: overlayType = "None";
 				case .Flags: overlayType = "Flags";
 				case .Deform: overlayType = "Deform";
@@ -1480,8 +1468,8 @@ namespace SpyroScope {
 		}
 
 		void Reload() {
-			terrain.Reload();
-			terrain.ReloadAnimations();
+			Terrain.Reload();
+			Terrain.ReloadAnimations();
 		}
 	}
 }

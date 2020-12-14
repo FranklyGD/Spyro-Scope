@@ -3,10 +3,10 @@ using System;
 using System.Collections;
 
 namespace SpyroScope {
-	class Terrain {
-		public TerrainCollision collision ~ delete _;
-		public TerrainRegion[] visualMeshes;
-		public RegionAnimation[] animations;
+	static class Terrain {
+		public static TerrainCollision collision;
+		public static TerrainRegion[] visualMeshes;
+		public static RegionAnimation[] animations;
 		public static List<int> usedTextureIndices = new .() ~ delete _;
 		public static TextureQuad[] textureInfos;
 		public static TextureScroller[] textureScrollers;
@@ -18,44 +18,55 @@ namespace SpyroScope {
 			NearLQ,
 			NearHQ
 		}
-		public RenderMode renderMode = .Collision;
-		public bool wireframe;
-		public int drawnRegion = -1;
-		public bool decoded;
+		public static RenderMode renderMode = .Collision;
+		public static bool wireframe;
+		public static int drawnRegion = -1;
+		public static bool decoded;
 
-		public this() {
+		public static void Load() {
+			Reload();
+			ReloadAnimations();
+		}
+
+		public static void Clear() {
+			DeleteAndNullify!(collision);
+
+			DeleteContainerAndItems!(visualMeshes);
+			visualMeshes = null;
+			decoded = false;
+
+			if (animations != null) {
+				for (var item in animations) {
+					item.Dispose();
+				}
+				DeleteAndNullify!(animations);
+			}
+			
+			if (textureScrollers != null) {
+				for (var item in textureScrollers) {
+					item.Dispose();
+				}
+				DeleteAndNullify!(textureScrollers);
+			}
+				
+			if (textureSwappers != null) {
+				for (var item in textureSwappers) {
+					item.Dispose();
+				}
+				DeleteAndNullify!(textureSwappers);
+			}
+
+			DeleteAndNullify!(textureInfos);
+		}
+
+		public static void Reload() {
+			// Collision
 			Emulator.Address address = ?;
 			Emulator.collisionDataPointers[(int)Emulator.rom].Read(&address);
 			Emulator.Address deformAddress = ?;
 			Emulator.collisionDeformDataPointers[(int)Emulator.rom].Read(&deformAddress);
 			collision = new .(address, deformAddress);
-			
-			Reload();
-			ReloadAnimations();
-		}
 
-		public ~this() {
-			DeleteContainerAndItems!(visualMeshes);
-
-			for (var item in animations) {
-				item.Dispose();
-			}
-			delete animations;
-
-			for (var item in textureScrollers) {
-				item.Dispose();
-			}
-			DeleteAndNullify!(textureScrollers);
-
-			for (var item in textureSwappers) {
-				item.Dispose();
-			}
-			DeleteAndNullify!(textureSwappers);
-
-			DeleteAndNullify!(textureInfos);
-		}
-
-		public void Reload() {
 			usedTextureIndices.Clear();
 
 			// Locate scene region data and amount that are present in RAM
@@ -201,7 +212,7 @@ namespace SpyroScope {
 			delete warpData;*/
 		}
 
-		public void Decode() {
+		public static void Decode() {
 			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 
 			// Convert any used VRAM textures for previewing
@@ -219,7 +230,7 @@ namespace SpyroScope {
 			decoded = true;
 		}
 
-		public void Update() {
+		public static void Update() {
 			if (renderMode == .Collision) {
 				collision.Update();
 			} else {
@@ -240,7 +251,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public void Draw() {
+		public static void Draw() {
 			Renderer.SetTint(.(255,255,255));
 			Renderer.BeginSolid();
 
@@ -323,7 +334,7 @@ namespace SpyroScope {
 			Renderer.BeginSolid();
 		}
 
-		public void ReloadAnimations() {
+		public static void ReloadAnimations() {
 			uint32 count = ?;
 			Emulator.ReadFromRAM(Emulator.sceneRegionDeformPointers[(int)Emulator.rom] - 4, &count, 4);
 

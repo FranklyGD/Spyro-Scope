@@ -835,8 +835,8 @@ namespace SpyroScope {
 		}
 
 		void Decode() {
-			if (!ViewerState.terrain.decoded) {
-				ViewerState.terrain.Decode();
+			if (!Terrain.decoded) {
+				Terrain.Decode();
 			}
 
 			if (!spritesDecoded) {

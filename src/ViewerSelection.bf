@@ -22,28 +22,24 @@ namespace SpyroScope {
 		}
 
 		static bool MeshTest(ref float distance) {
-			if (ViewerState.terrain == null) {
-				return false;
-			}
-
 			let origin = Camera.ScreenPointToOrigin(WindowApp.mousePosition);
 			let ray = Camera.ScreenPointToRay(WindowApp.mousePosition);
 
-			if (ViewerState.terrain.renderMode == .Collision) {
-				if (GMath.RayMeshIntersect(origin, ray, ViewerState.terrain.collision.mesh, ref distance, ref currentTriangleIndex)) {
+			if (Terrain.renderMode == .Collision && Terrain.collision != null) {
+				if (GMath.RayMeshIntersect(origin, ray, Terrain.collision.mesh, ref distance, ref currentTriangleIndex)) {
 					ViewerState.cursor3DPosition = origin + ray * distance;
 					return true;
 				}
-			} else {
-				for (let i < ViewerState.terrain.visualMeshes.Count) {
-					let visualMesh = ViewerState.terrain.visualMeshes[i];
+			} else if (Terrain.visualMeshes != null) {
+				for (let i < Terrain.visualMeshes.Count) {
+					let visualMesh = Terrain.visualMeshes[i];
 					let transform = Vector(1f/16, 1f/16, 1f/visualMesh.verticalScale);
 
 					let metadata = visualMesh.metadata;
 					let transformedOrigin = (origin - .((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16)) * transform;
 					let transformedRay = ray * transform;
 
-					if (ViewerState.terrain.renderMode == .NearLQ || ViewerState.terrain.renderMode == .NearHQ) {
+					if (Terrain.renderMode == .NearLQ || Terrain.renderMode == .NearHQ) {
 						if (GMath.RayMeshIntersect(transformedOrigin, transformedRay, visualMesh.nearMesh, ref distance, ref hoveredTriangleIndex)) {
 							hoveredRegionIndex = i;
 							hoveredRegionTransparent = false;
@@ -156,14 +152,14 @@ namespace SpyroScope {
 		}
 
 		static bool TerrainDeformHoverTest(ref float distance) {
-			if (ViewerState.terrain == null || !(ViewerState.terrain.renderMode == .Collision && ViewerState.terrain.collision.overlay == .Deform)) {
+			if (!(Terrain.renderMode == .Collision && Terrain.collision.overlay == .Deform)) {
 				return false;
 			}
 
 			hoveredAnimGroupIndex = -1;
 
-			for (int groupIndex = 0; groupIndex < ViewerState.terrain.collision.animationGroups.Count; groupIndex++) {
-				let group = ViewerState.terrain.collision.animationGroups[groupIndex];
+			for (int groupIndex = 0; groupIndex < Terrain.collision.animationGroups.Count; groupIndex++) {
+				let group = Terrain.collision.animationGroups[groupIndex];
 				
 				let screenPosition = Camera.SceneToScreen(group.center);
 
