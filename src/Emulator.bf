@@ -82,7 +82,7 @@ namespace SpyroScope {
 		public static bool[8] changedPointers;
 		public const Address<Address>[8][11] pointerSets = .(
 			sceneRegionPointers,
-			sceneRegionDeformPointers,
+			farRegionDeformPointers,
 			collisionDataPointers,
 			collisionFlagsArrayPointers,
 			collisionDeformDataPointers,
@@ -127,7 +127,8 @@ namespace SpyroScope {
 		public const Address<uint32>[4] collisionRadius = .((.)0x8007036c, (.)0x8007044c, (.)0, (.)0); // Exclusive to Spyro: Year of the Dragon.
 
 		public const Address<Address>[11] sceneRegionPointers = .(0, (.)0x800785a8/*StD*/, 0, 0, (.)0x800673d4/*RR*/, 0, 0, 0, (.)0x8006d128/*YotD-1.1*/, 0, 0);
-		public const Address<Address>[11] sceneRegionDeformPointers = .(0, (.)0x80078584/*StD*/, 0, 0, (.)0x800681f8/*RR*/, 0, 0, 0, (.)0x8006e454/*YotD-1.1*/, 0, 0);
+		public const Address<Address>[11] farRegionDeformPointers = .(0, (.)0x80078574/*StD*/, 0, 0, (.)0x800681e8/*RR*/, 0, 0, 0, (.)0x8006e444/*YotD-1.1*/, 0, 0);
+		public const Address<Address>[11] nearRegionDeformPointers = .(0, (.)0x80078584/*StD*/, 0, 0, (.)0x800681f8/*RR*/, 0, 0, 0, (.)0x8006e454/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] warpingRegionPointers = .(0, 0/*StD*/, 0, 0, (.)0x800673f0/*RR*/, 0, 0, 0, (.)0x8006d144/*YotD-1.1*/, 0, 0);
 		
 		public const Address<Address>[11] textureDataPointers = .(0, (.)0x800785c4/*StD*/, 0, 0, (.)0x800673f4/*RR*/, 0, 0, 0, (.)0x8006d148/*YotD-1.1*/, 0, 0);

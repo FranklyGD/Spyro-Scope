@@ -25,8 +25,12 @@ namespace SpyroScope {
 			}
 		} }
 
+		public FarFace[] farFaces ~ delete _;
+
 		public Mesh farMesh ~ delete _;
-		public List<uint32> farMeshIndices = new .() ~ delete _;
+		public List<uint8> farMesh2GameIndices = new .() ~ delete _;
+		/// Used to convert mesh triangle index to face index
+		public List<int> farFaceIndices = new .() ~ delete _;
 
 		Vector[] nearVertices;
 		Renderer.Color4[] nearColors ~ delete _;
@@ -35,16 +39,57 @@ namespace SpyroScope {
 		public Mesh nearMesh ~ delete _;
 		public Mesh nearMeshSubdivided ~ delete _;
 		public List<uint8> nearMesh2GameIndices = new .() ~ delete _;
+		/// Used to convert mesh triangle index to face index
 		public List<int> nearFaceIndices = new .() ~ delete _;
-		public List<uint8> nearTri2TextureIndices = new .() ~ delete _;
 
 		public Mesh nearMeshTransparent ~ delete _;
 		public Mesh nearMeshTransparentSubdivided ~ delete _;
 		public List<uint8> nearMesh2GameTransparentIndices = new .() ~ delete _;
+		/// Used to convert mesh triangle index to face index (transparent)
 		public List<int> nearFaceTransparentIndices = new .() ~ delete _;
-		public List<uint8> nearTri2TransparentTextureIndices = new .() ~ delete _;
 
 		public int highestUsedTextureIndex = -1;
+
+		public struct FarFace {
+			public uint32 packedVertexIndices, packedColorIndices;
+
+			public uint8[4] UnpackVertexIndices() {
+				uint8[4] indices;
+				if (Emulator.installment == .SpyroTheDragon) {
+					indices[0] = (.)(packedVertexIndices >> 14 & 0x3f); //((packedVertexIndices >> 11) & 0x1f8) >> 3;
+					indices[1] = (.)(packedVertexIndices >> 20 & 0x3f); //((packedVertexIndices >> 17) & 0x1f8) >> 3;
+					indices[2] = (.)(packedVertexIndices >> 26 & 0x3f); //((packedVertexIndices >> 23) & 0x1f8) >> 3;
+					indices[3] = (.)(packedVertexIndices >> 8 & 0x3f); //((packedVertexIndices >> 5) & 0x1f8) >> 3;
+				} else {
+					indices[0] = (.)(packedVertexIndices >> 10 & 0x7f); //((packedVertexIndices >> 7) & 0x3fc) >> 2;
+					indices[1] = (.)(packedVertexIndices >> 17 & 0x7f); //((packedVertexIndices >> 14) & 0x3fc) >> 2;
+					indices[2] = (.)(packedVertexIndices >> 24 & 0x7f); //((packedVertexIndices >> 21) & 0x3fc) >> 2;
+					indices[3] = (.)(packedVertexIndices >> 3 & 0x7f); //(packedVertexIndices & 0x3fc) >> 2;
+				}
+				return indices;
+			}
+
+			public uint8[4] UnpackColorIndices() {
+				uint8[4] indices;
+				if (Emulator.installment == .SpyroTheDragon) {
+					indices[0] = (.)(packedColorIndices >> 14 & 0x3f); //((packedColorIndices >> 12) & 0xfc) >> 2;
+					indices[1] = (.)(packedColorIndices >> 20 & 0x3f); //((packedColorIndices >> 18) & 0xfc) >> 2;
+					indices[2] = (.)(packedColorIndices >> 26 & 0x3f); //((packedColorIndices >> 24) & 0xfc) >> 2;
+					indices[3] = (.)(packedColorIndices >> 8 & 0x3f); //((packedColorIndices >> 6) & 0xfc) >> 2;
+				} else {
+					indices[0] = (.)(packedColorIndices >> 11 & 0x7f); //((packedColorIndices >> 9) & 0x1fc) >> 2;
+					indices[1] = (.)(packedColorIndices >> 18 & 0x7f); //((packedColorIndices >> 16) & 0x1fc) >> 2;
+					indices[2] = (.)(packedColorIndices >> 25 & 0x7f); //((packedColorIndices >> 23) & 0x1fc) >> 2;
+					indices[3] = (.)(packedColorIndices >> 4 & 0x7f); //((packedColorIndices >> 2) & 0x1fc) >> 2;
+				}
+				return indices;
+			}
+			
+			public bool isTriangle { get => Emulator.installment == .SpyroTheDragon ?
+				(packedVertexIndices >> 14 & 0x3f) == (packedVertexIndices >> 8 & 0x3f) :
+				(packedVertexIndices >> 10 & 0x7f) == (packedVertexIndices >> 3 & 0x7f)
+			;}
+		}
 
 		public struct NearFace {
 			public uint8[4] trianglesIndices, colorsIndices, a, b;
@@ -117,8 +162,10 @@ namespace SpyroScope {
 
 		public void GetUsedTextures() {
 			Emulator.Address regionPointer = address + 0x1c + ((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2) * 4;
-			nearFaces = scope .[metadata.nearFaceCount];
-			Emulator.ReadFromRAM(regionPointer + ((int)metadata.nearVertexCount + (int)metadata.nearColorCount * 2) * 4, nearFaces.CArray(), (int)metadata.nearFaceCount * sizeof(NearFace));
+			if (nearFaces == null) {
+				nearFaces = new .[metadata.nearFaceCount];
+				Emulator.ReadFromRAM(regionPointer + ((int)metadata.nearVertexCount + (int)metadata.nearColorCount * 2) * 4, nearFaces.CArray(), (int)metadata.nearFaceCount * sizeof(NearFace));
+			}
 
 			for (let i < metadata.nearFaceCount) {
 				let textureIndex = nearFaces[i].renderInfo.textureIndex;
@@ -144,10 +191,10 @@ namespace SpyroScope {
 			Vector[4] triangleVertices = ?;
 			Renderer.Color[4] triangleColors = ?;
 			
-			uint32[4] triangleIndices = ?;
+			uint8[4] triangleIndices, colorIndices;
 
-			uint32[] regionTriangles = scope .[faceSize * 2];
-			Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize) * 4, regionTriangles.CArray(), faceSize * 2 * 4);
+			farFaces = new .[faceSize * 2];
+			Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize) * 4, farFaces.CArray(), faceSize * sizeof(FarFace));
 
 			Renderer.Color4[] vertexColors = scope .[colorSize];
 			Emulator.ReadFromRAM(regionPointer + vertexSize * 4, vertexColors.CArray(), colorSize * 4);
@@ -160,36 +207,24 @@ namespace SpyroScope {
 			// Vertex Indexing [80028e10]
 			// Color Indexing [80028f28]
 			for (let i < faceSize) {
-				uint32 packedTriangleIndex = regionTriangles[i * 2];
-				uint32 packedColorIndex = regionTriangles[i * 2 + 1];
-
-				if (Emulator.installment == .SpyroTheDragon) {
-					triangleIndices[0] = packedTriangleIndex >> 14 & 0x3f; //((packedTriangleIndex >> 11) & 0x1f8) >> 3;
-					triangleIndices[1] = packedTriangleIndex >> 20 & 0x3f; //((packedTriangleIndex >> 17) & 0x1f8) >> 3;
-					triangleIndices[2] = packedTriangleIndex >> 26 & 0x3f; //((packedTriangleIndex >> 23) & 0x1f8) >> 3;
-					triangleIndices[3] = packedTriangleIndex >> 8 & 0x3f; //((packedTriangleIndex >> 5) & 0x1f8) >> 3;
-				} else {
-					triangleIndices[0] = packedTriangleIndex >> 10 & 0x7f; //((packedTriangleIndex >> 7) & 0x3fc) >> 2;
-					triangleIndices[1] = packedTriangleIndex >> 17 & 0x7f; //((packedTriangleIndex >> 14) & 0x3fc) >> 2;
-					triangleIndices[2] = packedTriangleIndex >> 24 & 0x7f; //((packedTriangleIndex >> 21) & 0x3fc) >> 2;
-					triangleIndices[3] = packedTriangleIndex >> 3 & 0x7f; //(packedTriangleIndex & 0x3fc) >> 2;
-				}
+				let face = farFaces[i];
+				triangleIndices = face.UnpackVertexIndices();
 
 				triangleVertices[0] = UnpackVertex(packedVertices[triangleIndices[0]]);
 				triangleVertices[1] = UnpackVertex(packedVertices[triangleIndices[1]]);
 				triangleVertices[2] = UnpackVertex(packedVertices[triangleIndices[2]]);
 
-				if (Emulator.installment == .SpyroTheDragon) {
-					triangleColors[0] = vertexColors[packedColorIndex >> 14 & 0x3f]; //((packedTriangleIndex >> 12) & 0xfc) >> 2;
-					triangleColors[1] = vertexColors[packedColorIndex >> 20 & 0x3f]; //((packedTriangleIndex >> 18) & 0xfc) >> 2;
-					triangleColors[2] = vertexColors[packedColorIndex >> 26 & 0x3f]; //((packedTriangleIndex >> 24) & 0xfc) >> 2;
-				} else {
-					triangleColors[0] = vertexColors[packedColorIndex >> 11 & 0x7f]; //((packedTriangleColorIndex >> 9) & 0x1fc) >> 2;
-					triangleColors[1] = vertexColors[packedColorIndex >> 18 & 0x7f]; //((packedTriangleColorIndex >> 16) & 0x1fc) >> 2;
-					triangleColors[2] = vertexColors[packedColorIndex >> 25 & 0x7f]; //((packedTriangleColorIndex >> 23) & 0x1fc) >> 2;
-				}
+				colorIndices = face.UnpackColorIndices();
+
+				triangleColors[0] = vertexColors[colorIndices[0]];
+				triangleColors[1] = vertexColors[colorIndices[1]];
+				triangleColors[2] = vertexColors[colorIndices[2]];
 
 				if (triangleIndices[0] == triangleIndices[3]) {
+					farMesh2GameIndices.Add(triangleIndices[0]);
+					farMesh2GameIndices.Add(triangleIndices[2]);
+					farMesh2GameIndices.Add(triangleIndices[1]);
+
 					vertexList.Add(triangleVertices[0]);
 					vertexList.Add(triangleVertices[2]);
 					vertexList.Add(triangleVertices[1]);
@@ -197,14 +232,19 @@ namespace SpyroScope {
 					colorList.Add(triangleColors[0]);
 					colorList.Add(triangleColors[2]);
 					colorList.Add(triangleColors[1]);
+
+					farFaceIndices.Add(i);
 				} else {
 					triangleVertices[3] = UnpackVertex(packedVertices[triangleIndices[3] % packedVertices.Count]);
+					triangleColors[3] = vertexColors[colorIndices[3]];
 					
-					if (Emulator.installment == .SpyroTheDragon) {
-						triangleColors[3] = vertexColors[packedColorIndex >> 8 & 0x3f]; //((packedTriangleColorIndex >> 6) & 0xfc) >> 2;
-					} else {
-						triangleColors[3] = vertexColors[packedColorIndex >> 4 & 0x7f]; //((packedTriangleColorIndex >> 2) & 0x1fc) >> 2;
-					}
+					farMesh2GameIndices.Add(triangleIndices[0]);
+					farMesh2GameIndices.Add(triangleIndices[2]);
+					farMesh2GameIndices.Add(triangleIndices[1]);
+					
+					farMesh2GameIndices.Add(triangleIndices[0]);
+					farMesh2GameIndices.Add(triangleIndices[1]);
+					farMesh2GameIndices.Add(triangleIndices[3]);
 
 					vertexList.Add(triangleVertices[0]);
 					vertexList.Add(triangleVertices[2]);
@@ -221,6 +261,9 @@ namespace SpyroScope {
 					colorList.Add(triangleColors[0]);
 					colorList.Add(triangleColors[1]);
 					colorList.Add(triangleColors[3]);
+
+					farFaceIndices.Add(i);
+					farFaceIndices.Add(i);
 				}
 			}
 
@@ -250,7 +293,6 @@ namespace SpyroScope {
 
 			List<uint8> activeNearMeshIndices = ?;
 			List<int> activeNearFaceIndices = ?;
-			List<uint8> activeNearTextureIndices = ?;
 
 			uint32[] packedVertices = scope .[vertexSize];
 			Emulator.ReadFromRAM(regionPointer, packedVertices.CArray(), vertexSize * 4);
@@ -278,8 +320,10 @@ namespace SpyroScope {
 			List<Renderer.Color> colorTransparentSubList = scope .();
 			List<float[2]> uvTransparentSubList = scope .();
 
-			nearFaces = new .[faceSize];
-			Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize * 2) * 4, nearFaces.CArray(), faceSize * sizeof(NearFace));
+			if (nearFaces == null) {
+				nearFaces = new .[faceSize];
+				Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize * 2) * 4, nearFaces.CArray(), faceSize * sizeof(NearFace));
+			}
 
 			nearColors = new .[colorSize * 2];
 			Emulator.ReadFromRAM(regionPointer + vertexSize * 4, nearColors.CArray(), colorSize * 2 * 4);
@@ -315,7 +359,6 @@ namespace SpyroScope {
 					activeUvSubList = uvTransparentSubList;
 					activeNearMeshIndices = nearMesh2GameTransparentIndices;
 					activeNearFaceIndices = nearFaceTransparentIndices;
-					activeNearTextureIndices = nearTri2TransparentTextureIndices;
 				} else {
 					activeVertexList = vertexList;
 					activeColorList = colorList;
@@ -325,7 +368,6 @@ namespace SpyroScope {
 					activeUvSubList = uvSubList;
 					activeNearMeshIndices = nearMesh2GameIndices;
 					activeNearFaceIndices = nearFaceIndices;
-					activeNearTextureIndices = nearTri2TextureIndices;
 				}
 
 				if (regionFace.isTriangle) {
@@ -475,7 +517,6 @@ namespace SpyroScope {
 					uvs[11] = rotatedTriangleUV[0];
 
 					activeNearFaceIndices.Add(i);
-					activeNearTextureIndices.Add(textureIndex);
 				} else {
 					// Low quality textures
 					var indices = activeNearMeshIndices.GrowUnitialized(6);
@@ -595,8 +636,6 @@ namespace SpyroScope {
 
 					activeNearFaceIndices.Add(i);
 					activeNearFaceIndices.Add(i);
-					activeNearTextureIndices.Add(textureIndex);
-					activeNearTextureIndices.Add(textureIndex);
 				}
 			}
 

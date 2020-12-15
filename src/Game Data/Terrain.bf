@@ -6,7 +6,10 @@ namespace SpyroScope {
 	static class Terrain {
 		public static TerrainCollision collision;
 		public static TerrainRegion[] visualMeshes;
-		public static RegionAnimation[] animations;
+
+		public static RegionAnimation[] farAnimations;
+		public static RegionAnimation[] nearAnimations;
+
 		public static List<int> usedTextureIndices = new .() ~ delete _;
 		public static TextureQuad[] textureInfos;
 		public static TextureScroller[] textureScrollers;
@@ -35,11 +38,18 @@ namespace SpyroScope {
 			visualMeshes = null;
 			decoded = false;
 
-			if (animations != null) {
-				for (var item in animations) {
+			if (farAnimations != null) {
+				for (var item in farAnimations) {
 					item.Dispose();
 				}
-				DeleteAndNullify!(animations);
+				DeleteAndNullify!(farAnimations);
+			}
+
+			if (nearAnimations != null) {
+				for (var item in nearAnimations) {
+					item.Dispose();
+				}
+				DeleteAndNullify!(nearAnimations);
 			}
 			
 			if (textureScrollers != null) {
@@ -177,11 +187,11 @@ namespace SpyroScope {
 			
 
 			// Delete animations as the new loaded mesh may be incompatible
-			if (animations != null) {
-				for (let item in animations) {
+			if (nearAnimations != null) {
+				for (let item in nearAnimations) {
 					item.Dispose();
 				}
-				DeleteAndNullify!(animations);
+				DeleteAndNullify!(nearAnimations);
 			}
 
 			// Derived from Spyro: Ripto's Rage [80023994] TODO
@@ -234,9 +244,17 @@ namespace SpyroScope {
 			if (renderMode == .Collision) {
 				collision.Update();
 			} else {
-				if (animations != null) {
-					for (let animation in animations) {
-						animation.Update();
+				if (farAnimations != null) {
+					for (let animation in farAnimations) {
+						animation.Update(visualMeshes[animation.regionIndex].farMesh);
+					}
+				}
+
+				if (nearAnimations != null) {
+					for (let animation in nearAnimations) {
+						let region = visualMeshes[animation.regionIndex];
+						animation.Update(region.nearMesh);
+						animation.UpdateSubdivided(region);
 					}
 				}
 			}
@@ -244,6 +262,7 @@ namespace SpyroScope {
 			UpdateTextureInfo(true);
 			
 			for (let terrainRegion in visualMeshes) {
+				terrainRegion.farMesh.Update();
 				terrainRegion.nearMesh.Update();
 				terrainRegion.nearMeshSubdivided.Update();
 				terrainRegion.nearMeshTransparent.Update();
@@ -336,21 +355,51 @@ namespace SpyroScope {
 
 		public static void ReloadAnimations() {
 			uint32 count = ?;
-			Emulator.ReadFromRAM(Emulator.sceneRegionDeformPointers[(int)Emulator.rom] - 4, &count, 4);
+			Emulator.ReadFromRAM(Emulator.farRegionDeformPointers[(int)Emulator.rom] - 4, &count, 4);
 
-			delete animations;
-			animations = new .[count];
+			delete farAnimations;
+			farAnimations = new .[count];
 
 			Emulator.Address sceneDeformArray = ?;
-			Emulator.sceneRegionDeformPointers[(int)Emulator.rom].Read(&sceneDeformArray);
-			let animationPointers = scope Emulator.Address[count];
+			Emulator.farRegionDeformPointers[(int)Emulator.rom].Read(&sceneDeformArray);
+			var animationPointers = scope Emulator.Address[count];
 			Emulator.ReadFromRAM(sceneDeformArray, animationPointers.CArray(), 4 * count);
 
 			for (let animationIndex < count) {
-				let animation = &animations[animationIndex];
-
+				let animation = &farAnimations[animationIndex];
 				*animation = .(animationPointers[animationIndex]);
-				animation.Reload(visualMeshes);
+
+				let region = visualMeshes[animation.regionIndex];
+				var triOrQuad = scope bool[region.metadata.farFaceCount];
+
+				for (let i < region.metadata.farFaceCount) {
+					triOrQuad[i] = region.farFaces[i].isTriangle;
+				}
+
+				animation.Reload(region.farMesh2GameIndices, triOrQuad, region.farFaceIndices, region.farMesh);
+			}
+
+			Emulator.ReadFromRAM(Emulator.nearRegionDeformPointers[(int)Emulator.rom] - 4, &count, 4);
+
+			delete nearAnimations;
+			nearAnimations = new .[count];
+
+			Emulator.nearRegionDeformPointers[(int)Emulator.rom].Read(&sceneDeformArray);
+			animationPointers = scope Emulator.Address[count];
+			Emulator.ReadFromRAM(sceneDeformArray, animationPointers.CArray(), 4 * count);
+
+			for (let animationIndex < count) {
+				let animation = &nearAnimations[animationIndex];
+				*animation = .(animationPointers[animationIndex]);
+
+				let region = visualMeshes[animation.regionIndex];
+				var triOrQuad = scope bool[region.metadata.nearFaceCount];
+
+				for (let i < region.metadata.nearFaceCount) {
+					triOrQuad[i] = region.GetNearFace(i).isTriangle;
+				}
+
+				animation.Reload(region.nearMesh2GameIndices, triOrQuad, region.nearFaceIndices, region.nearMesh);
 			}
 		}
 

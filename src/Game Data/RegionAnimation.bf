@@ -5,13 +5,12 @@ namespace SpyroScope {
 	struct RegionAnimation {
 		public Emulator.Address address;
 		public uint8 regionIndex;
-		public uint32 count;
+		public uint16 count;
 		public Vector center;
 		public float radius;
 
-		public TerrainRegion region;
-		public Mesh[] nearMeshStates;
-		public List<int> nearAnimatedTriangles;
+		public Mesh[] meshStates;
+		public List<int> animatedTriangles;
 
 		public struct KeyframeData {
 			public uint8 flag, a, nextKeyframe, b, interpolation, fromState, toState, c;
@@ -27,22 +26,20 @@ namespace SpyroScope {
 
 		public this(Emulator.Address address) {
 			this = ?;
-
 			this.address = address;
-		}
 
-		public void Dispose() {
-			DeleteContainerAndItems!(nearMeshStates);
-			delete nearAnimatedTriangles;
-		}
-
-		public void Reload(TerrainRegion[] terrainRegions) mut {
 			if (address.IsNull)
 				return;
 
 			Emulator.ReadFromRAM(address + 4, &regionIndex, 2);
-			region = terrainRegions[regionIndex];
+		}
 
+		public void Dispose() {
+			DeleteContainerAndItems!(meshStates);
+			delete animatedTriangles;
+		}
+
+		public void Reload(List<uint8> mesh2GameIndices, bool[] triOrQuad, List<int> faceIndices, Mesh mesh) mut {
 			Emulator.ReadFromRAM(address + 6, &count, 2);
 
 			uint32 vertexDataOffset = ?;
@@ -66,11 +63,10 @@ namespace SpyroScope {
 			let vertexCount = count / 4;
 
 			// Find triangles using these vertices
-			let mesh2GameIndices = region.nearMesh2GameIndices;
 			List<uint32> gameVertexIndices = scope .();
-			nearAnimatedTriangles = new .();
+			animatedTriangles = new .();
 			for (var i = 0; i < mesh2GameIndices.Count; i += 3) {
-				if (region.GetNearFace(region.nearFaceIndices[i / 3]).isTriangle) {
+				if (triOrQuad[faceIndices[i / 3]]) {
 					if (mesh2GameIndices[i] < vertexCount ||
 						mesh2GameIndices[i + 1] < vertexCount ||
 						mesh2GameIndices[i + 2] < vertexCount) {
@@ -80,7 +76,7 @@ namespace SpyroScope {
 						gameVertexIndices.Add(mesh2GameIndices[i + 1]);
 						gameVertexIndices.Add(mesh2GameIndices[i + 2]);
 	
-						nearAnimatedTriangles.Add(i);
+						animatedTriangles.Add(i);
 					}
 				} else {
 					if (mesh2GameIndices[i] < vertexCount ||
@@ -98,8 +94,8 @@ namespace SpyroScope {
 						gameVertexIndices.Add(mesh2GameIndices[i + 4]);
 						gameVertexIndices.Add(mesh2GameIndices[i + 5]);
 
-						nearAnimatedTriangles.Add(i);
-						nearAnimatedTriangles.Add(i + 3);
+						animatedTriangles.Add(i);
+						animatedTriangles.Add(i + 3);
 					}
 					
 					i += 3;
@@ -107,7 +103,7 @@ namespace SpyroScope {
 			}
 
 			let vertices = scope Vector[vertexCount];
-			nearMeshStates = new .[stateCount];
+			meshStates = new .[stateCount];
 			for (let stateIndex < stateCount) {
 				let startVertexState = stateIndex * vertexCount;
 
@@ -141,37 +137,41 @@ namespace SpyroScope {
 					} else {
 						// Include the vertices of the affected triangles
 						// even though they are not modified
-						v[i] = region.nearMesh.vertices[nearAnimatedTriangles[i / 3] + (i % 3)];
+						v[i] = mesh.vertices[animatedTriangles[i / 3] + (i % 3)];
 					}
 					c[i] = .(255,255,255);
 					n[i] = .(0,0,1);
 				}
 
-				nearMeshStates[stateIndex] = new .(v,n,c);
+				meshStates[stateIndex] = new .(v,n,c);
 			}
 		}
 
-		public void Update() {
+		public void Update(Mesh mesh) {
 			let currentKeyframe = CurrentKeyframe;
 
 			KeyframeData keyframeData = GetKeyframeData(currentKeyframe);
 
-			let interpolation = (float)keyframeData.interpolation / (256);
+			let interpolation = (float)keyframeData.interpolation / 256;
 
-			if (keyframeData.fromState >= nearMeshStates.Count || keyframeData.toState >= nearMeshStates.Count) {
+			if (keyframeData.fromState >= meshStates.Count || keyframeData.toState >= meshStates.Count) {
 				return; // Don't bother since it picked up garbage data
 			}
 
 			// Update all vertices that are meant to move between states
-			for (let i < nearMeshStates[0].vertices.Count) {
-				Vector fromVertex = nearMeshStates[keyframeData.fromState].vertices[i];
-				Vector toVertex = nearMeshStates[keyframeData.toState].vertices[i];
+			for (let i < meshStates[0].vertices.Count) {
+				Vector fromVertex = meshStates[keyframeData.fromState].vertices[i];
+				Vector toVertex = meshStates[keyframeData.toState].vertices[i];
 				
-				region.nearMesh.vertices[nearAnimatedTriangles[i / 3] + (i % 3)] = fromVertex + (toVertex - fromVertex) * interpolation;
+				mesh.vertices[animatedTriangles[i / 3] + (i % 3)] = fromVertex + (toVertex - fromVertex) * interpolation;
 			}
 
-			for (var i < nearAnimatedTriangles.Count) {
-				let triangleIndex = nearAnimatedTriangles[i];
+			mesh.SetDirty();
+		}
+
+		public void UpdateSubdivided(TerrainRegion region) {
+			for (var i < animatedTriangles.Count) {
+				let triangleIndex = animatedTriangles[i];
 				
 				Vector* vertices = &region.nearMesh.vertices[triangleIndex];
 
@@ -245,7 +245,6 @@ namespace SpyroScope {
 				}
 			}
 
-			region.nearMesh.SetDirty();
 			region.nearMeshSubdivided.SetDirty();
 		}
 

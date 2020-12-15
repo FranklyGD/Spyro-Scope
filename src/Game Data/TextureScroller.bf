@@ -59,8 +59,9 @@ namespace SpyroScope {
 			for (let regionIndex < visualMeshes.Count) {
 				let terrainRegion = visualMeshes[regionIndex];
 
-				for (var triangleIndex = 0; triangleIndex < terrainRegion.nearTri2TextureIndices.Count; triangleIndex++) {
-					if (terrainRegion.nearTri2TextureIndices[triangleIndex] == textureIndex) {
+				for (var triangleIndex = 0; triangleIndex < terrainRegion.nearFaceIndices.Count; triangleIndex++) {
+					let nearFace = terrainRegion.GetNearFace(terrainRegion.nearFaceIndices[triangleIndex]);
+					if (nearFace.renderInfo.textureIndex == textureIndex) {
 						if (!affectedTriangles.ContainsKey((.)regionIndex)) {
 							affectedTriangles[(.)regionIndex] = new .();
 						}
@@ -68,8 +69,9 @@ namespace SpyroScope {
 					}
 				}
 				
-				for (var triangleIndex = 0; triangleIndex < terrainRegion.nearTri2TransparentTextureIndices.Count; triangleIndex++) {
-					if (terrainRegion.nearTri2TransparentTextureIndices[triangleIndex] == textureIndex) {
+				for (var triangleIndex = 0; triangleIndex < terrainRegion.nearFaceTransparentIndices.Count; triangleIndex++) {
+					let nearFace = terrainRegion.GetNearFace(terrainRegion.nearFaceTransparentIndices[triangleIndex]);
+					if (nearFace.renderInfo.textureIndex == textureIndex) {
 						if (!affectedTransparentTriangles.ContainsKey((.)regionIndex)) {
 							affectedTransparentTriangles[(.)regionIndex] = new .();
 						}
