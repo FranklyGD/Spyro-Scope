@@ -383,26 +383,26 @@ namespace SpyroScope {
 						triangleUV[(3 - textureRotation) & 3]
 					);
 
-					int8[2] indexSwap = flipSide ? .(1,2) : .(2,1);
+					int8[2] indexSwap = flipSide ? .(2,1) : .(1,2);
 					
 					indices[0] = trianglesIndices[3];
-					indices[1] = trianglesIndices[indexSwap[0]];
-					indices[2] = trianglesIndices[indexSwap[1]];
+					indices[1] = trianglesIndices[indexSwap[1]];
+					indices[2] = trianglesIndices[indexSwap[0]];
 
 					vertices[0] = nearVertices[indices[0]];
 					vertices[1] = nearVertices[indices[1]];
 					vertices[2] = nearVertices[indices[2]];
 					
 					colors[0] = nearColors[colorIndices[3]];
-					colors[1] = nearColors[colorIndices[indexSwap[0]]];
-					colors[2] = nearColors[colorIndices[indexSwap[1]]];
+					colors[1] = nearColors[colorIndices[indexSwap[1]]];
+					colors[2] = nearColors[colorIndices[indexSwap[0]]];
 
 					indexSwap[0]--;
 					indexSwap[1]--;
 					
 					uvs[0] = rotatedTriangleUV[2];
-					uvs[1] = rotatedTriangleUV[indexSwap[0]];
-					uvs[2] = rotatedTriangleUV[indexSwap[1]];
+					uvs[1] = rotatedTriangleUV[indexSwap[1]];
+					uvs[2] = rotatedTriangleUV[indexSwap[0]];
 
 					// High quality textures
 					Vector[5] midpoints = ?;
@@ -504,16 +504,16 @@ namespace SpyroScope {
 
 					rotatedTriangleUV = .(
 						triangleUV[(0 - (textureRotation + quadRotation)) & 3],
-						triangleUV[(1 - (textureRotation + quadRotation)) & 3],
 						triangleUV[(2 - (textureRotation + quadRotation)) & 3],
+						triangleUV[(1 - (textureRotation + quadRotation)) & 3]
 					);
 
 					if (flipSide ^ quadFlip) {
-						Swap!(rotatedTriangleUV[0], rotatedTriangleUV[2]);
+						Swap!(rotatedTriangleUV[0], rotatedTriangleUV[1]);
 					}
 
-					uvs[9] = rotatedTriangleUV[2];
-					uvs[10] = rotatedTriangleUV[1];
+					uvs[9] = rotatedTriangleUV[1];
+					uvs[10] = rotatedTriangleUV[2];
 					uvs[11] = rotatedTriangleUV[0];
 
 					activeNearFaceIndices.Add(i);
@@ -725,17 +725,17 @@ namespace SpyroScope {
 					let textureRotation = regionFace.renderInfo.rotation;
 
 					if (regionFace.isTriangle) {
-						float[4][2] rotatedTriangleUV = .((?),
+						float[3][2] rotatedTriangleUV = .(
 							triangleUV[(0 - textureRotation) & 3],
 							triangleUV[(2 - textureRotation) & 3],
 							triangleUV[(3 - textureRotation) & 3]
 						);
 
-						int8[2] indexSwap = regionFace.flipped ? .(1,3) : .(3,1);
+						int8[2] indexSwap = regionFace.flipped ? .(1,0) : .(0,1);
 
-						regionMesh.uvs[0 + vertexIndex] = rotatedTriangleUV[indexSwap[0]];
-						regionMesh.uvs[1 + vertexIndex] = rotatedTriangleUV[2];
-						regionMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[indexSwap[1]];
+						regionMesh.uvs[0 + vertexIndex] = rotatedTriangleUV[2];
+						regionMesh.uvs[1 + vertexIndex] = rotatedTriangleUV[indexSwap[1]];
+						regionMesh.uvs[2 + vertexIndex] = rotatedTriangleUV[indexSwap[0]];
 
 						const uint8[4][3] rotationOrder = .(
 							(0,1,2),
@@ -750,23 +750,23 @@ namespace SpyroScope {
 							let offset2 = ti * 3;
 							offset = (1 + subQuadIndexRotation[ti]) * 4;
 
-							rotatedTriangleUV = .((?),
-								triangleUV[((3 - (textureRotation)) & 3) + offset],
+							rotatedTriangleUV = .(
+								triangleUV[((0 - (textureRotation)) & 3) + offset],
 								triangleUV[((2 - (textureRotation)) & 3) + offset],
-								triangleUV[((0 - (textureRotation)) & 3) + offset]
+								triangleUV[((3 - (textureRotation)) & 3) + offset]
 							);
 
-							regionMeshSubdivided.uvs[0 + offset2 + subdividedVertexIndex] = rotatedTriangleUV[indexSwap[1]];
-							regionMeshSubdivided.uvs[1 + offset2 + subdividedVertexIndex] = rotatedTriangleUV[2];
+							regionMeshSubdivided.uvs[0 + offset2 + subdividedVertexIndex] = rotatedTriangleUV[2];
+							regionMeshSubdivided.uvs[1 + offset2 + subdividedVertexIndex] = rotatedTriangleUV[indexSwap[1]];
 							regionMeshSubdivided.uvs[2 + offset2 + subdividedVertexIndex] = rotatedTriangleUV[indexSwap[0]];
 						}
 
 						offset = (1 + subQuadIndexRotation[0]) * 4;
 
-						rotatedTriangleUV = .((?),
+						rotatedTriangleUV = .(
 							triangleUV[((0 - (textureRotation)) & 3) + offset],
 							triangleUV[((2 - (textureRotation)) & 3) + offset],
-							triangleUV[((1 - (textureRotation)) & 3) + offset],
+							triangleUV[((1 - (textureRotation)) & 3) + offset]
 						);
 
 						regionMeshSubdivided.uvs[9 + subdividedVertexIndex] = rotatedTriangleUV[indexSwap[1]];
