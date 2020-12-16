@@ -735,7 +735,7 @@ namespace SpyroScope {
 				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 256, 490, .(0,0,0,128));
 
 				var partialUV = textureInfo[0].GetVramPartialUV();
-				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 0,128, partialUV.leftY, partialUV.leftY + TextureQuad.terrainQuadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
+				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 0,128, partialUV.leftY, partialUV.leftY + (1f / 16), partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
 
 				const uint[4][2] offsets = .(
 					(128, 64),
@@ -747,7 +747,7 @@ namespace SpyroScope {
 					let offset = offsets[qi];
 
 					partialUV = textureInfo[1 + qi].GetVramPartialUV();
-					DrawUtilities.Rect(WindowApp.height - (offset[1] + 64), WindowApp.height - offset[1], offset[0], offset[0] + 64, partialUV.leftY, partialUV.leftY + TextureQuad.terrainQuadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
+					DrawUtilities.Rect(WindowApp.height - (offset[1] + 64), WindowApp.height - offset[1], offset[0], offset[0] + 64, partialUV.leftY, partialUV.leftY + (1f / 16), partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
 				}
 				
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("Face Index: {}", faceIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 6, 0), .(255,255,255));
