@@ -105,7 +105,7 @@ namespace SpyroScope {
 
 				for (let quadIndex < quadCount) {
 					let i = textureIndex * quadCount + quadIndex;
-					let quad = Terrain.textureInfos[i];
+					let quad = Terrain.textures[i];
 					let partialUVs = quad.GetVramPartialUV();
 
 					(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
@@ -188,7 +188,7 @@ namespace SpyroScope {
 			}
 
 			if (hoveredTextureIndex > -1) {
-				let quad = Terrain.textureInfos[hoveredTextureIndex];
+				let quad = Terrain.textures[hoveredTextureIndex];
 
 				let partialUVs = quad.GetVramPartialUV();
 				(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
@@ -253,7 +253,7 @@ namespace SpyroScope {
 				switch (clutReference.category) {
 					case .Terrain: {
 						for (let quadIndex in clutReference.references) {
-							let quad = Terrain.textureInfos[quadIndex];
+							let quad = Terrain.textures[quadIndex];
 			
 							let partialUVs = quad.GetVramPartialUV();
 							(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
@@ -298,7 +298,7 @@ namespace SpyroScope {
 				
 				for (let quadIndex < quadCount) {
 					let i = textureIndex * quadCount + quadIndex;
-					let quad = Terrain.textureInfos[i];
+					let quad = Terrain.textures[i];
 					let referenceIndex = cluts.FindIndex(scope (x) => x.category == .Terrain && x.type == (quadIndex < (Emulator.installment == .SpyroTheDragon ? 1 : 2) ? .Gradient : .Normal) && x.location == quad.clut);
 
 					if (referenceIndex == -1) {
@@ -427,7 +427,7 @@ namespace SpyroScope {
 						for (let textureIndex in Terrain.usedTextureIndices) {
 							for (let quadIndex < quadCount) {
 								let i = textureIndex * quadCount + quadIndex;
-								let quad = Terrain.textureInfos[i];
+								let quad = Terrain.textures[i];
 
 								let pageIndex = quad.GetTPageIndex();
 								let bitMode = (quad.texturePage & 0x80 > 0) ? 2 : 4;
@@ -609,7 +609,7 @@ namespace SpyroScope {
 				switch (dialog.ShowDialog()) {
 					case .Ok(let val):
 						if (val == .OK) {
-							let quad = Terrain.textureInfos[hoveredTextureIndex];
+							let quad = Terrain.textures[hoveredTextureIndex];
 							VRAM.Export(dialog.FileNames[0], quad.left, quad.leftSkew, quad.width, quad.height, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.texturePage);
 						}
 					case .Err:
@@ -653,7 +653,7 @@ namespace SpyroScope {
 							let fileParams = fileName.Split!('_');
 							
 							if (hoveredTextureIndex > -1) {
-								let quad = Terrain.textureInfos[hoveredTextureIndex];
+								let quad = Terrain.textures[hoveredTextureIndex];
 
 								switch (fileParams[0]) {
 									case "clut": {

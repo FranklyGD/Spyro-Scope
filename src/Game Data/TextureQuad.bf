@@ -3,14 +3,9 @@ using System;
 namespace SpyroScope {
 	[Ordered]
 	public struct TextureQuad {
-		
-		// All terrain quads are 32x32 when decoded
-		// and the closer rendered ones are four of those combined
-
 		public uint8 left, leftSkew;
 		public uint16 clut;
 		public uint8 right, rightSkew, texturePage, flipRotateRaw;
-		public const float quadSize = 1f / 16;
 
 		public int width { get => (int)right - left + 1; }
 		public int height { get {

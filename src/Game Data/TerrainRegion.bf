@@ -341,7 +341,7 @@ namespace SpyroScope {
 
 				let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 				TextureQuad* quad = ?;
-				TextureQuad* quadSet = &Terrain.textureInfos[textureIndex * quadCount];
+				TextureQuad* quadSet = &Terrain.textures[textureIndex * quadCount];
 				quad = quadSet = Emulator.installment == .SpyroTheDragon ? quadSet : quadSet + 1;
 				var partialUV = quad.GetVramPartialUV();
 
@@ -821,7 +821,7 @@ namespace SpyroScope {
 			nearFaces[faceIndex] = *face;
 
 			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
-			TextureQuad* quad = &Terrain.textureInfos[face.renderInfo.textureIndex * quadCount];
+			TextureQuad* quad = &Terrain.textures[face.renderInfo.textureIndex * quadCount];
 			if (Emulator.installment != .SpyroTheDragon) {
 				quad++;
 			}

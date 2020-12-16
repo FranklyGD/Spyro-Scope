@@ -5,13 +5,13 @@ using System.Collections;
 namespace SpyroScope {
 	static class Terrain {
 		public static TerrainCollision collision;
-		public static TerrainRegion[] visualMeshes;
+		public static TerrainRegion[] regions;
 
 		public static RegionAnimation[] farAnimations;
 		public static RegionAnimation[] nearAnimations;
 
 		public static List<int> usedTextureIndices = new .() ~ delete _;
-		public static TextureQuad[] textureInfos;
+		public static TextureQuad[] textures;
 		public static TextureScroller[] textureScrollers;
 		public static TextureSwapper[] textureSwappers;
 
@@ -34,8 +34,8 @@ namespace SpyroScope {
 		public static void Clear() {
 			DeleteAndNullify!(collision);
 
-			DeleteContainerAndItems!(visualMeshes);
-			visualMeshes = null;
+			DeleteContainerAndItems!(regions);
+			regions = null;
 			decoded = false;
 
 			if (farAnimations != null) {
@@ -66,7 +66,7 @@ namespace SpyroScope {
 				DeleteAndNullify!(textureSwappers);
 			}
 
-			DeleteAndNullify!(textureInfos);
+			DeleteAndNullify!(textures);
 		}
 
 		public static void Reload() {
@@ -87,17 +87,17 @@ namespace SpyroScope {
 			Emulator.ReadFromRAM(sceneDataRegionArrayPointer + 4, &sceneRegionCount, 4);
 
 			// Remove any existing parsed data
-			DeleteContainerAndItems!(visualMeshes);
+			DeleteContainerAndItems!(regions);
 
 			// Parse all terrain regions
-			visualMeshes = new .[sceneRegionCount];
+			regions = new .[sceneRegionCount];
 
 			Emulator.Address[] sceneDataRegionAddresses = new .[sceneRegionCount];
 			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegionAddresses[0], sceneRegionCount);
 			for (let regionIndex < sceneRegionCount) {
 				let region = new TerrainRegion(sceneDataRegionAddresses[regionIndex]);
 				region.GetUsedTextures();
-				visualMeshes[regionIndex] = region;
+				regions[regionIndex] = region;
 			}
 			delete sceneDataRegionAddresses;
 
@@ -120,7 +120,7 @@ namespace SpyroScope {
 				Emulator.Address[] textureScrollerAddresses = new .[textureScrollerCount];
 				textureScrollerArrayAddress.ReadArray(&textureScrollerAddresses[0], textureScrollerCount);
 				for (let i < textureScrollerCount) {
-					let scroller = TextureScroller(textureScrollerAddresses[i], visualMeshes);
+					let scroller = TextureScroller(textureScrollerAddresses[i]);
 					scroller.GetUsedTextures();
 					textureScrollers[i] = scroller;
 				}
@@ -146,7 +146,7 @@ namespace SpyroScope {
 				Emulator.Address[] textureScrollerAddresses = new .[textureSwapperCount];
 				textureScrollerArrayAddress.ReadArray(&textureScrollerAddresses[0], textureSwapperCount);
 				for (let i < textureSwapperCount) {
-					let swapper = TextureSwapper(textureScrollerAddresses[i], visualMeshes);
+					let swapper = TextureSwapper(textureScrollerAddresses[i]);
 					swapper.GetUsedTextures();
 					textureSwappers[i] = swapper;
 				}
@@ -161,19 +161,19 @@ namespace SpyroScope {
 				}
 			}
 
-			if (textureInfos != null) {
-				delete textureInfos;
+			if (textures != null) {
+				delete textures;
 			}
 			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 
 			let totalQuadCount = (highestUsedIndex + 1) * quadCount;
 			Emulator.Address<TextureQuad> textureDataAddress = ?;
 			Emulator.textureDataPointers[(int)Emulator.rom].Read(&textureDataAddress);
-			textureInfos = new .[totalQuadCount];
-			textureDataAddress.ReadArray(&textureInfos[0], totalQuadCount);
+			textures = new .[totalQuadCount];
+			textureDataAddress.ReadArray(&textures[0], totalQuadCount);
 
 			for (let regionIndex < sceneRegionCount) {
-				visualMeshes[regionIndex].Reload();
+				regions[regionIndex].Reload();
 			}
 			
 			for (let scrollerIndex < textureScrollerCount) {
@@ -229,7 +229,7 @@ namespace SpyroScope {
 			let quadDecodeCount = Emulator.installment == .SpyroTheDragon ? 5 : 6;
 			for (let textureIndex in usedTextureIndices) {
 				for (let i < quadDecodeCount) {
-					Terrain.textureInfos[textureIndex * quadCount + i].Decode();
+					Terrain.textures[textureIndex * quadCount + i].Decode();
 				}
 			}
 
@@ -246,13 +246,13 @@ namespace SpyroScope {
 			} else {
 				if (farAnimations != null) {
 					for (let animation in farAnimations) {
-						animation.Update(visualMeshes[animation.regionIndex].farMesh);
+						animation.Update(regions[animation.regionIndex].farMesh);
 					}
 				}
 
 				if (nearAnimations != null) {
 					for (let animation in nearAnimations) {
-						let region = visualMeshes[animation.regionIndex];
+						let region = regions[animation.regionIndex];
 						animation.Update(region.nearMesh);
 						animation.UpdateSubdivided(region);
 					}
@@ -261,7 +261,7 @@ namespace SpyroScope {
 
 			UpdateTextureInfo(true);
 			
-			for (let terrainRegion in visualMeshes) {
+			for (let terrainRegion in regions) {
 				terrainRegion.farMesh.Update();
 				terrainRegion.nearMesh.Update();
 				terrainRegion.nearMeshSubdivided.Update();
@@ -281,9 +281,9 @@ namespace SpyroScope {
 			switch (renderMode) {
 				case .Far : {
 					if (drawnRegion > -1) {
-						visualMeshes[drawnRegion].DrawFar();
+						regions[drawnRegion].DrawFar();
 					} else {
-						for (let visualMesh in visualMeshes) {
+						for (let visualMesh in regions) {
 							visualMesh.DrawFar();
 						}
 					}
@@ -292,18 +292,18 @@ namespace SpyroScope {
 					Renderer.BeginRetroShading();
 
 					if (drawnRegion > -1) {
-						visualMeshes[drawnRegion].DrawNear();
+						regions[drawnRegion].DrawNear();
 					} else {
 						VRAM.decoded?.Bind();
 
-						for (let visualMesh in visualMeshes) {
+						for (let visualMesh in regions) {
 							visualMesh.DrawNear();
 						}
 						
 						GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
 						GL.glDepthMask(GL.GL_FALSE);  
 
-						for (let visualMesh in visualMeshes) {
+						for (let visualMesh in regions) {
 							visualMesh.DrawNearTransparent();
 						}
 
@@ -320,18 +320,18 @@ namespace SpyroScope {
 					Renderer.BeginRetroShading();
 	
 					if (drawnRegion > -1) {
-						visualMeshes[drawnRegion].DrawNear();
+						regions[drawnRegion].DrawNear();
 					} else {
 						VRAM.decoded?.Bind();
 	
-						for (let visualMesh in visualMeshes) {
+						for (let visualMesh in regions) {
 							visualMesh.DrawNearSubdivided();
 						}
 						
 						GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
 						GL.glDepthMask(GL.GL_FALSE);  
 	
-						for (let visualMesh in visualMeshes) {
+						for (let visualMesh in regions) {
 							visualMesh.DrawNearTransparentSubdivided();
 						}
 	
@@ -369,7 +369,7 @@ namespace SpyroScope {
 				let animation = &farAnimations[animationIndex];
 				*animation = .(animationPointers[animationIndex]);
 
-				let region = visualMeshes[animation.regionIndex];
+				let region = regions[animation.regionIndex];
 				var triOrQuad = scope bool[region.metadata.farFaceCount];
 
 				for (let i < region.metadata.farFaceCount) {
@@ -392,7 +392,7 @@ namespace SpyroScope {
 				let animation = &nearAnimations[animationIndex];
 				*animation = .(animationPointers[animationIndex]);
 
-				let region = visualMeshes[animation.regionIndex];
+				let region = regions[animation.regionIndex];
 				var triOrQuad = scope bool[region.metadata.nearFaceCount];
 
 				for (let i < region.metadata.nearFaceCount) {

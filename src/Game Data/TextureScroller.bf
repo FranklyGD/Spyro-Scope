@@ -6,7 +6,6 @@ namespace SpyroScope {
 		Emulator.Address address;
 		public uint8 textureIndex;
 		
-		public TerrainRegion[] visualMeshes;
 		public Dictionary<uint8, List<int>> affectedTriangles = new .();
 		public Dictionary<uint8, List<int>> affectedTransparentTriangles = new .();
 		
@@ -22,11 +21,10 @@ namespace SpyroScope {
 			}
 		}
 
-		public this(Emulator.Address address, TerrainRegion[] visualMeshes) {
+		public this(Emulator.Address address) {
 			this = ?;
 
 			this.address = address;
-			this.visualMeshes = visualMeshes;
 
 			Emulator.ReadFromRAM(address + 4, &textureIndex, 1);
 		}
@@ -56,8 +54,8 @@ namespace SpyroScope {
 			if (address.IsNull)
 				return;
 
-			for (let regionIndex < visualMeshes.Count) {
-				let terrainRegion = visualMeshes[regionIndex];
+			for (let regionIndex < Terrain.regions.Count) {
+				let terrainRegion = Terrain.regions[regionIndex];
 
 				for (var triangleIndex = 0; triangleIndex < terrainRegion.nearFaceIndices.Count; triangleIndex++) {
 					let nearFace = terrainRegion.GetNearFace(terrainRegion.nearFaceIndices[triangleIndex]);
@@ -90,7 +88,7 @@ namespace SpyroScope {
 		public void Decode() {
 			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 			for (let i < quadCount) {
-				let quad = (TextureQuad*)&Terrain.textureInfos[textureIndex * quadCount + i];
+				let quad = (TextureQuad*)&Terrain.textures[textureIndex * quadCount + i];
 
 				let verticalQuad = (quad.texturePage & 0x80 > 0) ? 3 : 2;
 				quad.leftSkew = 0;
@@ -108,7 +106,7 @@ namespace SpyroScope {
 			let quadVerticalPosition = verticalPosition >> 2;
 
 			if (Emulator.installment == .SpyroTheDragon) {
-				let textureLOD = (TextureQuad*)&Terrain.textureInfos[(int)textureIndex * 21];
+				let textureLOD = (TextureQuad*)&Terrain.textures[(int)textureIndex * 21];
 
 				textureLOD[0].leftSkew = textureLOD[0].rightSkew = quadVerticalPosition;
 				for (uint8 i < 4) {
@@ -118,7 +116,7 @@ namespace SpyroScope {
 					textureLOD[5 + i].leftSkew = textureLOD[5 + i].rightSkew = (verticalPosition + (i / 4 * 0x20)) & 0x3f;
 				}
 			} else {
-				let textureLOD = (TextureLOD*)&Terrain.textureInfos[(int)textureIndex * 6];
+				let textureLOD = (TextureLOD*)&Terrain.textures[(int)textureIndex * 6];
 				let farQuad = &textureLOD.farQuad;
 				let nearQuad = &textureLOD.nearQuad;
 				farQuad.leftSkew = nearQuad.leftSkew = quadVerticalPosition;
@@ -148,7 +146,7 @@ namespace SpyroScope {
 
 		public void UpdateUVs(bool transparent) {
 			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
-			TextureQuad* quad = &Terrain.textureInfos[textureIndex * quadCount];
+			TextureQuad* quad = &Terrain.textures[textureIndex * quadCount];
 			if (Emulator.installment != .SpyroTheDragon) {
 				quad++;
 			}
@@ -168,7 +166,7 @@ namespace SpyroScope {
 
 			let affectedTriangles = transparent ? affectedTransparentTriangles : affectedTriangles;
 			for (let affectedRegionTriPair in affectedTriangles) {
-				let terrainRegion = visualMeshes[affectedRegionTriPair.key];
+				let terrainRegion = Terrain.regions[affectedRegionTriPair.key];
 				terrainRegion.UpdateUVs(affectedRegionTriPair.value, triangleUV, transparent);
 			}
 		} 

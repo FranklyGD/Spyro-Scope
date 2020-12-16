@@ -6,7 +6,6 @@ namespace SpyroScope {
 		Emulator.Address address;
 		public uint8 textureIndex;
 		
-		public TerrainRegion[] visualMeshes;
 		public Dictionary<uint8, List<int>> affectedTriangles = new .();
 		public Dictionary<uint8, List<int>> affectedTransparentTriangles = new .();
 
@@ -22,11 +21,10 @@ namespace SpyroScope {
 			}
 		}
 
-		public this(Emulator.Address address, TerrainRegion[] visualMeshes) {
+		public this(Emulator.Address address) {
 			this = ?;
 
 			this.address = address;
-			this.visualMeshes = visualMeshes;
 		}
 
 		public void Dispose() {
@@ -50,8 +48,8 @@ namespace SpyroScope {
 			
 			Emulator.ReadFromRAM(address + 4, &textureIndex, 1);
 
-			for (let regionIndex < visualMeshes.Count) {
-				let terrainRegion = visualMeshes[regionIndex];
+			for (let regionIndex < Terrain.regions.Count) {
+				let terrainRegion = Terrain.regions[regionIndex];
 
 				for (var triangleIndex = 0; triangleIndex < terrainRegion.nearFaceIndices.Count; triangleIndex++) {
 					let nearFace = terrainRegion.GetNearFace(terrainRegion.nearFaceIndices[triangleIndex]);
@@ -99,7 +97,7 @@ namespace SpyroScope {
 			
 			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 			for (let i < quadCount) {
-				Terrain.textureInfos[(int)textureIndex * quadCount + i] = Terrain.textureInfos[(int)sourceTextureIndex * quadCount + i];
+				Terrain.textures[(int)textureIndex * quadCount + i] = Terrain.textures[(int)sourceTextureIndex * quadCount + i];
 			}
 		}
 
@@ -111,7 +109,7 @@ namespace SpyroScope {
 		
 		public void UpdateUVs(bool transparent) {
 			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
-			TextureQuad* quad = &Terrain.textureInfos[textureIndex * quadCount];
+			TextureQuad* quad = &Terrain.textures[textureIndex * quadCount];
 			if (Emulator.installment != .SpyroTheDragon) {
 				quad++;
 			}
@@ -131,7 +129,7 @@ namespace SpyroScope {
 
 			let affectedTriangles = transparent ? affectedTransparentTriangles : affectedTriangles;
 			for (let affectedRegionTriPair in affectedTriangles) {
-				let terrainRegion = visualMeshes[affectedRegionTriPair.key];
+				let terrainRegion = Terrain.regions[affectedRegionTriPair.key];
 				terrainRegion.UpdateUVs(affectedRegionTriPair.value, triangleUV, transparent);
 			}
 		} 

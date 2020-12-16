@@ -264,9 +264,9 @@ namespace SpyroScope {
 			textureIndexInput.OnValidate = new () => {
 				if (int.Parse(textureIndexInput.text) case .Ok(let val)) {
 					let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
-					if (val * quadCount < Terrain.textureInfos.Count) {
+					if (val * quadCount < Terrain.textures.Count) {
 						if (faceMenu.visible) {
-							let visualMesh = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+							let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 							int faceIndex = ?;
 							if (ViewerSelection.currentRegionTransparent) {
 								faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
@@ -293,7 +293,7 @@ namespace SpyroScope {
 			rotationInput.OnValidate = new () => {
 				if (int.Parse(rotationInput.text) case .Ok(let val)) {
 					if ((Terrain.renderMode == .NearLQ || Terrain.renderMode == .NearHQ) && ViewerSelection.currentRegionIndex > -1 && ViewerSelection.currentTriangleIndex > -1) {
-						let visualMesh = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+						let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 						int faceIndex = ?;
 						if (ViewerSelection.currentRegionTransparent) {
 							faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
@@ -319,7 +319,7 @@ namespace SpyroScope {
 			depthOffsetInput.OnValidate = new () => {
 				if (int.Parse(depthOffsetInput.text) case .Ok(let val)) {
 					if (faceMenu.visible) {
-						let visualMesh = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+						let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 						int faceIndex = ?;
 						if (ViewerSelection.currentRegionTransparent) {
 							faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
@@ -345,7 +345,7 @@ namespace SpyroScope {
 			mirrorToggle.toggleIconTexture = toggledTexture;
 			mirrorToggle.OnActuated.Add(new () => {
 				if (faceMenu.visible) {
-					let visualMesh = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 					int faceIndex = ?;
 					if (ViewerSelection.currentRegionTransparent) {
 						faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
@@ -367,7 +367,7 @@ namespace SpyroScope {
 			doubleSidedToggle.toggleIconTexture = toggledTexture;
 			doubleSidedToggle.OnActuated.Add(new () => {
 				if (faceMenu.visible) {
-					let visualMesh = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 					int faceIndex = ?;
 					if (ViewerSelection.currentRegionTransparent) {
 						faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
@@ -450,7 +450,7 @@ namespace SpyroScope {
 			}
 
 			if (faceMenu.visible) {
-				let visualMesh = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 				int faceIndex = ?;
 				if (ViewerSelection.currentRegionTransparent) {
 					faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
@@ -531,7 +531,7 @@ namespace SpyroScope {
 				}
 
 				if (ViewerSelection.currentRegionIndex > 0) {
-					let region = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+					let region = Terrain.regions[ViewerSelection.currentRegionIndex];
 					DrawUtilities.Axis(.((int)region.metadata.centerX * 16, (int)region.metadata.centerY * 16, (int)region.metadata.centerZ * 16), .Scale(1000));
 				}
 			}
@@ -708,7 +708,7 @@ namespace SpyroScope {
 					}
 				}
 			} else if (faceMenu.visible) {
-				let visualMesh = Terrain.visualMeshes[ViewerSelection.currentRegionIndex];
+				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 				let metadata = visualMesh.metadata;
 				
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", ViewerSelection.currentRegionIndex), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 11, 0), .(255,255,255));
@@ -726,17 +726,16 @@ namespace SpyroScope {
 				let face = visualMesh.GetNearFace(faceIndex);
 				
 				let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
-				TextureQuad* textureInfo = &Terrain.textureInfos[face.renderInfo.textureIndex * quadCount];
+				TextureQuad* textureInfo = &Terrain.textures[face.renderInfo.textureIndex * quadCount];
 				if (Emulator.installment != .SpyroTheDragon) {
 					textureInfo++;
 				}
-				
-				const let quadSize = TextureQuad.quadSize;
+			
 				
 				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 256, 490, .(0,0,0,128));
 
 				var partialUV = textureInfo[0].GetVramPartialUV();
-				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 0,128, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
+				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 0,128, partialUV.leftY, partialUV.leftY + TextureQuad.terrainQuadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
 
 				const uint[4][2] offsets = .(
 					(128, 64),
@@ -748,7 +747,7 @@ namespace SpyroScope {
 					let offset = offsets[qi];
 
 					partialUV = textureInfo[1 + qi].GetVramPartialUV();
-					DrawUtilities.Rect(WindowApp.height - (offset[1] + 64), WindowApp.height - offset[1], offset[0], offset[0] + 64, partialUV.leftY, partialUV.leftY + quadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
+					DrawUtilities.Rect(WindowApp.height - (offset[1] + 64), WindowApp.height - offset[1], offset[0], offset[0] + 64, partialUV.leftY, partialUV.leftY + TextureQuad.terrainQuadSize, partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
 				}
 				
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("Face Index: {}", faceIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 6, 0), .(255,255,255));

@@ -30,9 +30,9 @@ namespace SpyroScope {
 					ViewerState.cursor3DPosition = origin + ray * distance;
 					return true;
 				}
-			} else if (Terrain.visualMeshes != null) {
-				for (let i < Terrain.visualMeshes.Count) {
-					let visualMesh = Terrain.visualMeshes[i];
+			} else if (Terrain.regions != null) {
+				for (let i < Terrain.regions.Count) {
+					let visualMesh = Terrain.regions[i];
 					let transform = Vector(1f/16, 1f/16, 1f/visualMesh.verticalScale);
 
 					let metadata = visualMesh.metadata;
