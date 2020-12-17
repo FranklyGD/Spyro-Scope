@@ -162,12 +162,14 @@ namespace SpyroScope {
 				Terrain.renderMode = .Collision;
 				ViewerSelection.currentTriangleIndex = -1;
 				ViewerSelection.currentRegionIndex = -1;
+				faceMenu.visible = false;
 			});
 			viewButton2.OnActuated.Add(new () => {
 				viewButton2.enabled = cycleTerrainOverlayButton.enabled = false;
 				viewButton1.enabled = viewButton3.enabled = true;
 				Terrain.renderMode = .Far;
 				ViewerSelection.currentTriangleIndex = -1;
+				faceMenu.visible = false;
 			});
 			viewButton3.OnActuated.Add(new () => {
 				/*viewButton3.enabled =*/ cycleTerrainOverlayButton.enabled = false;
