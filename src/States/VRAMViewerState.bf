@@ -116,14 +116,6 @@ namespace SpyroScope {
 					Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,64), .(64,64,64));
 					Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
 
-					if (blinkerTime < 30) {
-						if (i == selectedTextureIndex) {
-							DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
-						} else if (selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].category == .Terrain && cluts[selectedCLUTIndex].references.Contains(i)) {
-							DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,0,0,64));
-						}
-					}
-
 					let modifiedQuadIndex = quadIndex + (Emulator.installment == .SpyroTheDragon ? 1 : 0);
 					switch (modifiedQuadIndex) {
 						case 0:
@@ -149,10 +141,15 @@ namespace SpyroScope {
 							Renderer.DrawLine(.(qleft, qbottom - 4, 0), .(qright - 4, qbottom - 4, 0), .(64,64,255), .(64,64,255));
 							Renderer.DrawLine(.(qright - 4, qtop, 0), .(qright - 4, qbottom - 4, 0), .(64,64,255), .(64,64,255));
 					}
+
+					if (blinkerTime < 30 && selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].category == .Terrain && cluts[selectedCLUTIndex].references.Contains(i)) {
+						DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,0,0,64));
+					}
 				}
 			}
 
-			for (let sprite in textureSprites3) {
+			for (let i < textureSprites3.Count) {
+				let sprite = textureSprites3[i];
 				let partialUVs = sprite.GetVramPartialUV();
 
 				(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
@@ -162,6 +159,10 @@ namespace SpyroScope {
 				Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
 				Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,64), .(64,64,64));
 				Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
+
+				if (blinkerTime < 30 && selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].category == .Sprite && cluts[selectedCLUTIndex].references.Contains(i)) {
+					DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,0,0,64));
+				}
 			}
 			
 			for (let CLUTIndex < cluts.Count) {
@@ -181,7 +182,7 @@ namespace SpyroScope {
 						DrawUtilities.Rect(ctop, cbottom, cleft, cright, .(255,255,255,64));
 					} else if (selectedTextureIndex > -1 && clutReference.category == .Terrain && clutReference.references.Contains(selectedTextureIndex)) {
 						DrawUtilities.Rect(ctop, cbottom, cleft, cright, .(255,0,0,64));
-					} else if (selectedSpriteIndex > -1 && clutReference.category == .Sprite && clutReference.references.Contains(textureSprites[selectedSpriteIndex].start)) {
+					} else if (selectedSpriteIndex > -1 && clutReference.category == .Sprite && clutReference.references.Contains(Emulator.installment == .YearOfTheDragon ? selectedSpriteIndex : textureSprites[selectedSpriteIndex].start)) {
 						DrawUtilities.Rect(ctop, cbottom, cleft, cright, .(255,0,0,64));
 					}
 				}
@@ -212,12 +213,8 @@ namespace SpyroScope {
 						Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,64), .(64,64,64));
 						Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
 						
-						if (blinkerTime < 30) {
-							if (spriteSetIndex == selectedSpriteIndex) {
-								DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
-							} else if (selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].category == .Sprite && cluts[selectedCLUTIndex].references[0] >= sprite.start && cluts[selectedCLUTIndex].references[0] < sprite.start + sprite.frames.Count) {
-								DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,0,0,64));
-							}
+						if (blinkerTime < 30 && selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].category == .Sprite && cluts[selectedCLUTIndex].references.FindIndex(scope (x) => x >= sprite.start && x < sprite.start + sprite.frames.Count) > -1) {
+							DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,0,0,64));
 						}
 					}
 				}
@@ -262,20 +259,66 @@ namespace SpyroScope {
 						}
 					}
 					case .Sprite: {
-						if (Emulator.installment != .RiptosRage) {
-							break;
-						}
-
-						for (let spriteIndex in clutReference.references) {
-							let spriteSetIndex = textureSprites.FindIndex(scope (x) => spriteIndex >= x.start && spriteIndex < x.start + x.frames.Count);
-							let spriteSet = textureSprites[spriteSetIndex];
+						switch (Emulator.installment) {
+							case .RiptosRage:
+								for (let spriteIndex in clutReference.references) {
+									let spriteSetIndex = textureSprites.FindIndex(scope (x) => spriteIndex >= x.start && spriteIndex < x.start + x.frames.Count);
+									let spriteSet = textureSprites[spriteSetIndex];
+									
+									(float qleft, float qtop) = UVToScreen(0.5f + (float)spriteSet.frames[0].x / (1024 * 4), 0.5f + (float)spriteSet.frames[0].y / 512);
+		
+									Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
+								}
 							
-							(float qleft, float qtop) = UVToScreen(0.5f + (float)spriteSet.frames[0].x / (1024 * 4), 0.5f + (float)spriteSet.frames[0].y / 512);
-
-							Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
+							case .YearOfTheDragon:
+								for (let spriteIndex in clutReference.references) {
+									let spriteSet = textureSprites3[spriteIndex];
+									
+									let partialUVs = spriteSet.GetVramPartialUV();
+									(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
+	
+									Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
+								}
+							default:
 						}
 					}
 					case .Object:
+				}
+			}
+
+			if (selectedTextureIndex > -1) {
+				let quad = Terrain.textures[selectedTextureIndex];
+				let partialUVs = quad.GetVramPartialUV();
+
+				(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
+				(float qright, float qbottom) = UVToScreen(partialUVs.right, partialUVs.rightY);
+
+				if (blinkerTime < 30) {
+					DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
+				}
+			}
+
+			if (selectedSpriteIndex > -1) {
+				if (Emulator.installment == .RiptosRage) {
+					let sprite = textureSprites[selectedSpriteIndex];
+					for (let frame in sprite.frames) {
+						(float qleft, float qtop) = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
+						(float qright, float qbottom) = UVToScreen(0.5f + (float)((int)frame.x + sprite.width) / (1024 * 4), 0.5f + (float)((int)frame.y + sprite.height) / 512);
+
+						if (blinkerTime < 30) {
+							DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
+						}
+					}
+				} else {
+					let quad = textureSprites3[selectedSpriteIndex];
+					let partialUVs = quad.GetVramPartialUV();
+
+					(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
+					(float qright, float qbottom) = UVToScreen(partialUVs.right, partialUVs.rightY);
+
+					if (blinkerTime < 30) {
+						DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
+					}
 				}
 			}
 
@@ -378,6 +421,25 @@ namespace SpyroScope {
 					Emulator.Address<TextureQuad> spriteArrayPointer = ?;
 					Emulator.ReadFromRAM((.)0x8006c868, &spriteArrayPointer, 4);
 					spriteArrayPointer.ReadArray(&textureSprites3[0], 45);
+
+					for (let i < textureSprites3.Count) {
+						let sprite = textureSprites3[i];
+						let referenceIndex = cluts.FindIndex(scope (x) => x.category == .Sprite && x.type == .Normal && x.location == sprite.clut);
+	
+						if (referenceIndex == -1) {
+							CLUTReference clutReference = ?;
+							clutReference.category = .Sprite;
+							clutReference.type = .Normal;
+							clutReference.location = sprite.clut;
+							clutReference.width = 16;
+							clutReference.references = new .();
+	
+							clutReference.references.Add(i);
+							cluts.Add(clutReference);
+						} else {
+							cluts[referenceIndex].references.Add(i);
+						}
+					}
 				}
 				default:
 			} 
