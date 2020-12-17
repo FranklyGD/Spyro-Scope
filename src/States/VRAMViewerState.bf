@@ -57,7 +57,7 @@ namespace SpyroScope {
 
 		public this() {
 			Emulator.OnSceneChanged.Add(new => OnSceneChanged);
-			VRAM.OnSnapshotTaken.Add(new () => { spritesDecoded = false; });
+			VRAM.OnSnapshotTaken.Add(new => OnNewSnapshot);
 		}
 
 		public ~this() {
@@ -287,7 +287,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public void OnSceneChanged() {
+		void OnSceneChanged() {
 			for (let clutReference in cluts) {
 				delete clutReference.references;
 			}
@@ -383,6 +383,11 @@ namespace SpyroScope {
 			} 
 
 			SpyroFont.Init();
+		}
+		
+		void OnNewSnapshot() {
+			spritesDecoded = false;
+			hoveredTextureIndex = hoveredSpriteIndex = -1;
 		}
 
 		public override bool OnEvent(SDL2.SDL.Event event) {
