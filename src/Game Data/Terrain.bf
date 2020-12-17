@@ -75,6 +75,8 @@ namespace SpyroScope {
 			Emulator.collisionDataPointers[(int)Emulator.rom].Read(&address);
 			Emulator.Address deformAddress = ?;
 			Emulator.collisionDeformDataPointers[(int)Emulator.rom].Read(&deformAddress);
+
+			delete collision;
 			collision = new .(address, deformAddress);
 
 			usedTextureIndices.Clear();
@@ -354,10 +356,16 @@ namespace SpyroScope {
 		}
 
 		public static void ReloadAnimations() {
+			if (farAnimations != null) {
+				for (var item in farAnimations) {
+					item.Dispose();
+				}
+				delete farAnimations;
+			}
+
 			uint32 count = ?;
 			Emulator.ReadFromRAM(Emulator.farRegionDeformPointers[(int)Emulator.rom] - 4, &count, 4);
 
-			delete farAnimations;
 			farAnimations = new .[count];
 
 			Emulator.Address sceneDeformArray = ?;
@@ -378,10 +386,16 @@ namespace SpyroScope {
 
 				animation.Reload(region.farMesh2GameIndices, triOrQuad, region.farFaceIndices, region.farMesh);
 			}
+			
+			if (nearAnimations != null) {
+				for (var item in nearAnimations) {
+					item.Dispose();
+				}
+				delete nearAnimations;
+			}
 
 			Emulator.ReadFromRAM(Emulator.nearRegionDeformPointers[(int)Emulator.rom] - 4, &count, 4);
 
-			delete nearAnimations;
 			nearAnimations = new .[count];
 
 			Emulator.nearRegionDeformPointers[(int)Emulator.rom].Read(&sceneDeformArray);
