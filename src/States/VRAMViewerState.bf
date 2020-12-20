@@ -116,34 +116,56 @@ namespace SpyroScope {
 					Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,64), .(64,64,64));
 					Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
 
+					if (blinkerTime < 30 && selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].category == .Terrain && cluts[selectedCLUTIndex].references.Contains(i)) {
+						DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,0,0,64));
+					}
+
 					let modifiedQuadIndex = quadIndex + (Emulator.installment == .SpyroTheDragon ? 1 : 0);
 					switch (modifiedQuadIndex) {
 						case 0:
-							Renderer.DrawLine(.(qleft + 4, qtop + 4, 0), .(qright - 4, qtop + 4, 0), .(255,64,64), .(255,64,64));
-							Renderer.DrawLine(.(qleft + 4, qbottom - 4, 0), .(qright - 4, qbottom - 4, 0), .(255,64,64), .(255,64,64));
-							Renderer.DrawLine(.(qleft + 4, qtop + 4, 0), .(qleft + 4, qbottom - 4, 0), .(255,64,64), .(255,64,64));
-							Renderer.DrawLine(.(qright - 4, qtop + 4, 0), .(qright - 4, qbottom - 4, 0), .(255,64,64), .(255,64,64));
-						case 1:
-							Renderer.DrawLine(.(qleft + 2, qtop + 2, 0), .(qright - 2, qtop + 2, 0), .(64,255,64), .(64,255,64));
-							Renderer.DrawLine(.(qleft + 2, qbottom - 2, 0), .(qright - 2, qbottom - 2, 0), .(64,255,64), .(64,255,64));
-							Renderer.DrawLine(.(qleft + 2, qtop + 2, 0), .(qleft + 2, qbottom - 2, 0), .(64,255,64), .(64,255,64));
-							Renderer.DrawLine(.(qright - 2, qtop + 2, 0), .(qright - 2, qbottom - 2, 0), .(64,255,64), .(64,255,64));
-						case 2:
-							Renderer.DrawLine(.(qleft + 4, qtop + 4, 0), .(qright, qtop + 4, 0), .(64,64,255), .(64,64,255));
-							Renderer.DrawLine(.(qleft + 4, qtop + 4, 0), .(qleft + 4, qbottom, 0), .(64,64,255), .(64,64,255));
-						case 3:
-							Renderer.DrawLine(.(qleft, qtop + 4, 0), .(qright - 4, qtop + 4, 0), .(64,64,255), .(64,64,255));
-							Renderer.DrawLine(.(qright - 4, qtop + 4, 0), .(qright - 4, qbottom, 0), .(64,64,255), .(64,64,255));
-						case 4:
-							Renderer.DrawLine(.(qleft + 4, qbottom - 4, 0), .(qright, qbottom - 4, 0), .(64,64,255), .(64,64,255));
-							Renderer.DrawLine(.(qleft + 4, qtop, 0), .(qleft + 4, qbottom - 4, 0), .(64,64,255), .(64,64,255));
-						case 5:
-							Renderer.DrawLine(.(qleft, qbottom - 4, 0), .(qright - 4, qbottom - 4, 0), .(64,64,255), .(64,64,255));
-							Renderer.DrawLine(.(qright - 4, qtop, 0), .(qright - 4, qbottom - 4, 0), .(64,64,255), .(64,64,255));
-					}
+							qleft += 4;
+							qtop += 4;
+							qright -= 4;
+							qbottom -= 4;
 
-					if (blinkerTime < 30 && selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].category == .Terrain && cluts[selectedCLUTIndex].references.Contains(i)) {
-						DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,0,0,64));
+							Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(255,64,64), .(255,64,64));
+							Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(255,64,64), .(255,64,64));
+							Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(255,64,64), .(255,64,64));
+							Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(255,64,64), .(255,64,64));
+						case 1:
+							qleft += 2;
+							qtop += 2;
+							qright -= 2;
+							qbottom -= 2;
+
+							Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(64,255,64), .(64,255,64));
+							Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,255,64), .(64,255,64));
+							Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,255,64), .(64,255,64));
+							Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,255,64), .(64,255,64));
+						case 2:
+							qleft += 4;
+							qtop += 4;
+
+							Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(64,64,255), .(64,64,255));
+							Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,255), .(64,64,255));
+						case 3:
+							qleft += 4;
+							qright -= 4;
+
+							Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(64,64,255), .(64,64,255));
+							Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,255), .(64,64,255));
+						case 4:
+							qleft += 4;
+							qbottom -= 4;
+
+							Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,64,255), .(64,64,255));
+							Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,255), .(64,64,255));
+						case 5:
+							qright -= 4;
+							qbottom -= 4;
+
+							Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,64,255), .(64,64,255));
+							Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,255), .(64,64,255));
 					}
 				}
 			}
@@ -176,15 +198,33 @@ namespace SpyroScope {
 				Renderer.DrawLine(.(cleft, cbottom, 0), .(cright, cbottom, 0), .(64,64,64), .(64,64,64));
 				Renderer.DrawLine(.(cleft, ctop, 0), .(cleft, cbottom, 0), .(64,64,64), .(64,64,64));
 				Renderer.DrawLine(.(cright, ctop, 0), .(cright, cbottom, 0), .(64,64,64), .(64,64,64));
-				
-				if (blinkerTime < 30) {
-					if (CLUTIndex == selectedCLUTIndex) {
-						DrawUtilities.Rect(ctop, cbottom, cleft, cright, .(255,255,255,64));
-					} else if (selectedTextureIndex > -1 && clutReference.category == .Terrain && clutReference.references.Contains(selectedTextureIndex)) {
-						DrawUtilities.Rect(ctop, cbottom, cleft, cright, .(255,0,0,64));
-					} else if (selectedSpriteIndex > -1 && clutReference.category == .Sprite && clutReference.references.Contains(Emulator.installment == .YearOfTheDragon ? selectedSpriteIndex : textureSprites[selectedSpriteIndex].start)) {
-						DrawUtilities.Rect(ctop, cbottom, cleft, cright, .(255,0,0,64));
-					}
+			}
+
+			// CLUTs can be small and packed very tightly in VRAM so the lines drawn could over draw the highlight,
+			// instead do it in another loop draw pass
+			for (let CLUTIndex < cluts.Count) {
+				let clutReference = cluts[CLUTIndex];
+				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
+
+				(float cleft, float ctop) = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
+				(float cright, float cbottom) = PixelToScreen(clutPosition.x + clutReference.width, (clutPosition.x >> 10) + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1));
+
+				if (blinkerTime < 30 &&
+					selectedTextureIndex > -1 && clutReference.category == .Terrain && clutReference.references.Contains(selectedTextureIndex) ||
+					selectedSpriteIndex > -1 && clutReference.category == .Sprite && clutReference.references.Contains(selectedSpriteIndex)
+				) {
+
+					DrawUtilities.Rect(ctop, cbottom, cleft, cright, .(255,0,0,64));
+
+					cleft -= 2;
+					ctop -= 2;
+					cright += 2;
+					cbottom += 2;
+
+					Renderer.DrawLine(.(cleft, ctop, 0), .(cright, ctop, 0), .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(.(cleft, cbottom, 0), .(cright, cbottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(.(cleft, ctop, 0), .(cleft, cbottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(.(cright, ctop, 0), .(cright, cbottom, 0), .(255,255,255), .(255,255,255));
 				}
 			}
 
@@ -222,7 +262,9 @@ namespace SpyroScope {
 
 			if (hoveredSpriteIndex > -1) {
 				if (Emulator.installment == .RiptosRage) {
-					let frame = textureSprites[hoveredSpriteIndex].frames[0];
+					let spriteSetIndex = textureSprites.FindIndex(scope (x) => hoveredSpriteIndex >= x.start && hoveredSpriteIndex < x.start + x.frames.Count);
+					let spriteSet = textureSprites[spriteSetIndex];
+					let frame = spriteSet.frames[hoveredSpriteIndex - spriteSet.start];
 	
 					(float qleft, float qtop) = PixelToScreen(frame.x / 4 + 512, frame.y + 256);
 					(float cleft, float ctop) = PixelToScreen((frame.clutX & 3) * 16 + 512, frame.clutY + 256);
@@ -264,8 +306,9 @@ namespace SpyroScope {
 								for (let spriteIndex in clutReference.references) {
 									let spriteSetIndex = textureSprites.FindIndex(scope (x) => spriteIndex >= x.start && spriteIndex < x.start + x.frames.Count);
 									let spriteSet = textureSprites[spriteSetIndex];
+									let frame = spriteSet.frames[spriteIndex - spriteSet.start];
 									
-									(float qleft, float qtop) = UVToScreen(0.5f + (float)spriteSet.frames[0].x / (1024 * 4), 0.5f + (float)spriteSet.frames[0].y / 512);
+									(float qleft, float qtop) = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
 		
 									Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
 								}
@@ -286,39 +329,57 @@ namespace SpyroScope {
 				}
 			}
 
-			if (selectedTextureIndex > -1) {
-				let quad = Terrain.textures[selectedTextureIndex];
-				let partialUVs = quad.GetVramPartialUV();
-
-				(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
-				(float qright, float qbottom) = UVToScreen(partialUVs.right, partialUVs.rightY);
-
-				if (blinkerTime < 30) {
-					DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
-				}
-			}
-
-			if (selectedSpriteIndex > -1) {
-				if (Emulator.installment == .RiptosRage) {
-					let sprite = textureSprites[selectedSpriteIndex];
-					for (let frame in sprite.frames) {
-						(float qleft, float qtop) = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
-						(float qright, float qbottom) = UVToScreen(0.5f + (float)((int)frame.x + sprite.width) / (1024 * 4), 0.5f + (float)((int)frame.y + sprite.height) / 512);
-
-						if (blinkerTime < 30) {
-							DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
-						}
-					}
-				} else {
-					let quad = textureSprites3[selectedSpriteIndex];
+			
+			if (blinkerTime < 30) {
+				if (selectedTextureIndex > -1) {
+					let quad = Terrain.textures[selectedTextureIndex];
 					let partialUVs = quad.GetVramPartialUV();
-
+	
 					(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
 					(float qright, float qbottom) = UVToScreen(partialUVs.right, partialUVs.rightY);
-
-					if (blinkerTime < 30) {
+	
+					DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
+				}
+	
+				if (selectedSpriteIndex > -1) {
+					if (Emulator.installment == .RiptosRage) {
+						let spriteSetIndex = textureSprites.FindIndex(scope (x) => selectedSpriteIndex >= x.start && selectedSpriteIndex < x.start + x.frames.Count);
+						let spriteSet = textureSprites[spriteSetIndex];
+						let frame = spriteSet.frames[selectedSpriteIndex - spriteSet.start];
+	
+						(float qleft, float qtop) = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
+						(float qright, float qbottom) = UVToScreen(0.5f + (float)((int)frame.x + spriteSet.width) / (1024 * 4), 0.5f + (float)((int)frame.y + spriteSet.height) / 512);
+	
+						DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
+					} else {
+						let quad = textureSprites3[selectedSpriteIndex];
+						let partialUVs = quad.GetVramPartialUV();
+	
+						(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
+						(float qright, float qbottom) = UVToScreen(partialUVs.right, partialUVs.rightY);
+	
 						DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
 					}
+				}
+	
+				if (selectedCLUTIndex > -1) {
+					let clutReference = cluts[selectedCLUTIndex];
+					(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
+
+					(float cleft, float ctop) = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
+					(float cright, float cbottom) = PixelToScreen(clutPosition.x + clutReference.width, (clutPosition.x >> 10) + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1));
+	
+					DrawUtilities.Rect(ctop, cbottom, cleft, cright, .(255,255,255,64));
+
+					cleft -= 2;
+					ctop -= 2;
+					cright += 2;
+					cbottom += 2;
+	
+					Renderer.DrawLine(.(cleft, ctop, 0), .(cright, ctop, 0), .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(.(cleft, cbottom, 0), .(cright, cbottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(.(cleft, ctop, 0), .(cleft, cbottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(.(cright, ctop, 0), .(cright, cbottom, 0), .(255,255,255), .(255,255,255));
 				}
 			}
 
@@ -524,7 +585,7 @@ namespace SpyroScope {
 								if (localTestPosition.x > frame.x / 4 && localTestPosition.x <= ((int)frame.x + spriteSet.width) / 4 &&
 									localTestPosition.y > frame.y && localTestPosition.y <= ((int)frame.y + spriteSet.height)) {
 
-									hoveredSpriteIndex = spriteSetIndex;
+									hoveredSpriteIndex = spriteSet.start + frameIndex;
 									break;
 								}
 	
@@ -684,15 +745,26 @@ namespace SpyroScope {
 			}
 
 			if (hoveredSpriteIndex > -1) {
-				let dialog = scope System.IO.FolderBrowserDialog(.Save);
+				let dialog = scope System.IO.SaveFileDialog();
+				dialog.FileName = scope String() .. AppendF("S{}", hoveredSpriteIndex);
+				dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
+				dialog.OverwritePrompt = true;
+				dialog.CheckFileExists = true;
+				dialog.AddExtension = true;
+				dialog.DefaultExt = "bmp";
 
 				switch (dialog.ShowDialog()) {
 					case .Ok(let val):
 						if (val == .OK) {
-							let spriteSet = textureSprites[hoveredSpriteIndex];
-							for (let frameIndex < spriteSet.frames.Count) {
-								let frame = spriteSet.frames[frameIndex];
-								VRAM.Export(scope String() .. AppendF("{}\\S{}.bmp", dialog.SelectedPath, spriteSet.start + frameIndex), frame.x, frame.y, spriteSet.width, spriteSet.height, 4, 0x18);
+							if (Emulator.installment == .RiptosRage) {
+								let spriteSetIndex = textureSprites.FindIndex(scope (x) => hoveredSpriteIndex >= x.start && hoveredSpriteIndex < x.start + x.frames.Count);
+								let spriteSet = textureSprites[spriteSetIndex];
+								let frame = spriteSet.frames[hoveredSpriteIndex - spriteSet.start];
+
+								VRAM.Export(dialog.FileNames[0], frame.x, frame.y, spriteSet.width, spriteSet.height, 4, 0x18);
+							} else {
+								let quad = textureSprites3[hoveredSpriteIndex];
+								VRAM.Export(dialog.FileNames[0], quad.left, quad.leftSkew, quad.width, quad.height, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.texturePage);
 							}
 						}
 					case .Err:
@@ -701,6 +773,10 @@ namespace SpyroScope {
 		}
 
 		void Alter() {
+			if (hoveredTextureIndex == -1 && hoveredSpriteIndex == -1 && hoveredCLUTIndex == -1) {
+				return;
+			}
+
 			let dialog = scope OpenFileDialog();
 			dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
 			dialog.CheckFileExists = true;
@@ -713,82 +789,81 @@ namespace SpyroScope {
 
 						let surface = SDLImage.Load(file);
 						if (surface != null) {
-							let filePath = file.Split!('\\');
-							let fileNameFull = filePath[filePath.Count - 1];
-							var fileName = scope String();
-							fileNameFull.Substring(0, fileNameFull.Length - 4).ToString(fileName);
-							let fileParams = fileName.Split!('_');
-							
 							if (hoveredTextureIndex > -1) {
 								let quad = Terrain.textures[hoveredTextureIndex];
-
-								switch (fileParams[0]) {
-									case "clut": {
-										let clutPosition = quad.GetCLUTCoordinates();
-
-										uint16[] clutTable = ?;
-										if (fileParams.Count > 1 && (fileParams[1] == "fade" || fileParams[1] == "gradient")) {
-											clutTable = GenerateCLUT!(surface, 16);
-											VRAM.Write(clutTable, clutPosition.x, clutPosition.y, surface.w, 16);
-										} else {
-											clutTable = GenerateCLUT!(surface);
-											VRAM.Write(clutTable, clutPosition.x, clutPosition.y, surface.w, 1);
-										}
-										VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, quad.width, quad.height, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.clut);
-									}
-
-									default: {
-										AlterVRAM(surface, quad.texturePage, quad.left, quad.leftSkew, quad.width, quad.height, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.clut);
-									}
-								}
+								AlterVRAM(surface, quad.texturePage, quad.left, quad.leftSkew, quad.width, quad.height, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.clut);
 							}
 
 							if (hoveredSpriteIndex > -1) {
 								if (Emulator.installment == .RiptosRage) {
-									let spriteSet = textureSprites[hoveredSpriteIndex];
-									switch (fileParams[0]) {
-										case "clut": {
-											for (let frame in spriteSet.frames) {
-												VRAM.Write(GenerateCLUT!(surface), (frame.clutX & 3) * 16 + 512, frame.clutY + 256, surface.w, 1);
-												VRAM.Decode(0x18, frame.x, frame.y, spriteSet.width, spriteSet.height, 4, (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020);
-											}
-										}
-	
-										default: {
-											let frameToReplace = Math.Min(dialog.FileNames.Count, spriteSet.frames.Count);
-											for (let frameIndex < frameToReplace) {
-												let fileFrame = dialog.FileNames[frameIndex];
-	
-												let surfaceFrame = SDLImage.Load(fileFrame);
-												let frame = spriteSet.frames[frameIndex];
-	
-												AlterVRAM(surfaceFrame, 0x18, frame.x, frame.y, spriteSet.width, spriteSet.height, 4, (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020);
-												
-												SDL.FreeSurface(surfaceFrame);
-											}
-										}
+									let spriteSetIndex = textureSprites.FindIndex(scope (x) => hoveredSpriteIndex >= x.start && hoveredSpriteIndex < x.start + x.frames.Count);
+									let spriteSet = textureSprites[spriteSetIndex];
+
+									let spritesToReplace = Math.Min(dialog.FileNames.Count, spriteSet.frames.Count - (hoveredSpriteIndex - spriteSet.start));
+									for (let fileSpriteIndex < spritesToReplace) {
+										let sprite = spriteSet.frames[hoveredSpriteIndex - spriteSet.start + fileSpriteIndex];
+
+										let fileSprite = dialog.FileNames[fileSpriteIndex];
+										let surfaceSprite = SDLImage.Load(fileSprite);
+
+										AlterVRAM(surfaceSprite, 0x18, sprite.x, sprite.y, spriteSet.width, spriteSet.height, 4, (sprite.clutX & 3) + ((int)sprite.clutY << 6) + 0x4020);
+										
+										SDL.FreeSurface(surfaceSprite);
 									}
 								} else {
-									let quad = textureSprites3[hoveredSpriteIndex];
-									switch (fileParams[0]) {
-										case "clut": {
-											let clutPosition = quad.GetCLUTCoordinates();
+									let spritesToReplace = Math.Min(dialog.FileNames.Count, textureSprites3.Count - hoveredSpriteIndex);
+									for (let fileSpriteIndex < spritesToReplace) {
+										let sprite = textureSprites3[hoveredSpriteIndex + fileSpriteIndex];
 
-											uint16[] clutTable = ?;
-											if (fileParams.Count > 1 && (fileParams[1] == "fade" || fileParams[1] == "gradient")) {
-												clutTable = GenerateCLUT!(surface, 16);
-												VRAM.Write(clutTable, clutPosition.x, clutPosition.y, surface.w, 16);
-											} else {
-												clutTable = GenerateCLUT!(surface);
-												VRAM.Write(clutTable, clutPosition.x, clutPosition.y, surface.w, 1);
-											}
-											VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, quad.width, quad.height, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.clut);
-										}
+										let fileSprite = dialog.FileNames[fileSpriteIndex];
+										let surfaceSprite = SDLImage.Load(fileSprite);
 
-										default: {
-											AlterVRAM(surface, quad.texturePage, quad.left, quad.leftSkew, quad.width, quad.height, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.clut);
-										}
+										AlterVRAM(surfaceSprite, sprite.texturePage, sprite.left, sprite.leftSkew, sprite.width, sprite.height, (sprite.texturePage & 0x80) > 0 ? 8 : 4, sprite.clut);
+
+										SDL.FreeSurface(surfaceSprite);
 									}
+								}
+							}
+
+							if (hoveredCLUTIndex > -1) {
+								let clutReference = cluts[hoveredCLUTIndex];
+								(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
+								
+								uint16[] clutTable = ?;
+								switch (clutReference.type) {
+									case .Normal:
+										clutTable = GenerateCLUT!(surface);
+										VRAM.Write(clutTable, clutPosition.x, clutPosition.y, surface.w, 1);
+
+									case .Gradient:
+										clutTable = GenerateCLUT!(surface, 16);
+										VRAM.Write(clutTable, clutPosition.x, clutPosition.y, surface.w, 16);
+								}
+
+								switch (clutReference.category) {
+									case .Terrain:
+										for (let reference in cluts[hoveredCLUTIndex].references) {
+											let quad = Terrain.textures[reference];
+											VRAM.Decode(quad.texturePage, quad.left, quad.leftSkew, quad.width, quad.height, (quad.texturePage & 0x80) > 0 ? 8 : 4, clutReference.location);
+										}
+
+									case .Sprite:
+										if (Emulator.installment == .RiptosRage) { 
+											for (let reference in cluts[hoveredCLUTIndex].references) {
+												let spriteSetIndex = textureSprites.FindIndex(scope (x) => reference >= x.start && reference < x.start + x.frames.Count);
+												let spriteSet = textureSprites[spriteSetIndex];
+												let frame = spriteSet.frames[reference - spriteSet.start];
+	
+												VRAM.Decode(0x18, frame.x, frame.y, spriteSet.width, spriteSet.height, 4, clutReference.location);
+											}
+										} else {
+											for (let reference in cluts[hoveredCLUTIndex].references) {
+												let sprite = textureSprites3[reference];
+												VRAM.Decode(sprite.texturePage, sprite.left, sprite.leftSkew, sprite.width, sprite.height, 4, clutReference.location);
+											}
+										}
+
+									default:
 								}
 							}
 						}
