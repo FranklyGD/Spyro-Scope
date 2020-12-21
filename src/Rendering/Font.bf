@@ -158,5 +158,23 @@ namespace SpyroScope {
 
 			return width;
 		}
+
+		public int NearestTextIndex(StringView text, float targetWidth) {
+			float width = 0, closest = Math.Abs(targetWidth);
+			for (let i < text.Length) {
+				let c = text[i];
+				let character = characters[c];
+				
+				width += character.advance >> 6;
+				let distance = Math.Abs(width - targetWidth);
+				if (distance > closest) {
+					return i;
+				}
+				
+				closest = distance;
+			}
+
+			return text.Length;
+		}
 	}
 }

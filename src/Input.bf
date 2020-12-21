@@ -3,7 +3,8 @@ using System;
 
 namespace SpyroScope {
 	class Input : GUIElement {
-		public static int cursor;
+		public static int cursor, selectBegin;
+		public static bool dragging;
 		
 		public Renderer.Color normalColor = .(255, 255, 255);
 		public Renderer.Color activeColor = .(255, 255, 128);
@@ -14,13 +15,6 @@ namespace SpyroScope {
 
 		String lastValidText = new .() ~ delete _;
 		public String text = new .() ~ delete _;
-		public enum InputFormat {
-			None,
-			Integer,
-			Float,
-			Hex
-		}
-		public InputFormat format;
 		
 		public bool enabled = true;
 		public Event<delegate void()> OnSubmit ~ _.Dispose();
@@ -48,15 +42,33 @@ namespace SpyroScope {
 			let textStartX = drawn.left + 4;
 			var cursorPos = 0f;
 			if (text != null && !text.IsEmpty) {
-				WindowApp.fontSmall.Print(text, .(textStartX, vcenter - halfHeight, 0), .(0,0,0));
-
 				if (selectedElement == this) {
 					cursorPos = WindowApp.fontSmall.CalculateWidth(.(text,0,cursor));
+
+					if (SelectionExists()) {
+						var selectBeginPos = WindowApp.fontSmall.CalculateWidth(.(text,0,selectBegin));
+	
+						float left, right;
+						if (cursor > selectBegin) {
+							left = selectBeginPos;
+							right = cursorPos;
+						} else {
+							left = cursorPos;
+							right = selectBeginPos;
+						}
+
+						left += textStartX;
+						right += textStartX;
+
+						DrawUtilities.Rect(vcenter - halfHeight, vcenter + halfHeight, left, right, .(56,154,232,192));
+					}
 				}
+				
+				WindowApp.fontSmall.Print(text, .(textStartX, vcenter - halfHeight, 0), .(0,0,0));
 			}
 
 			if (selectedElement == this) {
-				cursorPos += textStartX + 1;
+				cursorPos += textStartX;
 				Renderer.DrawLine(.(cursorPos, vcenter - halfHeight, 0), .(cursorPos, vcenter + halfHeight, 0), .(0,0,0), .(0,0,0));
 			}
 		}
@@ -66,29 +78,85 @@ namespace SpyroScope {
 
 			switch (event.type) {
 				case .KeyDown:
-					if (event.key.keysym.sym == .BACKSPACE && text.Length > 0 && cursor > 0) {
-						text.Remove(cursor--, 1);
+					if (enabled && event.key.keysym.sym == .BACKSPACE && text.Length > 0 && cursor > 0) {
+						if (SelectionExists()) {
+							let left = GetLeft();
+							text.Remove(left, GetRight() - left);
+							cursor = left;
+						} else {
+							text.Remove(cursor--, 1);
+						}
+						selectBegin = cursor;
 						CheckText();
 					}
+				
+					if (event.key.keysym.mod & .CTRL > 0) {
+						if (event.key.keysym.sym == .A) {
+							SelectAll();
+						}
 
-					if (event.key.keysym.sym == .V) {
-						if (event.key.keysym.mod & .CTRL > 0) {
-							let clipboard = StringView(SDL.GetClipboardText());
-							text.Append(clipboard);
-							cursor += clipboard.Length;
-							CheckText();
+						if (event.key.keysym.sym == .C) {
+							Copy();
+						}
+
+						if (enabled) {
+							// Cut
+							if (event.key.keysym.sym == .X) {
+								if (SelectionExists()) {
+									SDL.SetClipboardText(scope String(GetSelectionText()));
+									
+									let left = GetLeft();
+									text.Remove(left, GetRight() - left);
+									cursor = left;
+								} else {
+									SDL.SetClipboardText(text);
+	
+									text.Set("");
+									cursor = 0;
+								}
+								selectBegin = cursor;
+							}
+	
+							// Paste
+							if (event.key.keysym.sym == .V) {
+								if (SelectionExists()) {
+									let left = GetLeft();
+									let right = GetRight();
+	
+									text.Remove(left, right - left);
+									cursor = left;
+								}
+	
+								let clipboard = scope String(SDL.GetClipboardText()) .. Replace("\t", "") .. Replace("\n", "");
+								text.Insert(cursor, clipboard);
+								cursor += clipboard.Length;
+								selectBegin = cursor;
+								CheckText();
+							}
 						}
 					}
 
 					if (event.key.keysym.sym == .LEFT) {
-						if (--cursor < 0) {
+						if (SelectionExists() && event.key.keysym.mod & .SHIFT == 0) {
+							cursor = GetLeft();
+						} else if (--cursor < 0) {
 							cursor = 0;
+						}
+
+						if (event.key.keysym.mod & .SHIFT == 0) {
+							selectBegin = cursor;
 						}
 					}
 
 					if (event.key.keysym.sym == .RIGHT) {
-						if (++cursor > text.Length) {
+						if (SelectionExists() && event.key.keysym.mod & .SHIFT == 0) {
+							cursor = GetRight();
+						} else if (++cursor > text.Length) {
 							cursor = text.Length;
+						}
+
+						if (event.key.keysym.mod & .SHIFT == 0) {
+							selectBegin = cursor;
 						}
 					}
 
@@ -102,13 +170,27 @@ namespace SpyroScope {
 				return true;
 
 				case .TextInput:
-					text.Insert(cursor, .((char8*)&event.text.text[0]));
-					cursor++;
-					CheckText();
+					if (enabled) {
+						if (SelectionExists()) {
+							let left = GetLeft();
+							text.Remove(left, GetRight());
+							cursor = left;
+						}
+						text.Insert(cursor, .((char8*)&event.text.text[0]));
+						selectBegin = ++cursor;
+						CheckText();
+					}
 					return true;
 
-				default: return false;
+				case .MouseMotion:
+					if (dragging) {
+						cursor = WindowApp.fontSmall.NearestTextIndex(text, WindowApp.mousePosition.x - (drawn.left + 4));
+					}
+
+				default:
 			}
+
+			return false;
 		}
 
 		protected override void MouseEnter() {
@@ -120,7 +202,12 @@ namespace SpyroScope {
 		}
 
 		protected override void Pressed() {
-			cursor = text.Length;
+			selectBegin = cursor = WindowApp.fontSmall.NearestTextIndex(text, WindowApp.mousePosition.x - (drawn.left + 4));
+			dragging = true;
+		}
+
+		protected override void Unpressed() {
+			dragging = false;
 		}
 
 		void CheckText() {
@@ -135,6 +222,39 @@ namespace SpyroScope {
 				text.Set(validText);
 			}
 			lastValidText.Set(validText);
+		}
+
+		[Inline]
+		int GetLeft() {
+			return Math.Min(cursor, selectBegin);
+		}
+		
+		[Inline]
+		int GetRight() {
+			return Math.Max(cursor, selectBegin);
+		}
+
+		[Inline]
+		bool SelectionExists() {
+			return cursor != selectBegin;
+		}
+
+		[Inline]
+		StringView GetSelectionText() {
+			return .(text, GetLeft(), Math.Abs(cursor - selectBegin));
+		}
+
+		public void SelectAll() {
+			selectBegin = 0;
+			cursor = text.Length;
+		}
+
+		public void Copy() {
+			if (SelectionExists()) {
+				SDL.SetClipboardText(scope String(GetSelectionText()));
+			} else {
+				SDL.SetClipboardText(text);
+			}
 		}
 	}
 }
