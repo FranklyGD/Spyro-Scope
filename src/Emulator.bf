@@ -520,8 +520,13 @@ namespace SpyroScope {
 			cameraPositionAddress[(int)rom].Read(&cameraPosition);
 			cameraMatrixAddress[(int)rom].Read(&cameraBasisInv);
 			cameraEulerRotationAddress[(int)rom].Read(&cameraEulerRotation);
-			
-			objectArrayPointers[(int)rom].Read(&objectArrayAddress);
+
+			Emulator.Address<Moby> newObjectArrayAddress = ?;
+			objectArrayPointers[(int)rom].Read(&newObjectArrayAddress);
+			if (objectArrayAddress != newObjectArrayAddress) {
+				Moby.allocated.Clear();
+			}
+			objectArrayAddress = newObjectArrayAddress;
 
 			//ReadFromRAM((.)0x8006a28c, &collidingTriangle, 4);
 
