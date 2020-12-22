@@ -263,8 +263,8 @@ namespace SpyroScope {
 			textureIndexInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -5 + 1);
 			textureIndexInput.normalTexture = normalInputTexture;
 			textureIndexInput.activeTexture = activeInputTexture;
-			textureIndexInput.OnValidate = new () => {
-				if (int.Parse(textureIndexInput.text) case .Ok(let val)) {
+			textureIndexInput.OnValidate = new (text) => {
+				if (int.Parse(text) case .Ok(let val)) {
 					let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 					if (val * quadCount < Terrain.textures.Count) {
 						if (faceMenu.visible) {
@@ -278,6 +278,8 @@ namespace SpyroScope {
 							let face = visualMesh.GetNearFace(faceIndex);
 							face.renderInfo.textureIndex = (.)val;
 							visualMesh.SetNearFace(face, faceIndex);
+
+							text .. Clear().AppendF("{}", face.renderInfo.textureIndex);
 						}
 
 						return true;
@@ -292,8 +294,8 @@ namespace SpyroScope {
 			rotationInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -4 + 1);
 			rotationInput.normalTexture = normalInputTexture;
 			rotationInput.activeTexture = activeInputTexture;
-			rotationInput.OnValidate = new () => {
-				if (int.Parse(rotationInput.text) case .Ok(let val)) {
+			rotationInput.OnValidate = new (text) => {
+				if (int.Parse(text) case .Ok(let val)) {
 					if ((Terrain.renderMode == .NearLQ || Terrain.renderMode == .NearHQ) && ViewerSelection.currentRegionIndex > -1 && ViewerSelection.currentTriangleIndex > -1) {
 						let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 						int faceIndex = ?;
@@ -305,8 +307,10 @@ namespace SpyroScope {
 						let face = visualMesh.GetNearFace(faceIndex);
 						face.renderInfo.rotation = (.)val;
 						visualMesh.SetNearFace(face, faceIndex);
-					}
 
+						text .. Clear().AppendF("{}", face.renderInfo.rotation);
+					}
+					
 					return true;
 				}
 				return false;
@@ -318,8 +322,8 @@ namespace SpyroScope {
 			depthOffsetInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -2 + 1);
 			depthOffsetInput.normalTexture = normalInputTexture;
 			depthOffsetInput.activeTexture = activeInputTexture;
-			depthOffsetInput.OnValidate = new () => {
-				if (int.Parse(depthOffsetInput.text) case .Ok(let val)) {
+			depthOffsetInput.OnValidate = new (text) => {
+				if (int.Parse(text) case .Ok(let val)) {
 					if (faceMenu.visible) {
 						let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 						int faceIndex = ?;
@@ -331,8 +335,10 @@ namespace SpyroScope {
 						let face = visualMesh.GetNearFace(faceIndex);
 						face.renderInfo.depthOffset = (.)val;
 						visualMesh.SetNearFace(face, faceIndex);
+						
+						text .. Clear().AppendF("{}", face.renderInfo.depthOffset);
 					}
-
+					
 					return true;
 				}
 				return false;

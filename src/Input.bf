@@ -4,7 +4,7 @@ using System;
 namespace SpyroScope {
 	class Input : GUIElement {
 		public static int cursor, selectBegin;
-		public static bool dragging;
+		public static bool dragging, underlyingChanged;
 		
 		public Renderer.Color normalColor = .(255, 255, 255);
 		public Renderer.Color activeColor = .(255, 255, 128);
@@ -17,9 +17,10 @@ namespace SpyroScope {
 		public String text = new .() ~ delete _;
 		
 		public bool enabled = true;
+		public bool displayUnderlying = true;
 		public Event<delegate void()> OnSubmit ~ _.Dispose();
 		public Event<delegate void()> OnChanged ~ _.Dispose();
-		public delegate bool() OnValidate ~ delete _;
+		public delegate bool(String text) OnValidate ~ delete _;
 
 		public override void Draw(Rect parentRect) {
 			base.Draw(parentRect);
@@ -65,11 +66,21 @@ namespace SpyroScope {
 				}
 				
 				WindowApp.fontSmall.Print(text, .(textStartX, vcenter - halfHeight, 0), .(0,0,0));
+			} else {
+				WindowApp.fontSmall.Print(lastValidText, .(textStartX, vcenter - halfHeight, 0), .(0,0,0, 128));
 			}
 
 			if (selectedElement == this) {
 				cursorPos += textStartX;
 				Renderer.DrawLine(.(cursorPos, vcenter - halfHeight, 0), .(cursorPos, vcenter + halfHeight, 0), .(0,0,0), .(0,0,0));
+
+				if (text != null && !text.IsEmpty && displayUnderlying && underlyingChanged && lastValidText != null && !lastValidText.IsEmpty) {
+					let validDisplayText = scope String() .. AppendF("= {}", lastValidText);
+
+					let textWidth = WindowApp.fontSmall.CalculateWidth(validDisplayText);
+					DrawUtilities.Rect(drawn.top - WindowApp.fontSmall.height - 4, drawn.top, drawn.left, drawn.left + textWidth + 8, .(255,255,255));
+					WindowApp.fontSmall.Print(validDisplayText, .(textStartX, drawn.top - WindowApp.fontSmall.height - 2, 0), .(0,0,0));
+				}
 			}
 		}
 
@@ -126,7 +137,8 @@ namespace SpyroScope {
 									text.Remove(left, right - left);
 									cursor = left;
 								}
-	
+
+								// Remove special spacing character since this is only one line text
 								let clipboard = scope String(SDL.GetClipboardText()) .. Replace("\t", "") .. Replace("\n", "");
 								text.Insert(cursor, clipboard);
 								cursor += clipboard.Length;
@@ -210,10 +222,24 @@ namespace SpyroScope {
 			dragging = false;
 		}
 
+		protected override void Selected() {
+			underlyingChanged = false;
+		}
+
 		void CheckText() {
-			if (OnValidate == null || OnValidate()) {
+			if (OnValidate == null) {
 				lastValidText.Set(text);
 				OnChanged();
+			} else {
+				let buffer = scope String(text);
+				if (OnValidate(buffer)) {
+					lastValidText.Set(buffer);
+					OnChanged();
+				}
+			}
+
+			if (displayUnderlying) {
+				underlyingChanged = lastValidText != text;
 			}
 		}
 

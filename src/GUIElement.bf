@@ -95,13 +95,16 @@ namespace SpyroScope {
 		}
 
 		static bool GUIMousePress(uint8 button) {
-			selectedElement = hoveredElement;
-			if (hoveredElement != null) {
-				pressedElement = .hoveredElement;
-				pressedElement.Pressed();
-				return true;
+			pressedElement = hoveredElement;
+			pressedElement?.Pressed();
+
+			if (selectedElement != hoveredElement) {
+				selectedElement?.Unselected();
+				hoveredElement?.Selected();
 			}
-			return false;
+			selectedElement = hoveredElement;
+
+			return hoveredElement != null;
 		}
 
 		static bool GUIMouseRelease(uint8 button) {
@@ -172,6 +175,8 @@ namespace SpyroScope {
 		protected virtual void Update() {}
 		protected virtual void Pressed() {}
 		protected virtual void Unpressed() {}
+		protected virtual void Selected() {}
+		protected virtual void Unselected() {}
 		protected virtual void MouseEnter() {}
 		protected virtual void MouseExit() {}
 
