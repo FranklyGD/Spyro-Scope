@@ -23,7 +23,6 @@ namespace SpyroScope {
 		}
 		public static RenderMode renderMode = .Collision;
 		public static bool wireframe;
-		public static int drawnRegion = -1;
 		public static bool decoded;
 
 		public static void Load() {
@@ -282,68 +281,52 @@ namespace SpyroScope {
 
 			switch (renderMode) {
 				case .Far : {
-					if (drawnRegion > -1) {
-						regions[drawnRegion].DrawFar();
-					} else {
-						for (let visualMesh in regions) {
-							visualMesh.DrawFar();
-						}
+					for (let visualMesh in regions) {
+						visualMesh.DrawFar();
 					}
 				}
 				case .NearLQ : {
 					Renderer.BeginRetroShading();
+					VRAM.decoded?.Bind();
 
-					if (drawnRegion > -1) {
-						regions[drawnRegion].DrawNear();
-					} else {
-						VRAM.decoded?.Bind();
-
-						for (let visualMesh in regions) {
-							visualMesh.DrawNear();
-						}
-						
-						GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
-						GL.glDepthMask(GL.GL_FALSE);  
-
-						for (let visualMesh in regions) {
-							visualMesh.DrawNearTransparent();
-						}
-
-						GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-						GL.glDepthMask(GL.GL_TRUE);  
-
-						Renderer.whiteTexture.Bind();
-
+					for (let visualMesh in regions) {
+						visualMesh.DrawNear();
 					}
+					
+					GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
+					GL.glDepthMask(GL.GL_FALSE);  
+
+					for (let visualMesh in regions) {
+						visualMesh.DrawNearTransparent();
+					}
+
+					GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+					GL.glDepthMask(GL.GL_TRUE);  
+
+					Renderer.whiteTexture.Bind();
 
 					Renderer.BeginDefaultShading();
 				}
 				case .NearHQ : {
 					Renderer.BeginRetroShading();
-	
-					if (drawnRegion > -1) {
-						regions[drawnRegion].DrawNear();
-					} else {
-						VRAM.decoded?.Bind();
-	
-						for (let visualMesh in regions) {
-							visualMesh.DrawNearSubdivided();
-						}
-						
-						GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
-						GL.glDepthMask(GL.GL_FALSE);  
-	
-						for (let visualMesh in regions) {
-							visualMesh.DrawNearTransparentSubdivided();
-						}
-	
-						GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-						GL.glDepthMask(GL.GL_TRUE);  
-	
-						Renderer.whiteTexture.Bind();
-	
+					VRAM.decoded?.Bind();
+
+					for (let visualMesh in regions) {
+						visualMesh.DrawNearSubdivided();
 					}
-	
+					
+					GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
+					GL.glDepthMask(GL.GL_FALSE);  
+
+					for (let visualMesh in regions) {
+						visualMesh.DrawNearTransparentSubdivided();
+					}
+
+					GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+					GL.glDepthMask(GL.GL_TRUE);  
+
+					Renderer.whiteTexture.Bind();
+
 					Renderer.BeginDefaultShading();
 				}
 				case .Collision : {
