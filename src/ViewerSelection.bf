@@ -85,8 +85,8 @@ namespace SpyroScope {
 
 		static bool MobyTest(ref float distance) {
 			hoveredObjects.Clear();
-			for (int objectIndex = 0; objectIndex < ViewerState.objectList.Count; objectIndex++) {
-				let (address, object) = ViewerState.objectList[objectIndex];
+			for (int objectIndex = 0; objectIndex < Moby.allocated.Count; objectIndex++) {
+				let object = Moby.allocated[objectIndex];
 
 				if (!object.IsActive && ViewerState.hideInactive) {
 					continue;

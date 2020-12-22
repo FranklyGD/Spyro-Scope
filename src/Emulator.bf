@@ -155,8 +155,7 @@ namespace SpyroScope {
 		public static uint32[] deathPlaneHeights ~ delete _;
 		public static uint32[] maxFreeflightHeights ~ delete _;
 
-		public static Address collisionDataAddress;
-		public static Address collisionDeformPointerArrayAddress;
+		public static Address<Moby> objectArrayAddress;
 
 		// Game Constants
 		public static (String label, Renderer.Color color)[11] collisionTypes = .(
@@ -521,6 +520,8 @@ namespace SpyroScope {
 			cameraPositionAddress[(int)rom].Read(&cameraPosition);
 			cameraMatrixAddress[(int)rom].Read(&cameraBasisInv);
 			cameraEulerRotationAddress[(int)rom].Read(&cameraEulerRotation);
+			
+			objectArrayPointers[(int)rom].Read(&objectArrayAddress);
 
 			//ReadFromRAM((.)0x8006a28c, &collidingTriangle, 4);
 

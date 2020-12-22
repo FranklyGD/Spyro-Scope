@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 
 namespace SpyroScope {
 	[Ordered]
@@ -34,6 +35,8 @@ namespace SpyroScope {
 		public bool HasModel { get { return objectTypeID < 0x300; } }
 		// Derived from Spyro: Year of the Dragon [80030410]
 		public bool IsActive { get { return updateState < 0x80; } }
+
+		public static List<Moby> allocated = new .() ~ delete _;
 
 		public Matrix basis { get { return .Euler(
 			-(float)eulerRotation.x / 0x80 * Math.PI_f,
@@ -150,6 +153,11 @@ namespace SpyroScope {
 					}
 				}
 			}
+		}
+
+		[Inline]
+		public static Emulator.Address<Moby> GetAddress(int index) {
+			return Emulator.objectArrayAddress + index * sizeof(Moby);
 		}
 	}
 }

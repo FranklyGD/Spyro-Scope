@@ -29,7 +29,6 @@ namespace SpyroScope {
 		bool drawLimits;
 
 		// Objects
-		public static List<(Emulator.Address<Moby>, Moby)> objectList = new .(128) ~ delete _;
 		Dictionary<uint16, MobyModelSet> modelSets = new .();
 
 		// UI
@@ -238,7 +237,7 @@ namespace SpyroScope {
 			copyMobyAddress.normalTexture = normalButtonTexture;
 			copyMobyAddress.pressedTexture = pressedButtonTexture;
 			copyMobyAddress.text = "Copy";
-			copyMobyAddress.OnActuated.Add(new () => { SDL.SetClipboardText(scope String() .. AppendF("{}", objectList[ViewerSelection.currentObjIndex].0)); });
+			copyMobyAddress.OnActuated.Add(new () => { SDL.SetClipboardText(scope String() .. AppendF("{}", Moby.GetAddress(ViewerSelection.currentObjIndex))); });
 
 			Button copyMobyDataAddress = new .();
 
@@ -247,7 +246,7 @@ namespace SpyroScope {
 			copyMobyDataAddress.normalTexture = normalButtonTexture;
 			copyMobyDataAddress.pressedTexture = pressedButtonTexture;
 			copyMobyDataAddress.text = "Copy";
-			copyMobyDataAddress.OnActuated.Add(new () => { SDL.SetClipboardText(scope String() .. AppendF("{}", (objectList[ViewerSelection.currentObjIndex].1).dataPointer)); });
+			copyMobyDataAddress.OnActuated.Add(new () => { SDL.SetClipboardText(scope String() .. AppendF("{}", Moby.allocated[ViewerSelection.currentObjIndex].dataPointer)); });
 
 			GUIElement.PopParent();
 
@@ -447,6 +446,33 @@ namespace SpyroScope {
 
 			UpdateView();
 
+			var objPointer = Emulator.objectArrayAddress;
+			objPointer.ReadArray(Moby.allocated.Ptr, Moby.allocated.Count);
+			objPointer += Moby.allocated.Count * sizeof(Moby);
+
+			if (Emulator.loadingStatus == .Idle) {
+				while (true) {
+					Moby object = ?;
+					objPointer.Read(&object);
+	
+					if (object.dataPointer.IsNull) {
+						break;
+					}
+
+					Moby.allocated.Add(object);
+
+					if (!hideInactive || object.IsActive) {
+						if ((!showManipulator || ViewerSelection.currentObjIndex != Moby.allocated.Count) && drawObjectOrigins) {
+							object.DrawOriginAxis();
+						}
+	
+						DrawMoby(object);
+					}
+					
+					objPointer += sizeof(Moby);
+				}
+			}
+
 			cornerMenuInterp = Math.MoveTo(cornerMenuInterp, cornerMenuVisible ? 1 : 0, 0.1f);
 			cornerMenu.offset = .(-200 * (1 - cornerMenuInterp),0,0,240);
 
@@ -479,7 +505,7 @@ namespace SpyroScope {
 
 			if (showManipulator) {
 				if (ViewerSelection.currentObjIndex > -1) {
-					Moby* moby = &(objectList[ViewerSelection.currentObjIndex].1);
+					let moby = Moby.allocated[ViewerSelection.currentObjIndex];
 					Translator.Update(moby.position, moby.basis);
 				} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
 					Translator.Update(Terrain.collision.mesh.vertices[ViewerSelection.currentTriangleIndex * 3], .Identity);
@@ -497,53 +523,37 @@ namespace SpyroScope {
 				DrawGameCameraFrustrum();
 			}
 			
-			Emulator.Address<Moby> objPointer = ?;
-			Emulator.objectArrayPointers[(int)Emulator.rom].Read(&objPointer);
-			
-			objectList.Clear();
-			if (Emulator.loadingStatus == .Idle) {
-				while (true) {
-					Moby object = ?;
-					objPointer.Read(&object);
+			for (let object in Moby.allocated) {
+				if (!hideInactive || object.IsActive) {
+					if ((!showManipulator || ViewerSelection.currentObjIndex != Moby.allocated.Count) && drawObjectOrigins) {
+						object.DrawOriginAxis();
+					}
 
-					if (object.dataPointer.IsNull) {
-						break;
-					}
-	
-					if (!hideInactive || object.IsActive) {
-						if ((!showManipulator || ViewerSelection.currentObjIndex != objectList.Count) && drawObjectOrigins) {
-							object.DrawOriginAxis();
-						}
-		
-						DrawMoby(object);
-		
-						objectList.Add((objPointer, object));
-					}
-					
-					objPointer += sizeof(Moby);
-				}
-	
-				if (displayAllData) {
-					for (let (address, object) in objectList) {
-						object.DrawData();
-					}
-				} else {
-					if (ViewerSelection.currentObjIndex != -1) {
-						if (ViewerSelection.currentObjIndex < objectList.Count) {
-							let (address, object) = objectList[ViewerSelection.currentObjIndex];
-							object.DrawData();
-						} else {
-							ViewerSelection.currentObjIndex = -1;
-						}
-					}
-				}
-
-				if (ViewerSelection.currentRegionIndex > 0) {
-					let region = Terrain.regions[ViewerSelection.currentRegionIndex];
-					DrawUtilities.Axis(.((int)region.metadata.centerX * 16, (int)region.metadata.centerY * 16, (int)region.metadata.centerZ * 16), .Scale(1000));
+					DrawMoby(object);
 				}
 			}
-			if (ViewerSelection.hoveredObjIndex >= objectList.Count || ViewerSelection.currentObjIndex >= objectList.Count) {
+
+			if (displayAllData) {
+				for (let object in Moby.allocated) {
+					object.DrawData();
+				}
+			} else {
+				if (ViewerSelection.currentObjIndex != -1) {
+					if (ViewerSelection.currentObjIndex < Moby.allocated.Count) {
+						let object = Moby.allocated[ViewerSelection.currentObjIndex];
+						object.DrawData();
+					} else {
+						ViewerSelection.currentObjIndex = -1;
+					}
+				}
+			}
+
+			if (ViewerSelection.currentRegionIndex > 0) {
+				let region = Terrain.regions[ViewerSelection.currentRegionIndex];
+				DrawUtilities.Axis(.((int)region.metadata.centerX * 16, (int)region.metadata.centerY * 16, (int)region.metadata.centerZ * 16), .Scale(1000));
+			}
+
+			if (ViewerSelection.hoveredObjIndex >= Moby.allocated.Count || ViewerSelection.currentObjIndex >= Moby.allocated.Count) {
 				Selection.Reset();
 				ViewerSelection.hoveredObjects.Clear();
 			}
@@ -607,7 +617,7 @@ namespace SpyroScope {
 
 		public override void DrawGUI() {
 			if (displayIcons) {
-				for	(let (address, object) in objectList) {
+				for	(let object in Moby.allocated) {
 					if (hideInactive && !object.IsActive) {
 						continue;
 					}
@@ -624,8 +634,8 @@ namespace SpyroScope {
 				}
 			}
 
-			if (objectList.Count > 0 && ViewerSelection.currentObjIndex > -1) {
-				let (address, currentObject) = objectList[ViewerSelection.currentObjIndex];
+			if (Moby.allocated.Count > 0 && ViewerSelection.currentObjIndex > -1) {
+				let currentObject = Moby.allocated[ViewerSelection.currentObjIndex];
 				// Begin overlays
 				var screenPosition = Camera.SceneToScreen(currentObject.position);
 				if (drawObjectOrigins && screenPosition.z > 0) { // Must be in front of view
@@ -634,9 +644,6 @@ namespace SpyroScope {
 					DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(16,16,16));
 
 					if (!sideInspectorVisible) {
-						Emulator.Address objectArrayPointer = ?;
-						Emulator.ReadFromRAM(Emulator.objectArrayPointers[(int)Emulator.rom], &objectArrayPointer, 4);
-
 						screenPosition.y += screenSize;
 						screenPosition.x = Math.Floor(screenPosition.x);
 						screenPosition.y = Math.Floor(screenPosition.y);
@@ -644,7 +651,7 @@ namespace SpyroScope {
 							.(0,0,0,192));
 
 						screenPosition.y += 2;
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", address),
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", Moby.GetAddress(ViewerSelection.currentObjIndex)),
 							screenPosition, .(255,255,255));
 						WindowApp.bitmapFont.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
 							screenPosition + .(0,WindowApp.bitmapFont.characterHeight,0), .(255,255,255));
@@ -653,7 +660,7 @@ namespace SpyroScope {
 			}
 
 			if (ViewerSelection.hoveredObjects.Count > 0 && ViewerSelection.hoveredObjIndex > -1) {
-				let (address, hoveredObject) = objectList[ViewerSelection.hoveredObjIndex];
+				let hoveredObject = Moby.allocated[ViewerSelection.hoveredObjIndex];
 				// Begin overlays
 				var screenPosition = Camera.SceneToScreen(hoveredObject.position);
 				if (screenPosition.z > 0) { // Must be in front of view
@@ -785,8 +792,8 @@ namespace SpyroScope {
 						textColor = .(0,0,0);
 						DrawUtilities.Rect(WindowApp.mousePosition.y + 16 + i * WindowApp.bitmapFont.characterHeight, WindowApp.mousePosition.y + 16 + (i + 1) * WindowApp.bitmapFont.characterHeight, WindowApp.mousePosition.x + 16, WindowApp.mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(255,255,255,192));
 					}
-					DrawMobyIcon(objectList[hoveredObject.index].1, .(WindowApp.mousePosition.x + 28 + WindowApp.bitmapFont.characterWidth * 16, WindowApp.mousePosition.y + 16 + WindowApp.bitmapFont.characterHeight * (0.5f + i), 0), 0.75f);
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]: {:X4}", objectList[hoveredObject.index].0, (objectList[hoveredObject.index].1).objectTypeID), .( WindowApp.mousePosition.x + 16,  WindowApp.mousePosition.y + 18 + i * WindowApp.bitmapFont.characterHeight,0), textColor);
+					DrawMobyIcon(Moby.allocated[hoveredObject.index], .(WindowApp.mousePosition.x + 28 + WindowApp.bitmapFont.characterWidth * 16, WindowApp.mousePosition.y + 16 + WindowApp.bitmapFont.characterHeight * (0.5f + i), 0), 0.75f);
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]: {:X4}", Moby.GetAddress(hoveredObject.index), Moby.allocated[hoveredObject.index].objectTypeID), .(WindowApp.mousePosition.x + 16,  WindowApp.mousePosition.y + 18 + i * WindowApp.bitmapFont.characterHeight,0), textColor);
 				}
 			}
 
@@ -822,8 +829,8 @@ namespace SpyroScope {
 
 			// Side Inspector
 			if (ViewerSelection.currentObjIndex > -1) {
-				let (address, object) = objectList[ViewerSelection.currentObjIndex];
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", address), .(sideInspector.drawn.left + 22, 3, 0), .(255,255,255));
+				let object = Moby.allocated[ViewerSelection.currentObjIndex];
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", Moby.GetAddress(ViewerSelection.currentObjIndex)), .(sideInspector.drawn.left + 22, 3, 0), .(255,255,255));
 				int line = 0;
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("State {} ({})", object.updateState, object.IsActive ? "Active" : "Inactive"), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
 				line++;
@@ -867,9 +874,9 @@ namespace SpyroScope {
 
 								if (ViewerSelection.currentObjIndex > -1) {
 									Translator.OnDragged.Add(new (position) => {
-										var (address, moby) = objectList[ViewerSelection.currentObjIndex];
+										var moby = Moby.allocated[ViewerSelection.currentObjIndex];
 										moby.position = position.ToVectorInt();
-										address.Write(&moby);
+										Moby.GetAddress(ViewerSelection.currentObjIndex).Write(&moby);
 									});
 								} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
 									Translator.OnDragged.Add(new (position) => {
