@@ -185,7 +185,7 @@ namespace SpyroScope {
 					if (enabled) {
 						if (SelectionExists()) {
 							let left = GetLeft();
-							text.Remove(left, GetRight());
+							text.Remove(left, GetRight() - left);
 							cursor = left;
 						}
 						text.Insert(cursor, .((char8*)&event.text.text[0]));
