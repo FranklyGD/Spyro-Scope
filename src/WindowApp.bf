@@ -43,6 +43,7 @@ namespace SpyroScope {
 			uiProjection = .Screen(width, height);
 
 			id = SDL.GetWindowID(window);
+			GUIElement.Init();
 
 			state = new SetupState();
 			states.Add(state);
@@ -61,8 +62,6 @@ namespace SpyroScope {
 			state.Enter();
 
 			windowApp = this;
-
-			GUIElement.Init();
 		}
 
 		public ~this() {

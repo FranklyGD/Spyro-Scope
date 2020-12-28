@@ -45,13 +45,8 @@ namespace SpyroScope {
 		}
 
 		public static void Select() {
-			if (passedSelect != null) {
-				passedSelect.Unselect();
-			}
-
-			if (passedTest != null) {
-				passedTest.Select();
-			}
+			passedSelect?.Unselect();
+			passedTest?.Select();
 
 			passedSelect = passedTest;
 			Test();

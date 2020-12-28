@@ -48,7 +48,9 @@ namespace SpyroScope {
 				strBuffer.AppendF("{:X8}", (uint32)this);
 			}
 
-			public bool IsNull { get => this == 0; }
+			public bool IsNull { get => this == Null; }
+
+			public const Address Null = 0;
 		}
 		public struct Address<T> : Address {
 			public override void ToString(String strBuffer) {
@@ -521,13 +523,6 @@ namespace SpyroScope {
 			cameraMatrixAddress[(int)rom].Read(&cameraBasisInv);
 			cameraEulerRotationAddress[(int)rom].Read(&cameraEulerRotation);
 
-			Emulator.Address<Moby> newObjectArrayAddress = ?;
-			objectArrayPointers[(int)rom].Read(&newObjectArrayAddress);
-			if (objectArrayAddress != newObjectArrayAddress) {
-				Moby.allocated.Clear();
-			}
-			objectArrayAddress = newObjectArrayAddress;
-
 			//ReadFromRAM((.)0x8006a28c, &collidingTriangle, 4);
 
 			CheckSources();
@@ -542,6 +537,13 @@ namespace SpyroScope {
 			if (!VRAM.upToDate && gameState != (installment == .SpyroTheDragon ? 2 : 4)) {
 				VRAM.TakeSnapshot();
 			}
+
+			Emulator.Address<Moby> newObjectArrayAddress = ?;
+			objectArrayPointers[(int)rom].Read(&newObjectArrayAddress);
+			if (objectArrayAddress != newObjectArrayAddress) {
+				Moby.allocated.Clear();
+			}
+			objectArrayAddress = newObjectArrayAddress;
 		}
 
 		public static void SetSpyroPosition(VectorInt* position) {

@@ -38,11 +38,6 @@ namespace SpyroScope {
 		List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
 		Button togglePauseButton, stepButton, cycleTerrainOverlayButton, teleportButton;
-		
-		Texture normalButtonTexture = new .("images/ui/button_normal.png") ~ delete _; 
-		Texture pressedButtonTexture = new .("images/ui/button_pressed.png") ~ delete _;
-		Texture normalInputTexture = new .("images/ui/input_normal.png") ~ delete _; 
-		Texture activeInputTexture = new .("images/ui/input_active.png") ~ delete _;
 
 		Texture playTexture = new .("images/ui/play.png") ~ delete _; 
 		Texture pauseTexture = new .("images/ui/pause.png") ~ delete _; 
@@ -62,6 +57,8 @@ namespace SpyroScope {
 		GUIElement sideInspector;
 		bool sideInspectorVisible;
 		float sideInspectorInterp;
+
+		Inspector mainInspector;
 
 		(Toggle button, String label)[8] toggleList = .(
 			(null, "Wirefra(m)e"),
@@ -89,8 +86,6 @@ namespace SpyroScope {
 			togglePauseButton.anchor = .(0.5f, 0.5f, 0, 0);
 			togglePauseButton.offset = .(-16, 16, -16, 16);
 			togglePauseButton.offset.Shift(-16, 32);
-			togglePauseButton.normalTexture = normalButtonTexture;
-			togglePauseButton.pressedTexture = pressedButtonTexture;
 			togglePauseButton.OnActuated.Add(new => TogglePause);
 
 			stepButton = new .();
@@ -98,8 +93,6 @@ namespace SpyroScope {
 			stepButton.anchor = .(0.5f, 0.5f, 0, 0);
 			stepButton.offset = .(-16, 16, -16, 16);
 			stepButton.offset.Shift(16, 32);
-			stepButton.normalTexture = normalButtonTexture;
-			stepButton.pressedTexture = pressedButtonTexture;
 			stepButton.iconTexture = stepTexture;
 			stepButton.OnActuated.Add(new => Step);
 
@@ -114,8 +107,6 @@ namespace SpyroScope {
 			viewButton1.offset = .(16,72,16,32);
 			viewButton2.offset = .(72,128,16,32);
 			viewButton3.offset = .(128,184,16,32);
-			viewButton1.normalTexture = viewButton2.normalTexture = viewButton3.normalTexture = normalButtonTexture;
-			viewButton1.pressedTexture = viewButton2.pressedTexture = viewButton3.pressedTexture = pressedButtonTexture;
 
 			viewButton1.text = "Game";
 			viewButton2.text = "Free";
@@ -146,8 +137,6 @@ namespace SpyroScope {
 			viewButton1.offset = .(16,72,36,52);
 			viewButton2.offset = .(72,128,36,52);
 			viewButton3.offset = .(128,184,36,52);
-			viewButton1.normalTexture = viewButton2.normalTexture = viewButton3.normalTexture = normalButtonTexture;
-			viewButton1.pressedTexture = viewButton2.pressedTexture = viewButton3.pressedTexture = pressedButtonTexture;
 
 			viewButton1.text = "Collision";
 			viewButton2.text = "Far";
@@ -180,8 +169,6 @@ namespace SpyroScope {
 				Toggle button = new .();
 
 				button.offset = .(16, 32, 16 + (i + 2) * WindowApp.font.height, 32 + (i + 2) * WindowApp.font.height);
-				button.normalTexture = normalButtonTexture;
-				button.pressedTexture = pressedButtonTexture;
 				button.toggleIconTexture = toggledTexture;
 
 				toggleList[i].button = button;
@@ -201,16 +188,12 @@ namespace SpyroScope {
 			cycleTerrainOverlayButton = new .();
 
 			cycleTerrainOverlayButton.offset = .(16, 180, 16 + (toggleList.Count + 2) * WindowApp.font.height, 32 + (toggleList.Count + 2) * WindowApp.font.height);
-			cycleTerrainOverlayButton.normalTexture = normalButtonTexture;
-			cycleTerrainOverlayButton.pressedTexture = pressedButtonTexture;
 			cycleTerrainOverlayButton.text = "Terrain Over(l)ay";
 			cycleTerrainOverlayButton.OnActuated.Add(new => CycleTerrainOverlay);
 
 			teleportButton = new .();
 
 			teleportButton.offset = .(16, 180, 16 + (toggleList.Count + 3) * WindowApp.font.height, 32 + (toggleList.Count + 3) * WindowApp.font.height);
-			teleportButton.normalTexture = normalButtonTexture;
-			teleportButton.pressedTexture = pressedButtonTexture;
 			teleportButton.text = "(T)eleport";
 			teleportButton.OnActuated.Add(new => Teleport);
 			teleportButton.enabled = false;
@@ -226,27 +209,24 @@ namespace SpyroScope {
 
 			pinInspectorButton.offset = .(0, 16, 0, 16);
 			pinInspectorButton.offset.Shift(2,2);
-			pinInspectorButton.normalTexture = normalButtonTexture;
-			pinInspectorButton.pressedTexture = pressedButtonTexture;
 			pinInspectorButton.toggleIconTexture = toggledTexture;
+			
+			mainInspector = new .("Object");
+			mainInspector.anchor = .(0,1,0,1);
+			mainInspector.offset = .(4,-4,24,-4);
 
-			Button copyMobyAddress = new .();
+			mainInspector.AddProperty<int8>("State", 0x48).ReadOnly = true;
 
-			copyMobyAddress.offset = .(0,64,0,16);
-			copyMobyAddress.offset.Shift(150,2);
-			copyMobyAddress.normalTexture = normalButtonTexture;
-			copyMobyAddress.pressedTexture = pressedButtonTexture;
-			copyMobyAddress.text = "Copy";
-			copyMobyAddress.OnActuated.Add(new () => { SDL.SetClipboardText(scope String() .. AppendF("{}", Moby.GetAddress(ViewerSelection.currentObjIndex))); });
+			mainInspector.AddProperty<int32>("Position", 0xc, "XYZ");
+			mainInspector.AddProperty<int8>("Rotation", 0x44, "XYZ");
+			
+			mainInspector.AddProperty<uint8>("Type #ID", 0x36).ReadOnly = true;
+			mainInspector.AddProperty<Emulator.Address>("Data", 0x0).ReadOnly = true;
+			mainInspector.AddProperty<int8>("Held Value", 0x50);
 
-			Button copyMobyDataAddress = new .();
-
-			copyMobyDataAddress.offset = .(0,64,0,16);
-			copyMobyDataAddress.offset.Shift(195,251);
-			copyMobyDataAddress.normalTexture = normalButtonTexture;
-			copyMobyDataAddress.pressedTexture = pressedButtonTexture;
-			copyMobyDataAddress.text = "Copy";
-			copyMobyDataAddress.OnActuated.Add(new () => { SDL.SetClipboardText(scope String() .. AppendF("{}", Moby.allocated[ViewerSelection.currentObjIndex].dataPointer)); });
+			mainInspector.AddProperty<uint16>("Model #ID", 0x3c);
+			mainInspector.AddProperty<uint8>("Color", 0x54, "RGBA");
+			mainInspector.AddProperty<uint8>("LOD Distance", 0x4e);
 
 			GUIElement.PopParent();
 
@@ -260,8 +240,6 @@ namespace SpyroScope {
 			textureIndexInput.anchor = .(0, 0, 1, 1);
 			textureIndexInput.offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
 			textureIndexInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -5 + 1);
-			textureIndexInput.normalTexture = normalInputTexture;
-			textureIndexInput.activeTexture = activeInputTexture;
 			textureIndexInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
@@ -289,8 +267,6 @@ namespace SpyroScope {
 			rotationInput.anchor = .(0, 0, 1, 1);
 			rotationInput.offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
 			rotationInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -4 + 1);
-			rotationInput.normalTexture = normalInputTexture;
-			rotationInput.activeTexture = activeInputTexture;
 			rotationInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
@@ -315,8 +291,6 @@ namespace SpyroScope {
 			depthOffsetInput.anchor = .(0, 0, 1, 1);
 			depthOffsetInput.offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
 			depthOffsetInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -2 + 1);
-			depthOffsetInput.normalTexture = normalInputTexture;
-			depthOffsetInput.activeTexture = activeInputTexture;
 			depthOffsetInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
@@ -341,8 +315,6 @@ namespace SpyroScope {
 			mirrorToggle.anchor = .(0, 0, 1, 1);
 			mirrorToggle.offset = .(0,16,0,16);
 			mirrorToggle.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -3 + 2);
-			mirrorToggle.normalTexture = normalButtonTexture;
-			mirrorToggle.pressedTexture = pressedButtonTexture;
 			mirrorToggle.toggleIconTexture = toggledTexture;
 			mirrorToggle.OnActuated.Add(new () => {
 				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
@@ -361,8 +333,6 @@ namespace SpyroScope {
 			doubleSidedToggle.anchor = .(0, 0, 1, 1);
 			doubleSidedToggle.offset = .(0,16,0,16);
 			doubleSidedToggle.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -1 + 2);
-			doubleSidedToggle.normalTexture = normalButtonTexture;
-			doubleSidedToggle.pressedTexture = pressedButtonTexture;
 			doubleSidedToggle.toggleIconTexture = toggledTexture;
 			doubleSidedToggle.OnActuated.Add(new () => {
 				if (faceMenu.visible) {
@@ -380,14 +350,6 @@ namespace SpyroScope {
 			});
 
 			GUIElement.PopParent();
-
-			for (let element in guiElements) {
-				Button button = element as Button;
-				if (button != null) {
-					button.[Friend]color = button.normalColor;
-					button.[Friend]texture = button.normalTexture;
-				}
-			}
 
 			Emulator.OnSceneChanged.Add(new => OnSceneChanged);
 			Emulator.OnSceneChanging.Add(new => OnSceneChanging);
@@ -469,7 +431,7 @@ namespace SpyroScope {
 			cornerMenu.offset = .(-200 * (1 - cornerMenuInterp),0,0,240);
 
 			sideInspectorInterp = Math.MoveTo(sideInspectorInterp, sideInspectorVisible ? 1 : 0, 0.1f);
-			sideInspector.offset = .(-300 * sideInspectorInterp,0,0,0);
+			sideInspector.offset = .(-300 * sideInspectorInterp,300 * (1 - sideInspectorInterp),0,0);
 
 			if (Emulator.loadingStatus == .Loading || Emulator.gameState > 0) {
 				return;
@@ -814,9 +776,10 @@ namespace SpyroScope {
 			}
 
 			// Side Inspector
-			if (ViewerSelection.currentObjIndex > -1) {
+			/*if (ViewerSelection.currentObjIndex > -1) {
+				WindowApp.bitmapFont.Print("Address", .(sideInspector.drawn.left + 24, 3, 0), .(255,255,255));
+
 				let object = Moby.allocated[ViewerSelection.currentObjIndex];
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", Moby.GetAddress(ViewerSelection.currentObjIndex)), .(sideInspector.drawn.left + 22, 3, 0), .(255,255,255));
 				int line = 0;
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("State {} ({})", object.updateState, object.IsActive ? "Active" : "Inactive"), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
 				line++;
@@ -833,7 +796,7 @@ namespace SpyroScope {
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("Data [{}]", object.dataPointer), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
 				line++;
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("Gem-Value {}", (int8)object.heldGemValue), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-			}
+			}*/
 
 			if (Emulator.loadingStatus == .Loading) {
 				DrawLoadingOverlay();
@@ -883,6 +846,14 @@ namespace SpyroScope {
 
 						if (!(showManipulator && Translator.hovered)) {
 							Selection.Select();
+							
+							if (ViewerSelection.currentObjIndex > -1) {
+								let address = Moby.GetAddress(ViewerSelection.currentObjIndex);
+								let reference = &Moby.allocated[ViewerSelection.currentObjIndex];
+								mainInspector.SetData(address, reference);
+							} else {
+								mainInspector.SetData(.Null, null);
+							}
 						}
 
 						faceMenu.visible = (Terrain.renderMode == .NearLQ || Terrain.renderMode == .NearHQ) && ViewerSelection.currentRegionIndex > -1 && ViewerSelection.currentTriangleIndex > -1;

@@ -45,9 +45,19 @@ namespace SpyroScope {
 		public static GUIElement pressedElement;
 		public static GUIElement selectedElement;
 
+		public static Texture normalButtonTexture ~ delete _; 
+		public static Texture pressedButtonTexture ~ delete _;
+		public static Texture normalInputTexture ~ delete _; 
+		public static Texture activeInputTexture ~ delete _;
+
 		public static void Init() {
 			arrow = SDL.CreateSystemCursor(.SDL_SYSTEM_CURSOR_ARROW);
 			Ibeam = SDL.CreateSystemCursor(.SDL_SYSTEM_CURSOR_IBEAM);
+
+			normalButtonTexture = new .("images/ui/button_normal.png");
+			pressedButtonTexture = new .("images/ui/button_pressed.png");
+			normalInputTexture = new .("images/ui/input_normal.png"); 
+			activeInputTexture = new .("images/ui/input_active.png");
 		}
 
 		public static void SetActiveGUI(List<GUIElement> GUI) {

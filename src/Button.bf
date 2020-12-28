@@ -6,8 +6,8 @@ namespace SpyroScope {
 		public Renderer.Color pressedColor = .(255, 255, 255);
 		public Renderer.Color disabledColor = .(128, 128, 128);
 
-		public Texture normalTexture = Renderer.whiteTexture;
-		public Texture pressedTexture = Renderer.whiteTexture;
+		public Texture normalTexture = normalButtonTexture;
+		public Texture pressedTexture = pressedButtonTexture;
 
 		public Texture iconTexture;
 		public String text;
