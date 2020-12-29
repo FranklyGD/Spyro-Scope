@@ -15,6 +15,9 @@ namespace SpyroScope {
 
 		String lastValidText = new .() ~ delete _;
 		public String text = new .() ~ delete _;
+		public StringView preText;
+		public StringView postText;
+		Vector textStart;
 		
 		public bool enabled = true;
 		public bool displayUnderlying = true;
@@ -40,7 +43,10 @@ namespace SpyroScope {
 			let vcenter = (drawn.top + drawn.bottom) / 2;
 			let halfHeight = Math.Floor(WindowApp.fontSmall.height / 2);
 
-			let textStartX = Math.Round(drawn.left) + 4;
+			textStart = Vector(Math.Round(drawn.left) + 4, vcenter - halfHeight, 0);
+			textStart = WindowApp.fontSmall.Print(preText, textStart, .(0,0,0,128));
+
+			Vector postTextStart;
 			var cursorPos = 0f;
 			if (text != null && !text.IsEmpty) {
 				if (selectedElement == this) {
@@ -58,20 +64,22 @@ namespace SpyroScope {
 							right = selectBeginPos;
 						}
 
-						left += textStartX;
-						right += textStartX;
+						left += textStart.x;
+						right += textStart.x;
 
-						DrawUtilities.Rect(vcenter - halfHeight, vcenter + halfHeight, left, right, .(56,154,232,192));
+						DrawUtilities.Rect(textStart.y, vcenter + halfHeight, left, right, .(56,154,232,192));
 					}
 				}
 				
-				WindowApp.fontSmall.Print(text, .(textStartX, vcenter - halfHeight, 0), .(0,0,0));
+				postTextStart = WindowApp.fontSmall.Print(text, textStart, .(0,0,0));
 			} else {
-				WindowApp.fontSmall.Print(lastValidText, .(textStartX, vcenter - halfHeight, 0), .(0,0,0, 128));
+				postTextStart = WindowApp.fontSmall.Print(lastValidText, textStart, .(0,0,0, 128));
 			}
 
+			WindowApp.fontSmall.Print(postText, postTextStart, .(0,0,0,128));
+
 			if (selectedElement == this) {
-				cursorPos += textStartX;
+				cursorPos += textStart.x;
 				Renderer.DrawLine(.(cursorPos, vcenter - halfHeight, 0), .(cursorPos, vcenter + halfHeight, 0), .(0,0,0), .(0,0,0));
 
 				if (text != null && !text.IsEmpty && displayUnderlying && underlyingChanged && lastValidText != null && !lastValidText.IsEmpty) {
@@ -79,7 +87,7 @@ namespace SpyroScope {
 
 					let textWidth = WindowApp.fontSmall.CalculateWidth(validDisplayText);
 					DrawUtilities.Rect(drawn.top - WindowApp.fontSmall.height - 4, drawn.top, drawn.left, drawn.left + textWidth + 8, .(255,255,255));
-					WindowApp.fontSmall.Print(validDisplayText, .(textStartX, drawn.top - WindowApp.fontSmall.height - 2, 0), .(0,0,0));
+					WindowApp.fontSmall.Print(validDisplayText, .(textStart.x, drawn.top - WindowApp.fontSmall.height - 2, 0), .(0,0,0));
 				}
 			}
 		}
@@ -196,7 +204,7 @@ namespace SpyroScope {
 
 				case .MouseMotion:
 					if (dragging) {
-						cursor = WindowApp.fontSmall.NearestTextIndex(text, WindowApp.mousePosition.x - (drawn.left + 4));
+						cursor = WindowApp.fontSmall.NearestTextIndex(text, WindowApp.mousePosition.x - textStart.x);
 					}
 
 				default:

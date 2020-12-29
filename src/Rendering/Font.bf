@@ -115,7 +115,7 @@ namespace SpyroScope {
 			Texture.Unbind();
 		}
 
-		public void Print(StringView text, Vector position, float scale, Renderer.Color4 color) {
+		public Vector Print(StringView text, Vector position, float scale, Renderer.Color4 color) {
 			var position;
 			position.y += penLine;
 
@@ -137,10 +137,13 @@ namespace SpyroScope {
 
 				position.x += (character.advance >> 6) * scale;
 			}
+
+			position.y -= penLine;
+			return position;
 		}
 
-		public void Print(StringView text, Vector position, Renderer.Color4 color) {
-			Print(text, position, 1, color);
+		public Vector Print(StringView text, Vector position, Renderer.Color4 color) {
+			return Print(text, position, 1, color);
 		}
 
 		public float CalculateWidth(StringView text) {

@@ -226,7 +226,7 @@ namespace SpyroScope {
 
 			mainInspector.AddProperty<uint16>("Model #ID", 0x3c);
 			mainInspector.AddProperty<uint8>("Color", 0x54, "RGBA");
-			mainInspector.AddProperty<uint8>("LOD Distance", 0x4e);
+			mainInspector.AddProperty<uint8>("LOD Distance", 0x4e).postTextInput = " x 1000";
 
 			GUIElement.PopParent();
 

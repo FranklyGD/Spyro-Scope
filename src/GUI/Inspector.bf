@@ -23,6 +23,7 @@ namespace SpyroScope {
 			input.anchor = .(0,1,0,0);
 			input.offset = .(labelWidth,0,0,WindowApp.bitmapFont.characterHeight);
 			input.enabled = false;
+			input.preText = "0x";
 
 			area = new GUIElement();
 			area.anchor = .(0,1,0,1);
@@ -85,6 +86,16 @@ namespace SpyroScope {
 				set { for (let input in inputs) input.enabled = !value; }
 			}
 
+			public StringView preTextInput {
+				get => inputs[0].preText;
+				set { for (let input in inputs) input.preText = value; }
+			}
+
+			public StringView postTextInput {
+				get => inputs[0].postText;
+				set { for (let input in inputs) input.postText = value; }
+			}
+
 			public this(Inspector inspector, StringView label, int offset, StringView components) : base() {
 				this.inspector = inspector;
 				this.label = label;
@@ -138,6 +149,10 @@ namespace SpyroScope {
 							ModifyData((.)&castedVal);
 						}
 					});
+
+					if (typeof(T) == typeof(Emulator.Address)) {
+						input.preText = "0x";
+					}
 				}
 
 				GUIElement.PopParent();
