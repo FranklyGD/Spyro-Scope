@@ -214,8 +214,8 @@ namespace SpyroScope {
 				clutRect.end = PixelToScreen(clutPosition.x + clutReference.width, (clutPosition.x >> 10) + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1));
 
 				if (blinkerTime < 30 &&
-					selectedTextureIndex > -1 && clutReference.category == .Terrain && clutReference.references.Contains(selectedTextureIndex) ||
-					selectedSpriteIndex > -1 && clutReference.category == .Sprite && clutReference.references.Contains(selectedSpriteIndex)
+					(selectedTextureIndex > -1 && clutReference.category == .Terrain && clutReference.references.Contains(selectedTextureIndex) ||
+					selectedSpriteIndex > -1 && clutReference.category == .Sprite && clutReference.references.Contains(selectedSpriteIndex))
 				) {
 
 					DrawUtilities.Rect(clutRect, .(255,0,0,64));
