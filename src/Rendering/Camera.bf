@@ -2,8 +2,8 @@ using System;
 
 namespace SpyroScope {
 	static struct Camera {
-		public static Vector position;
-		public static Matrix basis;
+		public static Vector3 position;
+		public static Matrix3 basis;
 		public static bool orthographic;
 		public static float size;
 		public static float fov;
@@ -18,7 +18,7 @@ namespace SpyroScope {
 			}
 		};
 
-		public static Vector SceneToScreen(Vector worldPosition) {
+		public static Vector3 SceneToScreen(Vector3 worldPosition) {
 			let viewProjectionMatrix = projection * (basis.Transpose() * Matrix4.Translation(-position));
 			let viewPosition = viewProjectionMatrix * Vector4(worldPosition, 1);
 
@@ -33,7 +33,7 @@ namespace SpyroScope {
 			return size * WindowApp.height / (orthographic ? Camera.size / 2 : (depth * Math.Tan(fov * (Math.PI_f / 180) / 2) * 2));
 		}
 
-		public static Vector ScreenPointToOrigin((float x, float y) screenPosition) {
+		public static Vector3 ScreenPointToOrigin(Vector2 screenPosition) {
 			if (orthographic) {
 				let x = 0.5f - (screenPosition.x / WindowApp.width);
 				let y = screenPosition.y / WindowApp.height - 0.5f;
@@ -45,7 +45,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public static Vector ScreenPointToRay((float x, float y) screenPosition) {
+		public static Vector3 ScreenPointToRay(Vector2 screenPosition) {
 			if (orthographic) {
 				return -basis.z;
 			} else {
@@ -54,7 +54,7 @@ namespace SpyroScope {
 				let tangent = Math.Tan(fov * Math.PI_f / 360);
 	
 				let aspect = (float)WindowApp.width / WindowApp.height;
-				return basis * Vector(-x * tangent * aspect, -y * tangent, -1);
+				return basis * Vector3(-x * tangent * aspect, -y * tangent, -1);
 			}
 		}
 	}

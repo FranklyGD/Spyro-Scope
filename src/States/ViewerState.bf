@@ -14,8 +14,8 @@ namespace SpyroScope {
 		ViewMode viewMode = .Game;
 		bool cameraHijacked;
 		float cameraSpeed = 64;
-		Vector cameraMotion;
-		Vector viewEulerRotation;
+		Vector3 cameraMotion;
+		Vector3 viewEulerRotation;
 		bool mapMode;
 
 		// Options
@@ -32,7 +32,7 @@ namespace SpyroScope {
 		Dictionary<uint16, MobyModelSet> modelSets = new .();
 
 		// UI
-		public static Vector cursor3DPosition;
+		public static Vector3 cursor3DPosition;
 
 		List<(String message, DateTime time)> messageFeed = new .();
 		List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
@@ -464,7 +464,7 @@ namespace SpyroScope {
 				} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
 					Translator.Update(Terrain.collision.mesh.vertices[ViewerSelection.currentTriangleIndex * 3], .Identity);
 				} else {
-					Vector spyroPosition = Emulator.spyroPosition;
+					Vector3 spyroPosition = Emulator.spyroPosition;
 					Translator.Update(spyroPosition, Emulator.spyroBasis.ToMatrixCorrected());
 				}
 			}
@@ -595,7 +595,7 @@ namespace SpyroScope {
 				if (drawObjectOrigins && screenPosition.z > 0) { // Must be in front of view
 					let screenSize = Camera.SceneSizeToScreenSize(200, screenPosition.z);
 					screenPosition.z = 0;
-					DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(16,16,16));
+					DrawUtilities.Circle(screenPosition, Matrix3.Scale(screenSize,screenSize,screenSize), .(16,16,16));
 
 					if (!sideInspectorVisible) {
 						screenPosition.y += screenSize;
@@ -606,9 +606,9 @@ namespace SpyroScope {
 
 						screenPosition.y += 2;
 						WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", Moby.GetAddress(ViewerSelection.currentObjIndex)),
-							screenPosition, .(255,255,255));
+							(Vector2)screenPosition, .(255,255,255));
 						WindowApp.bitmapFont.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
-							screenPosition + .(0,WindowApp.bitmapFont.characterHeight,0), .(255,255,255));
+							(Vector2)screenPosition + .(0,WindowApp.bitmapFont.characterHeight), .(255,255,255));
 					}
 				}
 			}
@@ -620,7 +620,7 @@ namespace SpyroScope {
 				if (screenPosition.z > 0) { // Must be in front of view
 					let screenSize = Camera.SceneSizeToScreenSize(150, screenPosition.z);
 					screenPosition.z = 0;
-					DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(128,64,16));
+					DrawUtilities.Circle(screenPosition, Matrix3.Scale(screenSize,screenSize,screenSize), .(128,64,16));
 				}
 			}
 
@@ -635,7 +635,7 @@ namespace SpyroScope {
 						if (screenPosition.z > 0) { // Must be in front of view
 							let screenSize = Camera.SceneSizeToScreenSize(hoveredAnimGroup.radius - 50, screenPosition.z);
 							screenPosition.z = 0;
-							DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(128,64,16));
+							DrawUtilities.Circle(screenPosition, Matrix3.Scale(screenSize,screenSize,screenSize), .(128,64,16));
 						}
 					}
 
@@ -645,7 +645,7 @@ namespace SpyroScope {
 						if (screenPosition.z > 0) { // Must be in front of view
 							let screenSize = Camera.SceneSizeToScreenSize(animationGroup.radius, screenPosition.z);
 							screenPosition.z = 0;
-							DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(16,16,0));
+							DrawUtilities.Circle(screenPosition, Matrix3.Scale(screenSize,screenSize,screenSize), .(16,16,0));
 						}
 
 						let leftPaddingBG = 4;
@@ -658,20 +658,20 @@ namespace SpyroScope {
 
 						// Content
 						let currentKeyframe = animationGroup.CurrentKeyframe;
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("Group Index {}", ViewerSelection.currentAnimGroupIndex), .(8, (.)WindowApp.height - (18 * 5 + 8 + 15), 0), .(255,255,255));
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("Keyframe {}", (uint)currentKeyframe), .(8, (.)WindowApp.height - (18 * 4 + 8 + 15), 0), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("Group Index {}", ViewerSelection.currentAnimGroupIndex), .(8, (.)WindowApp.height - (18 * 5 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("Keyframe {}", (uint)currentKeyframe), .(8, (.)WindowApp.height - (18 * 4 + 8 + 15)), .(255,255,255));
 						let keyframeData = animationGroup.GetKeyframeData(currentKeyframe);
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("Flag {}", (uint)keyframeData.flag), .(8, (.)WindowApp.height - (18 * 3 + 8 + 15), 0), .(255,255,255));
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("Interp. {}", (uint)keyframeData.interpolation), .(8, (.)WindowApp.height - (18 * 2 + 8 + 15), 0), .(255,255,255));
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("From State {}", (uint)keyframeData.fromState), .(8, (.)WindowApp.height - (18 * 1 + 8 + 15), 0), .(255,255,255));
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("To State {}", (uint)keyframeData.toState), .(8, (.)WindowApp.height - (18 * 0 + 8 + 15), 0), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("Flag {}", (uint)keyframeData.flag), .(8, (.)WindowApp.height - (18 * 3 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("Interp. {}", (uint)keyframeData.interpolation), .(8, (.)WindowApp.height - (18 * 2 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("From State {}", (uint)keyframeData.fromState), .(8, (.)WindowApp.height - (18 * 1 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("To State {}", (uint)keyframeData.toState), .(8, (.)WindowApp.height - (18 * 0 + 8 + 15)), .(255,255,255));
 					} else if (Terrain.collision.animationGroups != null) {
 						for (let animationGroup in Terrain.collision.animationGroups) {
 							var screenPosition = Camera.SceneToScreen(animationGroup.center);
 							if (screenPosition.z > 0) { // Must be in front of view
 								let screenSize = Camera.SceneSizeToScreenSize(animationGroup.radius, screenPosition.z);
 								screenPosition.z = 0;
-								DrawUtilities.Circle(screenPosition, Matrix.Scale(screenSize,screenSize,screenSize), .(16,16,0));
+								DrawUtilities.Circle(screenPosition, Matrix3.Scale(screenSize,screenSize,screenSize), .(16,16,0));
 							}
 						}
 					}
@@ -680,10 +680,10 @@ namespace SpyroScope {
 				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 				let metadata = visualMesh.metadata;
 				
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", ViewerSelection.currentRegionIndex), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 11, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Center: <{},{},{}>", (int)metadata.centerX * 16, (int)metadata.centerY * 16, (int)metadata.centerZ * 16), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 10, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Offset: <{},{},{}>", (int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 9, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Scaled Vertically: {}", metadata.verticallyScaledDown), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 8, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", ViewerSelection.currentRegionIndex), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 11), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Center: <{},{},{}>", (int)metadata.centerX * 16, (int)metadata.centerY * 16, (int)metadata.centerZ * 16), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 10), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Offset: <{},{},{}>", (int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 9), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Scaled Vertically: {}", metadata.verticallyScaledDown), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 8), .(255,255,255));
 
 				int faceIndex = ?;
 				if (ViewerSelection.currentRegionTransparent) {
@@ -719,12 +719,12 @@ namespace SpyroScope {
 					DrawUtilities.Rect(WindowApp.height - (offset[1] + 64), WindowApp.height - offset[1], offset[0], offset[0] + 64, partialUV.leftY, partialUV.leftY + (1f / 16), partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
 				}
 				
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Face Index: {}", faceIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 6, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Tex Index"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 5, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Rotation"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 4, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Mirror"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 3, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Depth Offset"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 2, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Double Sided"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Face Index: {}", faceIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 6), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Tex Index"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 5), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Rotation"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 4), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Mirror"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 3), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Depth Offset"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 2), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Double Sided"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight), .(255,255,255));
 
 			}
 
@@ -741,7 +741,7 @@ namespace SpyroScope {
 						DrawUtilities.Rect(WindowApp.mousePosition.y + 16 + i * WindowApp.bitmapFont.characterHeight, WindowApp.mousePosition.y + 16 + (i + 1) * WindowApp.bitmapFont.characterHeight, WindowApp.mousePosition.x + 16, WindowApp.mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(255,255,255,192));
 					}
 					DrawMobyIcon(Moby.allocated[hoveredObject.index], .(WindowApp.mousePosition.x + 28 + WindowApp.bitmapFont.characterWidth * 16, WindowApp.mousePosition.y + 16 + WindowApp.bitmapFont.characterHeight * (0.5f + i), 0), 0.75f);
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]: {:X4}", Moby.GetAddress(hoveredObject.index), Moby.allocated[hoveredObject.index].objectTypeID), .(WindowApp.mousePosition.x + 16,  WindowApp.mousePosition.y + 18 + i * WindowApp.bitmapFont.characterHeight,0), textColor);
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]: {:X4}", Moby.GetAddress(hoveredObject.index), Moby.allocated[hoveredObject.index].objectTypeID), .(WindowApp.mousePosition.x + 16,  WindowApp.mousePosition.y + 18 + i * WindowApp.bitmapFont.characterHeight), textColor);
 				}
 			}
 
@@ -751,7 +751,7 @@ namespace SpyroScope {
 				let middleWindow = WindowApp.width / 2;
 				let xOrigin = middleWindow - halfWidth;
 				DrawUtilities.Rect(64, 64 + WindowApp.font.height, xOrigin, xOrigin + WindowApp.font.CalculateWidth(message) + 4, .(0,0,0, 192));
-				WindowApp.font.Print(message, .(middleWindow - halfWidth, 64, 0), .(255,255,255));
+				WindowApp.font.Print(message, .(middleWindow - halfWidth, 64), .(255,255,255));
 			}
 
 			// Begin window relative position UI
@@ -764,14 +764,14 @@ namespace SpyroScope {
 			// Corner Menu
 			for (let element in guiElements) {
 				if (element.GetVisibility()) {
-					let parentRect = element.parent != null ? element.parent.drawn : GUIElement.Rect(0, WindowApp.width, 0, WindowApp.height);
+					let parentRect = element.parent != null ? element.parent.drawn : Rect(0, WindowApp.width, 0, WindowApp.height);
 					element.Draw(parentRect);
 				}
 			}
 
 			for (let toggle in toggleList) {
 				if (toggle.button.visible) {
-					WindowApp.fontSmall.Print(toggle.label, .(toggle.button.drawn.right + 8, toggle.button.drawn.top + 1, 0), .(255,255,255));
+					WindowApp.fontSmall.Print(toggle.label, .(toggle.button.drawn.right + 8, toggle.button.drawn.top + 1), .(255,255,255));
 				}
 			}
 
@@ -824,19 +824,19 @@ namespace SpyroScope {
 								if (ViewerSelection.currentObjIndex > -1) {
 									Translator.OnDragged.Add(new (position) => {
 										var moby = Moby.allocated[ViewerSelection.currentObjIndex];
-										moby.position = position.ToVectorInt();
+										moby.position = (.)position;
 										Moby.GetAddress(ViewerSelection.currentObjIndex).Write(&moby);
 									});
 								} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
 									Translator.OnDragged.Add(new (position) => {
 										var triangle = Terrain.collision.triangles[ViewerSelection.currentTriangleIndex].Unpack(false);
-										triangle[0] = position.ToVectorInt();
+										triangle[0] = (.)position;
 										Terrain.collision.SetNearVertex((.)ViewerSelection.currentTriangleIndex, triangle, true);
 									});
 								} else {
 									Translator.OnDragBegin.Add(new => Emulator.KillSpyroUpdate);
 									Translator.OnDragged.Add(new (position) => {
-										Emulator.spyroPosition = position.ToVectorInt();
+										Emulator.spyroPosition = (.)position;
 										Emulator.spyroPositionAddresses[(int)Emulator.rom].Write(&Emulator.spyroPosition);
 									});
 									Translator.OnDragEnd.Add(new => Emulator.RestoreSpyroUpdate);
@@ -1049,7 +1049,7 @@ namespace SpyroScope {
 
 			if (object.HasModel) {
 				if (modelSets.ContainsKey(object.objectTypeID)) {
-					let basis = Matrix.Euler(
+					let basis = Matrix3.Euler(
 						-(float)object.eulerRotation.x / 0x80 * Math.PI_f,
 						(float)object.eulerRotation.y / 0x80 * Math.PI_f,
 						-(float)object.eulerRotation.z / 0x80 * Math.PI_f
@@ -1069,7 +1069,7 @@ namespace SpyroScope {
 			}
 		}
 
-		void DrawMobyIcon(Moby object, Vector screenPosition, float scale) {
+		void DrawMobyIcon(Moby object, Vector3 screenPosition, float scale) {
 			switch (object.objectTypeID) {
 				case 0xca:
 				case 0xcb:
@@ -1131,7 +1131,7 @@ namespace SpyroScope {
 			viewEulerRotation.z = Math.Repeat(viewEulerRotation.z + 1, 2) - 1;
 
 			// Corrected view matrix for the scope
-			Camera.basis = Matrix.Euler(
+			Camera.basis = Matrix3.Euler(
 				(viewEulerRotation.x - 0.5f) * Math.PI_f,
 				viewEulerRotation.y  * Math.PI_f,
 				(0.5f - viewEulerRotation.z) * Math.PI_f
@@ -1147,8 +1147,7 @@ namespace SpyroScope {
 				if (viewMode == .Free) {
 					Camera.position += cameraMotionDirection;
 				} else {
-					let cameraNewPosition = Emulator.cameraPosition.ToVector() + cameraMotionDirection;
-					Emulator.cameraPosition = cameraNewPosition.ToVectorInt();
+					Emulator.cameraPosition = (.)(Emulator.cameraPosition + cameraMotionDirection);
 					Emulator.SetCameraPosition(&Emulator.cameraPosition);
 				}
 			}
@@ -1169,24 +1168,24 @@ namespace SpyroScope {
 
 		void DrawGameCameraFrustrum() {
 			let cameraBasis = Emulator.cameraBasisInv.ToMatrixCorrected().Transpose();
-			let cameraBasisCorrected = Matrix(cameraBasis.y, cameraBasis.z, -cameraBasis.x);
+			let cameraBasisCorrected = Matrix3(cameraBasis.y, cameraBasis.z, -cameraBasis.x);
 
-			Renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(500,0,0), .(255,0,0), .(255,0,0));
-			Renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(0,500,0), .(0,255,0), .(0,255,0));
-			Renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector(0,0,500), .(0,0,255), .(0,0,255));
+			Renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector3(500,0,0), .(255,0,0), .(255,0,0));
+			Renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector3(0,500,0), .(0,255,0), .(0,255,0));
+			Renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector3(0,0,500), .(0,0,255), .(0,0,255));
 
 			let projectionMatrixInv = WindowApp.gameProjection.Inverse();
 			let viewProjectionMatrixInv = cameraBasisCorrected * projectionMatrixInv;
 
-			let farTopLeft = (Vector)(viewProjectionMatrixInv * Vector4(-1,1,1,1)) + Emulator.cameraPosition.ToVector();
-			let farTopRight = (Vector)(viewProjectionMatrixInv * Vector4(1,1,1,1)) + Emulator.cameraPosition.ToVector();
-			let farBottomLeft = (Vector)(viewProjectionMatrixInv * Vector4(-1,-1,1,1)) + Emulator.cameraPosition.ToVector();
-			let farBottomRight = (Vector)(viewProjectionMatrixInv * Vector4(1,-1,1,1)) + Emulator.cameraPosition.ToVector();
+			let farTopLeft = (Vector3)(viewProjectionMatrixInv * Vector4(-1,1,1,1)) + (Vector3)Emulator.cameraPosition;
+			let farTopRight = (Vector3)(viewProjectionMatrixInv * Vector4(1,1,1,1)) + Emulator.cameraPosition;
+			let farBottomLeft = (Vector3)(viewProjectionMatrixInv * Vector4(-1,-1,1,1)) + Emulator.cameraPosition;
+			let farBottomRight = (Vector3)(viewProjectionMatrixInv * Vector4(1,-1,1,1)) + Emulator.cameraPosition;
 
-			let nearTopLeft = (Vector)(viewProjectionMatrixInv * Vector4(-1,1,-1,1)) + Emulator.cameraPosition.ToVector();
-			let nearTopRight = (Vector)(viewProjectionMatrixInv * Vector4(1,1,-1,1)) + Emulator.cameraPosition.ToVector();
-			let nearBottomLeft = (Vector)(viewProjectionMatrixInv * Vector4(-1,-1,-1,1)) + Emulator.cameraPosition.ToVector();
-			let nearBottomRight = (Vector)(viewProjectionMatrixInv * Vector4(1,-1,-1,1)) + Emulator.cameraPosition.ToVector();
+			let nearTopLeft = (Vector3)(viewProjectionMatrixInv * Vector4(-1,1,-1,1)) + Emulator.cameraPosition;
+			let nearTopRight = (Vector3)(viewProjectionMatrixInv * Vector4(1,1,-1,1)) + Emulator.cameraPosition;
+			let nearBottomLeft = (Vector3)(viewProjectionMatrixInv * Vector4(-1,-1,-1,1)) + Emulator.cameraPosition;
+			let nearBottomRight = (Vector3)(viewProjectionMatrixInv * Vector4(1,-1,-1,1)) + Emulator.cameraPosition;
 
 			Renderer.DrawLine(nearTopLeft, farTopLeft , .(16,16,16), .(16,16,16));
 			Renderer.DrawLine(nearTopRight, farTopRight, .(16,16,16), .(16,16,16));
@@ -1205,13 +1204,15 @@ namespace SpyroScope {
 		}
 
 		void DrawSpyroInformation() {
-			DrawUtilities.Arrow(Emulator.spyroPosition, Emulator.spyroIntendedVelocity / 10, 25, .(255,255,0));
-			DrawUtilities.Arrow(Emulator.spyroPosition, Emulator.spyroPhysicsVelocity / 10, 50, .(255,128,0));
+			let position = (Vector3)Emulator.spyroPosition;
+
+			DrawUtilities.Arrow(position, (Vector3)Emulator.spyroIntendedVelocity / 10, 25, .(255,255,0));
+			DrawUtilities.Arrow(position, (Vector3)Emulator.spyroPhysicsVelocity / 10, 50, .(255,128,0));
 
 			let viewerSpyroBasis = Emulator.spyroBasis.ToMatrixCorrected();
-			Renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(500,0,0), .(255,0,0), .(255,0,0));
-			Renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(0,500,0), .(0,255,0), .(0,255,0));
-			Renderer.DrawLine(Emulator.spyroPosition, Emulator.spyroPosition + viewerSpyroBasis * Vector(0,0,500), .(0,0,255), .(0,0,255));
+			Renderer.DrawLine(position, position + viewerSpyroBasis * Vector3(500,0,0), .(255,0,0), .(255,0,0));
+			Renderer.DrawLine(position, position + viewerSpyroBasis * Vector3(0,500,0), .(0,255,0), .(0,255,0));
+			Renderer.DrawLine(position, position + viewerSpyroBasis * Vector3(0,0,500), .(0,0,255), .(0,0,255));
 
 			uint32 radius = ?;
 			if (Emulator.installment == .YearOfTheDragon) {
@@ -1220,7 +1221,7 @@ namespace SpyroScope {
 			    radius = 0x164;
 			}
 
-			DrawUtilities.WireframeSphere(Emulator.spyroPosition, viewerSpyroBasis, radius, .(32,32,32));
+			DrawUtilities.WireframeSphere(position, viewerSpyroBasis, radius, .(32,32,32));
 		}
 
 		void DrawMessageFeed() {
@@ -1239,10 +1240,10 @@ namespace SpyroScope {
 				let message = feedItem.message;
 				let age = feedItem.time - now;
 				let fade = Math.Min(age.TotalSeconds, 1);
-				let offsetOrigin = Vector(0,(messageFeed.Count - i - 1) * WindowApp.font.height,0);
+				let offsetOrigin = Vector2(0,(messageFeed.Count - i - 1) * WindowApp.font.height);
 				DrawUtilities.Rect(offsetOrigin.y, offsetOrigin.y + WindowApp.font.height, offsetOrigin.x, offsetOrigin.x + WindowApp.font.CalculateWidth(message) + 4,
 					.(0,0,0,(.)(192 * fade)));
-				WindowApp.font.Print(message, offsetOrigin + .(2,0,0), .(255,255,255,(.)(255 * fade)));
+				WindowApp.font.Print(message, offsetOrigin + .(2,0), .(255,255,255,(.)(255 * fade)));
 			}
 		}
 
@@ -1253,10 +1254,9 @@ namespace SpyroScope {
 				let flagData = Terrain.collision.GetCollisionFlagData(flagIndex);
 	
 				if (flagData.type == 0 || flagData.type == 3 || flagData.type == 6 || flagData.type == 7) {
-					var screenPosition = Camera.SceneToScreen(cursor3DPosition);
+					var screenPosition = (Vector2)Camera.SceneToScreen(cursor3DPosition);
 					screenPosition.x = Math.Floor(screenPosition.x);
 					screenPosition.y = Math.Floor(screenPosition.y);
-					screenPosition.z = 0;
 					DrawUtilities.Rect(screenPosition.y, screenPosition.y + WindowApp.bitmapFont.characterHeight, screenPosition.x, screenPosition.x + WindowApp.bitmapFont.characterWidth * 10,
 						.(0,0,0,192));
 		
@@ -1288,7 +1288,7 @@ namespace SpyroScope {
 				let bottomPadding = 8 + 18 * i;
 				DrawUtilities.Rect((.)WindowApp.height - (bottomPadding + 16), (.)WindowApp.height - bottomPadding, leftPadding, leftPadding + 16, color);
 
-				WindowApp.bitmapFont.Print(label, .(leftPadding + 24, (.)WindowApp.height - (bottomPadding + 15), 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(label, .(leftPadding + 24, (.)WindowApp.height - (bottomPadding + 15)), .(255,255,255));
 			}
 		}
 
@@ -1300,14 +1300,14 @@ namespace SpyroScope {
 			var halfWidth = Math.Round(WindowApp.font.CalculateWidth(loadingMessage) / 2);
 			var baseline = WindowApp.height / 2 - WindowApp.font.height;
 			let middleWindow = WindowApp.width / 2;
-			WindowApp.font.Print(loadingMessage, .(middleWindow - halfWidth, baseline, 0), .(255,255,255));
+			WindowApp.font.Print(loadingMessage, .(middleWindow - halfWidth, baseline), .(255,255,255));
 
 			var line = 0;
 			for (let i < 8) {
 				if (!Emulator.changedPointers[i]) {
 					halfWidth = WindowApp.fontSmall.CalculateWidth(Emulator.pointerLabels[i]) / 2;
 					baseline = WindowApp.height / 2 + (.)(WindowApp.fontSmall.height * line);
-					WindowApp.fontSmall.Print(Emulator.pointerLabels[i], .(Math.Round(middleWindow - halfWidth), baseline, 0), .(255,255,255));
+					WindowApp.fontSmall.Print(Emulator.pointerLabels[i], .(Math.Round(middleWindow - halfWidth), baseline), .(255,255,255));
 					line++;
 				}
 			}
@@ -1427,7 +1427,7 @@ namespace SpyroScope {
 		}
 
 		void Teleport() {
-			Emulator.spyroPosition = Camera.position.ToVectorInt();
+			Emulator.spyroPosition = (.)Camera.position;
 			Emulator.spyroPositionAddresses[(int)Emulator.rom].Write(&Emulator.spyroPosition);
 			PushMessageToFeed("Teleported Spyro to Game Camera");
 		}

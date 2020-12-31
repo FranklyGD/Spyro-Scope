@@ -15,7 +15,7 @@ namespace SpyroScope {
 			this.characterHeight = characterHeight;
 		}
 
-		public void Print(StringView text, float width, float height, Vector position, Renderer.Color4 color) {
+		public void Print(StringView text, float width, float height, Vector2 position, Renderer.Color4 color) {
 			for (let i < text.Length) {
 				if (text[i] == ' ') {
 					continue;
@@ -34,7 +34,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public void Print(StringView text, Vector position, Renderer.Color4 color) {
+		public void Print(StringView text, Vector2 position, Renderer.Color4 color) {
 			Print(text, characterWidth, characterHeight, position, color);
 		}
 	}

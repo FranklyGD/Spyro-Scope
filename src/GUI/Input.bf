@@ -17,7 +17,7 @@ namespace SpyroScope {
 		public String text = new .() ~ delete _;
 		public StringView preText;
 		public StringView postText;
-		Vector textStart;
+		Vector2 textStart;
 		
 		public bool enabled = true;
 		public bool displayUnderlying = true;
@@ -43,10 +43,10 @@ namespace SpyroScope {
 			let vcenter = (drawn.top + drawn.bottom) / 2;
 			let halfHeight = Math.Floor(WindowApp.fontSmall.height / 2);
 
-			textStart = Vector(Math.Round(drawn.left) + 4, vcenter - halfHeight, 0);
+			textStart = .(Math.Round(drawn.left) + 4, vcenter - halfHeight);
 			textStart = WindowApp.fontSmall.Print(preText, textStart, .(0,0,0,128));
 
-			Vector postTextStart;
+			Vector2 postTextStart;
 			var cursorPos = 0f;
 			if (text != null && !text.IsEmpty) {
 				if (selectedElement == this) {
@@ -87,7 +87,7 @@ namespace SpyroScope {
 
 					let textWidth = WindowApp.fontSmall.CalculateWidth(validDisplayText);
 					DrawUtilities.Rect(drawn.top - WindowApp.fontSmall.height - 4, drawn.top, drawn.left, drawn.left + textWidth + 8, .(255,255,255));
-					WindowApp.fontSmall.Print(validDisplayText, .(textStart.x, drawn.top - WindowApp.fontSmall.height - 2, 0), .(0,0,0));
+					WindowApp.fontSmall.Print(validDisplayText, .(textStart.x, drawn.top - WindowApp.fontSmall.height - 2), .(0,0,0));
 				}
 			}
 		}

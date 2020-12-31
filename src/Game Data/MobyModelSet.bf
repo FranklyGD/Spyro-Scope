@@ -31,14 +31,14 @@ namespace SpyroScope {
 				uint32 triangleDataSize = ?;
 				Emulator.ReadFromRAM(modelDataAddress + modelMetadata.triangleDataOffset, &triangleDataSize, 4);
 				
-				List<Vector> vertices = scope .();
+				List<Vector3> vertices = scope .();
 				
 				uint32[] packedVertices = scope .[modelMetadata.vertexCount];
 				if (modelMetadata.vertexCount > 0) {
 					Emulator.ReadFromRAM(modelDataAddress + 0x10, &packedVertices[0], 4 * modelMetadata.vertexCount);
 				
 					uint32[4] triangleIndices = ?;
-					Vector[4] triangleVertices = ?;
+					Vector3[4] triangleVertices = ?;
 	
 					// Reading the model triangle information is DMA-like:
 					// Per triangle information packet varies in size
@@ -81,8 +81,8 @@ namespace SpyroScope {
 					}
 				}
 
-				Vector[] v = new .[vertices.Count];
-				Vector[] n = new .[vertices.Count];
+				Vector3[] v = new .[vertices.Count];
+				Vector3[] n = new .[vertices.Count];
 				Renderer.Color4[] c = new .[vertices.Count];
 
 				for (let i < vertices.Count) {
@@ -91,7 +91,7 @@ namespace SpyroScope {
 				}
 
 				for (var i = 0; i < vertices.Count; i += 3) {
-					n[i] = n[i+1] = n[i+2] = Vector.Cross(v[i+2] - v[i+0], v[i+1] - v[i+0]);
+					n[i] = n[i+1] = n[i+2] = Vector3.Cross(v[i+2] - v[i+0], v[i+1] - v[i+0]);
 				}
 
 				models[modelIndex] = new .(v, n, c);
@@ -100,8 +100,8 @@ namespace SpyroScope {
 
 		// Derived from Spyro: Ripto's Rage [8004757c]
 		// Vertices need to be scaled by two before the model is drawn
-		Vector UnpackVertex(uint32 packedVertex) {
-			Vector vertex = ?;
+		Vector3 UnpackVertex(uint32 packedVertex) {
+			Vector3 vertex = ?;
 
 			vertex.x = -(int32)packedVertex >> 0x15;
 			vertex.y = -(int32)(packedVertex << 10) >> 0x15;

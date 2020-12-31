@@ -6,6 +6,7 @@ using System.IO;
 
 namespace SpyroScope {
 	class VRAMViewerState : WindowState {
+
 		List<TextureSprite> textureSprites = new .() ~ DeleteContainerAndItems!(_);
 		TextureQuad[] textureSprites3 = new .[45] ~ delete _;
 		int blinkerTime = 0;
@@ -47,10 +48,10 @@ namespace SpyroScope {
 
 		float scale = 1, scaleMagnitude = 0;
 		bool expand;
-		(float x, float y) vramOrigin;
+		Vector2 vramOrigin;
 		(float width, float height) vramSize;
 
-		(float x, float y) viewPosition, testPosition;
+		Vector2 viewPosition, testPosition;
 		int hoveredTexturePage = -1, hoveredTextureIndex = -1, hoveredCLUTIndex = -1, hoveredSpriteIndex = -1;
 		int selectedTexturePage = -1, selectedTextureIndex = -1, selectedCLUTIndex = -1, selectedSpriteIndex = -1;
 		bool panning;
@@ -73,7 +74,7 @@ namespace SpyroScope {
 		}
 
 		public override void Exit() {
-			
+
 		}
 
 		public override void Update() {
@@ -91,7 +92,7 @@ namespace SpyroScope {
 			let pixelWidth = expand ? 4 : 1;
 			vramSize.width = (expand ? 512 : 1024) * pixelWidth;
 			vramSize.height = 512;
-			
+
 			let right = vramOrigin.x + vramSize.width * scale;
 			let bottom = vramOrigin.y + vramSize.height * scale;
 
@@ -108,64 +109,65 @@ namespace SpyroScope {
 					let quad = Terrain.textures[i];
 					let partialUVs = quad.GetVramPartialUV();
 
-					(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
-					(float qright, float qbottom) = UVToScreen(partialUVs.right, partialUVs.rightY);
+					Rect quadRect;
+					quadRect.start = UVToScreen(partialUVs.left, partialUVs.leftY);
+					quadRect.end = UVToScreen(partialUVs.right, partialUVs.rightY);
 
-					Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(64,64,64), .(64,64,64));
-					Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
-					Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,64), .(64,64,64));
-					Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
+					Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,64,64), .(64,64,64));
+					Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
+					Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
+					Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
 
 					if (blinkerTime < 30 && selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].category == .Terrain && cluts[selectedCLUTIndex].references.Contains(i)) {
-						DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,0,0,64));
+						DrawUtilities.Rect(quadRect, .(255,0,0,64));
 					}
 
 					let modifiedQuadIndex = quadIndex + (Emulator.installment == .SpyroTheDragon ? 1 : 0);
 					switch (modifiedQuadIndex) {
 						case 0:
-							qleft += 4;
-							qtop += 4;
-							qright -= 4;
-							qbottom -= 4;
+							quadRect.left += 4;
+							quadRect.top += 4;
+							quadRect.right -= 4;
+							quadRect.bottom -= 4;
 
-							Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(255,64,64), .(255,64,64));
-							Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(255,64,64), .(255,64,64));
-							Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(255,64,64), .(255,64,64));
-							Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(255,64,64), .(255,64,64));
+							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(255,64,64), .(255,64,64));
+							Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(255,64,64), .(255,64,64));
+							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(255,64,64), .(255,64,64));
+							Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(255,64,64), .(255,64,64));
 						case 1:
-							qleft += 2;
-							qtop += 2;
-							qright -= 2;
-							qbottom -= 2;
+							quadRect.left += 2;
+							quadRect.top += 2;
+							quadRect.right -= 2;
+							quadRect.bottom -= 2;
 
-							Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(64,255,64), .(64,255,64));
-							Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,255,64), .(64,255,64));
-							Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,255,64), .(64,255,64));
-							Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,255,64), .(64,255,64));
+							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,255,64), .(64,255,64));
+							Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,255,64), .(64,255,64));
+							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,255,64), .(64,255,64));
+							Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,255,64), .(64,255,64));
 						case 2:
-							qleft += 4;
-							qtop += 4;
+							quadRect.left += 4;
+							quadRect.top += 4;
 
-							Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(64,64,255), .(64,64,255));
-							Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,255), .(64,64,255));
+							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,64,255), .(64,64,255));
+							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
 						case 3:
-							qleft += 4;
-							qright -= 4;
+							quadRect.top += 4;
+							quadRect.right -= 4;
 
-							Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(64,64,255), .(64,64,255));
-							Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,255), .(64,64,255));
+							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,64,255), .(64,64,255));
+							Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
 						case 4:
-							qleft += 4;
-							qbottom -= 4;
+							quadRect.left += 4;
+							quadRect.bottom -= 4;
 
-							Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,64,255), .(64,64,255));
-							Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,255), .(64,64,255));
+							Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
+							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
 						case 5:
-							qright -= 4;
-							qbottom -= 4;
+							quadRect.right -= 4;
+							quadRect.bottom -= 4;
 
-							Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,64,255), .(64,64,255));
-							Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,255), .(64,64,255));
+							Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
+							Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
 					}
 				}
 			}
@@ -174,30 +176,31 @@ namespace SpyroScope {
 				let sprite = textureSprites3[i];
 				let partialUVs = sprite.GetVramPartialUV();
 
-				(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
-				(float qright, float qbottom) = UVToScreen(partialUVs.right, partialUVs.rightY);
+				Rect quadRect;
+				quadRect.start = UVToScreen(partialUVs.left, partialUVs.leftY);
+				quadRect.end = UVToScreen(partialUVs.right, partialUVs.rightY);
 
-				Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(64,64,64), .(64,64,64));
-				Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
-				Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,64), .(64,64,64));
-				Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
+				Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,64,64), .(64,64,64));
+				Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
+				Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
+				Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
 
 				if (blinkerTime < 30 && selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].category == .Sprite && cluts[selectedCLUTIndex].references.Contains(i)) {
-					DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,0,0,64));
+					DrawUtilities.Rect(quadRect, .(255,0,0,64));
 				}
 			}
-			
+
 			for (let CLUTIndex < cluts.Count) {
 				let clutReference = cluts[CLUTIndex];
 				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
 
-				(float cleft, float ctop) = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
-				(float cright, float cbottom) = PixelToScreen(clutPosition.x + clutReference.width, (clutPosition.x >> 10) + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1));
+				let clutStart = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
+				let clutEnd = PixelToScreen(clutPosition.x + clutReference.width, (clutPosition.x >> 10) + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1));
 
-				Renderer.DrawLine(.(cleft, ctop, 0), .(cright, ctop, 0), .(64,64,64), .(64,64,64));
-				Renderer.DrawLine(.(cleft, cbottom, 0), .(cright, cbottom, 0), .(64,64,64), .(64,64,64));
-				Renderer.DrawLine(.(cleft, ctop, 0), .(cleft, cbottom, 0), .(64,64,64), .(64,64,64));
-				Renderer.DrawLine(.(cright, ctop, 0), .(cright, cbottom, 0), .(64,64,64), .(64,64,64));
+				Renderer.DrawLine(.(clutStart.x, clutStart.y, 0), .(clutEnd.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
+				Renderer.DrawLine(.(clutStart.x, clutEnd.y, 0), .(clutEnd.x, clutEnd.y, 0), .(64,64,64), .(64,64,64));
+				Renderer.DrawLine(.(clutStart.x, clutStart.y, 0), .(clutStart.x, clutEnd.y, 0), .(64,64,64), .(64,64,64));
+				Renderer.DrawLine(.(clutEnd.x, clutStart.y, 0), .(clutEnd.x, clutEnd.y, 0), .(64,64,64), .(64,64,64));
 			}
 
 			// CLUTs can be small and packed very tightly in VRAM so the lines drawn could over draw the highlight,
@@ -206,25 +209,26 @@ namespace SpyroScope {
 				let clutReference = cluts[CLUTIndex];
 				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
 
-				(float cleft, float ctop) = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
-				(float cright, float cbottom) = PixelToScreen(clutPosition.x + clutReference.width, (clutPosition.x >> 10) + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1));
+				Rect clutRect;
+				clutRect.start = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
+				clutRect.end = PixelToScreen(clutPosition.x + clutReference.width, (clutPosition.x >> 10) + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1));
 
 				if (blinkerTime < 30 &&
 					selectedTextureIndex > -1 && clutReference.category == .Terrain && clutReference.references.Contains(selectedTextureIndex) ||
 					selectedSpriteIndex > -1 && clutReference.category == .Sprite && clutReference.references.Contains(selectedSpriteIndex)
 				) {
 
-					DrawUtilities.Rect(ctop, cbottom, cleft, cright, .(255,0,0,64));
+					DrawUtilities.Rect(clutRect, .(255,0,0,64));
 
-					cleft -= 2;
-					ctop -= 2;
-					cright += 2;
-					cbottom += 2;
+					clutRect.left -= 2;
+					clutRect.top -= 2;
+					clutRect.right += 2;
+					clutRect.bottom += 2;
 
-					Renderer.DrawLine(.(cleft, ctop, 0), .(cright, ctop, 0), .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(.(cleft, cbottom, 0), .(cright, cbottom, 0), .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(.(cleft, ctop, 0), .(cleft, cbottom, 0), .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(.(cright, ctop, 0), .(cright, cbottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(.(clutRect.left, clutRect.top, 0), .(clutRect.right, clutRect.top, 0), .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(.(clutRect.left, clutRect.bottom, 0), .(clutRect.right, clutRect.bottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(.(clutRect.left, clutRect.top, 0), .(clutRect.left, clutRect.bottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(.(clutRect.right, clutRect.top, 0), .(clutRect.right, clutRect.bottom, 0), .(255,255,255), .(255,255,255));
 				}
 			}
 
@@ -232,12 +236,12 @@ namespace SpyroScope {
 				let quad = Terrain.textures[hoveredTextureIndex];
 
 				let partialUVs = quad.GetVramPartialUV();
-				(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
+				let quadStart = UVToScreen(partialUVs.left, partialUVs.leftY);
 
 				let clutPosition = quad.GetCLUTCoordinates();
-				(float cleft, float ctop) = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
-				
-				Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
+				let clutStart = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
+
+				Renderer.DrawLine(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
 			}
 
 			if (Emulator.installment == .RiptosRage) {
@@ -245,16 +249,17 @@ namespace SpyroScope {
 					let sprite = textureSprites[spriteSetIndex];
 
 					for (let frame in sprite.frames) {
-						(float qleft, float qtop) = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
-						(float qright, float qbottom) = UVToScreen(0.5f + (float)((int)frame.x + sprite.width) / (1024 * 4), 0.5f + (float)((int)frame.y + sprite.height) / 512);
-		
-						Renderer.DrawLine(.(qleft, qtop, 0), .(qright, qtop, 0), .(64,64,64), .(64,64,64));
-						Renderer.DrawLine(.(qleft, qbottom, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
-						Renderer.DrawLine(.(qleft, qtop, 0), .(qleft, qbottom, 0), .(64,64,64), .(64,64,64));
-						Renderer.DrawLine(.(qright, qtop, 0), .(qright, qbottom, 0), .(64,64,64), .(64,64,64));
-						
+						Rect quadRect;
+						quadRect.start = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
+						quadRect.end = UVToScreen(0.5f + (float)((int)frame.x + sprite.width) / (1024 * 4), 0.5f + (float)((int)frame.y + sprite.height) / 512);
+
+						Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,64,64), .(64,64,64));
+						Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
+						Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
+						Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
+
 						if (blinkerTime < 30 && selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].category == .Sprite && cluts[selectedCLUTIndex].references.FindIndex(scope (x) => x >= sprite.start && x < sprite.start + sprite.frames.Count) > -1) {
-							DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,0,0,64));
+							DrawUtilities.Rect(quadRect, .(255,0,0,64));
 						}
 					}
 				}
@@ -265,21 +270,21 @@ namespace SpyroScope {
 					let spriteSetIndex = textureSprites.FindIndex(scope (x) => hoveredSpriteIndex >= x.start && hoveredSpriteIndex < x.start + x.frames.Count);
 					let spriteSet = textureSprites[spriteSetIndex];
 					let frame = spriteSet.frames[hoveredSpriteIndex - spriteSet.start];
-	
-					(float qleft, float qtop) = PixelToScreen(frame.x / 4 + 512, frame.y + 256);
-					(float cleft, float ctop) = PixelToScreen((frame.clutX & 3) * 16 + 512, frame.clutY + 256);
-					
-					Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
+
+					let quadStart = PixelToScreen(frame.x / 4 + 512, frame.y + 256);
+					let clutStart = PixelToScreen((frame.clutX & 3) * 16 + 512, frame.clutY + 256);
+
+					Renderer.DrawLine(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
 				} else {
 					let quad = textureSprites3[hoveredSpriteIndex];
-	
+
 					let partialUVs = quad.GetVramPartialUV();
-					(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
+					let quadStart = UVToScreen(partialUVs.left, partialUVs.leftY);
 
 					let clutPosition = quad.GetCLUTCoordinates();
-					(float cleft, float ctop) = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
-					
-					Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
+					let clutStart = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
+
+					Renderer.DrawLine(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
 				}
 			}
 
@@ -287,17 +292,17 @@ namespace SpyroScope {
 				let clutReference = cluts[hoveredCLUTIndex];
 
 				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
-				(float cleft, float ctop) = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
+				let clutStart = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
 
 				switch (clutReference.category) {
 					case .Terrain: {
 						for (let quadIndex in clutReference.references) {
 							let quad = Terrain.textures[quadIndex];
-			
+
 							let partialUVs = quad.GetVramPartialUV();
-							(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
-			
-							Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
+							let quadStart = UVToScreen(partialUVs.left, partialUVs.leftY);
+
+							Renderer.DrawLine(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
 						}
 					}
 					case .Sprite: {
@@ -307,20 +312,20 @@ namespace SpyroScope {
 									let spriteSetIndex = textureSprites.FindIndex(scope (x) => spriteIndex >= x.start && spriteIndex < x.start + x.frames.Count);
 									let spriteSet = textureSprites[spriteSetIndex];
 									let frame = spriteSet.frames[spriteIndex - spriteSet.start];
-									
-									(float qleft, float qtop) = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
-		
-									Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
+
+									let quadStart = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
+
+									Renderer.DrawLine(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
 								}
-							
+
 							case .YearOfTheDragon:
 								for (let spriteIndex in clutReference.references) {
 									let spriteSet = textureSprites3[spriteIndex];
-									
+
 									let partialUVs = spriteSet.GetVramPartialUV();
-									(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
-	
-									Renderer.DrawLine(.(qleft, qtop, 0), .(cleft, ctop, 0), .(64,64,64), .(64,64,64));
+									let quadStart = UVToScreen(partialUVs.left, partialUVs.leftY);
+
+									Renderer.DrawLine(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
 								}
 							default:
 						}
@@ -329,62 +334,66 @@ namespace SpyroScope {
 				}
 			}
 
-			
+
 			if (blinkerTime < 30) {
 				if (selectedTextureIndex > -1) {
 					let quad = Terrain.textures[selectedTextureIndex];
 					let partialUVs = quad.GetVramPartialUV();
-	
-					(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
-					(float qright, float qbottom) = UVToScreen(partialUVs.right, partialUVs.rightY);
-	
-					DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
+
+					Rect quadRect;
+					quadRect.start = UVToScreen(partialUVs.left, partialUVs.leftY);
+					quadRect.end = UVToScreen(partialUVs.right, partialUVs.rightY);
+
+					DrawUtilities.Rect(quadRect, .(255,255,255,64));
 				}
-	
+
 				if (selectedSpriteIndex > -1) {
 					if (Emulator.installment == .RiptosRage) {
 						let spriteSetIndex = textureSprites.FindIndex(scope (x) => selectedSpriteIndex >= x.start && selectedSpriteIndex < x.start + x.frames.Count);
 						let spriteSet = textureSprites[spriteSetIndex];
 						let frame = spriteSet.frames[selectedSpriteIndex - spriteSet.start];
-	
-						(float qleft, float qtop) = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
-						(float qright, float qbottom) = UVToScreen(0.5f + (float)((int)frame.x + spriteSet.width) / (1024 * 4), 0.5f + (float)((int)frame.y + spriteSet.height) / 512);
-	
-						DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
+
+						Rect quadRect;
+						quadRect.start = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
+						quadRect.end = UVToScreen(0.5f + (float)((int)frame.x + spriteSet.width) / (1024 * 4), 0.5f + (float)((int)frame.y + spriteSet.height) / 512);
+
+						DrawUtilities.Rect(quadRect, .(255,255,255,64));
 					} else {
 						let quad = textureSprites3[selectedSpriteIndex];
 						let partialUVs = quad.GetVramPartialUV();
-	
-						(float qleft, float qtop) = UVToScreen(partialUVs.left, partialUVs.leftY);
-						(float qright, float qbottom) = UVToScreen(partialUVs.right, partialUVs.rightY);
-	
-						DrawUtilities.Rect(qtop, qbottom, qleft, qright, .(255,255,255,64));
+
+						Rect quadRect;
+						quadRect.start = UVToScreen(partialUVs.left, partialUVs.leftY);
+						quadRect.end = UVToScreen(partialUVs.right, partialUVs.rightY);
+
+						DrawUtilities.Rect(quadRect, .(255,255,255,64));
 					}
 				}
-	
+
 				if (selectedCLUTIndex > -1) {
 					let clutReference = cluts[selectedCLUTIndex];
 					(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
 
-					(float cleft, float ctop) = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
-					(float cright, float cbottom) = PixelToScreen(clutPosition.x + clutReference.width, (clutPosition.x >> 10) + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1));
-	
-					DrawUtilities.Rect(ctop, cbottom, cleft, cright, .(255,255,255,64));
+					Rect rect;
+					rect.start = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
+					rect.end = PixelToScreen(clutPosition.x + clutReference.width, (clutPosition.x >> 10) + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1));
 
-					cleft -= 2;
-					ctop -= 2;
-					cright += 2;
-					cbottom += 2;
-	
-					Renderer.DrawLine(.(cleft, ctop, 0), .(cright, ctop, 0), .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(.(cleft, cbottom, 0), .(cright, cbottom, 0), .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(.(cleft, ctop, 0), .(cleft, cbottom, 0), .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(.(cright, ctop, 0), .(cright, cbottom, 0), .(255,255,255), .(255,255,255));
+					DrawUtilities.Rect(rect, .(255,255,255,64));
+
+					rect.left -= 2;
+					rect.top -= 2;
+					rect.right += 2;
+					rect.bottom += 2;
+
+					Renderer.DrawLine(.(rect.left, rect.top, 0), .(rect.right, rect.top, 0), .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(.(rect.left, rect.bottom, 0), .(rect.right, rect.bottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(.(rect.left, rect.top, 0), .(rect.left, rect.bottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(.(rect.right, rect.top, 0), .(rect.right, rect.bottom, 0), .(255,255,255), .(255,255,255));
 				}
 			}
 
 			WindowApp.bitmapFont.Print(scope String() .. AppendF("<{},{}>", (int)testPosition.x, (int)testPosition.y), .Zero, .(255,255,255));
-			WindowApp.bitmapFont.Print(scope String() .. AppendF("T-page {}", hoveredTexturePage), .(0, WindowApp.bitmapFont.characterHeight, 0), .(255,255,255));
+			WindowApp.bitmapFont.Print(scope String() .. AppendF("T-page {}", hoveredTexturePage), .(0, WindowApp.bitmapFont.characterHeight), .(255,255,255));
 
 			if (!spritesDecoded) {
 				DrawLoadingOverlay();
@@ -399,7 +408,7 @@ namespace SpyroScope {
 
 			for (let textureIndex in Terrain.usedTextureIndices) {
 				let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
-				
+
 				for (let quadIndex < quadCount) {
 					let i = textureIndex * quadCount + quadIndex;
 					let quad = Terrain.textures[i];
@@ -427,41 +436,41 @@ namespace SpyroScope {
 
 					textureSprites.Add(new .(0, 0, 10)); // Numbers
 					textureSprites.Add(new .(2, 10, 1)); // Forward Slash
-	
+
 					textureSprites.Add(new .(1, 11, 6)); // Gem
 					textureSprites.Add(new .(1, 19, 3)); // Spirit
-	
+
 					textureSprites.Add(new .(2, 0x1d, 1)); // Colon
 					textureSprites.Add(new .(2, 0x1e, 1)); // Period
-	
+
 					textureSprites.Add(new .(5, 0x16, 1)); // Power Bar Top
 					textureSprites.Add(new .(6, 0x1a, 1)); // Power Icon BG
 					textureSprites.Add(new .(7, 0x1b, 1)); // Power Icon FG
-	
+
 					textureSprites.Add(new .(5, 0x17, 1)); // Power Bar Mid
 					textureSprites.Add(new .(5, 0x18, 1)); // Power Bar Bottom
 					textureSprites.Add(new .(5, 0x19, 1)); // Power Bar Mid Lit
-	
+
 					textureSprites.Add(new .(11, 0x24, 4)); // Rounded Corners
-	
+
 					textureSprites.Add(new .(1, 0x1c, 1)); // Reticle Circle
-	
+
 					textureSprites.Add(new .(9, 0x1f, 1)); // Spyro Head
 					textureSprites.Add(new .(10, 0x20, 4)); // Spyro Eyes
-	
+
 					textureSprites.Add(new .(4, 0x57, 1)); // Map
-	
+
 					textureSprites.Add(new .(1, 0x37, 8)); // Objective 1
 					textureSprites.Add(new .(1, 0x3f, 8)); // Objective 2
 					/*textureSprites.Add(new .(1, 0x47, 8)); // Objective 3
 					textureSprites.Add(new .(1, 0x4f, 8)); // Objective 4*/
-	
+
 					for (let sprite in textureSprites) {
 						for (let frameIndex < sprite.frames.Count) {
 							let frame = sprite.frames[frameIndex];
 							let clut = (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020;
 							let referenceIndex = cluts.FindIndex(scope (x) => x.category == .Sprite && x.type == .Normal && x.location == clut);
-	
+
 							if (referenceIndex == -1) {
 								CLUTReference clutReference = ?;
 								clutReference.category = .Sprite;
@@ -469,7 +478,7 @@ namespace SpyroScope {
 								clutReference.location = clut;
 								clutReference.width = 16;
 								clutReference.references = new .();
-	
+
 								clutReference.references.Add(sprite.start + frameIndex);
 								cluts.Add(clutReference);
 							} else {
@@ -486,7 +495,7 @@ namespace SpyroScope {
 					for (let i < textureSprites3.Count) {
 						let sprite = textureSprites3[i];
 						let referenceIndex = cluts.FindIndex(scope (x) => x.category == .Sprite && x.type == .Normal && x.location == sprite.clut);
-	
+
 						if (referenceIndex == -1) {
 							CLUTReference clutReference = ?;
 							clutReference.category = .Sprite;
@@ -494,7 +503,7 @@ namespace SpyroScope {
 							clutReference.location = sprite.clut;
 							clutReference.width = 16;
 							clutReference.references = new .();
-	
+
 							clutReference.references.Add(i);
 							cluts.Add(clutReference);
 						} else {
@@ -503,11 +512,11 @@ namespace SpyroScope {
 					}
 				}
 				default:
-			} 
+			}
 
 			SpyroFont.Init();
 		}
-		
+
 		void OnNewSnapshot() {
 			spritesDecoded = false;
 			hoveredTextureIndex = hoveredSpriteIndex = -1;
@@ -539,7 +548,7 @@ namespace SpyroScope {
 
 						viewPosition.x -= translationX;
 						viewPosition.y -= translationY;
-						
+
 						vramOrigin.x = WindowApp.width / 2 - viewPosition.x * scale;
 						vramOrigin.y = WindowApp.height / 2 - viewPosition.y * scale;
 					} else {
@@ -559,7 +568,7 @@ namespace SpyroScope {
 
 								let pageIndex = quad.GetTPageIndex();
 								let bitMode = (quad.texturePage & 0x80 > 0) ? 2 : 4;
-								(float x, float y) localTestPosition = (testPosition.x - (pageIndex & 0xf) * 64, testPosition.y - (pageIndex >> 4 << 8));
+								Vector2 localTestPosition = .(testPosition.x - (pageIndex & 0xf) * 64, testPosition.y - (pageIndex >> 4 << 8));
 								let rightSkewAdjusted = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
 
 								if (localTestPosition.x > quad.left / bitMode && localTestPosition.x <= ((int)quad.right + 1) / bitMode &&
@@ -580,7 +589,7 @@ namespace SpyroScope {
 							let spriteSet = textureSprites[spriteSetIndex];
 							for (let frameIndex < spriteSet.frames.Count) {
 								let frame = spriteSet.frames[frameIndex];
-								(float x, float y) localTestPosition = (testPosition.x - 512, testPosition.y - 256);
+								Vector2 localTestPosition = .(testPosition.x - 512, testPosition.y - 256);
 
 								if (localTestPosition.x > frame.x / 4 && localTestPosition.x <= ((int)frame.x + spriteSet.width) / 4 &&
 									localTestPosition.y > frame.y && localTestPosition.y <= ((int)frame.y + spriteSet.height)) {
@@ -588,7 +597,7 @@ namespace SpyroScope {
 									hoveredSpriteIndex = spriteSet.start + frameIndex;
 									break;
 								}
-	
+
 								if (hoveredSpriteIndex > -1) {
 									break;
 								}
@@ -599,7 +608,7 @@ namespace SpyroScope {
 							let quad = textureSprites3[spriteIndex];
 							let pageIndex = quad.GetTPageIndex();
 							let bitMode = (quad.texturePage & 0x80 > 0) ? 2 : 4;
-							(float x, float y) localTestPosition = (testPosition.x - (pageIndex & 0xf) * 64, testPosition.y - (pageIndex >> 4 << 8));
+							Vector2 localTestPosition = .(testPosition.x - (pageIndex & 0xf) * 64, testPosition.y - (pageIndex >> 4 << 8));
 							let rightSkewAdjusted = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
 
 							if (localTestPosition.x > quad.left / bitMode && localTestPosition.x <= ((int)quad.right + 1) / bitMode &&
@@ -670,7 +679,7 @@ namespace SpyroScope {
 		void ResetView() {
 			let pixelWidth = expand ? 4 : 1;
 			let width = (expand ? 512 : 1024) * pixelWidth;
-			(float x, float y) size = (width, 512);
+			Vector2 size = .(width, 512);
 
 			viewPosition.x = size.x / 2;
 			viewPosition.y = size.y / 2;
@@ -715,13 +724,23 @@ namespace SpyroScope {
 		}
 
 		[Inline]
-		(float x, float y) PixelToScreen(float x, float y) {
-			return UVToScreen(x / 1024, y / 512);
+		Vector2 PixelToScreen(float x, float y) {
+			return UVToScreen(.(x / 1024, y / 512));
 		}
 
 		[Inline]
-		(float x, float y) UVToScreen(float x, float y) {
-			return (vramOrigin.x + (x - (expand ? 0.5f : 0)) * vramSize.width * (expand ? 2 : 1) * scale, vramOrigin.y + y * vramSize.height * scale);
+		Vector2 PixelToScreen(Vector2 pixelPos) {
+			return PixelToScreen(pixelPos.x, pixelPos.y);
+		}
+
+		[Inline]
+		Vector2 UVToScreen(float x, float y) {
+			return .(vramOrigin.x + (x - (expand ? 0.5f : 0)) * vramSize.width * (expand ? 2 : 1) * scale, vramOrigin.y + y * vramSize.height * scale);
+		}
+
+		[Inline]
+		Vector2 UVToScreen(Vector2 uvPos) {
+			return UVToScreen(uvPos.x, uvPos.y);
 		}
 
 		void Export() {
@@ -807,7 +826,7 @@ namespace SpyroScope {
 										let surfaceSprite = SDLImage.Load(fileSprite);
 
 										AlterVRAM(surfaceSprite, 0x18, sprite.x, sprite.y, spriteSet.width, spriteSet.height, 4, (sprite.clutX & 3) + ((int)sprite.clutY << 6) + 0x4020);
-										
+
 										SDL.FreeSurface(surfaceSprite);
 									}
 								} else {
@@ -828,7 +847,7 @@ namespace SpyroScope {
 							if (hoveredCLUTIndex > -1) {
 								let clutReference = cluts[hoveredCLUTIndex];
 								(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
-								
+
 								uint16[] clutTable = ?;
 								switch (clutReference.type) {
 									case .Normal:
@@ -848,12 +867,12 @@ namespace SpyroScope {
 										}
 
 									case .Sprite:
-										if (Emulator.installment == .RiptosRage) { 
+										if (Emulator.installment == .RiptosRage) {
 											for (let reference in cluts[hoveredCLUTIndex].references) {
 												let spriteSetIndex = textureSprites.FindIndex(scope (x) => reference >= x.start && reference < x.start + x.frames.Count);
 												let spriteSet = textureSprites[spriteSetIndex];
 												let frame = spriteSet.frames[reference - spriteSet.start];
-	
+
 												VRAM.Decode(0x18, frame.x, frame.y, spriteSet.width, spriteSet.height, 4, clutReference.location);
 											}
 										} else {
@@ -899,7 +918,7 @@ namespace SpyroScope {
 							let dg = GetChannelValue!(pixel, surface.format.Gmask) - (float)(clutSample >> 5 & 0x1f) / 31;
 							let db = GetChannelValue!(pixel, surface.format.Bmask) - (float)(clutSample >> 10 & 0x1f) / 31;
 							let distance = dr * dr + dg * dg + db * db;
-							
+
 							if (distance < closest) {
 								i = (.)c;
 								closest = distance;
@@ -931,14 +950,14 @@ namespace SpyroScope {
 
 			clutTable
 		}
-		
+
 		mixin GenerateCLUT(SDL.Surface* surface, int height, bool black = false) {
 			let clutTable = scope:mixin uint16[surface.w * 16];
 			let colorLevel = black ? 0 : 16;
 
 			for (let x < surface.w) {
 				let pixel = GetPixelFromSurface!(surface, x);
-	
+
 				for (let y < height) {
 					uint16 outR, outG, outB = ?;
 					float inR = GetChannelValue!(pixel, surface.format.Rmask);
@@ -951,12 +970,12 @@ namespace SpyroScope {
 					} else {
 						// Fade to the desired color
 						let fadeAmount = (float)y / height;
-	
+
 						outR = (uint16)Math.Lerp(GetChannelValue!(pixel, surface.format.Rmask) * 31, colorLevel, fadeAmount);
 						outG = (uint16)Math.Lerp(GetChannelValue!(pixel, surface.format.Gmask) * 31, colorLevel, fadeAmount);
 					 	outB = (uint16)Math.Lerp(GetChannelValue!(pixel, surface.format.Bmask) * 31, colorLevel, fadeAmount);
 					}
-	
+
 					clutTable[x + y * surface.w] = outR | outG << 5 | outB << 10 | (GetAlphaValue!(pixel, surface.format.Amask) > 0.5f ? 0 : 0x8000);
 				}
 			}
@@ -991,7 +1010,7 @@ namespace SpyroScope {
 						sprite.Decode();
 					}
 				}
-				
+
 				SpyroFont.Decode();
 
 				spritesDecoded = true;
@@ -1006,7 +1025,7 @@ namespace SpyroScope {
 			var halfWidth = Math.Round(WindowApp.font.CalculateWidth(message) / 2);
 			var baseline = (WindowApp.height - WindowApp.font.height) / 2;
 			let middleWindow = WindowApp.width / 2;
-			WindowApp.font.Print(message, .(middleWindow - halfWidth, baseline, 0), .(255,255,255));
+			WindowApp.font.Print(message, .(middleWindow - halfWidth, baseline), .(255,255,255));
 		}
 	}
 }

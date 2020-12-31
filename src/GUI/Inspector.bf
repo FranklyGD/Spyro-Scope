@@ -35,7 +35,7 @@ namespace SpyroScope {
 		public override void Draw(Rect parentRect) {
 			base.Draw(parentRect);
 
-			WindowApp.bitmapFont.Print(label, .(drawn.left, drawn.top + 3, 0), .(255,255,255));
+			WindowApp.bitmapFont.Print(label, .(drawn.left, drawn.top + 3), .(255,255,255));
 		}
 
 		public Property<T> AddProperty<T>(StringView label, int offset, StringView components) where T : struct {
@@ -173,10 +173,10 @@ namespace SpyroScope {
 			public override void Draw(Rect parentRect) {
 				base.Draw(parentRect);
 
-				WindowApp.bitmapFont.Print(label, .(drawn.left, drawn.top + 3, 0), .(255,255,255));
+				WindowApp.bitmapFont.Print(label, .(drawn.left, drawn.top + 3), .(255,255,255));
 				
 				for (let i < components.Length) {
-					WindowApp.bitmapFont.Print(.(components, i, 1), .(Math.Round(Math.Lerp(drawn.left+WindowApp.bitmapFont.characterWidth, drawn.right, (float)i / components.Length)), WindowApp.bitmapFont.characterHeight + drawn.top + 3, 0), .(255,255,255));
+					WindowApp.bitmapFont.Print(.(components, i, 1), .(Math.Round(Math.Lerp(drawn.left+WindowApp.bitmapFont.characterWidth, drawn.right, (float)i / components.Length)), WindowApp.bitmapFont.characterHeight + drawn.top + 3), .(255,255,255));
 				}
 			}
 

@@ -33,7 +33,7 @@ namespace SpyroScope {
 			} else if (Terrain.regions != null) {
 				for (let i < Terrain.regions.Count) {
 					let visualMesh = Terrain.regions[i];
-					let transform = Vector(1f/16, 1f/16, 1f/visualMesh.verticalScale);
+					let transform = Vector3(1f/16, 1f/16, 1f/visualMesh.verticalScale);
 
 					let metadata = visualMesh.metadata;
 					let transformedOrigin = (origin - .((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16)) * transform;

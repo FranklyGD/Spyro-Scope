@@ -53,8 +53,8 @@ namespace SpyroScope {
 		const uint maxGenericBufferLength = 0x6000;
 		static uint32 vertexArrayObject;
 		static uint32[6] bufferID = .(?);
-		static Vector[maxGenericBufferLength] positions;
-		static Vector[maxGenericBufferLength] normals;
+		static Vector3[maxGenericBufferLength] positions;
+		static Vector3[maxGenericBufferLength] normals;
 		static Color4[maxGenericBufferLength] colors;
 		static (float,float)[maxGenericBufferLength] uvs;
 		static DrawQueue[maxGenericBufferLength] drawQueue;
@@ -79,12 +79,12 @@ namespace SpyroScope {
 		public static Matrix4 model = .Identity;
 		public static int uniformViewMatrixIndex; // Camera Inverse Transform
 		public static Matrix4 view = .Identity;
-		public static Vector viewPosition = .Zero;
-		public static Matrix viewBasis = .Identity;
+		public static Vector3 viewPosition = .Zero;
+		public static Matrix3 viewBasis = .Identity;
 		public static int uniformProjectionMatrixIndex; // Camera Perspective
 		public static Matrix4 projection = .Identity;
 
-		public static Vector tint = .(1,1,1);
+		public static Vector3 tint = .(1,1,1);
 		public static int uniformZdepthOffsetIndex; // Z-depth Offset (mainly for pushing the wireframe forward to avoid Z-fighting)
 		public static int uniformRetroShadingIndex; // Change shading from modern to emulated
 		public static Texture whiteTexture ~ delete _;
@@ -189,7 +189,7 @@ namespace SpyroScope {
 			GL.glVertexAttribDivisor(instanceMatrixAttributeIndex+3, 1);
 
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[5]);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, sizeof(Vector), &tint, GL.GL_STATIC_DRAW);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, sizeof(Vector3), &tint, GL.GL_STATIC_DRAW);
 
 			instanceTintAttributeIndex = FindProgramAttribute(program, "instanceTint");
 			GL.glVertexAttribPointer(instanceTintAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
@@ -284,7 +284,7 @@ namespace SpyroScope {
 			return index;
 		}
 
-		public static void PushPoint(Vector position, Vector normal, Color4 color, (float,float) uv) {
+		public static void PushPoint(Vector3 position, Vector3 normal, Color4 color, (float,float) uv) {
 			if (vertexCount >= maxGenericBufferLength) {
 				return;
 			}
@@ -297,13 +297,13 @@ namespace SpyroScope {
 			vertexCount++;
 		}
 
-		public static void DrawLine(Vector p0, Vector p1,
+		public static void DrawLine(Vector3 p0, Vector3 p1,
 			Color4 c0, Color4 c1) {
 			if (vertexCount + 2 > maxGenericBufferLength) {
 				Draw();
 			}
 				
-			let normal = Vector(0,0,1);
+			let normal = Vector3(0,0,1);
 
 			PushPoint(p0, normal, c0, (0,0));
 			PushPoint(p1, normal, c1, (0,0));
@@ -318,14 +318,14 @@ namespace SpyroScope {
 			}
 		}
 
-		public static void DrawTriangle(Vector p0, Vector p1, Vector p2,
+		public static void DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2,
 			Color4 c0, Color4 c1, Color4 c2,
 			(float,float) uv0, (float,float) uv1, (float,float) uv2, uint textureObject) {
 			if (vertexCount + 3 > maxGenericBufferLength) {
 				Draw();
 			}
 
-			let normal = Vector.Cross(p1 - p0, p2 - p0);
+			let normal = Vector3.Cross(p1 - p0, p2 - p0);
 
 			PushPoint(p0, normal, c0, uv0);
 			PushPoint(p1, normal, c1, uv1);
@@ -341,16 +341,16 @@ namespace SpyroScope {
 			}
 		}
 
-		public static void DrawTriangle(Vector p0, Vector p1, Vector p2,
+		public static void DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2,
 			Color4 c0, Color4 c1, Color4 c2) {
 			DrawTriangle(p0, p1, p2, c0, c1, c2, (0,0), (0,0), (0,0), whiteTexture.textureObjectID);
 		}
 
-		public static void SetModel(Vector position, Matrix basis) {
+		public static void SetModel(Vector3 position, Matrix3 basis) {
 			model = Matrix4.Translation(position) * basis;
 		}
 
-		public static void SetView(Vector position, Matrix basis) {
+		public static void SetView(Vector3 position, Matrix3 basis) {
 			viewPosition = position;
 			viewBasis = basis;
 			view = basis.Transpose() * Matrix4.Translation(-position);
@@ -389,12 +389,12 @@ namespace SpyroScope {
 			GL.glBindVertexArray(vertexArrayObject);
 
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[0]);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector), null, GL.GL_STATIC_DRAW);
-			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector), &positions);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector3), null, GL.GL_STATIC_DRAW);
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector3), &positions);
 
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[1]);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector), null, GL.GL_STATIC_DRAW); 
-			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector), &normals);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector3), null, GL.GL_STATIC_DRAW); 
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector3), &normals);
 
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[2]);
 			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Renderer.Color4), null, GL.GL_STATIC_DRAW);

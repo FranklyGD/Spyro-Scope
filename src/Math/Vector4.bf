@@ -1,3 +1,5 @@
+using System;
+
 namespace SpyroScope {
 	struct Vector4 {
 		public float x,y,z,w;
@@ -9,26 +11,22 @@ namespace SpyroScope {
 			this.w = w;
 		}
 
-		public this(Vector v, float w) {
+		public this(Vector3 v, float w) {
 			this.x = v.x;
 			this.y = v.y;
 			this.z = v.z;
 			this.w = w;
 		}
 
-		public override void ToString(System.String strBuffer) {
+		public override void ToString(String strBuffer) {
 			strBuffer.AppendF("<{},{},{},{}>", x, y, z, w);
 		}
 
-		public static implicit operator Vector4(Vector v) {
-			return Vector4(v.x,v.y,v.z,0);
-		}
-
-		public static Vector4 operator +(Vector4 left, Vector4 right) {
+		public static Self operator +(Self left, Self right) {
 			return .(left.x + right.x, left.y + right.y, left.z + right.z, left.w + right.w);
 		}
 
-		public static Vector4 operator *(Vector4 left, float right) {
+		public static Self operator *(Self left, float right) {
 			return .(left.x * right, left.y * right, left.z * right, left.w * right);
 		}
 	}

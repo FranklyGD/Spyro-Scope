@@ -13,8 +13,8 @@ namespace SpyroScope {
 
 		public Mesh mesh;
 
-		public Vector upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
-		public Vector lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
+		public Vector3 upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
+		public Vector3 lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
 
 		public List<int> waterSurfaceTriangles = new .();
 		public List<uint32> collisionTypes = new .();
@@ -33,7 +33,7 @@ namespace SpyroScope {
 			public Emulator.Address dataPointer;
 			public uint32 start;
 			public uint32 count;
-			public Vector center;
+			public Vector3 center;
 			public float radius;
 			public Mesh[] mesh;
 
@@ -81,14 +81,14 @@ namespace SpyroScope {
 		}
 
 		/// Sets the position of the mesh's triangle with the index the game uses
-		public void SetNearVertex(int triangleIndex, VectorInt[3] triangle, bool updateGame = false) {
+		public void SetNearVertex(int triangleIndex, Vector3Int[3] triangle, bool updateGame = false) {
 			triangles[triangleIndex] = CollisionTriangle.Pack(triangle, false);
 
 			let unpackedTriangle = triangles[triangleIndex].Unpack(false);
-			let meshTriangle = (Vector[3]*)&mesh.vertices[triangleIndex * 3];
-			(*meshTriangle)[0] = unpackedTriangle[0].ToVector();
-			(*meshTriangle)[1] = unpackedTriangle[1].ToVector();
-			(*meshTriangle)[2] = unpackedTriangle[2].ToVector();
+			let meshTriangle = (Vector3[3]*)&mesh.vertices[triangleIndex * 3];
+			(*meshTriangle)[0] = unpackedTriangle[0];
+			(*meshTriangle)[1] = unpackedTriangle[1];
+			(*meshTriangle)[2] = unpackedTriangle[2];
 			mesh.SetDirty();
 
 			if (updateGame) {
@@ -119,8 +119,8 @@ namespace SpyroScope {
 
 			// Generate Mesh
 			let vertexCount = triangles.Count * 3;
-			Vector[] vertices = new .[vertexCount];
-			Vector[] normals = new .[vertexCount];
+			Vector3[] vertices = new .[vertexCount];
+			Vector3[] normals = new .[vertexCount];
 			Renderer.Color4[] colors = new .[vertexCount];
 
 			collisionTypes.Clear();
@@ -133,7 +133,7 @@ namespace SpyroScope {
 				let triangle = triangles[triangleIndex];
 				let unpackedTriangle = triangle.Unpack(false);
 			
-				let normal = Vector.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
+				let normal = Vector3.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
 				Renderer.Color color = .(255,255,255);
 
 				// Terrain as Water
@@ -206,10 +206,10 @@ namespace SpyroScope {
 
 				// Update all triangles that are meant to move between states
 				for (let i < animationGroup.count * 3) {
-					Vector fromVertex = animationGroup.mesh[keyframeData.fromState].vertices[i];
-					Vector toVertex = animationGroup.mesh[keyframeData.toState].vertices[i];
-					Vector fromNormal = animationGroup.mesh[keyframeData.fromState].normals[i];
-					Vector toNormal = animationGroup.mesh[keyframeData.toState].normals[i];
+					Vector3 fromVertex = animationGroup.mesh[keyframeData.fromState].vertices[i];
+					Vector3 toVertex = animationGroup.mesh[keyframeData.toState].vertices[i];
+					Vector3 fromNormal = animationGroup.mesh[keyframeData.fromState].normals[i];
+					Vector3 toNormal = animationGroup.mesh[keyframeData.toState].normals[i];
 
 					let vertexIndex = animationGroup.start * 3 + i;
 					mesh.vertices[vertexIndex] = fromVertex + (toVertex - fromVertex) * interpolation;
@@ -295,15 +295,15 @@ namespace SpyroScope {
 					highestUsedState = Math.Max(highestUsedState, s.toState);
 				}
 
-				Vector upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
-				Vector lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
+				Vector3 upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
+				Vector3 lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
 
 				let stateCount = highestUsedState + 1;
 				let groupVertexCount = animationGroup.count * 3;
 				animationGroup.mesh = new .[stateCount];
 				for (let stateIndex < stateCount) {
-					Vector[] vertices = new .[groupVertexCount];
-					Vector[] normals = new .[groupVertexCount];
+					Vector3[] vertices = new .[groupVertexCount];
+					Vector3[] normals = new .[groupVertexCount];
 					Renderer.Color4[] colors = new .[groupVertexCount];
 
 					let startTrianglesState = stateIndex * animationGroup.count;
@@ -312,7 +312,7 @@ namespace SpyroScope {
 						Emulator.ReadFromRAM(animationGroup.dataPointer + triangleDataOffset + (startTrianglesState + triangleIndex) * 12, &packedTriangle, 12);
 						let unpackedTriangle = packedTriangle.Unpack(true);
 
-						let normal = Vector.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
+						let normal = Vector3.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
 						Renderer.Color color = .(255,255,255);
 
 						for (let vi < 3) {
@@ -441,12 +441,12 @@ namespace SpyroScope {
 
 		void ColorPlatforms() {
 			for (int triangleIndex < triangles.Count) {
-				let normal = Vector.Cross(
+				let normal = Vector3.Cross(
 					mesh.vertices[triangleIndex * 3 + 2] - mesh.vertices[triangleIndex * 3 + 0],
 					mesh.vertices[triangleIndex * 3 + 1] - mesh.vertices[triangleIndex * 3 + 0]
 				);
 
-				VectorInt normalInt = normal.ToVectorInt();
+				Vector3Int normalInt = (.)normal;
 				// (GTE) Outer Product of 2 Vectors has its
 				// Shift Fraction bit enabled so that it
 				// shifts the final value by 12 bits to the right

@@ -11,7 +11,7 @@ namespace SpyroScope {
 			this.w = w;
 		}
 
-		public static Matrix4 Identity {
+		public static Self Identity {
 			get {
 			    return .(
 					.(1,0,0,0),
@@ -22,16 +22,16 @@ namespace SpyroScope {
 			}
 		}
 
-		public static implicit operator Matrix4(Matrix m) {
+		public static implicit operator Self(Matrix3 m) {
 			return .(
-				m.x,
-				m.y,
-				m.z,
+				.(m.x,0),
+				.(m.y,0),
+				.(m.z,0),
 				.(0,0,0,1)
 			);
 		}
 
-		public static Matrix4 Translation(Vector translation) {
+		public static Self Translation(Vector3 translation) {
 			return .(
 				.(1,0,0,0),
 				.(0,1,0,0),
@@ -40,7 +40,7 @@ namespace SpyroScope {
 			);
 		}
 
-		public static Matrix4 Perspective(float FoV, float aspect, float near, float far) {
+		public static Self Perspective(float FoV, float aspect, float near, float far) {
 			let tanFoV2 = Math.Tan(FoV / 2);
 			let space = far - near;
 			return .(
@@ -51,7 +51,7 @@ namespace SpyroScope {
 			);
 		}
 
-		public static Matrix4 Orthographic(float width, float height, float near, float far) {
+		public static Self Orthographic(float width, float height, float near, float far) {
 			let space = far - near;
 			return .(
 				.(2f / width,0,0,0),
@@ -61,7 +61,7 @@ namespace SpyroScope {
 			);
 		}
 
-		public static Matrix4 Screen(float width, float height) {
+		public static Self Screen(float width, float height) {
 			return .(
 				.(2f / width,0,0,0),
 				.(0,2f / -height,0,0),
@@ -70,11 +70,11 @@ namespace SpyroScope {
 			);
 		}
 
-		public static Matrix4 operator *(Matrix4 left, Matrix4 right) {
+		public static Self operator *(Self left, Self right) {
 			var left, right;
 			float* l = (float*)&left;
 			float* r = (float*)&right;
-			Matrix4 m = ?;
+			Self m = ?;
 			float* f = (float*)&m;
 
 			for (int i < 4) {
@@ -89,12 +89,12 @@ namespace SpyroScope {
 			return m;
 		}
 
-		public static Vector4 operator *(Matrix4 left, Vector4 right) {
+		public static Vector4 operator *(Self left, Vector4 right) {
 			return left.x * right.x + left.y * right.y + left.z * right.z + left.w * right.w;
 		}
 
-		public Matrix4 Inverse() {
-			Matrix4 inverse = ?;
+		public Self Inverse() {
+			Self inverse = ?;
 
 			let s0 = x.x * y.y - y.x * x.y;
 			let s1 = x.x * y.z - y.x * x.z;

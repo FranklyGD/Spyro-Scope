@@ -4,8 +4,8 @@ namespace SpyroScope {
 
 		// Derived from Spyro: Ripto's Rage [8001c214]
 		// Animated version from [80022e70]
-		public VectorInt[3] Unpack(bool animated) {
-			VectorInt[3] triangle;
+		public Vector3Int[3] Unpack(bool animated) {
+			Vector3Int[3] triangle;
 
 			let x = this.x & 0x3fff;
 			let y = this.y & 0x3fff;
@@ -36,7 +36,7 @@ namespace SpyroScope {
 			return triangle;
 		}
 
-		public static CollisionTriangle Pack(VectorInt[3] triangle, bool animated) {
+		public static CollisionTriangle Pack(Vector3Int[3] triangle, bool animated) {
 			var triangle;
 			CollisionTriangle packedTriangle = ?;
 

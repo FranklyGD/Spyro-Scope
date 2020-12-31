@@ -92,7 +92,7 @@ namespace SpyroScope {
 			0x1f3d,0x1f4e,0x1f5e,0x1f6e,0x1f7e,0x1f8f,0x1f9f,0x1faf,0x1fbf,0x1fcf,0x1fdf,0x1fef);
 
 		// Derived from Spyro: Ripto's Rage [8001ba20]
-		public static uint32 VectorLength(VectorInt vector) {
+		public static uint32 VectorLength(Vector3Int vector) {
 			var vector;
 
 			let usedBits = (uint32)(Math.Abs(vector.x) | Math.Abs(vector.y) | Math.Abs(vector.z));

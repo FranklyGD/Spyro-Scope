@@ -10,27 +10,6 @@ namespace SpyroScope {
 
 		public static bool debug;
 
-		public struct Rect {
-			public float left;
-			public float right;
-			public float bottom;
-			public float top;
-
-			public this(float left, float right, float top, float bottom) {
-				this.left = left;
-				this.right = right;
-				this.bottom = bottom;
-				this.top = top;
-			}
-
-			public void Shift(float x, float y) mut {
-				right += x;
-				left += x;
-				top += y;
-				bottom += y;
-			}
-		}
-
 		public Rect anchor;
 		public Rect offset;
 		public Rect drawn;
@@ -126,7 +105,7 @@ namespace SpyroScope {
 			return false;
 		}
 
-		static bool GUIMouseUpdate((float x, float y) mousePosition) {
+		static bool GUIMouseUpdate(Vector2 mousePosition) {
 			let lastHoveredElement = hoveredElement;
 			hoveredElement = null;
 			for (let element in activeGUI) {
@@ -190,7 +169,7 @@ namespace SpyroScope {
 		protected virtual void MouseEnter() {}
 		protected virtual void MouseExit() {}
 
-		public void MouseUpdate((float x, float y) mousePosition) {
+		public void MouseUpdate(Vector2 mousePosition) {
 			if (visible &&
 				mousePosition.x > drawn.left &&
 				mousePosition.x < drawn.right &&

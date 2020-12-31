@@ -12,7 +12,7 @@ namespace SpyroScope {
 
 		public readonly uint32 id;
 		public static uint width, height;
-		public static (float x, float y) mousePosition;
+		public static Vector2 mousePosition;
 
 		public bool closed { get; private set; }
 
@@ -106,7 +106,7 @@ namespace SpyroScope {
 			GL.glGetIntegerv(GL.GL_MAJOR_VERSION, (.)&majorVersion);
 			GL.glGetIntegerv(GL.GL_MINOR_VERSION, (.)&minorVersion);
 
-			bitmapFont.Print(scope String() .. AppendF("OpenGL {}.{}", majorVersion, minorVersion), .((.)WindowApp.width - bitmapFont.characterWidth * 10, 0, 0), .(255,255,255,8));
+			bitmapFont.Print(scope String() .. AppendF("OpenGL {}.{}", majorVersion, minorVersion), .((.)WindowApp.width - bitmapFont.characterWidth * 10, 0), .(255,255,255,8));
 
 			Renderer.Draw();
 			Renderer.Sync();
@@ -144,7 +144,7 @@ namespace SpyroScope {
 
 		public void OnEvent(SDL.Event event) {
 			if (event.type == .MouseMotion) {
-				mousePosition = (event.motion.x, event.motion.y);
+				mousePosition = .(event.motion.x, event.motion.y);
 			}
 
 			if (GUIElement.GUIEvent(event) || state.OnEvent(event)) {

@@ -43,7 +43,7 @@ namespace SpyroScope {
 				let textWidth = WindowApp.fontSmall.CalculateWidth(text);
 				let halfWidth = Math.Floor(textWidth / 2);
 				let halfHeight = Math.Floor(WindowApp.fontSmall.height / 2);
-				WindowApp.fontSmall.Print(text, .(hcenter - halfWidth, vcenter - halfHeight, 0), .(0,0,0));
+				WindowApp.fontSmall.Print(text, .(hcenter - halfWidth, vcenter - halfHeight), .(0,0,0));
 			}
 		}
 

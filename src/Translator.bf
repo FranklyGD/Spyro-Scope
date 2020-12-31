@@ -2,44 +2,44 @@ using System;
 
 namespace SpyroScope {
 	static class Translator {
-		static Vector position;
-		static Matrix basis;
+		static Vector3 position;
+		static Matrix3 basis;
 		static float scale;
 
-		static Vector referencePosition;
-		static Matrix referenceBasis;
-		static Vector offset;
+		static Vector3 referencePosition;
+		static Matrix3 referenceBasis;
+		static Vector3 offset;
 
 		public static bool hovered { get { return axisIndex > 0; } };
 		public static bool dragged { get; private set; };
 		static int8 axisIndex;
 		static int8 axisVisibleIndex;
 
-		static Vector anim;
+		static Vector3 anim;
 
 		public static Event<delegate void()> OnDragBegin ~ _.Dispose();
-		public static Event<delegate void(Vector)> OnDragged ~ _.Dispose();
+		public static Event<delegate void(Vector3)> OnDragged ~ _.Dispose();
 		public static Event<delegate void()> OnDragEnd ~ _.Dispose();
 
-		public static void Update(Vector position, Matrix basis) {
+		public static void Update(Vector3 position, Matrix3 basis) {
 			let viewDirection = Camera.orthographic ? Camera.basis.z : (Camera.position - Translator.position).Normalized();
 			axisVisibleIndex = 0;
-			if (Math.Abs(Vector.Dot(viewDirection, Translator.basis.x)) < 0.96f) {
+			if (Math.Abs(Vector3.Dot(viewDirection, Translator.basis.x)) < 0.96f) {
 				axisVisibleIndex |= 1;
 			}
-			if (Math.Abs(Vector.Dot(viewDirection, Translator.basis.y)) < 0.96f) {
+			if (Math.Abs(Vector3.Dot(viewDirection, Translator.basis.y)) < 0.96f) {
 				axisVisibleIndex |= 2;
 			}
-			if (Math.Abs(Vector.Dot(viewDirection, Translator.basis.z)) < 0.96f) {
+			if (Math.Abs(Vector3.Dot(viewDirection, Translator.basis.z)) < 0.96f) {
 				axisVisibleIndex |= 4;
 			}
-			if (Math.Abs(Vector.Dot(viewDirection, Translator.basis.x)) > 0.2f) {
+			if (Math.Abs(Vector3.Dot(viewDirection, Translator.basis.x)) > 0.2f) {
 				axisVisibleIndex |= 8;
 			}
-			if (Math.Abs(Vector.Dot(viewDirection, Translator.basis.y)) > 0.2f) {
+			if (Math.Abs(Vector3.Dot(viewDirection, Translator.basis.y)) > 0.2f) {
 				axisVisibleIndex |= 16;
 			}
-			if (Math.Abs(Vector.Dot(viewDirection, Translator.basis.z)) > 0.2f) {
+			if (Math.Abs(Vector3.Dot(viewDirection, Translator.basis.z)) > 0.2f) {
 				axisVisibleIndex |= 32;
 			}
 
@@ -101,7 +101,7 @@ namespace SpyroScope {
 
 			if (dragged) {
 				if (axisIndex == 1 || axisIndex == 2 || axisIndex == 4) {
-					Vector axis = ?;
+					Vector3 axis = ?;
 					Renderer.Color4 color = ?;
 					switch (axisIndex) {
 						case 1: axis = referenceBasis.x; color = .(255,0,0);
@@ -110,10 +110,10 @@ namespace SpyroScope {
 					}
 
 					let referenceToCamera = Camera.position - referencePosition;
-					let tickDirection = Vector.Cross(axis, referenceToCamera.Normalized());
-					let normalDirection = Vector.Cross(tickDirection, axis);
+					let tickDirection = Vector3.Cross(axis, referenceToCamera.Normalized());
+					let normalDirection = Vector3.Cross(tickDirection, axis);
 
-					let viewDistance = Math.Max(Math.Abs(Vector.Dot(normalDirection, Camera.position - referencePosition)), 1000);
+					let viewDistance = Math.Max(Math.Abs(Vector3.Dot(normalDirection, Camera.position - referencePosition)), 1000);
 					Renderer.DrawLine(referencePosition + axis * viewDistance * 4, referencePosition + axis * -viewDistance * 4, color, color);
 
 					for (int i = -100; i <= 100; i++) {
@@ -122,7 +122,7 @@ namespace SpyroScope {
 						Renderer.DrawLine(tickPosition + tickDirection * tickSize, tickPosition - tickDirection * tickSize, color, color);
 					}
 				} else {
-					Matrix planeBasis = ?;
+					Matrix3 planeBasis = ?;
 					Renderer.Color4 color = ?;
 					switch (axisIndex) {
 						case 6: color = .(255,32,32); planeBasis = .(referenceBasis.y, referenceBasis.z, referenceBasis.x);
@@ -136,38 +136,38 @@ namespace SpyroScope {
 			}
 		}
 
-		public static void MousePress((float x, float y) mousePosition) {
+		public static void MousePress(Vector2 mousePosition) {
 			if (hovered) {
 				dragged = true;
 				BeginDragged(mousePosition);
 			}
 		}
 
-		public static bool MouseMove((float x, float y) mousePosition) {
+		public static bool MouseMove(Vector2 mousePosition) {
 			let mouseOrigin = Camera.ScreenPointToOrigin(mousePosition);
 			let mouseRay = Camera.ScreenPointToRay(mousePosition);
 
 			if (dragged) {
 				if (axisIndex == 1 || axisIndex == 2 || axisIndex == 4) {
-					Vector axis = ?;
+					Vector3 axis = ?;
 					switch (axisIndex) {
 						case 1: axis = referenceBasis.x;
 						case 2: axis = referenceBasis.y;
 						case 4: axis = referenceBasis.z;
 					}
 
-					let planeNormal = Vector.Cross(Vector.Cross(axis, Camera.basis.z), axis);
+					let planeNormal = Vector3.Cross(Vector3.Cross(axis, Camera.basis.z), axis);
 
 					let intersectTime = GMath.RayPlaneIntersect(mouseOrigin, mouseRay, referencePosition, planeNormal);
 					if (intersectTime > 0) {
 						let planePosition = mouseOrigin + mouseRay * intersectTime - referencePosition;
-						let distanceDragged = Vector.Dot(planePosition, axis);
+						let distanceDragged = Vector3.Dot(planePosition, axis);
 						position = referencePosition + axis * distanceDragged - offset;
 					} else {
 						position = referencePosition;
 					}
 				} else {
-					Vector planeNormal = ?;
+					Vector3 planeNormal = ?;
 					switch (axisIndex) {
 						case 3: planeNormal = referenceBasis.z;
 						case 5: planeNormal = referenceBasis.y;
@@ -190,12 +190,12 @@ namespace SpyroScope {
 				axisIndex = 0;
 				float closest = float.PositiveInfinity;
 
-				Vector* basisAxis = &basis.x;
+				Vector3* basisAxis = &basis.x;
 				for (uint8 axis < 3) {
 					let planeNormal = basisAxis[axis % 3];
 					
 					let viewDirection = Camera.orthographic ? Camera.basis.z : (Camera.position - Translator.position).Normalized();
-					if (Math.Abs(Vector.Dot(viewDirection, planeNormal)) < 0.2f) {
+					if (Math.Abs(Vector3.Dot(viewDirection, planeNormal)) < 0.2f) {
 						continue;
 					}
 
@@ -212,8 +212,8 @@ namespace SpyroScope {
 					let secondPlaneAxis = basisAxis[secondAxisIndex];
 
 					let planePosition = mouseOrigin + mouseRay * intersectTime - position;
-					let firstCoordinate = Vector.Dot(planePosition, firstPlaneAxis) / scale;
-					let secondCoordinate = Vector.Dot(planePosition, secondPlaneAxis) / scale;
+					let firstCoordinate = Vector3.Dot(planePosition, firstPlaneAxis) / scale;
+					let secondCoordinate = Vector3.Dot(planePosition, secondPlaneAxis) / scale;
 
 					if (firstCoordinate > -0.01f && secondCoordinate > -0.01f) {
 						if (firstCoordinate < 0.125f / 6 && secondCoordinate < 0.125f / 6) {
@@ -244,7 +244,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public static void BeginDragged((float x, float y) mousePosition) {
+		public static void BeginDragged(Vector2 mousePosition) {
 			referencePosition = position;
 			referenceBasis = basis;
 			
@@ -252,22 +252,22 @@ namespace SpyroScope {
 			let mouseRay = Camera.ScreenPointToRay(mousePosition);
 
 			if (axisIndex == 1 || axisIndex == 2 || axisIndex == 4) {
-				Vector axis = ?;
+				Vector3 axis = ?;
 				switch (axisIndex) {
 					case 1: axis = referenceBasis.x;
 					case 2: axis = referenceBasis.y;
 					case 4: axis = referenceBasis.z;
 				}
 
-				let planeNormal = Vector.Cross(Vector.Cross(axis, Camera.basis.z), axis);
+				let planeNormal = Vector3.Cross(Vector3.Cross(axis, Camera.basis.z), axis);
 
 				let intersectTime = GMath.RayPlaneIntersect(mouseOrigin, mouseRay, referencePosition, planeNormal);
 
 				let planePosition = mouseOrigin + mouseRay * intersectTime - referencePosition;
-				let distanceDragged = Vector.Dot(planePosition, axis);
+				let distanceDragged = Vector3.Dot(planePosition, axis);
 				offset = axis * distanceDragged;
 			} else {
-				Vector planeNormal = ?;
+				Vector3 planeNormal = ?;
 				switch (axisIndex) {
 					case 3: planeNormal = referenceBasis.z;
 					case 5: planeNormal = referenceBasis.y;

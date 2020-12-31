@@ -2,8 +2,8 @@ using OpenGL;
 
 namespace SpyroScope {
 	class Mesh {
-		public Vector[] vertices ~ delete _;
-		public Vector[] normals ~ delete _;
+		public Vector3[] vertices ~ delete _;
+		public Vector3[] normals ~ delete _;
 		public Renderer.Color4[] colors ~ delete _;
 		public float[][2] uvs ~ delete _;
 
@@ -14,7 +14,7 @@ namespace SpyroScope {
 		uint16 instanceCount;
 		//Matrix4[] instanceMatrices = new .[128] ~ delete _;
 		public Matrix4[] instanceMatrices = new .[512] ~ delete _;
-		public Vector[] instanceColors = new .[512] ~ delete _;
+		public Vector3[] instanceColors = new .[512] ~ delete _;
 
 		bool IsValid;
 
@@ -28,7 +28,7 @@ namespace SpyroScope {
 		matrixBufferObject,
 		tintBufferObject;
 
-		public this(Vector[] vertices, float[][2] uvs, Vector[] normals, Renderer.Color4[] colors) {
+		public this(Vector3[] vertices, float[][2] uvs, Vector3[] normals, Renderer.Color4[] colors) {
 			this.vertices = vertices;
 			this.normals = normals;
 			this.colors = colors;
@@ -41,7 +41,7 @@ namespace SpyroScope {
 			Init();
 		}
 
-		public this(Vector[] vertices, Vector[] normals, Renderer.Color4[] colors, uint32[] indices) {
+		public this(Vector3[] vertices, Vector3[] normals, Renderer.Color4[] colors, uint32[] indices) {
 			this.vertices = vertices;
 			this.normals = normals;
 			this.colors = colors;
@@ -51,7 +51,7 @@ namespace SpyroScope {
 			Init();
 		}
 
-		public this(Vector[] vertices, Vector[] normals, Renderer.Color4[] colors) {
+		public this(Vector3[] vertices, Vector3[] normals, Renderer.Color4[] colors) {
 			this.vertices = vertices;
 			this.normals = normals;
 			this.colors = colors;
@@ -87,7 +87,7 @@ namespace SpyroScope {
 			// Per Vertex
 			GL.glGenBuffers(1, &vertexBufferObject);
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vertexBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector), &vertices[0], GL.GL_STATIC_DRAW); 
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector3), &vertices[0], GL.GL_STATIC_DRAW); 
 
 			GL.glEnableVertexAttribArray(Renderer.positionAttributeIndex);	
 			GL.glVertexAttribPointer(Renderer.positionAttributeIndex,
@@ -95,7 +95,7 @@ namespace SpyroScope {
 			
 			GL.glGenBuffers(1, &normalBufferObject);
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, normalBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector), &normals[0], GL.GL_STATIC_DRAW); 
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector3), &normals[0], GL.GL_STATIC_DRAW); 
 
 			GL.glEnableVertexAttribArray(Renderer.normalAttributeIndex);	
 			GL.glVertexAttribPointer(Renderer.normalAttributeIndex,
@@ -139,7 +139,7 @@ namespace SpyroScope {
 
 			GL.glGenBuffers(1, &tintBufferObject);
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, tintBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, 512 * sizeof(Vector), &instanceColors[0], GL.GL_DYNAMIC_DRAW);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, 512 * sizeof(Vector3), &instanceColors[0], GL.GL_DYNAMIC_DRAW);
 
 			GL.glEnableVertexAttribArray(Renderer.instanceTintAttributeIndex);	
 			GL.glVertexAttribPointer(Renderer.instanceTintAttributeIndex,
@@ -191,8 +191,8 @@ namespace SpyroScope {
 			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, instanceCount * sizeof(Matrix4), &instanceMatrices[0]);
 
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, tintBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, 512 * sizeof(Vector), null, GL.GL_DYNAMIC_DRAW);
-			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, instanceCount * sizeof(Vector), &instanceColors[0]);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, 512 * sizeof(Vector3), null, GL.GL_DYNAMIC_DRAW);
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, instanceCount * sizeof(Vector3), &instanceColors[0]);
 
 			GL.glDrawElementsInstanced(GL.GL_TRIANGLES, indices.Count, GL.GL_UNSIGNED_INT, null, instanceCount);
 			GL.glBindVertexArray(0);
@@ -219,12 +219,12 @@ namespace SpyroScope {
 			GL.glBindVertexArray(vertexArrayObject);
 
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vertexBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector), null, GL.GL_STATIC_DRAW);
-			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector), &vertices[0]);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector3), null, GL.GL_STATIC_DRAW);
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector3), &vertices[0]);
 
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, normalBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector), null, GL.GL_STATIC_DRAW); 
-			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector), &normals[0]);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector3), null, GL.GL_STATIC_DRAW); 
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector3), &normals[0]);
 
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, colorBufferObject);
 			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Renderer.Color4), null, GL.GL_STATIC_DRAW);

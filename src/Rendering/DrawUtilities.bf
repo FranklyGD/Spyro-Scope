@@ -3,7 +3,7 @@ using System;
 namespace SpyroScope {
 	static struct DrawUtilities {
 		[Inline]
-		public static void Axis(Vector position, Matrix basis) {
+		public static void Axis(Vector3 position, Matrix3 basis) {
 			Renderer.SetModel(position + basis.x * 0.5f, basis * .(.(0,0,0.1f),.(0,0.1f,0),.(-1,0,0)));
 			Renderer.SetTint(.(255,0,0));
 			PrimitiveShape.cylinder.QueueInstance();
@@ -16,31 +16,31 @@ namespace SpyroScope {
 		}
 
 		[Inline]
-		public static void Circle(Vector position, Matrix basis, Renderer.Color color) {
+		public static void Circle(Vector3 position, Matrix3 basis, Renderer.Color color) {
 			for (int i < 32) {
 				let theta0 = (float)i / 16 * Math.PI_f;
 				let theta1 = (float)(i + 1) / 16 * Math.PI_f;
-				let point0 = basis * Vector(Math.Cos(theta0), Math.Sin(theta0), 0);
-				let point1 = basis * Vector(Math.Cos(theta1), Math.Sin(theta1), 0);
+				let point0 = basis * Vector3(Math.Cos(theta0), Math.Sin(theta0), 0);
+				let point1 = basis * Vector3(Math.Cos(theta1), Math.Sin(theta1), 0);
 				Renderer.DrawLine(position + point0, position + point1, color, color);
 			}
 		}
 
 		[Inline]
-		public static void Arrow(Vector origin, Vector direction, float width, Renderer.Color color) {
+		public static void Arrow(Vector3 origin, Vector3 direction, float width, Renderer.Color color) {
 			if (direction.x * direction.x < 1 && direction.y * direction.y < 1 && direction.z * direction.z < 1) {
 				return;
 			}
 
-			Matrix arrowMatrix = ?;
+			Matrix3 arrowMatrix = ?;
 
 			arrowMatrix.z = direction;
 			if (arrowMatrix.z.x == 0 && arrowMatrix.z.y == 0) {
 				arrowMatrix.x = .(1,0,0);
 				arrowMatrix.y = .(0,arrowMatrix.z.z > 0 ? 1 : -1,0);
 			} else {
-				arrowMatrix.y = Vector.Cross(arrowMatrix.z, .(0,0,1)).Normalized();
-				arrowMatrix.x = Vector.Cross(arrowMatrix.y, arrowMatrix.z).Normalized();
+				arrowMatrix.y = Vector3.Cross(arrowMatrix.z, .(0,0,1)).Normalized();
+				arrowMatrix.x = Vector3.Cross(arrowMatrix.y, arrowMatrix.z).Normalized();
 			}
 
 			Renderer.SetTint(color);
@@ -58,11 +58,11 @@ namespace SpyroScope {
 		}
 
 		[Inline]
-		public static void WireframeSphere(Vector position, Matrix basis, float radius, Renderer.Color color) {
+		public static void WireframeSphere(Vector3 position, Matrix3 basis, float radius, Renderer.Color color) {
 			let scaledBasis = basis * radius;
 			DrawUtilities.Circle(position, scaledBasis, color);
-			DrawUtilities.Circle(position, Matrix(scaledBasis.y, scaledBasis.z, scaledBasis.x), color);
-			DrawUtilities.Circle(position, Matrix(scaledBasis.z, scaledBasis.x, scaledBasis.y), color);
+			DrawUtilities.Circle(position, Matrix3(scaledBasis.y, scaledBasis.z, scaledBasis.x), color);
+			DrawUtilities.Circle(position, Matrix3(scaledBasis.z, scaledBasis.x, scaledBasis.y), color);
 
 			let positionDifference = Renderer.viewPosition - position;
 			let distance = positionDifference.Length();
@@ -77,10 +77,10 @@ namespace SpyroScope {
 			let offsetedCenter = position + positionDifference * (t * radius / distance);
 			let tangentRadius = Math.Sin(tanAngle) * radius;
 
-			Matrix tangentCircleBasis = ?;
+			Matrix3 tangentCircleBasis = ?;
 			tangentCircleBasis.z = positionDifference / distance;
-			tangentCircleBasis.y = Vector.Cross(positionDifference, Renderer.viewBasis.x).Normalized();
-			tangentCircleBasis.x = Vector.Cross(tangentCircleBasis.z, tangentCircleBasis.y);
+			tangentCircleBasis.y = Vector3.Cross(positionDifference, Renderer.viewBasis.x).Normalized();
+			tangentCircleBasis.x = Vector3.Cross(tangentCircleBasis.z, tangentCircleBasis.y);
 
 			DrawUtilities.Circle(offsetedCenter, tangentCircleBasis * tangentRadius, color);
 		}
@@ -99,6 +99,24 @@ namespace SpyroScope {
 		[Inline]
 		public static void Rect(float top, float bottom, float left, float right, Renderer.Color4 color) {
 			Rect(top,bottom,left,right, 0,0,0,0, Renderer.whiteTexture, color);
+		}
+
+		[Inline]
+		public static void Rect(Rect rect, Rect uvRect, Texture texture, Renderer.Color4 color) {
+			Rect(
+				rect.top, rect.bottom, rect.left, rect.right,
+				uvRect.top, uvRect.bottom, uvRect.left, uvRect.right,
+				texture, color
+			);
+		}
+
+		[Inline]
+		public static void Rect(Rect rect, Renderer.Color4 color) {
+			Rect(
+				rect.top, rect.bottom, rect.left, rect.right,
+				0,0,0,0,
+				Renderer.whiteTexture, color
+			);
 		}
 
 		[Inline]
@@ -130,7 +148,7 @@ namespace SpyroScope {
 
 
 		[Inline]
-		public static void Grid(Vector position, Matrix basis, Renderer.Color4 color) {
+		public static void Grid(Vector3 position, Matrix3 basis, Renderer.Color4 color) {
 			let relativeViewPosition = basis.Transpose() * (Camera.position - position);
 			
 			let distance = Math.Max(Math.Abs(relativeViewPosition.z), 1000);
@@ -146,7 +164,7 @@ namespace SpyroScope {
 			for (var i = -(int)normalizedDistance; i < normalizedDistance; i++) {
 				let baseInterval = Math.Round(relativeViewPosition.y / roundedDistance);
 				let interval = baseInterval + i;
-				let slidingOffset = position + basis * Vector(relativeViewPosition.x, interval * roundedDistance, 0);
+				let slidingOffset = position + basis * Vector3(relativeViewPosition.x, interval * roundedDistance, 0);
 
 				let isTenth = interval % 10 == 0;
 				let brightness = Math.Max(1f - Math.Abs(interval * roundedDistance - relativeViewPosition.y) / (distance * 4), 0) * (isTenth ? 1 : invMagnitudeFrac * invMagnitudeFrac);
@@ -160,7 +178,7 @@ namespace SpyroScope {
 			for (var i = -(int)normalizedDistance; i < normalizedDistance; i++) {
 				let baseInterval = Math.Round(relativeViewPosition.x / roundedDistance);
 				let interval = baseInterval + i;
-				let slidingOffset = position + basis * Vector(interval * roundedDistance, relativeViewPosition.y, 0);
+				let slidingOffset = position + basis * Vector3(interval * roundedDistance, relativeViewPosition.y, 0);
 
 				let isTenth = interval % 10 == 0;
 				let brightness = Math.Max(1f - Math.Abs(interval * roundedDistance - relativeViewPosition.x) / (distance * 4), 0) * (isTenth ? 1 : invMagnitudeFrac * invMagnitudeFrac);

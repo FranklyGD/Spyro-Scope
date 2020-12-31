@@ -12,8 +12,8 @@ namespace SpyroScope {
 			public FT.Vector size;
 			public FT.Vector bearing;
 			public uint32 advance;
-			public (float x, float y) atlasPosition;
-			public (float x, float y) atlasPosition2;
+			public Vector2 atlasPosition;
+			public Vector2 atlasPosition2;
 		}
 		Dictionary<char8, Character> characters = new .() ~ delete _;
 
@@ -115,7 +115,7 @@ namespace SpyroScope {
 			Texture.Unbind();
 		}
 
-		public Vector Print(StringView text, Vector position, float scale, Renderer.Color4 color) {
+		public Vector2 Print(StringView text, Vector2 position, float scale, Renderer.Color4 color) {
 			var position;
 			position.y += penLine;
 
@@ -142,7 +142,7 @@ namespace SpyroScope {
 			return position;
 		}
 
-		public Vector Print(StringView text, Vector position, Renderer.Color4 color) {
+		public Vector2 Print(StringView text, Vector2 position, Renderer.Color4 color) {
 			return Print(text, position, 1, color);
 		}
 

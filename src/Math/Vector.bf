@@ -1,7 +1,7 @@
 using System;
 
 namespace SpyroScope {
-	struct Vector {
+	struct Vector3 {
 		public float x,y,z;
 
 		public this(float x, float y , float z) {
@@ -10,16 +10,12 @@ namespace SpyroScope {
 			this.z = z;
 		}
 
-		public static Vector Zero {
+		public static Self Zero {
 			get { return .(0,0,0); }
 		}
 
-		public override void ToString(System.String strBuffer) {
+		public override void ToString(String strBuffer) {
 			strBuffer.AppendF("<{},{},{}>", x, y, z);
-		}
-
-		public VectorInt ToVectorInt() {
-			return .((.)Math.Round(x),(.)Math.Round(y),(.)Math.Round(z));
 		}
 
 		public float LengthSq() {
@@ -30,56 +26,56 @@ namespace SpyroScope {
 			return Math.Sqrt(LengthSq());
 		}
 
-		public Vector Normalized() {
+		public Self Normalized() {
 			return this / Length();
 		}
 
-		public static implicit operator Vector(VectorInt v) {
-			return Vector(v.x,v.y,v.z);
+		public static implicit operator Self(Vector3Int v) {
+			return .(v.x,v.y,v.z);
 		}
 
-		public static implicit operator Vector(Vector4 v) {
-			return Vector(v.x/v.w,v.y/v.w,v.z/v.w);
+		public static implicit operator Self(Vector4 v) {
+			return .(v.x/v.w,v.y/v.w,v.z/v.w);
 		}
 
-		public static Vector operator -(Vector value) {
-			return .(- value.x, - value.y, - value.z);
+		public static Self operator -(Self v) {
+			return .(- v.x, - v.y, - v.z);
 		}
 
-		public static Vector operator +(Vector left, Vector right) {
+		public static Self operator +(Self left, Self right) {
 			return .(left.x + right.x, left.y + right.y, left.z + right.z);
 		}
 
-		public static Vector operator -(Vector left, Vector right) {
+		public static Self operator -(Self left, Self right) {
 			return .(left.x - right.x, left.y - right.y, left.z - right.z);
 		}
 
-		public static Vector operator *(Vector left, float right) {
+		public static Self operator *(Self left, float right) {
 			return .(left.x * right, left.y * right, left.z * right);
 		}
 
-		public static Vector operator /(Vector left, float right) {
+		public static Self operator /<T>(Self left, T right) where float : operator float/T {
 			return .(left.x / right, left.y / right, left.z / right);
 		}
 
-		public static Vector operator *(Vector left, Vector right) {
+		public static Self operator *(Self left, Self right) {
 			return .(left.x * right.x, left.y * right.y, left.z * right.z);
 		}
 
-		public static float Dot(Vector left, Vector right) {
+		public static float Dot(Self left, Self right) {
 			return left.x * right.x + left.y * right.y + left.z * right.z;
 		}
 
-		public static Vector Cross(Vector left, Vector right) {
-			return Vector(
+		public static Self Cross(Self left, Self right) {
+			return .(
 				left.y * right.z - left.z * right.y,
 				left.z * right.x - left.x * right.z,
 				left.x * right.y - left.y * right.x
 			);
 		}
 
-		public static float RayPlaneIntersect(Vector rayOrigin, Vector rayDirection, Vector planeOrigin, Vector planeNormal) {
-			return Vector.Dot(planeOrigin, rayOrigin - planeOrigin) / Vector.Dot(planeOrigin, rayDirection);
+		public static float RayPlaneIntersect(Self rayOrigin, Self rayDirection, Self planeOrigin, Self planeNormal) {
+			return Dot(planeOrigin, rayOrigin - planeOrigin) / Dot(planeOrigin, rayDirection);
 		}
 	}
 }

@@ -6,7 +6,7 @@ namespace SpyroScope {
 		public Emulator.Address address;
 		public uint8 regionIndex;
 		public uint16 count;
-		public Vector center;
+		public Vector3 center;
 		public float radius;
 
 		public Mesh[] meshStates;
@@ -56,8 +56,8 @@ namespace SpyroScope {
 				highestUsedState = Math.Max(highestUsedState, s.toState);
 			}
 
-			Vector upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
-			Vector lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
+			Vector3 upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
+			Vector3 lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
 
 			let stateCount = highestUsedState + 1;
 			let vertexCount = count / 4;
@@ -102,7 +102,7 @@ namespace SpyroScope {
 				}
 			}
 
-			let vertices = scope Vector[vertexCount];
+			let vertices = scope Vector3[vertexCount];
 			meshStates = new .[stateCount];
 			for (let stateIndex < stateCount) {
 				let startVertexState = stateIndex * vertexCount;
@@ -126,8 +126,8 @@ namespace SpyroScope {
 				center = (upperBound + lowerBound) / 2;
 				radius = (upperBound - center).Length();
 
-				Vector[] v = new .[gameVertexIndices.Count];
-				Vector[] n = new .[gameVertexIndices.Count];
+				Vector3[] v = new .[gameVertexIndices.Count];
+				Vector3[] n = new .[gameVertexIndices.Count];
 				Renderer.Color4[] c = new .[gameVertexIndices.Count];
 
 				for (let i < gameVertexIndices.Count) {
@@ -160,8 +160,8 @@ namespace SpyroScope {
 
 			// Update all vertices that are meant to move between states
 			for (let i < meshStates[0].vertices.Count) {
-				Vector fromVertex = meshStates[keyframeData.fromState].vertices[i];
-				Vector toVertex = meshStates[keyframeData.toState].vertices[i];
+				Vector3 fromVertex = meshStates[keyframeData.fromState].vertices[i];
+				Vector3 toVertex = meshStates[keyframeData.toState].vertices[i];
 				
 				mesh.vertices[animatedTriangles[i / 3] + (i % 3)] = fromVertex + (toVertex - fromVertex) * interpolation;
 			}
@@ -173,16 +173,16 @@ namespace SpyroScope {
 			for (var i < animatedTriangles.Count) {
 				let triangleIndex = animatedTriangles[i];
 				
-				Vector* vertices = &region.nearMesh.vertices[triangleIndex];
+				Vector3* vertices = &region.nearMesh.vertices[triangleIndex];
 
 				var regionFace = region.GetNearFace(region.nearFaceIndices[triangleIndex / 3]);
 				if (regionFace.isTriangle) {
-					Vector[5] midpoints = ?;
+					Vector3[5] midpoints = ?;
 					midpoints[0] = (vertices[0] + vertices[1]) / 2; // Top
 					midpoints[1] = (vertices[1] + vertices[2]) / 2; // Diagonal
 					midpoints[2] = (vertices[2] + vertices[0]) / 2; // Left
 
-					Vector[4][3] subQuadVertices = .(
+					Vector3[4][3] subQuadVertices = .(
 						(midpoints[2], midpoints[0], vertices[0]),
 						(midpoints[1], vertices[1], midpoints[0]),
 						(vertices[2], midpoints[1], midpoints[2]),
@@ -210,14 +210,14 @@ namespace SpyroScope {
 				} else {
 
 					// High quality textures
-					Vector[5] midpoints = ?;
+					Vector3[5] midpoints = ?;
 					midpoints[0] = (vertices[3] + vertices[4]) / 2; // Top
 					midpoints[1] = (vertices[0] + vertices[1]) / 2; // Bottom
 					midpoints[2] = (vertices[3] + vertices[5]) / 2; // Left
 					midpoints[3] = (vertices[0] + vertices[2]) / 2; // Right
 					midpoints[4] = (midpoints[0] + midpoints[1]) / 2;
 
-					Vector[4][4] subQuadVertices = .(
+					Vector3[4][4] subQuadVertices = .(
 						.(midpoints[2], midpoints[4], midpoints[0], vertices[3]),
 						.(midpoints[4], midpoints[3], vertices[2], midpoints[0]),
 						.(vertices[5], midpoints[1], midpoints[4], midpoints[2]),

@@ -7,7 +7,7 @@ namespace SpyroScope {
 		public Emulator.Address dataPointer; // 0
 		uint32 a; // 4
 		uint32 b; // 8
-		public VectorInt position; // 12
+		public Vector3Int position; // 12
 		uint32[7] c; // 24
 		uint16 d; // 52
 		public uint16 objectTypeID; // 54
@@ -18,7 +18,7 @@ namespace SpyroScope {
 		uint8 g; // 61
 		uint16 h; // 62
 		uint32 i; // 64
-		public VectorByte eulerRotation; // 68
+		public Vector3Byte eulerRotation; // 68
 		public uint8 updateState; // 72
 		public uint8 variantID; // 73
 		uint8[3] k; // 74
@@ -38,7 +38,7 @@ namespace SpyroScope {
 
 		public static List<Moby> allocated = new .() ~ delete _;
 
-		public Matrix basis { get { return .Euler(
+		public Matrix3 basis { get { return .Euler(
 			-(float)eulerRotation.x / 0x80 * Math.PI_f,
 			(float)eulerRotation.y / 0x80 * Math.PI_f,
 			-(float)eulerRotation.z / 0x80 * Math.PI_f
@@ -132,24 +132,24 @@ namespace SpyroScope {
 				uint8[] dataBytes = scope .[4 * 4 * waypointCount];
 				Emulator.ReadFromRAM(pathArrayPointer + 12, &dataBytes[0], 4 * 4 * waypointCount);
 				for (let i < waypointCount) {
-					let position = (VectorInt*)&dataBytes[4 * 4 * i];
+					let position = *(Vector3Int*)&dataBytes[4 * 4 * i];
 
-					Renderer.SetModel(*position, .Scale(500,500,50));
+					Renderer.SetModel(position, .Scale(500,500,50));
 					Renderer.SetTint(.(255,128,0));
 					PrimitiveShape.cylinder.QueueInstance();
 					
 					if (i == 0) {
-						Renderer.SetModel(*position, .Scale(400,400,100));
+						Renderer.SetModel(position, .Scale(400,400,100));
 						Renderer.SetTint(.(0,255,0));
 						PrimitiveShape.cylinder.QueueInstance();
 					}
 
 					if (i < waypointCount - 1) {
-						let nextPosition = (VectorInt*)&dataBytes[4 * 4 * (i + 1)];
-						let direction = *nextPosition - *position;
-						let normalizedDirection = direction.ToVector().Normalized();
+						let nextPosition = (Vector3)*(Vector3Int*)&dataBytes[4 * 4 * (i + 1)];
+						let direction = nextPosition - position;
+						let normalizedDirection = direction.Normalized();
 
-						DrawUtilities.Arrow(*position + normalizedDirection * 400, normalizedDirection * (direction.Length() - 800), 125, .(255,128,0));
+						DrawUtilities.Arrow(position + normalizedDirection * 400, normalizedDirection * (direction.Length() - 800), 125, .(255,128,0));
 					}
 				}
 			}

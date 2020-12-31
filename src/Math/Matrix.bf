@@ -1,16 +1,16 @@
 using System;
 
 namespace SpyroScope {
-	struct Matrix {
-		public Vector x,y,z;
+	struct Matrix3 {
+		public Vector3 x,y,z;
 
-		public this(Vector x, Vector y, Vector z) {
+		public this(Vector3 x, Vector3 y, Vector3 z) {
 			this.x = x;
 			this.y = y;
 			this.z = z;
 		}
 
-		public static Matrix Identity {
+		public static Self Identity {
 			get {
 			    return .(
 					.(1,0,0),
@@ -20,7 +20,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public static Matrix Euler(float x, float y, float z) {
+		public static Self Euler(float x, float y, float z) {
 			let sx = Math.Sin(x);
 			let cx = Math.Cos(x);
 			let sy = Math.Sin(y);
@@ -35,7 +35,7 @@ namespace SpyroScope {
 			);
 		}
 
-		public static Matrix Scale(float x, float y, float z) {
+		public static Self Scale(float x, float y, float z) {
 			return .(
 				.(x,0,0),
 				.(0,y,0),
@@ -43,7 +43,7 @@ namespace SpyroScope {
 			);
 		}
 
-		public static Matrix Scale(float scale) {
+		public static Self Scale(float scale) {
 			return .(
 				.(scale,0,0),
 				.(0,scale,0),
@@ -51,7 +51,7 @@ namespace SpyroScope {
 			);
 		}
 
-		public static Matrix Scale(Vector scale) {
+		public static Self Scale(Vector3 scale) {
 			return .(
 				.(scale.x,0,0),
 				.(0,scale.y,0),
@@ -59,8 +59,8 @@ namespace SpyroScope {
 			);
 		}
 
-		public Matrix Transpose() {
-			Matrix transpose = ?;
+		public Self Transpose() {
+			Self transpose = ?;
 
 			transpose.x.x = x.x;
 			transpose.x.y = y.x;
@@ -77,25 +77,25 @@ namespace SpyroScope {
 			return transpose;
 		}
 
-		public Matrix Orthonormalized() {
-			let right = Vector.Cross(z, y);
-			let up = Vector.Cross(z, right);
+		public Self Orthonormalized() {
+			let right = Vector3.Cross(z, y);
+			let up = Vector3.Cross(z, right);
 			return .(right.Normalized(), up.Normalized(), z.Normalized());
 		}
 
-		public static Matrix operator *(Matrix left, float right) {
+		public static Self operator *(Self left, float right) {
 			return .(left.x * right, left.y * right, left.z * right);
 		}
 
-		public static Vector operator *(Matrix left, Vector right) {
+		public static Vector3 operator *(Self left, Vector3 right) {
 			return left.x * right.x + left.y * right.y + left.z * right.z;
 		}
 
-		public static Matrix operator *(Matrix left, Matrix right) {
+		public static Self operator *(Self left, Self right) {
 			var left, right;
 			float* l = (float*)&left;
 			float* r = (float*)&right;
-			Matrix m = ?;
+			Self m = ?;
 			float* f = (float*)&m;
 
 			for (int i < 3) {

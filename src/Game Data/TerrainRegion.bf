@@ -32,7 +32,7 @@ namespace SpyroScope {
 		/// Used to convert mesh triangle index to face index
 		public List<int> farFaceIndices = new .() ~ delete _;
 
-		Vector[] nearVertices;
+		Vector3[] nearVertices;
 		Renderer.Color4[] nearColors ~ delete _;
 		NearFace[] nearFaces ~ delete _;
 		
@@ -137,7 +137,7 @@ namespace SpyroScope {
 		}
 
 		/// Sets the position of the mesh's vertex with the index the game uses
-		public void SetNearVertex(uint8 index, VectorInt position, bool updateGame = false) {
+		public void SetNearVertex(uint8 index, Vector3Int position, bool updateGame = false) {
 			for (let meshVertexIndex < nearMesh2GameIndices.Count) {
 				let vertexIndex = nearMesh2GameIndices[meshVertexIndex];
 				if (vertexIndex == index) {
@@ -177,7 +177,7 @@ namespace SpyroScope {
 		}
 
 		void GenerateFarMesh(Emulator.Address regionPointer, int vertexSize, int colorSize, int faceSize) {
-			List<Vector> vertexList = scope .();
+			List<Vector3> vertexList = scope .();
 			List<Renderer.Color> colorList = scope .();
 
 			uint32[] packedVertices = scope .[vertexSize];
@@ -188,7 +188,7 @@ namespace SpyroScope {
 			}
 
 			// Used for swapping around values
-			Vector[4] triangleVertices = ?;
+			Vector3[4] triangleVertices = ?;
 			Renderer.Color[4] triangleColors = ?;
 			
 			uint8[4] triangleIndices, colorIndices;
@@ -267,8 +267,8 @@ namespace SpyroScope {
 				}
 			}
 
-			Vector[] v = new .[vertexList.Count];
-			Vector[] n = new .[vertexList.Count];
+			Vector3[] v = new .[vertexList.Count];
+			Vector3[] n = new .[vertexList.Count];
 			Renderer.Color4[] c = new .[vertexList.Count];
 			float[][2] u = new .[vertexList.Count];
 
@@ -283,11 +283,11 @@ namespace SpyroScope {
 		}
 
 		void GenerateNearMesh(Emulator.Address regionPointer, int vertexSize, int colorSize, int faceSize) {
-			List<Vector> activeVertexList = ?;
+			List<Vector3> activeVertexList = ?;
 			List<Renderer.Color> activeColorList = ?;
 			List<float[2]> activeUvList = ?;
 			
-			List<Vector> activeVertexSubList = ?;
+			List<Vector3> activeVertexSubList = ?;
 			List<Renderer.Color> activeColorSubList = ?;
 			List<float[2]> activeUvSubList = ?;
 
@@ -304,19 +304,19 @@ namespace SpyroScope {
 			// Used for swapping around values
 			float[4][2] triangleUV = ?;
 
-			List<Vector> vertexList = scope .();
+			List<Vector3> vertexList = scope .();
 			List<Renderer.Color> colorList = scope .();
 			List<float[2]> uvList = scope .();
 
-			List<Vector> vertexTransparentList = scope .();
+			List<Vector3> vertexTransparentList = scope .();
 			List<Renderer.Color> colorTransparentList = scope .();
 			List<float[2]> uvTransparentList = scope .();
 
-			List<Vector> vertexSubList = scope .();
+			List<Vector3> vertexSubList = scope .();
 			List<Renderer.Color> colorSubList = scope .();
 			List<float[2]> uvSubList = scope .();
 
-			List<Vector> vertexTransparentSubList = scope .();
+			List<Vector3> vertexTransparentSubList = scope .();
 			List<Renderer.Color> colorTransparentSubList = scope .();
 			List<float[2]> uvTransparentSubList = scope .();
 
@@ -405,7 +405,7 @@ namespace SpyroScope {
 					uvs[2] = rotatedTriangleUV[indexSwap[0]];
 
 					// High quality textures
-					Vector[5] midpoints = ?;
+					Vector3[5] midpoints = ?;
 					midpoints[0] = (vertices[0] + vertices[1]) / 2; // Top
 					midpoints[1] = (vertices[1] + vertices[2]) / 2; // Diagonal
 					midpoints[2] = (vertices[2] + vertices[0]) / 2; // Left
@@ -415,7 +415,7 @@ namespace SpyroScope {
 					midcolors[1] = Renderer.Color.Lerp(colors[1], colors[2], 0.5f);
 					midcolors[2] = Renderer.Color.Lerp(colors[2], colors[0], 0.5f);
 
-					Vector[4][3] subQuadVertices = .(
+					Vector3[4][3] subQuadVertices = .(
 						(midpoints[2], midpoints[0], vertices[0]),
 						(midpoints[1], vertices[1], midpoints[0]),
 						(vertices[2], midpoints[1], midpoints[2]),
@@ -548,7 +548,7 @@ namespace SpyroScope {
 					}
 
 					// High quality textures
-					Vector[5] midpoints = ?;
+					Vector3[5] midpoints = ?;
 					midpoints[0] = (vertices[3] + vertices[4]) / 2; // Top
 					midpoints[1] = (vertices[0] + vertices[1]) / 2; // Bottom
 					midpoints[2] = (vertices[3] + vertices[5]) / 2; // Left
@@ -562,7 +562,7 @@ namespace SpyroScope {
 					midcolors[3] = Renderer.Color.Lerp(colors[0], colors[2], 0.5f);
 					midcolors[4] = Renderer.Color.Lerp(colors[1], colors[4], 0.5f);
 
-					Vector[4][4] subQuadVertices = .(
+					Vector3[4][4] subQuadVertices = .(
 						.(midpoints[2], midpoints[4], midpoints[0], vertices[3]),
 						.(midpoints[4], midpoints[3], vertices[2], midpoints[0]),
 						.(vertices[5], midpoints[1], midpoints[4], midpoints[2]),
@@ -639,8 +639,8 @@ namespace SpyroScope {
 				}
 			}
 
-			Vector[] v = new .[vertexList.Count];
-			Vector[] n = new .[vertexList.Count];
+			Vector3[] v = new .[vertexList.Count];
+			Vector3[] n = new .[vertexList.Count];
 			Renderer.Color4[] c = new .[vertexList.Count];
 			float[][2] u = new .[vertexList.Count];
 
@@ -699,8 +699,8 @@ namespace SpyroScope {
 		// Derived from Spyro: Ripto's Rage
 		// Far [80028c2c]
 		// Near [80024664]
-		public static VectorInt UnpackVertex(uint32 packedVertex) {
-			VectorInt vertex = ?;
+		public static Vector3Int UnpackVertex(uint32 packedVertex) {
+			Vector3Int vertex = ?;
 	
 			vertex.x = (.)(packedVertex >> 21);
 			vertex.y = (.)(packedVertex >> 10 & 0x7ff);
@@ -853,31 +853,31 @@ namespace SpyroScope {
 		}
 
 		public void DrawFar() {
-			Matrix scale = .Scale(16, 16, Emulator.installment == .SpyroTheDragon ? 8 : 16);
+			Matrix3 scale = .Scale(16, 16, Emulator.installment == .SpyroTheDragon ? 8 : 16);
 			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
 			farMesh.Draw();
 		}
 		
 		public void DrawNear() {
-			Matrix scale = .Scale(16, 16, verticalScale);
+			Matrix3 scale = .Scale(16, 16, verticalScale);
 			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
 			nearMesh.Draw();
 		}
 
 		public void DrawNearTransparent() {
-			Matrix scale = .Scale(16, 16, verticalScale);
+			Matrix3 scale = .Scale(16, 16, verticalScale);
 			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
 			nearMeshTransparent.Draw();
 		}
 
 		public void DrawNearSubdivided() {
-			Matrix scale = .Scale(16, 16, verticalScale);
+			Matrix3 scale = .Scale(16, 16, verticalScale);
 			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
 			nearMeshSubdivided.Draw();
 		}
 
 		public void DrawNearTransparentSubdivided() {
-			Matrix scale = .Scale(16, 16, verticalScale);
+			Matrix3 scale = .Scale(16, 16, verticalScale);
 			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
 			nearMeshTransparentSubdivided.Draw();
 		}

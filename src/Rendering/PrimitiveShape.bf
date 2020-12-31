@@ -19,7 +19,7 @@ namespace SpyroScope {
 		}
 
 		public static void GenerateCube() {
-			let vertices = new Vector[24](
+			let vertices = new Vector3[24](
 				.(0.5f,0.5f,0.5f),
 				.(0.5f,0.5f,0.5f),
 				.(0.5f,0.5f,0.5f),
@@ -47,7 +47,7 @@ namespace SpyroScope {
 				.(-0.5f,-0.5f,-0.5f)
 			);
 
-			let normals = new Vector[24](
+			let normals = new Vector3[24](
 				.(1.0f,0.0f,0.0f),
 				.(0.0f,1.0f,0.0f),
 				.(0.0f,0.0f,1.0f),
@@ -93,13 +93,13 @@ namespace SpyroScope {
 		}
 
 		public static void GenerateCylinder(int subdivisions) {
-			let loop = scope Vector[subdivisions];
+			let loop = scope Vector3[subdivisions];
 			for (int i < subdivisions) {
 				let theta = (float)i / subdivisions * Math.PI_f * 2;
 				loop[i] = .(Math.Cos(theta) / 2, Math.Sin(theta) / 2, 0);
 			}
 
-			let vertices = new Vector[subdivisions * 4];
+			let vertices = new Vector3[subdivisions * 4];
 			for (int i < subdivisions) {
 				vertices[i + subdivisions * 0] = vertices[i + subdivisions * 1] = loop[i];
 				vertices[i + subdivisions * 0].z = vertices[i + subdivisions * 1].z = 0.5f;
@@ -107,7 +107,7 @@ namespace SpyroScope {
 				vertices[i + subdivisions * 2].z = vertices[i + subdivisions * 3].z = -0.5f;
 			}
 
-			let normals = new Vector[subdivisions * 4];
+			let normals = new Vector3[subdivisions * 4];
 			for (int i < subdivisions) {
 				normals[i + subdivisions * 0] = .(0,0,1);
 				normals[i + subdivisions * 1] = normals[i + subdivisions * 2] = loop[i] * 2;
@@ -150,20 +150,20 @@ namespace SpyroScope {
 		}
 
 		public static void GenerateCone(int subdivisions) {
-			let loop = scope Vector[subdivisions];
+			let loop = scope Vector3[subdivisions];
 			for (int i < subdivisions) {
 				let theta = (float)i / subdivisions * Math.PI_f * 2;
 				loop[i] = .(Math.Cos(theta) / 2, Math.Sin(theta) / 2, 0);
 			}
 
-			let vertices = new Vector[subdivisions * 3];
+			let vertices = new Vector3[subdivisions * 3];
 			for (int i < subdivisions) {
 				vertices[i + subdivisions * 0] = .(0, 0, 0.5f);
 				vertices[i + subdivisions * 1] = vertices[i + subdivisions * 2] = loop[i];
 				vertices[i + subdivisions * 1].z = vertices[i + subdivisions * 2].z = -0.5f;
 			}
 
-			let normals = new Vector[subdivisions * 3];
+			let normals = new Vector3[subdivisions * 3];
 			for (int i < subdivisions) {
 				normals[i + subdivisions * 0] = normals[i + subdivisions * 1] = loop[i] * 1.788854382f;
 				normals[i + subdivisions * 0].z = normals[i + subdivisions * 1].z = 0.4472135955f;

@@ -9,7 +9,7 @@ namespace SpyroScope {
 		public Row x,y,z;
 
 		public static MatrixInt Euler(float x, float y, float z) {
-			return Matrix.Euler(x,y,z).ToMatrixIntCorrected();
+			return Matrix3.Euler(x,y,z).ToMatrixIntCorrected();
 		}
 
 		public MatrixInt Transpose() {
@@ -30,8 +30,8 @@ namespace SpyroScope {
 			return transpose;
 		}
 
-		public Matrix ToMatrix() {
-			Matrix matrix = ?;
+		public Matrix3 ToMatrix() {
+			Matrix3 matrix = ?;
 
 			matrix.x.x = ToFloat!(x.x);
 			matrix.x.y = ToFloat!(x.y);
@@ -48,8 +48,8 @@ namespace SpyroScope {
 			return matrix;
 		}
 
-		public Matrix ToMatrixCorrected() {
-			Matrix matrix = ?;
+		public Matrix3 ToMatrixCorrected() {
+			Matrix3 matrix = ?;
 			
 			matrix.x.x = ToFloat!(z.z);
 			matrix.x.y = -ToFloat!(x.z);
