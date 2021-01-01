@@ -90,7 +90,7 @@ namespace SpyroScope {
 			for (let i < quadCount) {
 				let quad = (TextureQuad*)&Terrain.textures[textureIndex * quadCount + i];
 
-				let verticalQuad = (quad.texturePage & 0x80 > 0) ? 3 : 2;
+				let verticalQuad = ((quad.texturePage & 0x80 > 0) ? 3 : 2) - ((Emulator.installment == .SpyroTheDragon) ? 1 : 0);
 				quad.leftSkew = 0;
 				quad.rightSkew = (uint8)(verticalQuad * 0x20 - 1);
 				quad.Decode();
