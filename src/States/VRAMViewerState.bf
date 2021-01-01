@@ -524,7 +524,9 @@ namespace SpyroScope {
 				default:
 			}
 
-			SpyroFont.Init();
+			if (Emulator.installment != .SpyroTheDragon) {
+				SpyroFont.Init();
+			}
 		}
 
 		void OnNewSnapshot() {
@@ -1021,7 +1023,9 @@ namespace SpyroScope {
 					}
 				}
 
-				SpyroFont.Decode();
+				if (Emulator.installment != .SpyroTheDragon) {
+					SpyroFont.Decode();
+				}
 
 				spritesDecoded = true;
 			}
