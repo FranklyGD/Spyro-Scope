@@ -709,6 +709,9 @@ namespace SpyroScope {
 			return vertex;
 		}
 
+		// This should almost be a complete copy of the mesh generation of UVs
+		// but because of how this is separated for optimization reasons its partially different
+		// TODO: Get all possible UV Quad/Face options working
 		public void UpdateUVs(List<int> affectedTriangles, float[4 * 5][2] triangleUV, bool transparent) {
 			for (let triangleIndex in affectedTriangles) {
 				let faceIndices = transparent ? nearFaceTransparentIndices : nearFaceIndices;
@@ -773,10 +776,12 @@ namespace SpyroScope {
 						regionMeshSubdivided.uvs[10 + subdividedVertexIndex] = rotatedTriangleUV[2];
 						regionMeshSubdivided.uvs[11 + subdividedVertexIndex] = rotatedTriangleUV[indexSwap[0]];
 					} else {
+						let flipSide = regionFace.flipped;
+
 						int8[2] indexSwap = ?;
 						const int8[2] oppositeIndex = .(1,3);
 						for (let qti < 2) {
-						indexSwap = (qti == 1) ^ regionFace.flipped ? .(2,0) : .(0,2);
+						indexSwap = (qti == 1) ^ flipSide ? .(2,0) : .(0,2);
 							let offset = qti * 3;
 
 							regionMesh.uvs[0 + offset + vertexIndex] = triangleUV[oppositeIndex[qti]];
@@ -784,19 +789,32 @@ namespace SpyroScope {
 							regionMesh.uvs[2 + offset + vertexIndex] = triangleUV[indexSwap[1]];
 						}
 
-						uint8[4] quadIndexSwap = regionFace.flipped ? (Emulator.installment == .SpyroTheDragon ? .(1,0,3,2) : .(2,1,0,3)) : .(0,1,2,3);
+						// There hasn't seem to be a use for animated rotated subquads...
+						// Come back to this when its relevant
+						let quadRotation = 0;
 
 						for (let qi < 4) {
 							let offset = qi * 6;
 							let offset2 = (1 + qi) * 4;
 
-							regionMeshSubdivided.uvs[0 + offset + subdividedVertexIndex] = triangleUV[quadIndexSwap[3] + offset2];
-							regionMeshSubdivided.uvs[1 + offset + subdividedVertexIndex] = triangleUV[quadIndexSwap[2] + offset2];
-							regionMeshSubdivided.uvs[2 + offset + subdividedVertexIndex] = triangleUV[quadIndexSwap[0] + offset2];
+							float[4][2] rotatedTriangleUV = .(
+								triangleUV[((0 - quadRotation) & 3) + offset2],
+								triangleUV[((1 - quadRotation) & 3) + offset2],
+								triangleUV[((2 - quadRotation) & 3) + offset2],
+								triangleUV[((3 - quadRotation) & 3) + offset2]
+							);
+
+							if (flipSide /*^ quadFlip*/) {
+								Swap!(rotatedTriangleUV[0], rotatedTriangleUV[2]);
+							}
+
+							regionMeshSubdivided.uvs[0 + offset + subdividedVertexIndex] = rotatedTriangleUV[3];
+							regionMeshSubdivided.uvs[1 + offset + subdividedVertexIndex] = rotatedTriangleUV[2];
+							regionMeshSubdivided.uvs[2 + offset + subdividedVertexIndex] = rotatedTriangleUV[0];
 							
-							regionMeshSubdivided.uvs[3 + offset + subdividedVertexIndex] = triangleUV[quadIndexSwap[0] + offset2];
-							regionMeshSubdivided.uvs[4 + offset + subdividedVertexIndex] = triangleUV[quadIndexSwap[2] + offset2];
-							regionMeshSubdivided.uvs[5 + offset + subdividedVertexIndex] = triangleUV[quadIndexSwap[1] + offset2];
+							regionMeshSubdivided.uvs[3 + offset + subdividedVertexIndex] = rotatedTriangleUV[0];
+							regionMeshSubdivided.uvs[4 + offset + subdividedVertexIndex] = rotatedTriangleUV[2];
+							regionMeshSubdivided.uvs[5 + offset + subdividedVertexIndex] = rotatedTriangleUV[1];
 						}
 
 						i++;
