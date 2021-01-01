@@ -224,10 +224,14 @@ namespace SpyroScope {
 		}
 
 		public static void Decode() {
-			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
-
 			// Convert any used VRAM textures for previewing
+			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 			let quadDecodeCount = Emulator.installment == .SpyroTheDragon ? 5 : 6;
+			
+			// The loop is done in reverse to counteract strange used texture info indices
+			// in "Spyro the Dragon", by overwriting the incorrect decoded parts with correct ones
+			usedTextureIndices.Sort(scope (x,y) => y <=> x);
+
 			for (let textureIndex in usedTextureIndices) {
 				for (let i < quadDecodeCount) {
 					Terrain.textures[textureIndex * quadCount + i].Decode();
