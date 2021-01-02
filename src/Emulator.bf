@@ -68,6 +68,26 @@ namespace SpyroScope {
 			public void Write(T* buffer) {
 				WriteToRAM(this, buffer, sizeof(T));
 			}
+
+			public void WriteArray(T* buffer, int count) {
+			    WriteToRAM(this, buffer, sizeof(T) * count);
+			}
+
+			public void GetAtIndex(T* buffer, int index) {
+			    ReadFromRAM(this + index * sizeof(T), buffer, sizeof(T));
+			}
+
+			public void SetAtIndex(T* buffer, int index) {
+			    WriteToRAM(this + index * sizeof(T), buffer, sizeof(T));
+			}
+
+			public void ReadRange(T* buffer, int start, int count) {
+			    ReadFromRAM(this + start * sizeof(T), buffer, count * sizeof(T));
+			}
+
+			public void WriteRange(T* buffer, int start, int count) {
+			    WriteToRAM(this + start * sizeof(T), buffer, count * sizeof(T));
+			}
 		}
 
 		public const String[8] pointerLabels = .(
@@ -126,7 +146,7 @@ namespace SpyroScope {
 		public const Address<Address>[11] collisionDataPointers = .(0, (.)0x800785d4/*StD*/, 0, 0, (.)0x800673fc/*RR*/, 0, 0, (.)0x8006d070, (.)0x8006d150/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] collisionFlagsArrayPointers = .(0, (.)0x800785b8/*StD*/, 0, 0, (.)0x800673e8/*RR*/, 0, 0, (.)0x8006d05c, (.)0x8006d13c/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] collisionDeformDataPointers = .(0, (.)0x800785a4/*StD*/, 0, 0, (.)0x80068208/*RR*/, 0, 0, (.)0x8006e384, (.)0x8006e464/*YotD-1.1*/, 0, 0);
-		public const Address<uint32>[4] collisionRadius = .((.)0x8007036c, (.)0x8007044c, (.)0, (.)0); // Exclusive to Spyro: Year of the Dragon.
+		public const Address<uint32>[4] collisionRadius = .((.)0x8007036c, (.)0x8007044c, 0, 0); // Exclusive to Spyro: Year of the Dragon
 
 		public const Address<Address>[11] sceneRegionPointers = .(0, (.)0x800785a8/*StD*/, 0, 0, (.)0x800673d4/*RR*/, 0, 0, 0, (.)0x8006d128/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] farRegionDeformPointers = .(0, (.)0x80078574/*StD*/, 0, 0, (.)0x800681e8/*RR*/, 0, 0, 0, (.)0x8006e444/*YotD-1.1*/, 0, 0);
@@ -136,6 +156,14 @@ namespace SpyroScope {
 		public const Address<Address>[11] textureDataPointers = .(0, (.)0x800785c4/*StD*/, 0, 0, (.)0x800673f4/*RR*/, 0, 0, 0, (.)0x8006d148/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] textureScrollerPointers = .(0, (.)0x8007856c/*StD*/, 0, 0, (.)0x800681e0/*RR*/, 0, 0, 0, (.)0x8006e43c/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] textureSwapperPointers = .(0, (.)0x80078564/*StD*/, 0, 0, (.)0x800681d8/*RR*/, 0, 0, 0, (.)0x8006e434/*YotD-1.1*/, 0, 0);
+
+		// Exclusive to Spyro: Ripto's Rage
+		public const Address<uint8>[3] spriteWidthArrayAddress = .((.)0x800634b8, 0, 0);
+		public const Address<uint8>[3] spriteHeightArrayAddress = .((.)0x800634d0, 0, 0);
+		public const Address<TextureSprite.SpriteFrame>[3] spriteFrameArrayAddress = .((.)0x8006351c, 0, 0);
+
+		public const Address<uint16>[7] spyroFontAddress = .((.)0x800636a4/*RR*/, 0, 0, 0, (.)0x800667c8/*YotD-1.1*/, 0, 0); // Doesn't exist in Spyro the Dragon
+		public const Address<Address<TextureQuad>>[4] spriteArrayPointer = .(0, (.)0x8006c868, 0, 0); // Exclusive to Spyro: Year of the Dragon
 
 		public const Address<uint32>[11] deathPlaneHeightsAddresses = .(0, (.)0x8006e9a4/*StD*/, 0, 0, (.)0x80060234/*RR*/, 0, 0, (.)0x800676e8, (.)0x800677c8/*YotD-1.1*/, 0, 0);
 		public const Address<uint32>[11] maxFreeflightHeightsAddresses = .(0, 0/*StD*/, 0, 0, (.)0x800601b4/*RR*/, 0, 0, (.)0x80067648, (.)0x80067728/*YotD-1.1*/, 0, 0);

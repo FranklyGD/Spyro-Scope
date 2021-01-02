@@ -20,11 +20,12 @@ namespace SpyroScope {
 		public this(uint8 id, int start, int count) {
 			this.start = start;
 
-			Emulator.ReadFromRAM((.)0x800634b8 + id, &width, 1);
-			Emulator.ReadFromRAM((.)0x800634d0 + id, &height, 1);
+			let i = (int)Emulator.rom - 4;
+			Emulator.spriteWidthArrayAddress[i].GetAtIndex(&width, id);
+			Emulator.spriteHeightArrayAddress[i].GetAtIndex(&height, id);
 			
 			frames = new .[count];
-			Emulator.ReadFromRAM((.)0x8006351c + start * sizeof(SpriteFrame), &frames[0], sizeof(SpriteFrame) * count);
+			Emulator.spriteFrameArrayAddress[i].ReadRange(&frames[0], start, count);
 		}
 
 		public void Decode() {

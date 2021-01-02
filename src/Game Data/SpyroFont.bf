@@ -5,7 +5,7 @@ namespace SpyroScope {
 		static (uint8 character, int8 offsetWidth)[128] fontCharacters;
 
 		public static void Init() {
-			Emulator.ReadFromRAM((.)(Emulator.installment == .RiptosRage ? 0x800636a4 : 0x800667c8), &fontCharacters, 2 * 128);
+			Emulator.spyroFontAddress[(int)Emulator.rom - 4].ReadArray((.)&fontCharacters, 128);
 		}
 
 		public static void Decode() {

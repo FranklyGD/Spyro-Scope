@@ -499,7 +499,7 @@ namespace SpyroScope {
 				}
 				case .YearOfTheDragon: {
 					Emulator.Address<TextureQuad> spriteArrayPointer = ?;
-					Emulator.ReadFromRAM((.)0x8006c868, &spriteArrayPointer, 4);
+					Emulator.spriteArrayPointer[(int)Emulator.rom - 7].Read(&spriteArrayPointer);
 					spriteArrayPointer.ReadArray(&textureSprites3[0], 45);
 
 					for (let i < textureSprites3.Count) {
