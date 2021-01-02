@@ -5,7 +5,9 @@ Dependencies = {corlib = "*", SDL2 = "*", FreeType = "*"}
 Name = "Spyro Scope"
 TargetType = "BeefGUIApplication"
 StartupObject = "SpyroScope.Program"
-DefaultNamespace = "SpyroScope"
+
+[Platform.Windows]
+FileVersion = "1.5.0"
 
 [Configs.Debug.Win64]
 TargetDirectory = "$(WorkspaceDir)/dist"

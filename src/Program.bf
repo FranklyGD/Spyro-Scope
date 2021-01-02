@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace SpyroScope {
 	class Program {
+		public static FileVersionInfo versionInfo = new .() ~ delete _;
 		static SDL.SDL_GameController* connectedController;
 
 		static void Main() {
@@ -16,6 +17,8 @@ namespace SpyroScope {
 			String exeDir = scope .();
 			Path.GetDirectoryPath(exePath, exeDir);
 			Directory.SetCurrentDirectory(exeDir);
+
+			versionInfo.GetVersionInfo(exePath);
 
 			SDL.Init(.Video | .Events);// | .GameController);
 			FT.Init();

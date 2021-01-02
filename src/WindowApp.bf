@@ -106,7 +106,11 @@ namespace SpyroScope {
 			GL.glGetIntegerv(GL.GL_MAJOR_VERSION, (.)&majorVersion);
 			GL.glGetIntegerv(GL.GL_MINOR_VERSION, (.)&minorVersion);
 
-			bitmapFont.Print(scope String() .. AppendF("OpenGL {}.{}", majorVersion, minorVersion), .((.)WindowApp.width - bitmapFont.characterWidth * 10, 0), .(255,255,255,8));
+			let versionString = scope String() .. AppendF("Spyro Scope {}", Program.versionInfo.FileVersion);
+			let openglVersionString = scope String() .. AppendF("OpenGL {}.{}", majorVersion, minorVersion);
+
+			bitmapFont.Print(versionString, .((.)WindowApp.width - bitmapFont.characterWidth * versionString.Length, 0), .(255,255,255,8));
+			bitmapFont.Print(openglVersionString, .((.)WindowApp.width - bitmapFont.characterWidth * 10, bitmapFont.characterHeight), .(255,255,255,8));
 
 			Renderer.Draw();
 			Renderer.Sync();
