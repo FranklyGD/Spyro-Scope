@@ -56,11 +56,11 @@ namespace SpyroScope {
 			// Refer to "TerrainRegion.NearFace.RenderInfo" for an implementation of the mentioned above
 		}
 
-		public void Decode() {
+		public int Decode() {
 			if (width < 0 || height < 0) {
-				return;
+				return -1;
 			}
-			VRAM.Decode(texturePage, left, leftSkew, width, height, (texturePage & 0x80 > 0) ? 8 : 4, clut);
+			return VRAM.Decode(texturePage, left, leftSkew, width, height, (texturePage & 0x80 > 0) ? 8 : 4, clut);
 		}
 	}
 }

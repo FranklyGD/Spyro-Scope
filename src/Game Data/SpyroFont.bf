@@ -1,4 +1,5 @@
 using OpenGL;
+using System.Collections;
 
 namespace SpyroScope {
 	static class SpyroFont {
@@ -8,7 +9,7 @@ namespace SpyroScope {
 			Emulator.spyroFontAddress[(int)Emulator.rom - 4].ReadArray((.)&fontCharacters, 128);
 		}
 
-		public static void Decode() {
+		public static void Decode(List<int> spriteTextureIDs) {
 			for (let character < 128) {
 				let fontCharacter = fontCharacters[character];
 				
@@ -28,7 +29,7 @@ namespace SpyroScope {
 					default: clut = 0x4922;
 				}
 
-				VRAM.Decode(0x18, coordx, coordy, 12, 9, 4, clut);
+				spriteTextureIDs.Add(VRAM.Decode(0x18, coordx, coordy, 12, 9, 4, clut));
 			}
 		}
 	}

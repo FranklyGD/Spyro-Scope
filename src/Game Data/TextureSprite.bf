@@ -1,6 +1,7 @@
 using OpenGL;
 using SDL2;
 using System;
+using System.Collections;
 
 namespace SpyroScope {
 	class TextureSprite {
@@ -28,12 +29,10 @@ namespace SpyroScope {
 			Emulator.spriteFrameArrayAddress[i].ReadRange(&frames[0], start, count);
 		}
 
-		public void Decode() {
-			for (let frameIndex < frames.Count) {
-				let frame = frames[frameIndex];
+		public int Decode(int frameIndex) {
+			let frame = frames[frameIndex];
 
-				VRAM.Decode(0x18, frame.x, frame.y, width, height, 4, (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020);
-			}
+			return VRAM.Decode(0x18, frame.x, frame.y, width, height, 4, (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020);
 		}
 
 		public void Export() {

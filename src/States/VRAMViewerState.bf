@@ -6,9 +6,9 @@ using System.IO;
 
 namespace SpyroScope {
 	class VRAMViewerState : WindowState {
-
-		List<TextureSprite> textureSprites = new .() ~ DeleteContainerAndItems!(_);
-		TextureQuad[] textureSprites3 = new .[45] ~ delete _;
+		List<int> spriteTextureIDs = new .() ~ delete _;
+		List<int> objectTextureIDs = new .() ~ delete _;
+		
 		int blinkerTime = 0;
 		bool spritesDecoded;
 
@@ -52,8 +52,8 @@ namespace SpyroScope {
 		(float width, float height) vramSize;
 
 		Vector2 viewPosition, testPosition;
-		int hoveredTexturePage = -1, hoveredTextureIndex = -1, hoveredCLUTIndex = -1, hoveredSpriteIndex = -1;
-		int selectedTexturePage = -1, selectedTextureIndex = -1, selectedCLUTIndex = -1, selectedSpriteIndex = -1;
+		int hoveredTexturePage = -1, hoveredTextureIndex = -1, hoveredCLUTIndex = -1, hoveredTextureIDIndex = -1;
+		int selectedTexturePage = -1, selectedTextureIndex = -1, selectedCLUTIndex = -1, selectedTextureIDIndex = -1;
 		bool panning;
 
 		public this() {
@@ -172,20 +172,19 @@ namespace SpyroScope {
 				}
 			}
 
-			for (let i < textureSprites3.Count) {
-				let sprite = textureSprites3[i];
-				let partialUVs = sprite.GetVramPartialUV();
+			for (let textureID in spriteTextureIDs) {
+				let decodedSprite = VRAM.decodedTextures[textureID];
 
 				Rect quadRect;
-				quadRect.start = UVToScreen(partialUVs.left, partialUVs.leftY);
-				quadRect.end = UVToScreen(partialUVs.right, partialUVs.rightY);
+				quadRect.start = PixelToScreen((float)decodedSprite.x / (16 / decodedSprite.bitmode), decodedSprite.y);
+				quadRect.end = PixelToScreen((float)(decodedSprite.x + decodedSprite.width) / (16 / decodedSprite.bitmode), decodedSprite.y + decodedSprite.height);
 
 				Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,64,64), .(64,64,64));
 				Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
 				Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
 				Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
 
-				if (blinkerTime < 30 && selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].category == .Sprite && cluts[selectedCLUTIndex].references.Contains(i)) {
+				if (blinkerTime < 30 && selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].category == .Sprite && cluts[selectedCLUTIndex].references.Contains(textureID)) {
 					DrawUtilities.Rect(quadRect, .(255,0,0,64));
 				}
 			}
@@ -215,7 +214,7 @@ namespace SpyroScope {
 
 				if (blinkerTime < 30 &&
 					(selectedTextureIndex > -1 && clutReference.category == .Terrain && clutReference.references.Contains(selectedTextureIndex) ||
-					selectedSpriteIndex > -1 && clutReference.category == .Sprite && clutReference.references.Contains(selectedSpriteIndex))
+					selectedTextureIDIndex > -1 && clutReference.category == .Sprite && clutReference.references.Contains(selectedTextureIDIndex))
 				) {
 
 					DrawUtilities.Rect(clutRect, .(255,0,0,64));
@@ -245,7 +244,7 @@ namespace SpyroScope {
 			}
 
 			if (Emulator.installment == .RiptosRage) {
-				for (let spriteSetIndex < textureSprites.Count) {
+				/*for (let spriteSetIndex < textureSprites.Count) {
 					let sprite = textureSprites[spriteSetIndex];
 
 					for (let frame in sprite.frames) {
@@ -262,30 +261,19 @@ namespace SpyroScope {
 							DrawUtilities.Rect(quadRect, .(255,0,0,64));
 						}
 					}
-				}
+				}*/
 			}
 
-			if (hoveredSpriteIndex > -1) {
-				if (Emulator.installment == .RiptosRage) {
-					let spriteSetIndex = textureSprites.FindIndex(scope (x) => hoveredSpriteIndex >= x.start && hoveredSpriteIndex < x.start + x.frames.Count);
-					let spriteSet = textureSprites[spriteSetIndex];
-					let frame = spriteSet.frames[hoveredSpriteIndex - spriteSet.start];
+			if (hoveredTextureIDIndex > -1) {
+				let sprite = VRAM.decodedTextures[hoveredTextureIDIndex];
 
-					let quadStart = PixelToScreen(frame.x / 4 + 512, frame.y + 256);
-					let clutStart = PixelToScreen((frame.clutX & 3) * 16 + 512, frame.clutY + 256);
+				let partialUVs = sprite.GetVramPartialUV();
+				let quadStart = UVToScreen(partialUVs.left, partialUVs.top);
 
-					Renderer.DrawLine(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
-				} else {
-					let quad = textureSprites3[hoveredSpriteIndex];
+				let clutPosition = sprite.GetCLUTCoordinates();
+				let clutStart = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
 
-					let partialUVs = quad.GetVramPartialUV();
-					let quadStart = UVToScreen(partialUVs.left, partialUVs.leftY);
-
-					let clutPosition = quad.GetCLUTCoordinates();
-					let clutStart = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
-
-					Renderer.DrawLine(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
-				}
+				Renderer.DrawLine(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
 			}
 
 			if (hoveredCLUTIndex > -1) {
@@ -306,28 +294,13 @@ namespace SpyroScope {
 						}
 					}
 					case .Sprite: {
-						switch (Emulator.installment) {
-							case .RiptosRage:
-								for (let spriteIndex in clutReference.references) {
-									let spriteSetIndex = textureSprites.FindIndex(scope (x) => spriteIndex >= x.start && spriteIndex < x.start + x.frames.Count);
-									let spriteSet = textureSprites[spriteSetIndex];
-									let frame = spriteSet.frames[spriteIndex - spriteSet.start];
+						for (let spriteTextureID in clutReference.references) {
+							let sprite = VRAM.decodedTextures[spriteTextureID];
 
-									let quadStart = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
+							let partialUVs = sprite.GetVramPartialUV();
+							let quadStart = UVToScreen(partialUVs.left, partialUVs.top);
 
-									Renderer.DrawLine(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
-								}
-
-							case .YearOfTheDragon:
-								for (let spriteIndex in clutReference.references) {
-									let spriteSet = textureSprites3[spriteIndex];
-
-									let partialUVs = spriteSet.GetVramPartialUV();
-									let quadStart = UVToScreen(partialUVs.left, partialUVs.leftY);
-
-									Renderer.DrawLine(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
-								}
-							default:
+							Renderer.DrawLine(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
 						}
 					}
 					case .Object:
@@ -347,27 +320,15 @@ namespace SpyroScope {
 					DrawUtilities.Rect(quadRect, .(255,255,255,64));
 				}
 
-				if (selectedSpriteIndex > -1) {
-					if (Emulator.installment == .RiptosRage) {
-						let spriteSetIndex = textureSprites.FindIndex(scope (x) => selectedSpriteIndex >= x.start && selectedSpriteIndex < x.start + x.frames.Count);
-						let spriteSet = textureSprites[spriteSetIndex];
-						let frame = spriteSet.frames[selectedSpriteIndex - spriteSet.start];
+				if (selectedTextureIDIndex > -1) {
+					let sprite = VRAM.decodedTextures[selectedTextureIDIndex];
+					let partialUVs = sprite.GetVramPartialUV();
 
-						Rect quadRect;
-						quadRect.start = UVToScreen(0.5f + (float)frame.x / (1024 * 4), 0.5f + (float)frame.y / 512);
-						quadRect.end = UVToScreen(0.5f + (float)((int)frame.x + spriteSet.width) / (1024 * 4), 0.5f + (float)((int)frame.y + spriteSet.height) / 512);
+					Rect quadRect;
+					quadRect.start = UVToScreen(partialUVs.left, partialUVs.top);
+					quadRect.end = UVToScreen(partialUVs.right, partialUVs.bottom);
 
-						DrawUtilities.Rect(quadRect, .(255,255,255,64));
-					} else {
-						let quad = textureSprites3[selectedSpriteIndex];
-						let partialUVs = quad.GetVramPartialUV();
-
-						Rect quadRect;
-						quadRect.start = UVToScreen(partialUVs.left, partialUVs.leftY);
-						quadRect.end = UVToScreen(partialUVs.right, partialUVs.rightY);
-
-						DrawUtilities.Rect(quadRect, .(255,255,255,64));
-					}
+					DrawUtilities.Rect(quadRect, .(255,255,255,64));
 				}
 
 				if (selectedCLUTIndex > -1) {
@@ -404,6 +365,10 @@ namespace SpyroScope {
 
 			WindowApp.bitmapFont.Print(scope String() .. AppendF("<{},{}>", (int)testPosition.x, (int)testPosition.y), .Zero, .(255,255,255));
 			WindowApp.bitmapFont.Print(scope String() .. AppendF("T-page {}", hoveredTexturePage), .(0, WindowApp.bitmapFont.characterHeight), .(255,255,255));
+			if (selectedTextureIndex > -1) {
+				let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Selected: T{}", selectedTextureIndex / quadCount), .(0, WindowApp.bitmapFont.characterHeight * 2), .(255,255,255));
+			}
 
 			if (!spritesDecoded) {
 				DrawLoadingOverlay();
@@ -411,6 +376,8 @@ namespace SpyroScope {
 		}
 
 		void OnSceneChanged() {
+			spriteTextureIDs.Clear();
+
 			for (let clutReference in cluts) {
 				delete clutReference.references;
 			}
@@ -440,90 +407,6 @@ namespace SpyroScope {
 				}
 			}
 
-			switch (Emulator.installment) {
-				case .RiptosRage: {
-					DeleteAndClearItems!(textureSprites);
-
-					textureSprites.Add(new .(0, 0, 10)); // Numbers
-					textureSprites.Add(new .(2, 10, 1)); // Forward Slash
-
-					textureSprites.Add(new .(1, 11, 6)); // Gem
-					textureSprites.Add(new .(1, 19, 3)); // Spirit
-
-					textureSprites.Add(new .(2, 0x1d, 1)); // Colon
-					textureSprites.Add(new .(2, 0x1e, 1)); // Period
-
-					textureSprites.Add(new .(5, 0x16, 1)); // Power Bar Top
-					textureSprites.Add(new .(6, 0x1a, 1)); // Power Icon BG
-					textureSprites.Add(new .(7, 0x1b, 1)); // Power Icon FG
-
-					textureSprites.Add(new .(5, 0x17, 1)); // Power Bar Mid
-					textureSprites.Add(new .(5, 0x18, 1)); // Power Bar Bottom
-					textureSprites.Add(new .(5, 0x19, 1)); // Power Bar Mid Lit
-
-					textureSprites.Add(new .(11, 0x24, 4)); // Rounded Corners
-
-					textureSprites.Add(new .(1, 0x1c, 1)); // Reticle Circle
-
-					textureSprites.Add(new .(9, 0x1f, 1)); // Spyro Head
-					textureSprites.Add(new .(10, 0x20, 4)); // Spyro Eyes
-
-					textureSprites.Add(new .(4, 0x57, 1)); // Map
-
-					textureSprites.Add(new .(1, 0x37, 8)); // Objective 1
-					textureSprites.Add(new .(1, 0x3f, 8)); // Objective 2
-					/*textureSprites.Add(new .(1, 0x47, 8)); // Objective 3
-					textureSprites.Add(new .(1, 0x4f, 8)); // Objective 4*/
-
-					for (let sprite in textureSprites) {
-						for (let frameIndex < sprite.frames.Count) {
-							let frame = sprite.frames[frameIndex];
-							let clut = (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020;
-							let referenceIndex = cluts.FindIndex(scope (x) => x.category == .Sprite && x.type == .Normal && x.location == clut);
-
-							if (referenceIndex == -1) {
-								CLUTReference clutReference = ?;
-								clutReference.category = .Sprite;
-								clutReference.type = .Normal;
-								clutReference.location = clut;
-								clutReference.width = 16;
-								clutReference.references = new .();
-
-								clutReference.references.Add(sprite.start + frameIndex);
-								cluts.Add(clutReference);
-							} else {
-								cluts[referenceIndex].references.Add(sprite.start + frameIndex);
-							}
-						}
-					}
-				}
-				case .YearOfTheDragon: {
-					Emulator.Address<TextureQuad> spriteArrayPointer = ?;
-					Emulator.spriteArrayPointer[(int)Emulator.rom - 7].Read(&spriteArrayPointer);
-					spriteArrayPointer.ReadArray(&textureSprites3[0], 45);
-
-					for (let i < textureSprites3.Count) {
-						let sprite = textureSprites3[i];
-						let referenceIndex = cluts.FindIndex(scope (x) => x.category == .Sprite && x.type == .Normal && x.location == sprite.clut);
-
-						if (referenceIndex == -1) {
-							CLUTReference clutReference = ?;
-							clutReference.category = .Sprite;
-							clutReference.type = .Normal;
-							clutReference.location = sprite.clut;
-							clutReference.width = 16;
-							clutReference.references = new .();
-
-							clutReference.references.Add(i);
-							cluts.Add(clutReference);
-						} else {
-							cluts[referenceIndex].references.Add(i);
-						}
-					}
-				}
-				default:
-			}
-
 			if (Emulator.installment != .SpyroTheDragon) {
 				SpyroFont.Init();
 			}
@@ -531,7 +414,7 @@ namespace SpyroScope {
 
 		void OnNewSnapshot() {
 			spritesDecoded = false;
-			hoveredTextureIndex = hoveredSpriteIndex = -1;
+			hoveredTextureIndex = hoveredTextureIDIndex = -1;
 		}
 
 		public override bool OnEvent(SDL2.SDL.Event event) {
@@ -543,7 +426,7 @@ namespace SpyroScope {
 								blinkerTime = 0;
 								selectedTextureIndex = hoveredTextureIndex;
 								selectedCLUTIndex = hoveredCLUTIndex;
-								selectedSpriteIndex = hoveredSpriteIndex;
+								selectedTextureIDIndex = hoveredTextureIDIndex;
 							}
 							case .Export: Export();
 							case .Alter: Alter();
@@ -596,37 +479,14 @@ namespace SpyroScope {
 							}
 						}
 
-						hoveredSpriteIndex = -1;
-						for (let spriteSetIndex < textureSprites.Count) {
-							let spriteSet = textureSprites[spriteSetIndex];
-							for (let frameIndex < spriteSet.frames.Count) {
-								let frame = spriteSet.frames[frameIndex];
-								Vector2 localTestPosition = .(testPosition.x - 512, testPosition.y - 256);
+						hoveredTextureIDIndex = -1;
+						for (let spriteTextureID in spriteTextureIDs) {
+							let sprite = VRAM.decodedTextures[spriteTextureID];
 
-								if (localTestPosition.x > frame.x / 4 && localTestPosition.x <= ((int)frame.x + spriteSet.width) / 4 &&
-									localTestPosition.y > frame.y && localTestPosition.y <= ((int)frame.y + spriteSet.height)) {
+							if (testPosition.x * 4 > sprite.x && testPosition.x * 4 <= (int)(sprite.x + sprite.width) &&
+								testPosition.y > sprite.y && testPosition.y <= (int)(sprite.y + sprite.height)) {
 
-									hoveredSpriteIndex = spriteSet.start + frameIndex;
-									break;
-								}
-
-								if (hoveredSpriteIndex > -1) {
-									break;
-								}
-							}
-						}
-
-						for (let spriteIndex < textureSprites3.Count) {
-							let quad = textureSprites3[spriteIndex];
-							let pageIndex = quad.GetTPageIndex();
-							let bitMode = (quad.texturePage & 0x80 > 0) ? 2 : 4;
-							Vector2 localTestPosition = .(testPosition.x - (pageIndex & 0xf) * 64, testPosition.y - (pageIndex >> 4 << 8));
-							let rightSkewAdjusted = Emulator.installment == .SpyroTheDragon ? quad.rightSkew + 0x1f : quad.rightSkew;
-
-							if (localTestPosition.x > quad.left / bitMode && localTestPosition.x <= ((int)quad.right + 1) / bitMode &&
-								localTestPosition.y > quad.leftSkew && localTestPosition.y <= (int)rightSkewAdjusted + 1) {
-
-								hoveredSpriteIndex = spriteIndex;
+								hoveredTextureIDIndex = spriteTextureID;
 								break;
 							}
 						}
@@ -775,36 +635,25 @@ namespace SpyroScope {
 				}
 			}
 
-			if (hoveredSpriteIndex > -1) {
+			if (hoveredTextureIDIndex > -1) {
 				let dialog = scope System.IO.SaveFileDialog();
-				dialog.FileName = scope String() .. AppendF("S{}", hoveredSpriteIndex);
+				dialog.FileName = scope String() .. AppendF("S{}", hoveredTextureIDIndex);
 				dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
 				dialog.OverwritePrompt = true;
 				dialog.CheckFileExists = true;
 				dialog.AddExtension = true;
 				dialog.DefaultExt = "bmp";
 
-				switch (dialog.ShowDialog()) {
-					case .Ok(let val):
-						if (val == .OK) {
-							if (Emulator.installment == .RiptosRage) {
-								let spriteSetIndex = textureSprites.FindIndex(scope (x) => hoveredSpriteIndex >= x.start && hoveredSpriteIndex < x.start + x.frames.Count);
-								let spriteSet = textureSprites[spriteSetIndex];
-								let frame = spriteSet.frames[hoveredSpriteIndex - spriteSet.start];
-
-								VRAM.Export(dialog.FileNames[0], frame.x, frame.y, spriteSet.width, spriteSet.height, 4, 0x18);
-							} else {
-								let quad = textureSprites3[hoveredSpriteIndex];
-								VRAM.Export(dialog.FileNames[0], quad.left, quad.leftSkew, quad.width, quad.height, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.texturePage);
-							}
-						}
-					case .Err:
+				if (dialog.ShowDialog() case .Ok(let val)) {
+					if (val == .OK) {
+						VRAM.Export(dialog.FileNames[0], hoveredTextureIDIndex);
+					}
 				}
 			}
 		}
 
 		void Alter() {
-			if (hoveredTextureIndex == -1 && hoveredSpriteIndex == -1 && hoveredCLUTIndex == -1) {
+			if (hoveredTextureIndex == -1 && hoveredTextureIDIndex == -1 && hoveredCLUTIndex == -1) {
 				return;
 			}
 
@@ -825,34 +674,15 @@ namespace SpyroScope {
 								AlterVRAM(surface, quad.texturePage, quad.left, quad.leftSkew, quad.width, quad.height, (quad.texturePage & 0x80) > 0 ? 8 : 4, quad.clut);
 							}
 
-							if (hoveredSpriteIndex > -1) {
-								if (Emulator.installment == .RiptosRage) {
-									let spriteSetIndex = textureSprites.FindIndex(scope (x) => hoveredSpriteIndex >= x.start && hoveredSpriteIndex < x.start + x.frames.Count);
-									let spriteSet = textureSprites[spriteSetIndex];
+							if (hoveredTextureIDIndex > -1) {
+								let spritesToReplace = Math.Min(dialog.FileNames.Count, VRAM.decodedTextures.Count - hoveredTextureIDIndex);
+								for (let fileSpriteIndex < spritesToReplace) {
+									let fileSprite = dialog.FileNames[fileSpriteIndex];
+									let surfaceSprite = SDLImage.Load(fileSprite);
 
-									let spritesToReplace = Math.Min(dialog.FileNames.Count, spriteSet.frames.Count - (hoveredSpriteIndex - spriteSet.start));
-									for (let fileSpriteIndex < spritesToReplace) {
-										let sprite = spriteSet.frames[hoveredSpriteIndex - spriteSet.start + fileSpriteIndex];
+									AlterVRAM(surfaceSprite, hoveredTextureIDIndex);
 
-										let fileSprite = dialog.FileNames[fileSpriteIndex];
-										let surfaceSprite = SDLImage.Load(fileSprite);
-
-										AlterVRAM(surfaceSprite, 0x18, sprite.x, sprite.y, spriteSet.width, spriteSet.height, 4, (sprite.clutX & 3) + ((int)sprite.clutY << 6) + 0x4020);
-
-										SDL.FreeSurface(surfaceSprite);
-									}
-								} else {
-									let spritesToReplace = Math.Min(dialog.FileNames.Count, textureSprites3.Count - hoveredSpriteIndex);
-									for (let fileSpriteIndex < spritesToReplace) {
-										let sprite = textureSprites3[hoveredSpriteIndex + fileSpriteIndex];
-
-										let fileSprite = dialog.FileNames[fileSpriteIndex];
-										let surfaceSprite = SDLImage.Load(fileSprite);
-
-										AlterVRAM(surfaceSprite, sprite.texturePage, sprite.left, sprite.leftSkew, sprite.width, sprite.height, (sprite.texturePage & 0x80) > 0 ? 8 : 4, sprite.clut);
-
-										SDL.FreeSurface(surfaceSprite);
-									}
+									SDL.FreeSurface(surfaceSprite);
 								}
 							}
 
@@ -879,7 +709,7 @@ namespace SpyroScope {
 										}
 
 									case .Sprite:
-										if (Emulator.installment == .RiptosRage) {
+										/*if (Emulator.installment == .RiptosRage) {
 											for (let reference in cluts[hoveredCLUTIndex].references) {
 												let spriteSetIndex = textureSprites.FindIndex(scope (x) => reference >= x.start && reference < x.start + x.frames.Count);
 												let spriteSet = textureSprites[spriteSetIndex];
@@ -892,7 +722,7 @@ namespace SpyroScope {
 												let sprite = textureSprites3[reference];
 												VRAM.Decode(sprite.texturePage, sprite.left, sprite.leftSkew, sprite.width, sprite.height, 4, clutReference.location);
 											}
-										}
+										}*/
 
 									default:
 								}
@@ -906,14 +736,34 @@ namespace SpyroScope {
 		}
 
 		void AlterVRAM(SDL.Surface* surface, int texturePage, int textureX, int textureY, int textureWidth, int textureHeight, int bitmode, int clut) {
+			let width = Math.Min(surface.w, textureWidth);
+			let height = Math.Min(surface.h, textureHeight);
+
+			let (quadWidth, quadPixels) = GeneratePixelBuffer!(surface, width, height, bitmode, clut);
+
+			VRAM.Write(quadPixels, ((texturePage & 0xf) * 64 + textureX / (16 / bitmode)), ((texturePage >> 4 & 0x1) * 256 + textureY), quadWidth, height);
+			VRAM.Decode(texturePage, textureX, textureY, width, height, bitmode, clut);
+		}
+
+		void AlterVRAM(SDL.Surface* surface, int decodedTextureID) {
+			let decodedTexture = VRAM.decodedTextures[decodedTextureID];
+
+			let width = Math.Min(surface.w, decodedTexture.width);
+			let height = Math.Min(surface.h, decodedTexture.height);
+
+			let (quadWidth, quadPixels) = GeneratePixelBuffer!(surface, width, height, decodedTexture.bitmode, decodedTexture.clut);
+
+			VRAM.Write(quadPixels, decodedTextureID);
+			VRAM.Decode(decodedTextureID);
+		}
+
+		mixin GeneratePixelBuffer(SDL.Surface* surface, int width, int height, int bitmode, int clut) {
 			let subPixels = 16 / bitmode;
 			let clutPosition = clut << 4;
 			let colorCount = 1 << bitmode;
 
-			let width = Math.Min(surface.w, textureWidth);
-			let height = Math.Min(surface.h, textureHeight);
 			let quadWidth = (int)Math.Ceiling((float)width / subPixels);
-			let quadPixels = scope uint16[quadWidth * height];
+			let quadPixels = scope:mixin uint16[quadWidth * height];
 
 			for (let x < width) {
 				for (let y < height) {
@@ -943,8 +793,7 @@ namespace SpyroScope {
 				}
 			}
 
-			VRAM.Write(quadPixels, ((texturePage & 0xf) * 64 + textureX / subPixels), ((texturePage >> 4 & 0x1) * 256 + textureY), quadWidth, height);
-			VRAM.Decode(texturePage, textureX, textureY, width, height, subPixels, clut);
+			(quadWidth, quadPixels)
 		}
 
 		mixin GenerateCLUT(SDL.Surface* surface) {
@@ -1014,17 +863,98 @@ namespace SpyroScope {
 
 			if (!spritesDecoded) {
 				if (Emulator.installment == .RiptosRage) {
+					let textureSprites = new List<TextureSprite>();
+
+					textureSprites.Add(new .(0, 0, 10)); // Numbers
+					textureSprites.Add(new .(2, 10, 1)); // Forward Slash
+
+					textureSprites.Add(new .(1, 11, 6)); // Gem
+					textureSprites.Add(new .(1, 19, 3)); // Spirit
+
+					textureSprites.Add(new .(2, 0x1d, 1)); // Colon
+					textureSprites.Add(new .(2, 0x1e, 1)); // Period
+
+					textureSprites.Add(new .(5, 0x16, 1)); // Power Bar Top
+					textureSprites.Add(new .(6, 0x1a, 1)); // Power Icon BG
+					textureSprites.Add(new .(7, 0x1b, 1)); // Power Icon FG
+
+					textureSprites.Add(new .(5, 0x17, 1)); // Power Bar Mid
+					textureSprites.Add(new .(5, 0x18, 1)); // Power Bar Bottom
+					textureSprites.Add(new .(5, 0x19, 1)); // Power Bar Mid Lit
+
+					textureSprites.Add(new .(11, 0x24, 4)); // Rounded Corners
+
+					textureSprites.Add(new .(1, 0x1c, 1)); // Reticle Circle
+
+					textureSprites.Add(new .(9, 0x1f, 1)); // Spyro Head
+					textureSprites.Add(new .(10, 0x20, 4)); // Spyro Eyes
+
+					textureSprites.Add(new .(4, 0x57, 1)); // Map
+
+					textureSprites.Add(new .(1, 0x37, 8)); // Objective 1
+					textureSprites.Add(new .(1, 0x3f, 8)); // Objective 2
+					/*textureSprites.Add(new .(1, 0x47, 8)); // Objective 3
+					textureSprites.Add(new .(1, 0x4f, 8)); // Objective 4*/
+
 					for (let sprite in textureSprites) {
-						sprite.Decode();
+						for (let frameIndex < sprite.frames.Count) {
+							let i = sprite.Decode(frameIndex);
+							spriteTextureIDs.Add(i);
+
+							let frame = sprite.frames[frameIndex];
+							let clut = (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020;
+							let referenceIndex = cluts.FindIndex(scope (x) => x.category == .Sprite && x.type == .Normal && x.location == clut);
+
+							if (referenceIndex == -1) {
+								CLUTReference clutReference = ?;
+								clutReference.category = .Sprite;
+								clutReference.type = .Normal;
+								clutReference.location = clut;
+								clutReference.width = 16;
+								clutReference.references = new .();
+
+								clutReference.references.Add(i);
+								cluts.Add(clutReference);
+							} else {
+								cluts[referenceIndex].references.Add(i);
+							}
+						}
 					}
+
+					DeleteContainerAndItems!(textureSprites);
 				} else {
+					var textureSprites3 = TextureQuad[45]();
+					Emulator.Address<TextureQuad> spriteArrayPointer = ?;
+					Emulator.spriteArrayPointer[(int)Emulator.rom - 7].Read(&spriteArrayPointer);
+					spriteArrayPointer.ReadArray(&textureSprites3[0], 45);
+
 					for (let sprite in textureSprites3) {
-						sprite.Decode();
+						let i = sprite.Decode();
+						spriteTextureIDs.Add(i);
 					}
 				}
 
 				if (Emulator.installment != .SpyroTheDragon) {
-					SpyroFont.Decode();
+					SpyroFont.Decode(spriteTextureIDs);
+				}
+
+				for (let textureID in spriteTextureIDs) {
+					let decodedSprite = VRAM.decodedTextures[textureID];
+					let referenceIndex = cluts.FindIndex(scope (x) => x.category == .Sprite && x.type == .Normal && x.location == decodedSprite.clut);
+	
+					if (referenceIndex == -1) {
+						CLUTReference clutReference = ?;
+						clutReference.category = .Sprite;
+						clutReference.type = .Normal;
+						clutReference.location = decodedSprite.clut;
+						clutReference.width = 16;
+						clutReference.references = new .();
+	
+						clutReference.references.Add(textureID);
+						cluts.Add(clutReference);
+					} else {
+						cluts[referenceIndex].references.Add(textureID);
+					}
 				}
 
 				spritesDecoded = true;

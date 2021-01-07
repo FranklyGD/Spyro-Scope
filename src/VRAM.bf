@@ -1,6 +1,7 @@
 using OpenGL;
 using SDL2;
 using System;
+using System.Collections;
 
 namespace SpyroScope {
 	static struct VRAM {
@@ -9,6 +10,28 @@ namespace SpyroScope {
 		static public uint16[] snapshotDecoded ~ delete _;
 		static public Texture raw ~ delete _;
 		static public Texture decoded ~ delete _;
+
+		public struct VRAMTexture {
+			public int bitmode;
+			public int x, y; // X's absolute position in the given bitmode, no page offset (already added in)
+			public int width, height;
+			public int clut;
+
+			public Rect GetVramPartialUV() {
+				return .(
+					(float)x / (16 / bitmode) / 1024,
+					(float)(x + width) / (16 / bitmode) / 1024,
+					(float)y / 512,
+					(float)(y + height) / 512
+				);
+			}
+
+			
+			public (int x, int y) GetCLUTCoordinates() {
+				return ((clut & 0x3f) << 4, clut >> 6);
+			}
+		}
+		public static List<VRAMTexture> decodedTextures = new .() ~ delete _;
 
 		static public Event<delegate void()> OnSnapshotTaken ~ _.Dispose();
 
@@ -34,6 +57,7 @@ namespace SpyroScope {
 				GL.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, 0, 0, 1024 * 4, 512, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &snapshotDecoded[0]);
 			}
 
+			decodedTextures.Clear();
 			upToDate = true;
 
 			OnSnapshotTaken();
@@ -51,15 +75,14 @@ namespace SpyroScope {
 			GL.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, x, y, width, height, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &buffer[0]);
 		}
 
-		public static void Decode(int tpage, int x, int y, int width, int height, int bitmode, int clut) {
-			(int x, int y) tpageCoords = ((tpage & 0xf) * 64, ((tpage & 0x10) >> 4) * 256);
+		public static void Write(uint16[] buffer, int decodedTextureID) {
+			let decodedTexture = decodedTextures[decodedTextureID];
+			
+			let subPixels = 16 / decodedTexture.bitmode;
+			Write(buffer, decodedTexture.x / subPixels, decodedTexture.y, decodedTexture.width / subPixels, decodedTexture.height);
+		}
 
-			// Pixel index from T-Page
-			let vramPagePosition = tpageCoords.x + tpageCoords.y * 1024;
-
-			// Pixel index from starting row
-			let vramPosition = vramPagePosition + ((int)y * 1024);
-
+		static void DecodeInternal(int x, int y, int width, int height, int bitmode, int clut) {
 			let bitModeMask = (1 << bitmode) - 1;
 			let subPixels = 16 / bitmode;
 			let pWidth = 4 / subPixels;
@@ -75,7 +98,7 @@ namespace SpyroScope {
 					let texelX = localx + x;
 
 					// Get the target pixel from the texture
-					let vramPixel = VRAM.snapshot[vramPosition + texelX / subPixels + localy * 1024];
+					let vramPixel = VRAM.snapshot[texelX / subPixels + (y + localy) * 1024];
 
 					// Retrieve a sub-pixel value from VRAM (8- or 4-bit mode) to sample from a CLUT
 					// Each sub-pixel contains a 8 or 4 bit value that tells the location of sample
@@ -117,18 +140,53 @@ namespace SpyroScope {
 
 			decoded.Bind();
 			GL.glTexSubImage2D(GL.GL_TEXTURE_2D,
-				0, tpageCoords.x * 4 + x * pWidth, tpageCoords.y + y,
+				0, x * pWidth, y,
 				width * pWidth, height,
 				GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &pixels[0]
 			);
-			
+
 			for (let localx < width * pWidth) {
 				for (let localy < height) {
-					snapshotDecoded[tpageCoords.x * 4 + x * pWidth + localx + (tpageCoords.y + y + localy) * 1024 * 4] = pixels[localx + localy * (width * pWidth)];
+					snapshotDecoded[x * pWidth + localx + (y + localy) * 1024 * 4] = pixels[localx + localy * (width * pWidth)];
 				}
 			}
 
 			delete pixels;
+		}
+
+		public static int Decode(int x, int y, int width, int height, int bitmode, int clut) {
+			VRAMTexture vtex = ?;
+			vtex.bitmode = bitmode;
+			vtex.x = x;
+			vtex.y = y;
+			vtex.width = width;
+			vtex.height = height;
+			vtex.clut = clut;
+
+			let foundIndex = decodedTextures.FindIndex(scope (x) => x == vtex);
+			if (foundIndex > -1) {
+				return foundIndex;
+			}
+
+			DecodeInternal(x, y, width, height, bitmode, clut);
+			
+			let nextIndex = decodedTextures.Count;
+			decodedTextures.Add(vtex);
+
+			return nextIndex;
+		}
+
+		public static int Decode(int tpage, int x, int y, int width, int height, int bitmode, int clut) {
+			(int x, int y) tpageCoords = ((tpage & 0xf) * 64, ((tpage & 0x10) >> 4) * 256);
+			
+			let subPixels = 16 / bitmode;
+			return Decode(x + tpageCoords.x * subPixels, y + tpageCoords.y, width, height, bitmode, clut);
+		}
+
+		public static void Decode(int decodedTextureID) {
+			let decodedTexture = decodedTextures[decodedTextureID];
+
+			DecodeInternal(decodedTexture.x, decodedTexture.y, decodedTexture.width, decodedTexture.height, decodedTexture.bitmode, decodedTexture.clut);
 		}
 
 		public static void Export(String file, int x, int y, int width, int height, int bitmode, int tpage) {
@@ -146,6 +204,26 @@ namespace SpyroScope {
 			}
 
 			SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&textureBuffer[0], (.)(width), (.)height, 16, 2 * (.)(width), 0x001f, 0x03e0, 0x7c00, 0x8000);
+			delete textureBuffer;
+
+			SDL.SDL_SaveBMP(img, file);
+			SDL.FreeSurface(img);
+		}
+
+		public static void Export(String file, int decodedTextureID) {
+			let decodedTexture = decodedTextures[decodedTextureID];
+
+			let subPixels = 16 / decodedTexture.bitmode;
+			let pixelWidth = 4 / subPixels;
+			uint16[] textureBuffer = new .[decodedTexture.width * decodedTexture.height];
+
+			for (let localx < decodedTexture.width) {
+				for (let localy < decodedTexture.height) {
+					textureBuffer[localx + localy * decodedTexture.width] = snapshotDecoded[(decodedTexture.x + localx) * pixelWidth + (decodedTexture.y + localy) * 1024 * 4];
+				}
+			}
+
+			SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&textureBuffer[0], (.)(decodedTexture.width), (.)decodedTexture.height, 16, 2 * (.)(decodedTexture.width), 0x001f, 0x03e0, 0x7c00, 0x8000);
 			delete textureBuffer;
 
 			SDL.SDL_SaveBMP(img, file);
