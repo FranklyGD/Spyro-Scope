@@ -898,39 +898,19 @@ namespace SpyroScope {
 
 					for (let sprite in textureSprites) {
 						for (let frameIndex < sprite.frames.Count) {
-							let i = sprite.Decode(frameIndex);
-							spriteTextureIDs.Add(i);
-
-							let frame = sprite.frames[frameIndex];
-							let clut = (frame.clutX & 3) + ((int)frame.clutY << 6) + 0x4020;
-							let referenceIndex = cluts.FindIndex(scope (x) => x.category == .Sprite && x.type == .Normal && x.location == clut);
-
-							if (referenceIndex == -1) {
-								CLUTReference clutReference = ?;
-								clutReference.category = .Sprite;
-								clutReference.type = .Normal;
-								clutReference.location = clut;
-								clutReference.width = 16;
-								clutReference.references = new .();
-
-								clutReference.references.Add(i);
-								cluts.Add(clutReference);
-							} else {
-								cluts[referenceIndex].references.Add(i);
-							}
+							spriteTextureIDs.Add(sprite.Decode(frameIndex));
 						}
 					}
 
 					DeleteContainerAndItems!(textureSprites);
 				} else {
-					var textureSprites3 = TextureQuad[45]();
+					var textureSprites = TextureQuad[45]();
 					Emulator.Address<TextureQuad> spriteArrayPointer = ?;
 					Emulator.spriteArrayPointer[(int)Emulator.rom - 7].Read(&spriteArrayPointer);
-					spriteArrayPointer.ReadArray(&textureSprites3[0], 45);
+					spriteArrayPointer.ReadArray(&textureSprites[0], 45);
 
-					for (let sprite in textureSprites3) {
-						let i = sprite.Decode();
-						spriteTextureIDs.Add(i);
+					for (let sprite in textureSprites) {
+						spriteTextureIDs.Add(sprite.Decode());
 					}
 				}
 
