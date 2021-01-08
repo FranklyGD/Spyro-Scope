@@ -5,6 +5,7 @@ namespace SpyroScope {
 	struct TextureSwapper {
 		Emulator.Address address;
 		public uint8 textureIndex;
+		List<uint8> textureFrameIndices = new .();
 		
 		public Dictionary<uint8, List<int>> affectedTriangles = new .();
 		public Dictionary<uint8, List<int>> affectedTransparentTriangles = new .();
@@ -28,6 +29,8 @@ namespace SpyroScope {
 		}
 
 		public void Dispose() {
+			delete textureFrameIndices;
+
 			for (var pair in affectedTriangles) {
 				delete pair.value;
 			}
@@ -75,16 +78,24 @@ namespace SpyroScope {
 
 		public void GetUsedTextures() {
 			uint8 keyframe = 0;
-			List<uint8> usedTextures = scope .();
-			while (usedTextures.Count == 0 || keyframe > 0) {
+			while (textureFrameIndices.Count == 0 || keyframe > 0) {
 				let keyframeData = GetKeyframeData(keyframe);
-				usedTextures.Add(keyframeData.textureIndex);
+				textureFrameIndices.Add(keyframeData.textureIndex);
 				keyframe = keyframeData.nextFrame;
 			}
 
-			for (let textureIndex in usedTextures) {
+			for (let textureIndex in textureFrameIndices) {
 				if (!Terrain.usedTextureIndices.Contains(textureIndex)) {
 					Terrain.usedTextureIndices.Add(textureIndex);
+				}
+			}
+		}
+		
+		public void Decode() {
+			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+			for (let textureFrame in textureFrameIndices) {
+				for (let i < quadCount) {
+					Terrain.textures[textureFrame * quadCount + i].Decode();
 				}
 			}
 		}

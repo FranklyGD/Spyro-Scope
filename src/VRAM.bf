@@ -79,7 +79,8 @@ namespace SpyroScope {
 			let decodedTexture = decodedTextures[decodedTextureID];
 			
 			let subPixels = 16 / decodedTexture.bitmode;
-			Write(buffer, decodedTexture.x / subPixels, decodedTexture.y, decodedTexture.width / subPixels, decodedTexture.height);
+			let pWidth = 4 / subPixels;
+			Write(buffer, decodedTexture.x / subPixels, decodedTexture.y, decodedTexture.width * pWidth, decodedTexture.height);
 		}
 
 		static void DecodeInternal(int x, int y, int width, int height, int bitmode, int clut) {
@@ -189,17 +190,14 @@ namespace SpyroScope {
 			DecodeInternal(decodedTexture.x, decodedTexture.y, decodedTexture.width, decodedTexture.height, decodedTexture.bitmode, decodedTexture.clut);
 		}
 
-		public static void Export(String file, int x, int y, int width, int height, int bitmode, int tpage) {
-			(int x, int y) tpageCoords = (tpage & 0xf, (tpage & 0x10) >> 4);
-			let vramPagePosition = ((tpageCoords.x * 64) + (tpageCoords.y * 256 * 1024)) * 4;
-
+		public static void Export(String file, int x, int y, int width, int height, int bitmode) {
 			let subPixels = 16 / bitmode;
 			let pixelWidth = 4 / subPixels;
 			uint16[] textureBuffer = new .[width * height];
 
 			for (let localx < width) {
 				for (let localy < height) {
-					textureBuffer[localx + localy * width] = snapshotDecoded[vramPagePosition + (x + localx) * pixelWidth + (y + localy) * 1024 * 4];
+					textureBuffer[localx + localy * width] = snapshotDecoded[(x + localx) * pixelWidth + (y + localy) * 1024 * 4];
 				}
 			}
 
@@ -210,24 +208,18 @@ namespace SpyroScope {
 			SDL.FreeSurface(img);
 		}
 
+		public static void Export(String file, int x, int y, int width, int height, int bitmode, int tpage) {
+			(int x, int y) tpageCoords = (tpage & 0xf, (tpage & 0x10) >> 4);
+			let subPixels = 16 / bitmode;
+			let pixelWidth = 4 / subPixels;
+
+			Export(file, x + tpageCoords.x * 64 / pixelWidth, y + tpageCoords.y * 256, width, height, bitmode);
+		}
+
 		public static void Export(String file, int decodedTextureID) {
 			let decodedTexture = decodedTextures[decodedTextureID];
 
-			let subPixels = 16 / decodedTexture.bitmode;
-			let pixelWidth = 4 / subPixels;
-			uint16[] textureBuffer = new .[decodedTexture.width * decodedTexture.height];
-
-			for (let localx < decodedTexture.width) {
-				for (let localy < decodedTexture.height) {
-					textureBuffer[localx + localy * decodedTexture.width] = snapshotDecoded[(decodedTexture.x + localx) * pixelWidth + (decodedTexture.y + localy) * 1024 * 4];
-				}
-			}
-
-			SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&textureBuffer[0], (.)(decodedTexture.width), (.)decodedTexture.height, 16, 2 * (.)(decodedTexture.width), 0x001f, 0x03e0, 0x7c00, 0x8000);
-			delete textureBuffer;
-
-			SDL.SDL_SaveBMP(img, file);
-			SDL.FreeSurface(img);
+			Export(file, decodedTexture.x, decodedTexture.y, decodedTexture.width, decodedTexture.height, decodedTexture.bitmode);
 		}
 
 

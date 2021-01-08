@@ -185,8 +185,6 @@ namespace SpyroScope {
 				textureSwappers[swapperIndex].Reload();
 			}
 
-			
-
 			// Delete animations as the new loaded mesh may be incompatible
 			if (nearAnimations != null) {
 				for (let item in nearAnimations) {
@@ -227,7 +225,16 @@ namespace SpyroScope {
 			// Convert any used VRAM textures for previewing
 			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 			let quadDecodeCount = Emulator.installment == .SpyroTheDragon ? 5 : 6;
+
+			// Temporarily remove affected textures
+			for (let textureScroller in textureScrollers) {
+				Terrain.usedTextureIndices.Remove(textureScroller.textureIndex);
+			}
 			
+			for (let textureSwapper in textureSwappers) {
+				Terrain.usedTextureIndices.Remove(textureSwapper.textureIndex);
+			}
+
 			// The loop is done in reverse to counteract strange used texture info indices
 			// in "Spyro the Dragon", by overwriting the incorrect decoded parts with correct ones
 			usedTextureIndices.Sort(scope (x,y) => y <=> x);
@@ -238,8 +245,15 @@ namespace SpyroScope {
 				}
 			}
 
-			for (let scrollerIndex < textureScrollers.Count) {
-				textureScrollers[scrollerIndex].Decode();
+			// Restore and decode the remaining textures
+			for (let textureScroller in textureScrollers) {
+				Terrain.usedTextureIndices.Add(textureScroller.textureIndex);
+				textureScroller.Decode();
+			}
+
+			for (let textureSwapper in textureSwappers) {
+				Terrain.usedTextureIndices.Add(textureSwapper.textureIndex);
+				textureSwapper.Decode();
 			}
 
 			decoded = true;
