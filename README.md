@@ -1,5 +1,5 @@
 # Spyro-Scope
-[![GitHub All Releases](https://img.shields.io/github/downloads/FranklyGD/Spyro-Scope/total)](https://github.com/FranklyGD/Spyro-Scope/releases) [![Discord](https://img.shields.io/discord/619694339777495056?color=7289DA&label=Mod%20the%20Dragon&logo=discord&logoColor=ffffff)](https://discord.gg/nVwGhN2)
+[![Latest Version](https://img.shields.io/github/v/release/FranklyGD/Spyro-Scope)](https://github.com/FranklyGD/Spyro-Scope/releases/latest) [![GitHub All Releases](https://img.shields.io/github/downloads/FranklyGD/Spyro-Scope/total)](https://github.com/FranklyGD/Spyro-Scope/releases) [![Discord](https://img.shields.io/discord/619694339777495056?color=7289DA&label=Mod%20the%20Dragon&logo=discord&logoColor=ffffff)](https://discord.gg/nVwGhN2)
 
 A project that sparked when looking back at the program created to see the data of the the original trilogy's games as it is being ran in an emulator.
 The program, called Spyro Scope, was only an in-house made program never released, so I thought it would be cool to recreate it.
@@ -27,6 +27,7 @@ however it may mess up the program or game. You have been warned!*
 For those new to Github or its new, layout here is the link to [Releases](https://github.com/FranklyGD/Spyro-Scope/releases)
 
 ## Features
+### World View
 * Externally play/pause and step the game's update loop
 * View the levels in sync with the current game's view or separated on its own
 * The ability to move and look around using the game's camera
@@ -44,10 +45,24 @@ For those new to Github or its new, layout here is the link to [Releases](https:
 * Move around Spyro and objects using an editor like tool
 
 ## Usage
+### World View
+* `Left Mouse` - Select
 * `Right Mouse Hold` - Rotate View/Camera
 * `Right Mouse Hold + WASD` - Move Camera
 * Move mouse to top-left of window to show menu with toggles and actions with their shortcuts
+* Move mouse to right of window to show menu and inspector for the current object selected
 * Top middle button controls the game loop, left one Play/Pause while right one Steps (runs one frame)
+
+### VRAM View
+Accessed by the `V` key. (Press again to return)
+* `Left Mouse` - Select
+* `Right Mouse Hold` - Pan View
+* `Scroll Wheel` - Zoom
+* `1` - Expand Working Area
+* `9` - Save VRAM
+* `0` - Reset Position
+* `Ctrl` + `Left Mouse` - Save Texture (Not CLUT)
+* `Alt` + `Left Mouse` - Load Texture/CLUT
 
 ## Compiling
 Beef IDE is used to compile the project as the language used is *beeflang*.
