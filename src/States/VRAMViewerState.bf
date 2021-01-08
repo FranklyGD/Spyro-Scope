@@ -710,56 +710,60 @@ namespace SpyroScope {
 				// Now proceed with the sprites
 				List<int> spriteTextureIDs = scope .();
 
-				if (Emulator.installment == .RiptosRage) {
-					let textureSprites = new List<TextureSprite>();
-
-					textureSprites.Add(new .(0, 0, 10)); // Numbers
-					textureSprites.Add(new .(2, 10, 1)); // Forward Slash
-
-					textureSprites.Add(new .(1, 11, 6)); // Gem
-					textureSprites.Add(new .(1, 19, 3)); // Spirit
-
-					textureSprites.Add(new .(2, 0x1d, 1)); // Colon
-					textureSprites.Add(new .(2, 0x1e, 1)); // Period
-
-					textureSprites.Add(new .(5, 0x16, 1)); // Power Bar Top
-					textureSprites.Add(new .(6, 0x1a, 1)); // Power Icon BG
-					textureSprites.Add(new .(7, 0x1b, 1)); // Power Icon FG
-
-					textureSprites.Add(new .(5, 0x17, 1)); // Power Bar Mid
-					textureSprites.Add(new .(5, 0x18, 1)); // Power Bar Bottom
-					textureSprites.Add(new .(5, 0x19, 1)); // Power Bar Mid Lit
-
-					textureSprites.Add(new .(11, 0x24, 4)); // Rounded Corners
-
-					textureSprites.Add(new .(1, 0x1c, 1)); // Reticle Circle
-
-					textureSprites.Add(new .(9, 0x1f, 1)); // Spyro Head
-					textureSprites.Add(new .(10, 0x20, 4)); // Spyro Eyes
-
-					textureSprites.Add(new .(4, 0x57, 1)); // Map
-
-					textureSprites.Add(new .(1, 0x37, 8)); // Objective 1
-					textureSprites.Add(new .(1, 0x3f, 8)); // Objective 2
-					/*textureSprites.Add(new .(1, 0x47, 8)); // Objective 3
-					textureSprites.Add(new .(1, 0x4f, 8)); // Objective 4*/
-
-					for (let sprite in textureSprites) {
-						for (let frameIndex < sprite.frames.Count) {
-							spriteTextureIDs.Add(sprite.Decode(frameIndex));
+				switch (Emulator.installment) {
+					case .RiptosRage:
+						let textureSprites = new List<TextureSprite>();
+	
+						textureSprites.Add(new .(0, 0, 10)); // Numbers
+						textureSprites.Add(new .(2, 10, 1)); // Forward Slash
+	
+						textureSprites.Add(new .(1, 11, 6)); // Gem
+						textureSprites.Add(new .(1, 19, 3)); // Spirit
+	
+						textureSprites.Add(new .(2, 0x1d, 1)); // Colon
+						textureSprites.Add(new .(2, 0x1e, 1)); // Period
+	
+						textureSprites.Add(new .(5, 0x16, 1)); // Power Bar Top
+						textureSprites.Add(new .(6, 0x1a, 1)); // Power Icon BG
+						textureSprites.Add(new .(7, 0x1b, 1)); // Power Icon FG
+	
+						textureSprites.Add(new .(5, 0x17, 1)); // Power Bar Mid
+						textureSprites.Add(new .(5, 0x18, 1)); // Power Bar Bottom
+						textureSprites.Add(new .(5, 0x19, 1)); // Power Bar Mid Lit
+	
+						textureSprites.Add(new .(11, 0x24, 4)); // Rounded Corners
+	
+						textureSprites.Add(new .(1, 0x1c, 1)); // Reticle Circle
+	
+						textureSprites.Add(new .(9, 0x1f, 1)); // Spyro Head
+						textureSprites.Add(new .(10, 0x20, 4)); // Spyro Eyes
+	
+						textureSprites.Add(new .(4, 0x57, 1)); // Map
+	
+						textureSprites.Add(new .(1, 0x37, 8)); // Objective 1
+						textureSprites.Add(new .(1, 0x3f, 8)); // Objective 2
+						/*textureSprites.Add(new .(1, 0x47, 8)); // Objective 3
+						textureSprites.Add(new .(1, 0x4f, 8)); // Objective 4*/
+	
+						for (let sprite in textureSprites) {
+							for (let frameIndex < sprite.frames.Count) {
+								spriteTextureIDs.Add(sprite.Decode(frameIndex));
+							}
 						}
-					}
+	
+						DeleteContainerAndItems!(textureSprites);
 
-					DeleteContainerAndItems!(textureSprites);
-				} else {
-					var textureSprites = TextureQuad[45]();
-					Emulator.Address<TextureQuad> spriteArrayPointer = ?;
-					Emulator.spriteArrayPointer[(int)Emulator.rom - 7].Read(&spriteArrayPointer);
-					spriteArrayPointer.ReadArray(&textureSprites[0], 45);
+					case .YearOfTheDragon:
+						var textureSprites = TextureQuad[45]();
+						Emulator.Address<TextureQuad> spriteArrayPointer = ?;
+						Emulator.spriteArrayPointer[(int)Emulator.rom - 7].Read(&spriteArrayPointer);
+						spriteArrayPointer.ReadArray(&textureSprites[0], 45);
+	
+						for (let sprite in textureSprites) {
+							spriteTextureIDs.Add(sprite.Decode());
+						}
 
-					for (let sprite in textureSprites) {
-						spriteTextureIDs.Add(sprite.Decode());
-					}
+					default:
 				}
 
 				if (Emulator.installment != .SpyroTheDragon) {
