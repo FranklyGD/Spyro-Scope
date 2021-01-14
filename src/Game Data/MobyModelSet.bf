@@ -73,11 +73,21 @@ namespace SpyroScope {
 							vertices.Add(triangleVertices[1]);
 							vertices.Add(triangleVertices[3]);
 						}
-	
+
 						uint32 extraData = ?;
 						Emulator.ReadFromRAM(scanningAddress + 4, &extraData, 4);
-						let stride = (extraData & 0x80000000 != 0) ? (uint32)5 : 2;
-						scanningAddress += 4 * stride;
+
+						if (extraData & 0x80000000 > 0) {
+							ExtendedTextureQuad textureQuad = ?;
+							Emulator.ReadFromRAM(scanningAddress + 8, &textureQuad, sizeof(ExtendedTextureQuad));
+
+							textureQuad.Decode();
+
+							scanningAddress += 4 * 5;
+						} else {
+							
+							scanningAddress += 4 * 2;
+						}
 					}
 				}
 
