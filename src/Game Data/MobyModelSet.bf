@@ -3,7 +3,8 @@ using System.Collections;
 
 namespace SpyroScope {
 	class MobyModelSet {
-		public Mesh[] models ~ DeleteContainerAndItems!(_);
+		public Mesh[] texturedModels ~ DeleteContainerAndItems!(_);
+		public Mesh[] solidModels ~ DeleteContainerAndItems!(_);
 
 		[Ordered]
 		struct ModelMetadata {
@@ -19,7 +20,8 @@ namespace SpyroScope {
 
 			uint32 modelCount = ?;
 			Emulator.ReadFromRAM(modelSetAddress, &modelCount, 4);
-			models = new .[modelCount];
+			texturedModels = new .[modelCount];
+			solidModels = new .[modelCount];
 
 			Emulator.Address[] modelAddresses = scope .[modelCount];
 			Emulator.ReadFromRAM(modelSetAddress + 4 * 5, &modelAddresses[0], 4 * modelCount);
@@ -134,7 +136,22 @@ namespace SpyroScope {
 					n[i] = n[i+1] = n[i+2] = Vector3.Cross(v[i+2] - v[i+0], v[i+1] - v[i+0]);
 				}
 
-				models[modelIndex] = new .(v, u, n, c);
+				texturedModels[modelIndex] = new .(v, u, n, c);
+
+				v = new .[solidVertices.Count];
+				n = new .[solidVertices.Count];
+				c = new .[solidVertices.Count];
+
+				for (let i < solidVertices.Count) {
+					v[i] = solidVertices[i];
+					c[i] = .(255,255,255);
+				}
+
+				for (var i = 0; i < solidVertices.Count; i += 3) {
+					n[i] = n[i+1] = n[i+2] = Vector3.Cross(v[i+2] - v[i+0], v[i+1] - v[i+0]);
+				}
+
+				solidModels[modelIndex] = new .(v, n, c);
 			}
 		}
 
@@ -148,6 +165,23 @@ namespace SpyroScope {
 			vertex.z = -((int32)(packedVertex << 20) >> 20);
 
 			return vertex;
+		}
+
+		public void QueueInstance(int modelID) {
+			texturedModels[modelID].QueueInstance();
+			solidModels[modelID].QueueInstance();
+		}
+
+		public void DrawInstances() {
+			VRAM.decoded.Bind();
+			for (let i < texturedModels.Count) {
+				texturedModels[i].DrawInstances();
+			}
+			
+			Renderer.whiteTexture.Bind();
+			for (let i < solidModels.Count) {
+				solidModels[i].DrawInstances();
+			}
 		}
 	}
 }

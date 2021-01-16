@@ -517,15 +517,9 @@ namespace SpyroScope {
 			// Draw all queued instances
 			PrimitiveShape.DrawInstances();
 
-			VRAM.decoded.Bind();
-
 			for (let modelSet in modelSets.Values) {
-				for (let model in modelSet.models) {
-					model.DrawInstances();
-				}
+				modelSet.DrawInstances();
 			}
-
-			Renderer.whiteTexture.Bind();
 
 			// Draw world's origin
 			Renderer.DrawLine(.Zero, .(10000,0,0), .(255,255,255), .(255,0,0));
@@ -1061,7 +1055,7 @@ namespace SpyroScope {
 
 					Renderer.SetModel(object.position, basis * 2);
 					Renderer.SetTint(object.IsActive ? .(255,255,255) : .(32,32,32));
-					modelSets[object.objectTypeID].models[object.modelID].QueueInstance();
+					modelSets[object.objectTypeID].QueueInstance(object.modelID);
 				} else {
 					Emulator.Address modelSetAddress = ?;
 					Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
