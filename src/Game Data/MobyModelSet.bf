@@ -15,6 +15,8 @@ namespace SpyroScope {
 		}
 
 		public this(Emulator.Address modelSetAddress) {
+			List<Vector3> activeVertices;
+
 			uint32 modelCount = ?;
 			Emulator.ReadFromRAM(modelSetAddress, &modelCount, 4);
 			models = new .[modelCount];
@@ -31,7 +33,11 @@ namespace SpyroScope {
 				uint32 triangleDataSize = ?;
 				Emulator.ReadFromRAM(modelDataAddress + modelMetadata.triangleDataOffset, &triangleDataSize, 4);
 				
-				List<Vector3> vertices = scope .();
+				List<Vector3> solidVertices = scope .();
+				List<Vector3> texturedVertices = scope .();
+				List<Vector2> textureUVs = scope .();
+
+				activeVertices = solidVertices;
 				
 				uint32[] packedVertices = scope .[modelMetadata.vertexCount];
 				if (modelMetadata.vertexCount > 0) {
@@ -47,6 +53,16 @@ namespace SpyroScope {
 					while (scanningAddress < scanningEndAddress) {
 						uint32 packedTriangleIndex = ?;
 						Emulator.ReadFromRAM(scanningAddress, &packedTriangleIndex, 4);
+						uint32 extraData = ?;
+						Emulator.ReadFromRAM(scanningAddress + 4, &extraData, 4);
+
+						let hasTextureData = extraData & 0x80000000 > 0;
+
+						let materialMode = extraData & 0b11;
+						switch (materialMode) {
+							case 2, 3: activeVertices = solidVertices;
+							default: activeVertices = hasTextureData ? texturedVertices : solidVertices;
+						}
 
 						// Derived from Spyro: Ripto's Rage [80047788]
 						triangleIndices[0] = packedTriangleIndex >> 7 & 0x7f; //((packedTriangleIndex >> 5) & 0x1fc) >> 2;
@@ -59,29 +75,41 @@ namespace SpyroScope {
 						triangleVertices[2] = UnpackVertex(packedVertices[triangleIndices[2]]);
 	
 						if (triangleIndices[0] == triangleIndices[3]) {
-							vertices.Add(triangleVertices[0]);
-							vertices.Add(triangleVertices[1]);
-							vertices.Add(triangleVertices[2]);
+							activeVertices.Add(triangleVertices[0]);
+							activeVertices.Add(triangleVertices[1]);
+							activeVertices.Add(triangleVertices[2]);
 						} else {
 							triangleVertices[3] = UnpackVertex(packedVertices[triangleIndices[3]]);
 	
-							vertices.Add(triangleVertices[0]);
-							vertices.Add(triangleVertices[2]);
-							vertices.Add(triangleVertices[1]);
+							activeVertices.Add(triangleVertices[0]);
+							activeVertices.Add(triangleVertices[2]);
+							activeVertices.Add(triangleVertices[1]);
 	
-							vertices.Add(triangleVertices[0]);
-							vertices.Add(triangleVertices[1]);
-							vertices.Add(triangleVertices[3]);
+							activeVertices.Add(triangleVertices[0]);
+							activeVertices.Add(triangleVertices[1]);
+							activeVertices.Add(triangleVertices[3]);
 						}
 
-						uint32 extraData = ?;
-						Emulator.ReadFromRAM(scanningAddress + 4, &extraData, 4);
 
-						if (extraData & 0x80000000 > 0) {
+						if (hasTextureData) {
 							ExtendedTextureQuad textureQuad = ?;
 							Emulator.ReadFromRAM(scanningAddress + 8, &textureQuad, sizeof(ExtendedTextureQuad));
 
 							textureQuad.Decode();
+
+							if (triangleIndices[0] == triangleIndices[3]) {
+								textureUVs.Add(textureQuad.GetVramUV2());
+								textureUVs.Add(textureQuad.GetVramUV0());
+								textureUVs.Add(textureQuad.GetVramUV1());
+							} else {
+								textureUVs.Add(textureQuad.GetVramUV2());
+								textureUVs.Add(textureQuad.GetVramUV0());
+								textureUVs.Add(textureQuad.GetVramUV1());
+								
+								textureUVs.Add(textureQuad.GetVramUV2());
+								textureUVs.Add(textureQuad.GetVramUV1());
+								textureUVs.Add(textureQuad.GetVramUV3());
+							}
 
 							scanningAddress += 4 * 5;
 						} else {
@@ -91,20 +119,22 @@ namespace SpyroScope {
 					}
 				}
 
-				Vector3[] v = new .[vertices.Count];
-				Vector3[] n = new .[vertices.Count];
-				Renderer.Color4[] c = new .[vertices.Count];
+				Vector3[] v = new .[texturedVertices.Count];
+				Vector3[] n = new .[texturedVertices.Count];
+				Renderer.Color4[] c = new .[texturedVertices.Count];
+				float[][2] u = new .[texturedVertices.Count];
 
-				for (let i < vertices.Count) {
-					v[i] = vertices[i];
+				for (let i < texturedVertices.Count) {
+					v[i] = texturedVertices[i];
 					c[i] = .(255,255,255);
+					u[i] = .(textureUVs[i].x, textureUVs[i].y);
 				}
 
-				for (var i = 0; i < vertices.Count; i += 3) {
+				for (var i = 0; i < texturedVertices.Count; i += 3) {
 					n[i] = n[i+1] = n[i+2] = Vector3.Cross(v[i+2] - v[i+0], v[i+1] - v[i+0]);
 				}
 
-				models[modelIndex] = new .(v, n, c);
+				models[modelIndex] = new .(v, u, n, c);
 			}
 		}
 

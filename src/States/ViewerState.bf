@@ -517,11 +517,15 @@ namespace SpyroScope {
 			// Draw all queued instances
 			PrimitiveShape.DrawInstances();
 
+			VRAM.decoded.Bind();
+
 			for (let modelSet in modelSets.Values) {
 				for (let model in modelSet.models) {
 					model.DrawInstances();
 				}
 			}
+
+			Renderer.whiteTexture.Bind();
 
 			// Draw world's origin
 			Renderer.DrawLine(.Zero, .(10000,0,0), .(255,255,255), .(255,0,0));
