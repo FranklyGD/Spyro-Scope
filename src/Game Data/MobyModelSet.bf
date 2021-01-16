@@ -75,18 +75,18 @@ namespace SpyroScope {
 						triangleVertices[2] = UnpackVertex(packedVertices[triangleIndices[2]]);
 	
 						if (triangleIndices[0] == triangleIndices[3]) {
-							activeVertices.Add(triangleVertices[0]);
-							activeVertices.Add(triangleVertices[1]);
 							activeVertices.Add(triangleVertices[2]);
+							activeVertices.Add(triangleVertices[1]);
+							activeVertices.Add(triangleVertices[0]);
 						} else {
 							triangleVertices[3] = UnpackVertex(packedVertices[triangleIndices[3]]);
-	
-							activeVertices.Add(triangleVertices[0]);
+							
 							activeVertices.Add(triangleVertices[2]);
-							activeVertices.Add(triangleVertices[1]);
-	
 							activeVertices.Add(triangleVertices[0]);
 							activeVertices.Add(triangleVertices[1]);
+							
+							activeVertices.Add(triangleVertices[1]);
+							activeVertices.Add(triangleVertices[0]);
 							activeVertices.Add(triangleVertices[3]);
 						}
 
@@ -98,16 +98,16 @@ namespace SpyroScope {
 							textureQuad.Decode();
 
 							if (triangleIndices[0] == triangleIndices[3]) {
-								textureUVs.Add(textureQuad.GetVramUV2());
 								textureUVs.Add(textureQuad.GetVramUV0());
 								textureUVs.Add(textureQuad.GetVramUV1());
-							} else {
 								textureUVs.Add(textureQuad.GetVramUV2());
+							} else {
 								textureUVs.Add(textureQuad.GetVramUV0());
+								textureUVs.Add(textureQuad.GetVramUV2());
 								textureUVs.Add(textureQuad.GetVramUV1());
 								
-								textureUVs.Add(textureQuad.GetVramUV2());
 								textureUVs.Add(textureQuad.GetVramUV1());
+								textureUVs.Add(textureQuad.GetVramUV2());
 								textureUVs.Add(textureQuad.GetVramUV3());
 							}
 
@@ -143,7 +143,7 @@ namespace SpyroScope {
 		Vector3 UnpackVertex(uint32 packedVertex) {
 			Vector3 vertex = ?;
 
-			vertex.x = -(int32)packedVertex >> 0x15;
+			vertex.x = (int32)packedVertex >> 0x15;
 			vertex.y = -(int32)(packedVertex << 10) >> 0x15;
 			vertex.z = -((int32)(packedVertex << 20) >> 20);
 
