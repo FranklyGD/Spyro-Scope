@@ -8,15 +8,16 @@ namespace SpyroScope {
 
 		[Ordered]
 		struct ModelMetadata {
-			uint8 a;
+			public uint8 colorCount;
 			public uint8 vertexCount;
 			uint16 b;
 			uint32 c;
-			public uint16 triangleDataOffset;
+			public uint16 triangleDataOffset, colorDataOffset;
 		}
 
 		public this(Emulator.Address modelSetAddress) {
 			List<Vector3> activeVertices;
+			List<Renderer.Color> activeColors;
 
 			uint32 modelCount = ?;
 			Emulator.ReadFromRAM(modelSetAddress, &modelCount, 4);
@@ -32,26 +33,30 @@ namespace SpyroScope {
 				ModelMetadata modelMetadata = ?;
 				Emulator.ReadFromRAM(modelDataAddress, &modelMetadata, sizeof(ModelMetadata));
 	
-				uint32 triangleDataSize = ?;
-				Emulator.ReadFromRAM(modelDataAddress + modelMetadata.triangleDataOffset, &triangleDataSize, 4);
-				
 				List<Vector3> solidVertices = scope .();
+				List<Renderer.Color> solidColors = scope .();
 				List<Vector3> texturedVertices = scope .();
 				List<Vector2> textureUVs = scope .();
-
-				activeVertices = solidVertices;
+				List<Renderer.Color> textureColors = scope .();
 				
-				uint32[] packedVertices = scope .[modelMetadata.vertexCount];
 				if (modelMetadata.vertexCount > 0) {
+					uint32[] packedVertices = scope .[modelMetadata.vertexCount];
 					Emulator.ReadFromRAM(modelDataAddress + 0x10, &packedVertices[0], 4 * modelMetadata.vertexCount);
-				
+
+					Renderer.Color4[] colors = scope .[modelMetadata.colorCount];
+					Emulator.ReadFromRAM(modelDataAddress + modelMetadata.colorDataOffset, &colors[0], 4 * modelMetadata.colorCount);
+					
+					uint16 offsets = ?;
+					Emulator.ReadFromRAM(modelDataAddress + modelMetadata.triangleDataOffset, &offsets, 2);
+
 					uint32[4] triangleIndices = ?;
 					Vector3[4] triangleVertices = ?;
+					uint32[4] colorIndices = ?;
 	
 					// Reading the model triangle information is DMA-like:
 					// Per triangle information packet varies in size
 					Emulator.Address scanningAddress = modelDataAddress + modelMetadata.triangleDataOffset + 4;
-					Emulator.Address scanningEndAddress = scanningAddress + triangleDataSize;
+					Emulator.Address scanningEndAddress = scanningAddress + offsets;
 					while (scanningAddress < scanningEndAddress) {
 						uint32 packedTriangleIndex = ?;
 						Emulator.ReadFromRAM(scanningAddress, &packedTriangleIndex, 4);
@@ -60,36 +65,61 @@ namespace SpyroScope {
 
 						let hasTextureData = extraData & 0x80000000 > 0;
 
-						let materialMode = extraData & 0b11;
-						switch (materialMode) {
-							case 2, 3: activeVertices = solidVertices;
-							default: activeVertices = hasTextureData ? texturedVertices : solidVertices;
+						let materialMode = extraData & 0b110;
+
+						if (hasTextureData) {
+							activeVertices = texturedVertices;
+							activeColors = textureColors;
+						} else {
+							activeVertices = solidVertices;
+							activeColors = solidColors;
 						}
 
-						// Derived from Spyro: Ripto's Rage [80047788]
-						triangleIndices[0] = packedTriangleIndex >> 7 & 0x7f; //((packedTriangleIndex >> 5) & 0x1fc) >> 2;
-						triangleIndices[1] = packedTriangleIndex >> 14 & 0x7f; //((packedTriangleIndex >> 12) & 0x1fc) >> 2;
-						triangleIndices[2] = packedTriangleIndex >> 21 & 0x7f; //((packedTriangleIndex >> 19) & 0x1fc) >> 2;
-						triangleIndices[3] = packedTriangleIndex & 0x7f;
+						if (materialMode == 0) {
+							// Derived from Spyro: Ripto's Rage [80047788]
+							triangleIndices[0] = packedTriangleIndex >> 7 & 0x7f; //((packedTriangleIndex >> 5) & 0x1fc) >> 2;
+							triangleIndices[1] = packedTriangleIndex >> 14 & 0x7f; //((packedTriangleIndex >> 12) & 0x1fc) >> 2;
+							triangleIndices[2] = packedTriangleIndex >> 21 & 0x7f; //((packedTriangleIndex >> 19) & 0x1fc) >> 2;
+							triangleIndices[3] = packedTriangleIndex & 0x7f; //packedTriangleIndex >> 2;
+		
+							triangleVertices[0] = UnpackVertex(packedVertices[triangleIndices[0]]);
+							triangleVertices[1] = UnpackVertex(packedVertices[triangleIndices[1]]);
+							triangleVertices[2] = UnpackVertex(packedVertices[triangleIndices[2]]);
 	
-						triangleVertices[0] = UnpackVertex(packedVertices[triangleIndices[0]]);
-						triangleVertices[1] = UnpackVertex(packedVertices[triangleIndices[1]]);
-						triangleVertices[2] = UnpackVertex(packedVertices[triangleIndices[2]]);
-	
-						if (triangleIndices[0] == triangleIndices[3]) {
-							activeVertices.Add(triangleVertices[2]);
-							activeVertices.Add(triangleVertices[1]);
-							activeVertices.Add(triangleVertices[0]);
-						} else {
-							triangleVertices[3] = UnpackVertex(packedVertices[triangleIndices[3]]);
-							
-							activeVertices.Add(triangleVertices[2]);
-							activeVertices.Add(triangleVertices[0]);
-							activeVertices.Add(triangleVertices[1]);
-							
-							activeVertices.Add(triangleVertices[1]);
-							activeVertices.Add(triangleVertices[0]);
-							activeVertices.Add(triangleVertices[3]);
+							// Derived from Spyro: Ripto's Rage [80047a98]
+							colorIndices[0] = extraData >> 10 & 0x7f; //((packedColorIndex >> 8) & 0x1fc) >> 2;
+							colorIndices[1] = extraData >> 17 & 0x7f; //((packedColorIndex >> 15) & 0x1fc) >> 2;
+							colorIndices[2] = extraData >> 24 & 0x7f; //((packedColorIndex >> 22) & 0x1fc) >> 2;
+		
+							if (triangleIndices[0] == triangleIndices[3]) {
+								activeVertices.Add(triangleVertices[2]);
+								activeVertices.Add(triangleVertices[1]);
+								activeVertices.Add(triangleVertices[0]);
+								
+								activeColors.Add(colors[colorIndices[2]]);
+								activeColors.Add(colors[colorIndices[1]]);
+								activeColors.Add(colors[colorIndices[0]]);
+							} else {
+								triangleVertices[3] = UnpackVertex(packedVertices[triangleIndices[3]]);
+								
+								activeVertices.Add(triangleVertices[2]);
+								activeVertices.Add(triangleVertices[0]);
+								activeVertices.Add(triangleVertices[1]);
+								
+								activeVertices.Add(triangleVertices[1]);
+								activeVertices.Add(triangleVertices[0]);
+								activeVertices.Add(triangleVertices[3]);
+
+								colorIndices[3] = extraData >> 3 & 0x7f; //((packedColorIndex >> 1) & 0x1fc) >> 2;
+								
+								activeColors.Add(colors[colorIndices[2]]);
+								activeColors.Add(colors[colorIndices[0]]);
+								activeColors.Add(colors[colorIndices[1]]);
+								
+								activeColors.Add(colors[colorIndices[1]]);
+								activeColors.Add(colors[colorIndices[0]]);
+								activeColors.Add(colors[colorIndices[3]]);
+							}
 						}
 
 
@@ -98,19 +128,21 @@ namespace SpyroScope {
 							Emulator.ReadFromRAM(scanningAddress + 8, &textureQuad, sizeof(ExtendedTextureQuad));
 
 							textureQuad.Decode();
-
-							if (triangleIndices[0] == triangleIndices[3]) {
-								textureUVs.Add(textureQuad.GetVramUV0());
-								textureUVs.Add(textureQuad.GetVramUV1());
-								textureUVs.Add(textureQuad.GetVramUV2());
-							} else {
-								textureUVs.Add(textureQuad.GetVramUV0());
-								textureUVs.Add(textureQuad.GetVramUV2());
-								textureUVs.Add(textureQuad.GetVramUV1());
-								
-								textureUVs.Add(textureQuad.GetVramUV1());
-								textureUVs.Add(textureQuad.GetVramUV2());
-								textureUVs.Add(textureQuad.GetVramUV3());
+							
+							if (materialMode == 0) {
+								if (triangleIndices[0] == triangleIndices[3]) {
+									textureUVs.Add(textureQuad.GetVramUV0());
+									textureUVs.Add(textureQuad.GetVramUV1());
+									textureUVs.Add(textureQuad.GetVramUV2());
+								} else {
+									textureUVs.Add(textureQuad.GetVramUV0());
+									textureUVs.Add(textureQuad.GetVramUV2());
+									textureUVs.Add(textureQuad.GetVramUV1());
+	
+									textureUVs.Add(textureQuad.GetVramUV1());
+									textureUVs.Add(textureQuad.GetVramUV2());
+									textureUVs.Add(textureQuad.GetVramUV3());
+								}
 							}
 
 							scanningAddress += 4 * 5;
@@ -128,7 +160,7 @@ namespace SpyroScope {
 
 				for (let i < texturedVertices.Count) {
 					v[i] = texturedVertices[i];
-					c[i] = .(255,255,255);
+					c[i] = textureColors[i];
 					u[i] = .(textureUVs[i].x, textureUVs[i].y);
 				}
 
@@ -144,7 +176,7 @@ namespace SpyroScope {
 
 				for (let i < solidVertices.Count) {
 					v[i] = solidVertices[i];
-					c[i] = .(255,255,255);
+					c[i] = solidColors[i];
 				}
 
 				for (var i = 0; i < solidVertices.Count; i += 3) {
@@ -173,6 +205,8 @@ namespace SpyroScope {
 		}
 
 		public void DrawInstances() {
+			Renderer.BeginRetroShading();
+
 			VRAM.decoded.Bind();
 			for (let i < texturedModels.Count) {
 				texturedModels[i].DrawInstances();
@@ -182,6 +216,8 @@ namespace SpyroScope {
 			for (let i < solidModels.Count) {
 				solidModels[i].DrawInstances();
 			}
+			
+			Renderer.BeginDefaultShading();
 		}
 	}
 }
