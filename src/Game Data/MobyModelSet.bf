@@ -206,13 +206,14 @@ namespace SpyroScope {
 
 		public void DrawInstances() {
 			Renderer.BeginRetroShading();
+			VRAM.decoded?.Bind();
 
-			VRAM.decoded.Bind();
 			for (let i < texturedModels.Count) {
 				texturedModels[i].DrawInstances();
 			}
 			
 			Renderer.halfWhiteTexture.Bind();
+
 			for (let i < solidModels.Count) {
 				solidModels[i].DrawInstances();
 			}
