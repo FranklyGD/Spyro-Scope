@@ -297,66 +297,49 @@ namespace SpyroScope {
 				Renderer.BeginWireframe();
 			}
 
-			switch (renderMode) {
-				case .Far : {
-					Renderer.BeginRetroShading();
+			if (renderMode == .Collision) {
+				collision.Draw(wireframe);
+			} else {
+				Renderer.BeginRetroShading();
+
+				if (renderMode == .Far) {
 					Renderer.halfWhiteTexture.Bind();
 
 					for (let visualMesh in regions) {
 						visualMesh.DrawFar();
 					}
-					
-					Renderer.whiteTexture.Bind();
-
-					Renderer.BeginDefaultShading();
-				}
-				case .NearLQ : {
-					Renderer.BeginRetroShading();
+				} else {
 					VRAM.decoded?.Bind();
 
-					for (let visualMesh in regions) {
-						visualMesh.DrawNear();
+					if (renderMode == .NearLQ) {
+						for (let visualMesh in regions) {
+							visualMesh.DrawNear();
+						}
+					} else {
+						for (let visualMesh in regions) {
+							visualMesh.DrawNearSubdivided();
+						}
 					}
-					
+						
 					GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
 					GL.glDepthMask(GL.GL_FALSE);  
-
-					for (let visualMesh in regions) {
-						visualMesh.DrawNearTransparent();
+					
+					if (renderMode == .NearLQ) {
+						for (let visualMesh in regions) {
+							visualMesh.DrawNearTransparent();
+						}
+					} else {
+						for (let visualMesh in regions) {
+							visualMesh.DrawNearTransparentSubdivided();
+						}
 					}
 
 					GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-					GL.glDepthMask(GL.GL_TRUE);  
-
-					Renderer.whiteTexture.Bind();
-
-					Renderer.BeginDefaultShading();
+					GL.glDepthMask(GL.GL_TRUE);
 				}
-				case .NearHQ : {
-					Renderer.BeginRetroShading();
-					VRAM.decoded?.Bind();
-
-					for (let visualMesh in regions) {
-						visualMesh.DrawNearSubdivided();
-					}
-					
-					GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
-					GL.glDepthMask(GL.GL_FALSE);  
-
-					for (let visualMesh in regions) {
-						visualMesh.DrawNearTransparentSubdivided();
-					}
-
-					GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-					GL.glDepthMask(GL.GL_TRUE);  
-
-					Renderer.whiteTexture.Bind();
-
-					Renderer.BeginDefaultShading();
-				}
-				case .Collision : {
-					collision.Draw(wireframe);
-				}
+				
+				Renderer.BeginDefaultShading();
+				Renderer.whiteTexture.Bind();
 			}
 				
 			// Restore polygon mode to default
