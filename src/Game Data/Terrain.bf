@@ -299,9 +299,16 @@ namespace SpyroScope {
 
 			switch (renderMode) {
 				case .Far : {
+					Renderer.BeginRetroShading();
+					Renderer.halfWhiteTexture.Bind();
+
 					for (let visualMesh in regions) {
 						visualMesh.DrawFar();
 					}
+					
+					Renderer.whiteTexture.Bind();
+
+					Renderer.BeginDefaultShading();
 				}
 				case .NearLQ : {
 					Renderer.BeginRetroShading();

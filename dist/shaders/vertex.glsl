@@ -12,6 +12,7 @@ uniform mat4 view;
 uniform mat4 projection;
 
 uniform float zdepthOffset;
+uniform float retroShading;
 
 out vec4 color;
 out vec2 uv;
@@ -25,7 +26,7 @@ void main() {
     color.rgb = pow(color.rgb, vec3(2.2));
 
     vec3 normal = normalize((instanceModel * vec4(vertexNormal, 0.0)).xyz);
-    color.rgb *= (dot(normal, vec3(0,0,1)) + 1.03) / 2.03;
+    color.rgb *= (dot(normal, vec3(0,0,1)) + 1.03) / 2.03 * (1.0 - retroShading) + retroShading;
 
     uv = vertexTextureMapping;
 }

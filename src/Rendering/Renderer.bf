@@ -87,7 +87,9 @@ namespace SpyroScope {
 		public static Vector3 tint = .(1,1,1);
 		public static int uniformZdepthOffsetIndex; // Z-depth Offset (mainly for pushing the wireframe forward to avoid Z-fighting)
 		public static int uniformRetroShadingIndex; // Change shading from modern to emulated
-		public static Texture whiteTexture ~ delete _;
+
+		public static Texture whiteTexture ~ delete _; // Used with solid colors
+		public static Texture halfWhiteTexture ~ delete _; // Used with emulating games' color
 
 		struct DrawQueue {
 			public uint16 type;
@@ -124,8 +126,10 @@ namespace SpyroScope {
 			SDL.GL_SwapWindow(window);
 
 			// Create Default Texture
-			var whiteTextureData = Color(255,255,255);
-			whiteTexture = new .(1, 1, GL.GL_RGB, GL.GL_RGB, &whiteTextureData);
+			var solidTextureData = Color(255,255,255);
+			whiteTexture = new .(1, 1, GL.GL_RGB, GL.GL_SRGB, &solidTextureData);
+			solidTextureData = Color(128,128,128);
+			halfWhiteTexture = new .(1, 1, GL.GL_RGB, GL.GL_SRGB, &solidTextureData);
 
 			// Compile shaders during run-time
 			vertexShader = CompileShader("shaders/vertex.glsl", GL.GL_VERTEX_SHADER);

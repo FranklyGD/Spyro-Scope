@@ -212,12 +212,13 @@ namespace SpyroScope {
 				texturedModels[i].DrawInstances();
 			}
 			
-			Renderer.whiteTexture.Bind();
+			Renderer.halfWhiteTexture.Bind();
 			for (let i < solidModels.Count) {
 				solidModels[i].DrawInstances();
 			}
 			
 			Renderer.BeginDefaultShading();
+			Renderer.whiteTexture.Bind();
 		}
 	}
 }
