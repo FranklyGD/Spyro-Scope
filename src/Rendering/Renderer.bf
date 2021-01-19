@@ -127,9 +127,9 @@ namespace SpyroScope {
 
 			// Create Default Texture
 			var solidTextureData = Color(255,255,255);
-			whiteTexture = new .(1, 1, GL.GL_RGB, GL.GL_SRGB, &solidTextureData);
+			whiteTexture = new .(1, 1, GL.GL_SRGB, GL.GL_RGB, &solidTextureData);
 			solidTextureData = Color(128,128,128);
-			halfWhiteTexture = new .(1, 1, GL.GL_RGB, GL.GL_SRGB, &solidTextureData);
+			halfWhiteTexture = new .(1, 1, GL.GL_SRGB, GL.GL_RGB, &solidTextureData);
 
 			// Compile shaders during run-time
 			vertexShader = CompileShader("shaders/vertex.glsl", GL.GL_VERTEX_SHADER);
