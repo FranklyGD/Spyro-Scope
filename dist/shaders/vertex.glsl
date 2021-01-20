@@ -22,13 +22,13 @@ out vec2 uv;
 
 void main() {
     // Geometry
-    gl_Position.xyzw = projection * view * instanceModel * vec4(vertexPosition, 1.0);
+    gl_Position.xyzw = projection * viewInv * instanceModel * vec4(vertexPosition, 1.0);
     gl_Position.z += zdepthOffset;
     vec3 normal = normalize((instanceModel * vec4(vertexNormal, 0.0)).xyz);
 
     // Input Scales
     color = vec4(vertexColor) / 255.0;
-    specular = dot((viewInv * normalize(vec4(-1,1,2,0))).xyz, normal);
+    specular = dot((view * normalize(vec4(-1,1,2,0))).xyz, normal);
 
     // Output
     color.rgb *= instanceTint;

@@ -77,8 +77,8 @@ namespace SpyroScope {
 
 		// Shader Uniforms
 		public static Matrix4 model = .Identity;
-		public static int uniformViewMatrixIndex; // Camera Inverse Transform
-		public static int uniformViewInvMatrixIndex; // Camera Transform
+		public static int uniformViewMatrixIndex; // Camera Transform
+		public static int uniformViewInvMatrixIndex; // Camera Inverse Transform
 		public static Matrix4 view = .Identity;
 		public static Vector3 viewPosition = .Zero;
 		public static Matrix3 viewBasis = .Identity;
@@ -361,9 +361,11 @@ namespace SpyroScope {
 		public static void SetView(Vector3 position, Matrix3 basis) {
 			viewPosition = position;
 			viewBasis = basis;
-			view = basis.Transpose() * Matrix4.Translation(-position);
+			
+			view = basis * Matrix4.Translation(position);
 			GL.glUniformMatrix4fv(uniformViewMatrixIndex, 1, GL.GL_FALSE, (float*)&view);
-			var viewInv = basis * Matrix4.Translation(position);
+
+			var viewInv = basis.Transpose() * Matrix4.Translation(-position);
 			GL.glUniformMatrix4fv(uniformViewInvMatrixIndex, 1, GL.GL_FALSE, (float*)&viewInv);
 		}
 
