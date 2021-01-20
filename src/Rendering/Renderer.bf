@@ -78,11 +78,13 @@ namespace SpyroScope {
 		// Shader Uniforms
 		public static Matrix4 model = .Identity;
 		public static int uniformViewMatrixIndex; // Camera Inverse Transform
+		public static int uniformViewInvMatrixIndex; // Camera Transform
 		public static Matrix4 view = .Identity;
 		public static Vector3 viewPosition = .Zero;
 		public static Matrix3 viewBasis = .Identity;
 		public static int uniformProjectionMatrixIndex; // Camera Perspective
 		public static Matrix4 projection = .Identity;
+		public static int uniformSpecularIndex;
 
 		public static Vector3 tint = .(1,1,1);
 		public static int uniformZdepthOffsetIndex; // Z-depth Offset (mainly for pushing the wireframe forward to avoid Z-fighting)
@@ -202,7 +204,9 @@ namespace SpyroScope {
 
 			// Get Uniforms
 			uniformViewMatrixIndex = FindProgramUniform(program, "view");
+			uniformViewInvMatrixIndex = FindProgramUniform(program, "viewInv");
 			uniformProjectionMatrixIndex = FindProgramUniform(program, "projection");
+			uniformSpecularIndex = FindProgramUniform(program, "specularAmount");
 			uniformZdepthOffsetIndex = FindProgramUniform(program, "zdepthOffset");
 			uniformRetroShadingIndex = FindProgramUniform(program, "retroShading");
 
@@ -359,6 +363,8 @@ namespace SpyroScope {
 			viewBasis = basis;
 			view = basis.Transpose() * Matrix4.Translation(-position);
 			GL.glUniformMatrix4fv(uniformViewMatrixIndex, 1, GL.GL_FALSE, (float*)&view);
+			var viewInv = basis * Matrix4.Translation(position);
+			GL.glUniformMatrix4fv(uniformViewInvMatrixIndex, 1, GL.GL_FALSE, (float*)&viewInv);
 		}
 
 		public static void SetProjection(Matrix4 projection) {
@@ -369,6 +375,10 @@ namespace SpyroScope {
 		public static void SetTint(Color tint) {
 			Renderer.tint = .((float)tint.r / 255, (float)tint.g / 255, (float)tint.b / 255);
 			//GL.glUniform3fv(uniformTintIndex, 1, &this.tint[0]);
+		}
+
+		public static void SetSpecular(float amount) {
+			GL.glUniform1f(uniformSpecularIndex, amount);
 		}
 
 		public static void BeginWireframe() {
