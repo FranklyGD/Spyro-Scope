@@ -181,7 +181,8 @@ namespace SpyroScope {
 		public static int16[3] cameraEulerRotation;
 		public static MatrixInt cameraBasisInv, spyroBasis;
 		public static int32 collidingTriangle = -1;
-
+		
+		public static Renderer.Color4[10][4] shinyColors;
 		public static uint32[] deathPlaneHeights ~ delete _;
 		public static uint32[] maxFreeflightHeights ~ delete _;
 
@@ -516,6 +517,8 @@ namespace SpyroScope {
 				}
 
 				case .RiptosRage: {
+					ReadFromRAM((.)0x80064440, &shinyColors, sizeof(Renderer.Color4[10][4]));
+
 					// 28 worlds exists but there is space for 32 (probably a power of 2 related thing)
 					deathPlaneHeights = new .[32];
 					maxFreeflightHeights = new .[32];

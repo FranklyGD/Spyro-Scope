@@ -1055,7 +1055,7 @@ namespace SpyroScope {
 
 					Renderer.SetModel(object.position, basis * 2);
 					Renderer.SetTint(object.IsActive ? .(255,255,255) : .(32,32,32));
-					modelSets[object.objectTypeID].QueueInstance(object.modelID);
+					modelSets[object.objectTypeID].QueueInstance(object.modelID, Emulator.shinyColors[object.color.r % 10][1]);
 				} else {
 					Emulator.Address modelSetAddress = ?;
 					Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);

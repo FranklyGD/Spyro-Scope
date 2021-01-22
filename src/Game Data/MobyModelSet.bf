@@ -250,10 +250,6 @@ namespace SpyroScope {
 			// Normally what to tint would be determined by a mode
 			// but for now it will only color the shiny-like materials
 		}
-		
-		public void QueueInstance(int modelID) {
-			QueueInstance(modelID, .(128,128,0));
-		}
 
 		public void DrawInstances() {
 			Renderer.BeginRetroShading();
