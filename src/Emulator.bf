@@ -314,19 +314,20 @@ namespace SpyroScope {
 
 		public static void FindGame() {
 			FetchRAMBaseAddress();
-			
+
+			SpyroROM newRom = .None;
 			for (int i < 10) {
 				let test = scope String();
 				let testPtr = test.PrepareBuffer(5);
 				ReadFromRAM(testAddresses[i], testPtr, 5);
 
 				if (test.CompareTo("Spyro", true) == 0) {
-					rom = (.)(i + 1);
+					newRom = (.)(i + 1);
 					break;
 				}
 			}
 
-			switch (rom) {
+			switch (newRom) {
 				case .SpyroTheDragon_NTSC_U,
 					 .SpyroTheDragon_NTSC_J,
 					 .SpyroTheDragon_PAL:
@@ -347,7 +348,7 @@ namespace SpyroScope {
 					installment = .None;
 			}
 
-			if (rom != .None) {
+			if (newRom != .None && newRom != rom) {
 				FetchVRAMBaseAddress();
 				FetchStaticData();
 			}
