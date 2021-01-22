@@ -352,6 +352,8 @@ namespace SpyroScope {
 				FetchVRAMBaseAddress();
 				FetchStaticData();
 			}
+
+			rom = newRom;
 		}
 		
 		[Import("psapi.lib"),CLink, CallingConvention(.Stdcall)]
