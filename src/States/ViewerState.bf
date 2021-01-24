@@ -1153,6 +1153,13 @@ namespace SpyroScope {
 		
 		void OnSceneChanging() {
 			Selection.Reset();
+
+			// Clear model data since the texture locations change in VRAM for every level
+			// Also since the object models have stopped drawing beyond this point
+			for (let modelSet in modelSets.Values) {
+				delete modelSet;
+			}
+			modelSets.Clear();
 		}
 
 		void OnSceneChanged() {
