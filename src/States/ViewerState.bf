@@ -622,7 +622,7 @@ namespace SpyroScope {
 				}
 			}
 
-			if (Terrain.renderMode == .Collision) {
+			if (Terrain.renderMode == .Collision && Terrain.collision != null) {
 				if (Terrain.collision.overlay == .Flags) {
 					DrawFlagsOverlay();
 				} else if (Terrain.collision.overlay == .Deform) {

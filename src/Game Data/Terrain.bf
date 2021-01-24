@@ -227,12 +227,16 @@ namespace SpyroScope {
 			let quadDecodeCount = Emulator.installment == .SpyroTheDragon ? 5 : 6;
 
 			// Temporarily remove affected textures
-			for (let textureScroller in textureScrollers) {
-				Terrain.usedTextureIndices.Remove(textureScroller.textureIndex);
+			if (textureScrollers != null) {
+				for (let textureScroller in textureScrollers) {
+					Terrain.usedTextureIndices.Remove(textureScroller.textureIndex);
+				}
 			}
 			
-			for (let textureSwapper in textureSwappers) {
-				Terrain.usedTextureIndices.Remove(textureSwapper.textureIndex);
+			if (textureSwappers != null) {
+				for (let textureSwapper in textureSwappers) {
+					Terrain.usedTextureIndices.Remove(textureSwapper.textureIndex);
+				}
 			}
 
 			// The loop is done in reverse to counteract strange used texture info indices
@@ -246,21 +250,26 @@ namespace SpyroScope {
 			}
 
 			// Restore and decode the remaining textures
-			for (let textureScroller in textureScrollers) {
-				Terrain.usedTextureIndices.Add(textureScroller.textureIndex);
-				textureScroller.Decode();
+			
+			if (textureScrollers != null) {
+				for (let textureScroller in textureScrollers) {
+					Terrain.usedTextureIndices.Add(textureScroller.textureIndex);
+					textureScroller.Decode();
+				}
 			}
-
-			for (let textureSwapper in textureSwappers) {
-				Terrain.usedTextureIndices.Add(textureSwapper.textureIndex);
-				textureSwapper.Decode();
+				
+			if (textureSwappers != null) {
+				for (let textureSwapper in textureSwappers) {
+					Terrain.usedTextureIndices.Add(textureSwapper.textureIndex);
+					textureSwapper.Decode();
+				}
 			}
 
 			decoded = true;
 		}
 
 		public static void Update() {
-			if (renderMode == .Collision) {
+			if (renderMode == .Collision && collision != null) {
 				collision.Update();
 			} else {
 				if (farAnimations != null) {
@@ -297,9 +306,9 @@ namespace SpyroScope {
 				Renderer.BeginWireframe();
 			}
 
-			if (renderMode == .Collision) {
+			if (renderMode == .Collision && collision != null) {
 				collision.Draw(wireframe);
-			} else {
+			} else if (regions != null) {
 				Renderer.BeginRetroShading();
 
 				if (renderMode == .Far) {
