@@ -6,6 +6,7 @@ namespace SpyroScope {
 		Stopwatch stopwatch = new .() ~ delete _;
 
 		public override void Enter() {
+			Renderer.clearColor = .(0,0,0);
 			stopwatch.Start();
 		}
 		

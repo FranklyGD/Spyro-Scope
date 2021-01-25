@@ -67,6 +67,7 @@ namespace SpyroScope {
 		}
 
 		public override void Enter() {
+			Renderer.clearColor = .(0,0,0);
 			ResetView();
 		}
 

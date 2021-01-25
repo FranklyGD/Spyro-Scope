@@ -471,6 +471,16 @@ namespace SpyroScope {
 		}
 
 		public override void DrawView() {
+			if (Terrain.renderMode == .Collision) {
+				Renderer.clearColor = .(0,0,0);
+			} else {
+				Emulator.backgroundClearColorAddress[(int)Emulator.rom].Read(&Renderer.clearColor);
+				Renderer.clearColor.r = (.)(Math.Pow((float)Renderer.clearColor.r / 255, 2.2f) * 255);
+				Renderer.clearColor.g = (.)(Math.Pow((float)Renderer.clearColor.g / 255, 2.2f) * 255);
+				Renderer.clearColor.b = (.)(Math.Pow((float)Renderer.clearColor.b / 255, 2.2f) * 255);
+				Renderer.clearColor.a = 255;
+			}
+
 			Terrain.Draw();
 
 			if (viewMode != .Game) {

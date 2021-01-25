@@ -66,6 +66,8 @@ namespace SpyroScope {
 		static uint fragmentShader;
 		static uint program;
 
+		public static Color4 clearColor = .(0,0,0);
+
 		// Shader Inputs
 		public static uint positionAttributeIndex;
 		public static uint normalAttributeIndex;
@@ -452,7 +454,7 @@ namespace SpyroScope {
 		}
 
 		public static void Clear() {
-			GL.glClearColor(0,0,0,1);
+			GL.glClearColor((float)clearColor.r / 255, (float)clearColor.g / 255, (float)clearColor.b / 255, (float)clearColor.a / 255);
 			GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 			startDrawQueue = lastDrawQueue = &drawQueue[0];
 			vertexCount = vertexOffset = 0;
