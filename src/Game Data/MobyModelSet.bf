@@ -303,11 +303,11 @@ namespace SpyroScope {
 				}*/
 
 				uint32 vd = ?;
-				Emulator.ReadFromRAM(vertexDataAddress + triangleIndices[1] * 4, &vd, 4);
+				Emulator.ReadFromRAM(vertexDataAddress + (uint32)triangleIndices[1] * 4, &vd, 4);
 				triangleVertices[0] = UnpackAnimatedVertex(vd);//packedVertices[triangleIndices[0]]);
-				Emulator.ReadFromRAM(vertexDataAddress + triangleIndices[2] * 4, &vd, 4);
+				Emulator.ReadFromRAM(vertexDataAddress + (uint32)triangleIndices[2] * 4, &vd, 4);
 				triangleVertices[1] = UnpackAnimatedVertex(vd);//packedVertices[triangleIndices[1]]);
-				Emulator.ReadFromRAM(vertexDataAddress + triangleIndices[3] * 4, &vd, 4);
+				Emulator.ReadFromRAM(vertexDataAddress + (uint32)triangleIndices[3] * 4, &vd, 4);
 				triangleVertices[2] = UnpackAnimatedVertex(vd);//packedVertices[triangleIndices[2]]);
 
 				// Derived from Spyro: Ripto's Rage [80047a98]
@@ -330,7 +330,7 @@ namespace SpyroScope {
 						activeColors.Add(.(255,255,255));
 					}
 				} else {
-					Emulator.ReadFromRAM(vertexDataAddress + triangleIndices[0] * 4, &vd, 4);
+					Emulator.ReadFromRAM(vertexDataAddress + (uint32)triangleIndices[0] * 4, &vd, 4);
 					triangleVertices[3] = UnpackAnimatedVertex(vd);//packedVertices[triangleIndices[3]]);
 					
 					activeVertices.Add(triangleVertices[2]);
