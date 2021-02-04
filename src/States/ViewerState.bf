@@ -1063,7 +1063,7 @@ namespace SpyroScope {
 						-(float)object.eulerRotation.z / 0x80 * Math.PI_f
 					);
 
-					Renderer.SetModel(object.position, basis * 2);
+					Renderer.SetModel(object.position, basis);
 					Renderer.SetTint(object.IsActive ? .(255,255,255) : .(32,32,32));
 					modelSets[object.objectTypeID].QueueInstance(object.modelID, Emulator.shinyColors[object.color.r % 10][1]);
 				} else {

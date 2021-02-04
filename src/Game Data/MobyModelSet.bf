@@ -415,13 +415,12 @@ namespace SpyroScope {
 		}
 
 		// Derived from Spyro: Ripto's Rage [8004757c]
-		// Vertices need to be scaled by two before the model is drawn
 		Vector3 UnpackVertex(uint32 packedVertex) {
 			Vector3 vertex = ?;
 
-			vertex.x = (int32)packedVertex >> 0x15;
-			vertex.y = -(int32)(packedVertex << 10) >> 0x15;
-			vertex.z = -((int32)(packedVertex << 20) >> 20);
+			vertex.x = (int32)packedVertex >> 0x15 << 1;
+			vertex.y = -(int32)(packedVertex << 10) >> 0x15 << 1;
+			vertex.z = -((int32)(packedVertex << 20) >> 20) << 1;
 
 			return vertex;
 		}
