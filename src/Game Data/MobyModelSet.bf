@@ -430,7 +430,7 @@ namespace SpyroScope {
 			Vector3 vertex = ?;
 			
 			vertex.x = (int32)packedVertex >> 0x15;
-			vertex.y = -(((int32)(packedVertex & 0xffff0000) << 0xa) >> 0x15) | (.)((packedVertex & 0xf000) >> 0xb);
+			vertex.y = -((((int32)(packedVertex & 0xffff0000) << 0xa) >> 0x15) | (.)((packedVertex & 0xf000) >> 0xb));
 			vertex.z = -(int32)((packedVertex & 0xffc) << 0x14) >> 0x14;
 
 			return vertex;
