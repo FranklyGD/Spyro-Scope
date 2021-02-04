@@ -426,11 +426,13 @@ namespace SpyroScope {
 		}
 
 		// Derived from Spyro: Ripto's Rage [80044794]
+		// In the game's code, it was originally read as two shorts (two 16-bit integers)
+		// Below is the reduced form of operations since the shorts share the same word (32-bit integer)
 		Vector3 UnpackAnimatedVertex(uint32 packedVertex) {
 			Vector3 vertex = ?;
 			
 			vertex.x = (int32)packedVertex >> 0x15;
-			vertex.y = -((((int32)(packedVertex & 0xffff0000) << 0xa) >> 0x15) | (.)((packedVertex & 0xf000) >> 0xb));
+			vertex.y = -(int32)(packedVertex << 0xa) >> 0x15;
 			vertex.z = -(int32)((packedVertex & 0xffc) << 0x14) >> 0x14;
 
 			return vertex;
