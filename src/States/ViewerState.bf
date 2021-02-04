@@ -1070,7 +1070,7 @@ namespace SpyroScope {
 					Emulator.Address modelSetAddress = ?;
 					Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
 
-					if (modelSetAddress != 0 && (int32)modelSetAddress > 0) {
+					if (modelSetAddress != 0) {
 						modelSets.Add(object.objectTypeID, new .(modelSetAddress));
 					}
 				}
