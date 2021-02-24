@@ -44,7 +44,7 @@ namespace SpyroScope {
 			public uint8 CurrentKeyframe {
 				get {
 					uint8 currentKeyframe = ?;
-					Emulator.ReadFromRAM(dataPointer + 2, &currentKeyframe, 1);
+					Emulator.active.ReadFromRAM(dataPointer + 2, &currentKeyframe, 1);
 					return currentKeyframe;
 				}
 			}
@@ -55,7 +55,7 @@ namespace SpyroScope {
 
 			public KeyframeData GetKeyframeData(uint8 keyframeIndex) {
 				AnimationGroup.KeyframeData keyframeData = ?;
-				Emulator.ReadFromRAM(dataPointer + 12 + ((uint32)keyframeIndex) * 8, &keyframeData, 8);
+				Emulator.active.ReadFromRAM(dataPointer + 12 + ((uint32)keyframeIndex) * 8, &keyframeData, 8);
 				return keyframeData;
 			}
 		}
@@ -93,29 +93,29 @@ namespace SpyroScope {
 
 			if (updateGame) {
 				Emulator.Address collisionTriangleArray = ?;
-				Emulator.ReadFromRAM(address + 20, &collisionTriangleArray, 4);
-				Emulator.WriteToRAM(collisionTriangleArray + triangleIndex * sizeof(CollisionTriangle), &triangles[triangleIndex], sizeof(CollisionTriangle));
+				Emulator.active.ReadFromRAM(address + 20, &collisionTriangleArray, 4);
+				Emulator.active.WriteToRAM(collisionTriangleArray + triangleIndex * sizeof(CollisionTriangle), &triangles[triangleIndex], sizeof(CollisionTriangle));
 			}
 		}
 
 		public void Reload() {
 			uint32 triangleCount = ?;
-			Emulator.ReadFromRAM(address, &triangleCount, 4);
-			Emulator.ReadFromRAM(address + 4, &specialTriangleCount, 4);
+			Emulator.active.ReadFromRAM(address, &triangleCount, 4);
+			Emulator.active.ReadFromRAM(address + 4, &specialTriangleCount, 4);
 
 			triangles = new .[triangleCount];
 			Emulator.Address collisionTriangleArray = ?;
-			Emulator.ReadFromRAM(address + (Emulator.installment == .SpyroTheDragon ? 16 : 20), &collisionTriangleArray, 4);
-			Emulator.ReadFromRAM(collisionTriangleArray, &triangles[0], sizeof(CollisionTriangle) * triangleCount);
+			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 16 : 20), &collisionTriangleArray, 4);
+			Emulator.active.ReadFromRAM(collisionTriangleArray, &triangles[0], sizeof(CollisionTriangle) * triangleCount);
 
 			Emulator.Address collisionFlagArray = ?;
 
 			flagIndices = new .[triangleCount];
-			Emulator.ReadFromRAM(address + 24, &collisionFlagArray, 4);
-			Emulator.ReadFromRAM(collisionFlagArray, &flagIndices[0], 1 * triangleCount);
+			Emulator.active.ReadFromRAM(address + 24, &collisionFlagArray, 4);
+			Emulator.active.ReadFromRAM(collisionFlagArray, &flagIndices[0], 1 * triangleCount);
 
-			Emulator.ReadFromRAM(Emulator.collisionFlagsArrayPointers[(int)Emulator.rom], &collisionFlagArray, 4);
-			Emulator.ReadFromRAM(collisionFlagArray, &collisionFlagPointerArray[0], 4 * 0x40);
+			Emulator.active.ReadFromRAM(Emulator.collisionFlagsArrayPointers[(int)Emulator.active.rom], &collisionFlagArray, 4);
+			Emulator.active.ReadFromRAM(collisionFlagArray, &collisionFlagPointerArray[0], 4 * 0x40);
 
 			// Generate Mesh
 			let vertexCount = triangles.Count * 3;
@@ -152,7 +152,7 @@ namespace SpyroScope {
 						if (overlay == .Flags) {
 							if (flagData.type < 11 /*Emulator.collisionTypes.Count*/) {
 								// Swap Ice with Supercharge if installment is "Spyro the Dragon" (Spyro 1)
-								let flagType = Emulator.installment == .SpyroTheDragon && flagData.type == 4 ? 2 : flagData.type;
+								let flagType = Emulator.active.installment == .SpyroTheDragon && flagData.type == 4 ? 2 : flagData.type;
 								color = Emulator.collisionTypes[flagType].color;
 							} else {
 								color = .(255, 0, 255);
@@ -264,12 +264,12 @@ namespace SpyroScope {
 			}
 
 			uint32 count = ?;
-			Emulator.ReadFromRAM(Emulator.collisionDeformDataPointers[(int)Emulator.rom] - 4, &count, 4);
+			Emulator.active.ReadFromRAM(Emulator.collisionDeformDataPointers[(int)Emulator.active.rom] - 4, &count, 4);
 			delete animationGroups;
 			animationGroups = new .[count];
 
 			let collisionModifyingGroupPointers = scope Emulator.Address[count];
-			Emulator.ReadFromRAM(deformArrayAddress, collisionModifyingGroupPointers.CArray(), 4 * count);
+			Emulator.active.ReadFromRAM(deformArrayAddress, collisionModifyingGroupPointers.CArray(), 4 * count);
 
 			for (let groupIndex < count) {
 				let animationGroup = &animationGroups[groupIndex];
@@ -278,18 +278,18 @@ namespace SpyroScope {
 					continue;
 				}
 
-				Emulator.ReadFromRAM(animationGroup.dataPointer + 4, &animationGroup.count, 2);
-				Emulator.ReadFromRAM(animationGroup.dataPointer + 6, &animationGroup.start, 2);
+				Emulator.active.ReadFromRAM(animationGroup.dataPointer + 4, &animationGroup.count, 2);
+				Emulator.active.ReadFromRAM(animationGroup.dataPointer + 6, &animationGroup.start, 2);
 				
 				uint32 triangleDataOffset = ?;
-				Emulator.ReadFromRAM(animationGroup.dataPointer + 8, &triangleDataOffset, 4);
+				Emulator.active.ReadFromRAM(animationGroup.dataPointer + 8, &triangleDataOffset, 4);
 
 				// Analyze the animation
 				uint32 keyframeCount = (triangleDataOffset >> 3) - 1; // triangleDataOffset / 8
 				uint8 highestUsedState = 0;
 				for (let keyframeIndex < keyframeCount) {
 					(uint8 fromState, uint8 toState) s = ?;
-					Emulator.ReadFromRAM(animationGroup.dataPointer + 12 + keyframeIndex * 8 + 5, &s, 2);
+					Emulator.active.ReadFromRAM(animationGroup.dataPointer + 12 + keyframeIndex * 8 + 5, &s, 2);
 
 					highestUsedState = Math.Max(highestUsedState, s.fromState);
 					highestUsedState = Math.Max(highestUsedState, s.toState);
@@ -309,7 +309,7 @@ namespace SpyroScope {
 					let startTrianglesState = stateIndex * animationGroup.count;
 					for (let triangleIndex < animationGroup.count) {
 						CollisionTriangle packedTriangle = ?;
-						Emulator.ReadFromRAM(animationGroup.dataPointer + triangleDataOffset + (startTrianglesState + triangleIndex) * 12, &packedTriangle, 12);
+						Emulator.active.ReadFromRAM(animationGroup.dataPointer + triangleDataOffset + (startTrianglesState + triangleIndex) * 12, &packedTriangle, 12);
 						let unpackedTriangle = packedTriangle.Unpack(true);
 
 						let normal = Vector3.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
@@ -471,7 +471,7 @@ namespace SpyroScope {
 		public (uint32 type, uint32 param) GetCollisionFlagData(uint32 flagIndex) {
 			Emulator.Address flagPointer = collisionFlagPointerArray[flagIndex];
 			(uint32, uint32) data = ?;
-			Emulator.ReadFromRAM(flagPointer, &data, 8);
+			Emulator.active.ReadFromRAM(flagPointer, &data, 8);
 			return data;
 		}
 	}

@@ -54,7 +54,7 @@ namespace SpyroScope {
 		bool panning;
 
 		public this() {
-			Emulator.OnSceneChanged.Add(new => OnSceneChanged);
+			Emulator.active.OnSceneChanged.Add(new => OnSceneChanged);
 			VRAM.OnSnapshotTaken.Add(new => OnNewSnapshot);
 		}
 
@@ -76,7 +76,7 @@ namespace SpyroScope {
 		}
 
 		public override void Update() {
-			Emulator.FetchImportantData();
+			Emulator.active.FetchImportantData();
 
 			Terrain.UpdateTextureInfo(false);
 			blinkerTime = (blinkerTime + 1) % 50;
@@ -100,7 +100,7 @@ namespace SpyroScope {
 			}
 
 			for (let textureIndex in Terrain.usedTextureIndices) {
-				let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+				let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
 
 				for (let quadIndex < quadCount) {
 					let i = textureIndex * quadCount + quadIndex;
@@ -111,7 +111,7 @@ namespace SpyroScope {
 					quadRect.start = UVToScreen(partialUVs.left, partialUVs.leftY);
 					quadRect.end = UVToScreen(partialUVs.right, partialUVs.rightY);
 
-					let modifiedQuadIndex = quadIndex + (Emulator.installment == .SpyroTheDragon ? 1 : 0);
+					let modifiedQuadIndex = quadIndex + (Emulator.active.installment == .SpyroTheDragon ? 1 : 0);
 					switch (modifiedQuadIndex) {
 						case 0:
 							quadRect.left += 4;
@@ -304,7 +304,7 @@ namespace SpyroScope {
 			}
 			cluts.Clear();
 
-			if (Emulator.installment != .SpyroTheDragon) {
+			if (Emulator.active.installment != .SpyroTheDragon) {
 				SpyroFont.Init();
 			}
 		}
@@ -711,7 +711,7 @@ namespace SpyroScope {
 				// Now proceed with the sprites
 				List<int> spriteTextureIDs = scope .();
 
-				switch (Emulator.installment) {
+				switch (Emulator.active.installment) {
 					case .RiptosRage:
 						let textureSprites = new List<TextureSprite>();
 	
@@ -757,7 +757,7 @@ namespace SpyroScope {
 					case .YearOfTheDragon:
 						var textureSprites = TextureQuad[45]();
 						Emulator.Address<TextureQuad> spriteArrayPointer = ?;
-						Emulator.spriteArrayPointer[(int)Emulator.rom - 7].Read(&spriteArrayPointer);
+						Emulator.spriteArrayPointer[(int)Emulator.active.rom - 7].Read(&spriteArrayPointer);
 						spriteArrayPointer.ReadArray(&textureSprites[0], 45);
 	
 						for (let sprite in textureSprites) {
@@ -767,7 +767,7 @@ namespace SpyroScope {
 					default:
 				}
 
-				if (Emulator.installment != .SpyroTheDragon) {
+				if (Emulator.active.installment != .SpyroTheDragon) {
 					SpyroFont.Decode(spriteTextureIDs);
 				}
 

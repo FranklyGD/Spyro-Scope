@@ -9,7 +9,7 @@ namespace SpyroScope {
 
 		public int width { get => (int)right - left + 1; }
 		public int height { get {
-			let rightSkewAdjusted = Emulator.installment == .SpyroTheDragon ? rightSkew + 0x1f : rightSkew;
+			let rightSkewAdjusted = Emulator.active.installment == .SpyroTheDragon ? rightSkew + 0x1f : rightSkew;
 			return (int)rightSkewAdjusted - leftSkew + 1;
 		} }
 
@@ -21,7 +21,7 @@ namespace SpyroScope {
 			let pageOffsetX = tpageCell.x * 0.0625f;
 			let pageOffsetY = tpageCell.y * 0.5f;
 
-			let rightSkewAdjusted = Emulator.installment == .SpyroTheDragon ? rightSkew + 0x1f : rightSkew;
+			let rightSkewAdjusted = Emulator.active.installment == .SpyroTheDragon ? rightSkew + 0x1f : rightSkew;
 			return (
 				pageOffsetX + (float)left / subPixels / 1024,
 				pageOffsetX + (float)((uint16)right + 1) / subPixels / 1024,
@@ -51,7 +51,7 @@ namespace SpyroScope {
 		}
 
 		public bool GetTransparency() {
-			return Emulator.installment != .SpyroTheDragon && (flipRotateRaw & 0b10000000) > 0;
+			return Emulator.active.installment != .SpyroTheDragon && (flipRotateRaw & 0b10000000) > 0;
 			// For "Spyro the Dragon", the transparency flag for it can be found on a per face basis
 			// Refer to "TerrainRegion.NearFace.RenderInfo" for an implementation of the mentioned above
 		}

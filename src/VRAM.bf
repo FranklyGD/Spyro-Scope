@@ -38,7 +38,7 @@ namespace SpyroScope {
 		public static void TakeSnapshot() {
 			delete snapshot;
 			snapshot = new .[1024 * 512];
-			Windows.ReadProcessMemory(Emulator.processHandle, (void*)Emulator.VRAMBaseAddress, &snapshot[0], 1024 * 512 * 2, null);
+			Windows.ReadProcessMemory(Emulator.active.processHandle, (void*)Emulator.active.VRAMBaseAddress, &snapshot[0], 1024 * 512 * 2, null);
 
 			delete raw;
 			raw = new .(1024, 512, OpenGL.GL.GL_SRGB, OpenGL.GL.GL_RGBA, OpenGL.GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &snapshot[0]);
@@ -70,7 +70,7 @@ namespace SpyroScope {
 				for (let localx < width) {
 					snapshot[x + localx + (y + localy) * 1024] = buffer[localx + localy * width];
 				}
-				Windows.WriteProcessMemory(Emulator.processHandle, (void*)(Emulator.VRAMBaseAddress + (x + (y + localy) * 1024) * 2), &buffer[(int)(localy * width)], width * 2, null);
+				Windows.WriteProcessMemory(Emulator.active.processHandle, (void*)(Emulator.active.VRAMBaseAddress + (x + (y + localy) * 1024) * 2), &buffer[(int)(localy * width)], width * 2, null);
 			}
 			GL.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, x, y, width, height, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &buffer[0]);
 		}

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Diagnostics;
 
 namespace SpyroScope {
@@ -15,17 +16,19 @@ namespace SpyroScope {
 		}
 
 		public override void Update() {
-			if (!(Emulator.emulator == .None || Emulator.rom == .None)) {
+			if (!(Emulator.active == null || Emulator.active.rom == .None)) {
 				if (stopwatch.ElapsedMilliseconds > 3000) {
 					windowApp.GoToState<ViewerState>();
 				}
 			} else if (stopwatch.ElapsedMilliseconds > 1000) {
-				if (Emulator.emulator == .None) {
-					Emulator.FindEmulator();
+				if (Emulator.active == null) {
+					let processes = new List<Process>();
+					Emulator.FindEmulatorProcesses(processes);
+					DeleteContainerAndItems!(processes);
 				} else {
-					Emulator.CheckEmulatorStatus();
-					if (Emulator.emulator != .None) {
-						Emulator.FindGame();
+					Emulator.active.CheckEmulatorStatus();
+					if (Emulator.active.emulator != .None) {
+						Emulator.active.FindGame();
 					}
 				}
 				
@@ -37,17 +40,17 @@ namespace SpyroScope {
 			let middleWindow = WindowApp.width / 2;
 
 			String message = .Empty;
-			if (Emulator.emulator == .None) {
+			if (Emulator.active == null) {
 				message = "Waiting for Emulator";
 			} else {
-				if (Emulator.rom == .None) {
+				if (Emulator.active.rom == .None) {
 					message = "Waiting for Game";
 				} else {
-					message = Emulator.gameNames[(int)Emulator.rom];
+					message = Emulator.gameNames[(int)Emulator.active.rom];
 				}
 				
 				let baseline = WindowApp.height / 2 - WindowApp.font.height * 1.5f;
-				let emulator = Emulator.emulatorNames[(int)Emulator.emulator];
+				let emulator = Emulator.emulatorNames[(int)Emulator.active.emulator];
 				let halfWidth = Math.Round(WindowApp.font.CalculateWidth(emulator) / 2);
 				WindowApp.font.Print(emulator, .(middleWindow - halfWidth, baseline), .(255,255,255));
 			}
@@ -57,7 +60,7 @@ namespace SpyroScope {
 			WindowApp.font.Print(message, .(middleWindow - halfWidth, baseline), .(255,255,255));
 
 			baseline += WindowApp.font.penLine;
-			if (Emulator.emulator == .None || Emulator.rom == .None) {
+			if (Emulator.active == null || Emulator.active.rom == .None) {
 				let t = (float)stopwatch.ElapsedMilliseconds / 1000 * 3.14f;
 				DrawUtilities.Rect(baseline + 2, baseline + 4, middleWindow - halfWidth * Math.Sin(t), middleWindow + halfWidth * Math.Sin(t),
 					.(255,255,255));

@@ -17,7 +17,7 @@ namespace SpyroScope {
 		public uint8 CurrentKeyframe {
 			get {
 				uint8 currentKeyframe = ?;
-				Emulator.ReadFromRAM(address + 2, &currentKeyframe, 1);
+				Emulator.active.ReadFromRAM(address + 2, &currentKeyframe, 1);
 				return currentKeyframe;
 			}
 		}
@@ -49,7 +49,7 @@ namespace SpyroScope {
 			if (address.IsNull)
 				return;
 			
-			Emulator.ReadFromRAM(address + 4, &textureIndex, 1);
+			Emulator.active.ReadFromRAM(address + 4, &textureIndex, 1);
 
 			for (let regionIndex < Terrain.regions.Count) {
 				let terrainRegion = Terrain.regions[regionIndex];
@@ -92,7 +92,7 @@ namespace SpyroScope {
 		}
 		
 		public void Decode() {
-			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+			let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
 			for (let textureFrame in textureFrameIndices) {
 				for (let i < quadCount) {
 					Terrain.textures[textureFrame * quadCount + i].Decode();
@@ -104,9 +104,9 @@ namespace SpyroScope {
 		// Derived from Spyro: Ripto's Rage [8002270c]
 		public void Update() {
 			uint8 sourceTextureIndex = ?;
-			Emulator.ReadFromRAM(address + 8 + (int)CurrentKeyframe * 4 + 3, &sourceTextureIndex, 1);
+			Emulator.active.ReadFromRAM(address + 8 + (int)CurrentKeyframe * 4 + 3, &sourceTextureIndex, 1);
 			
-			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+			let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
 			for (let i < quadCount) {
 				Terrain.textures[(int)textureIndex * quadCount + i] = Terrain.textures[(int)sourceTextureIndex * quadCount + i];
 			}
@@ -114,14 +114,14 @@ namespace SpyroScope {
 
 		public KeyframeData GetKeyframeData(uint8 keyframeIndex) {
 			KeyframeData keyframeData = ?;
-			Emulator.ReadFromRAM(address + 8 + ((uint32)keyframeIndex) * 4, &keyframeData, 4);
+			Emulator.active.ReadFromRAM(address + 8 + ((uint32)keyframeIndex) * 4, &keyframeData, 4);
 			return keyframeData;
 		}
 		
 		public void UpdateUVs(bool transparent) {
-			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+			let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
 			TextureQuad* quad = &Terrain.textures[textureIndex * quadCount];
-			if (Emulator.installment != .SpyroTheDragon) {
+			if (Emulator.active.installment != .SpyroTheDragon) {
 				quad++;
 			}
 

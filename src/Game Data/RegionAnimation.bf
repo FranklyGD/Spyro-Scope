@@ -19,7 +19,7 @@ namespace SpyroScope {
 		public uint8 CurrentKeyframe {
 			get {
 				uint8 currentKeyframe = ?;
-				Emulator.ReadFromRAM(address + 2, &currentKeyframe, 1);
+				Emulator.active.ReadFromRAM(address + 2, &currentKeyframe, 1);
 				return currentKeyframe;
 			}
 		}
@@ -31,7 +31,7 @@ namespace SpyroScope {
 			if (address.IsNull)
 				return;
 
-			Emulator.ReadFromRAM(address + 4, &regionIndex, 2);
+			Emulator.active.ReadFromRAM(address + 4, &regionIndex, 2);
 		}
 
 		public void Dispose() {
@@ -40,17 +40,17 @@ namespace SpyroScope {
 		}
 
 		public void Reload(List<uint8> mesh2GameIndices, bool[] triOrQuad, List<int> faceIndices, Mesh mesh) mut {
-			Emulator.ReadFromRAM(address + 6, &count, 2);
+			Emulator.active.ReadFromRAM(address + 6, &count, 2);
 
 			uint32 vertexDataOffset = ?;
-			Emulator.ReadFromRAM(address + 8, &vertexDataOffset, 4);
+			Emulator.active.ReadFromRAM(address + 8, &vertexDataOffset, 4);
 
 			// Analyze the animation
 			uint32 keyframeCount = (vertexDataOffset >> 3) - 1; // triangleDataOffset / 8
 			uint8 highestUsedState = 0;
 			for (let keyframeIndex < keyframeCount) {
 				(uint8 fromState, uint8 toState) s = ?;
-				Emulator.ReadFromRAM(address + 12 + keyframeIndex * 8 + 5, &s, 2);
+				Emulator.active.ReadFromRAM(address + 12 + keyframeIndex * 8 + 5, &s, 2);
 
 				highestUsedState = Math.Max(highestUsedState, s.fromState);
 				highestUsedState = Math.Max(highestUsedState, s.toState);
@@ -108,7 +108,7 @@ namespace SpyroScope {
 				let startVertexState = stateIndex * vertexCount;
 
 				let animatedVertices = scope uint32[vertexCount];
-				Emulator.ReadFromRAM(address + vertexDataOffset + (startVertexState * 4), &animatedVertices[0], vertexCount * 4);
+				Emulator.active.ReadFromRAM(address + vertexDataOffset + (startVertexState * 4), &animatedVertices[0], vertexCount * 4);
 
 				for (let vertexIndex < vertexCount) {
 					let unpackedVertex = TerrainRegion.UnpackVertex(animatedVertices[vertexIndex]);
@@ -250,7 +250,7 @@ namespace SpyroScope {
 
 		public KeyframeData GetKeyframeData(uint8 keyframeIndex) {
 			KeyframeData keyframeData = ?;
-			Emulator.ReadFromRAM(address + 12 + ((uint32)keyframeIndex) * 8, &keyframeData, 8);
+			Emulator.active.ReadFromRAM(address + 12 + ((uint32)keyframeIndex) * 8, &keyframeData, 8);
 			return keyframeData;
 		}
 	}

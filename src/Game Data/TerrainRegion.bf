@@ -18,7 +18,7 @@ namespace SpyroScope {
 
 		/// Vertical scale of the near part of the mesh
 		public int verticalScale { get {
-			if (Emulator.installment == .SpyroTheDragon) {
+			if (Emulator.active.installment == .SpyroTheDragon) {
 				return 8;
 			} else {
 				return metadata.verticallyScaledDown ? 2 : 16;
@@ -55,7 +55,7 @@ namespace SpyroScope {
 
 			public uint8[4] UnpackVertexIndices() {
 				uint8[4] indices;
-				if (Emulator.installment == .SpyroTheDragon) {
+				if (Emulator.active.installment == .SpyroTheDragon) {
 					indices[0] = (.)(packedVertexIndices >> 14 & 0x3f); //((packedVertexIndices >> 11) & 0x1f8) >> 3;
 					indices[1] = (.)(packedVertexIndices >> 20 & 0x3f); //((packedVertexIndices >> 17) & 0x1f8) >> 3;
 					indices[2] = (.)(packedVertexIndices >> 26 & 0x3f); //((packedVertexIndices >> 23) & 0x1f8) >> 3;
@@ -71,7 +71,7 @@ namespace SpyroScope {
 
 			public uint8[4] UnpackColorIndices() {
 				uint8[4] indices;
-				if (Emulator.installment == .SpyroTheDragon) {
+				if (Emulator.active.installment == .SpyroTheDragon) {
 					indices[0] = (.)(packedColorIndices >> 14 & 0x3f); //((packedColorIndices >> 12) & 0xfc) >> 2;
 					indices[1] = (.)(packedColorIndices >> 20 & 0x3f); //((packedColorIndices >> 18) & 0xfc) >> 2;
 					indices[2] = (.)(packedColorIndices >> 26 & 0x3f); //((packedColorIndices >> 24) & 0xfc) >> 2;
@@ -85,7 +85,7 @@ namespace SpyroScope {
 				return indices;
 			}
 			
-			public bool isTriangle { get => Emulator.installment == .SpyroTheDragon ?
+			public bool isTriangle { get => Emulator.active.installment == .SpyroTheDragon ?
 				(packedVertexIndices >> 14 & 0x3f) == (packedVertexIndices >> 8 & 0x3f) :
 				(packedVertexIndices >> 10 & 0x7f) == (packedVertexIndices >> 3 & 0x7f)
 			;}
@@ -99,7 +99,7 @@ namespace SpyroScope {
 			public struct RenderInfo {
 				public uint8 texture, flipSideDepth, a, b;
 				
-				public bool transparent { get => Emulator.installment == .SpyroTheDragon && texture & 0x80 > 0; }
+				public bool transparent { get => Emulator.active.installment == .SpyroTheDragon && texture & 0x80 > 0; }
 				// For "Ripto's Rage" and "Year of the Dragon", the transparency flag for it can be found on a per texture basis
 				// Refer to "TextureQuad" for an implementation of the mentioned above
 
@@ -107,9 +107,9 @@ namespace SpyroScope {
 				public uint8 depthOffset { get => BitEdit.Get!(flipSideDepth, 0b0011); set mut => BitEdit.Set!(flipSideDepth, value, 0b0011); }
 				public bool doubleSided { get => BitEdit.Get!(flipSideDepth, 0b1000) > 0; set mut => BitEdit.Set!(flipSideDepth, value, 0b1000); }
 				public uint8 rotation {
-					get => Emulator.installment == .SpyroTheDragon ? BitEdit.Get!(flipSideDepth, 0b0011) : BitEdit.Get!(flipSideDepth, 0b00110000) >> 4;
+					get => Emulator.active.installment == .SpyroTheDragon ? BitEdit.Get!(flipSideDepth, 0b0011) : BitEdit.Get!(flipSideDepth, 0b00110000) >> 4;
 					set mut {
-						if (Emulator.installment == .SpyroTheDragon) {
+						if (Emulator.active.installment == .SpyroTheDragon) {
 							BitEdit.Set!(flipSideDepth, value, 0b0011);
 						} else {
 							BitEdit.Set!(flipSideDepth, value << 4, 0b00110000);
@@ -117,11 +117,11 @@ namespace SpyroScope {
 					}
 				}
 			}
-			public RenderInfo* renderInfo  { get mut => Emulator.installment == .SpyroTheDragon ?  (.)&a: (.)&b; };
+			public RenderInfo* renderInfo  { get mut => Emulator.active.installment == .SpyroTheDragon ?  (.)&a: (.)&b; };
 			public bool flipped {
-				get mut => Emulator.installment == .SpyroTheDragon ? BitEdit.Get!(b[0], 0b0010) > 0: BitEdit.Get!(renderInfo.flipSideDepth, 0b0100) > 0;
+				get mut => Emulator.active.installment == .SpyroTheDragon ? BitEdit.Get!(b[0], 0b0010) > 0: BitEdit.Get!(renderInfo.flipSideDepth, 0b0100) > 0;
 				set mut {
-					if (Emulator.installment == .SpyroTheDragon) {
+					if (Emulator.active.installment == .SpyroTheDragon) {
 						BitEdit.Set!(b[0], value, 0b0010);
 					} else {
 						BitEdit.Set!(renderInfo.flipSideDepth, value, 0b0100);
@@ -133,7 +133,7 @@ namespace SpyroScope {
 		public this(Emulator.Address address) {
 			this.address = address;
 			
-			Emulator.ReadFromRAM(address, &metadata, sizeof(RegionMetadata));
+			Emulator.active.ReadFromRAM(address, &metadata, sizeof(RegionMetadata));
 		}
 
 		/// Sets the position of the mesh's vertex with the index the game uses
@@ -149,7 +149,7 @@ namespace SpyroScope {
 				let regionPointer = address + 0x1c +
 					((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2 +
 					metadata.nearVertexCount + (int)metadata.nearColorCount * 2) * 4;
-				Emulator.WriteToRAM(regionPointer, &nearVertices[index], (int)index * 4);
+				Emulator.active.WriteToRAM(regionPointer, &nearVertices[index], (int)index * 4);
 			}
 		}
 
@@ -164,7 +164,7 @@ namespace SpyroScope {
 			Emulator.Address regionPointer = address + 0x1c + ((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2) * 4;
 			if (nearFaces == null) {
 				nearFaces = new .[metadata.nearFaceCount];
-				Emulator.ReadFromRAM(regionPointer + ((int)metadata.nearVertexCount + (int)metadata.nearColorCount * 2) * 4, nearFaces.CArray(), (int)metadata.nearFaceCount * sizeof(NearFace));
+				Emulator.active.ReadFromRAM(regionPointer + ((int)metadata.nearVertexCount + (int)metadata.nearColorCount * 2) * 4, nearFaces.CArray(), (int)metadata.nearFaceCount * sizeof(NearFace));
 			}
 
 			for (let i < metadata.nearFaceCount) {
@@ -181,7 +181,7 @@ namespace SpyroScope {
 			List<Renderer.Color> colorList = scope .();
 
 			uint32[] packedVertices = scope .[vertexSize];
-			Emulator.ReadFromRAM(regionPointer, packedVertices.CArray(), vertexSize * 4);
+			Emulator.active.ReadFromRAM(regionPointer, packedVertices.CArray(), vertexSize * 4);
 			nearVertices = scope .[vertexSize];
 			for (let i < vertexSize) {
 				nearVertices[i] = UnpackVertex(packedVertices[i]);
@@ -194,10 +194,10 @@ namespace SpyroScope {
 			uint8[4] triangleIndices, colorIndices;
 
 			farFaces = new .[faceSize * 2];
-			Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize) * 4, farFaces.CArray(), faceSize * sizeof(FarFace));
+			Emulator.active.ReadFromRAM(regionPointer + (vertexSize + colorSize) * 4, farFaces.CArray(), faceSize * sizeof(FarFace));
 
 			Renderer.Color4[] vertexColors = scope .[colorSize];
-			Emulator.ReadFromRAM(regionPointer + vertexSize * 4, vertexColors.CArray(), colorSize * 4);
+			Emulator.active.ReadFromRAM(regionPointer + vertexSize * 4, vertexColors.CArray(), colorSize * 4);
 
 			// Derived from Spyro the Dragon
 			// Vertex Indexing [80026378]
@@ -295,7 +295,7 @@ namespace SpyroScope {
 			List<int> activeNearFaceIndices = ?;
 
 			uint32[] packedVertices = scope .[vertexSize];
-			Emulator.ReadFromRAM(regionPointer, packedVertices.CArray(), vertexSize * 4);
+			Emulator.active.ReadFromRAM(regionPointer, packedVertices.CArray(), vertexSize * 4);
 			nearVertices = scope .[vertexSize];
 			for (let i < vertexSize) {
 				nearVertices[i] = UnpackVertex(packedVertices[i]);
@@ -322,11 +322,11 @@ namespace SpyroScope {
 
 			if (nearFaces == null) {
 				nearFaces = new .[faceSize];
-				Emulator.ReadFromRAM(regionPointer + (vertexSize + colorSize * 2) * 4, nearFaces.CArray(), faceSize * sizeof(NearFace));
+				Emulator.active.ReadFromRAM(regionPointer + (vertexSize + colorSize * 2) * 4, nearFaces.CArray(), faceSize * sizeof(NearFace));
 			}
 
 			nearColors = new .[colorSize * 2];
-			Emulator.ReadFromRAM(regionPointer + vertexSize * 4, nearColors.CArray(), colorSize * 2 * 4);
+			Emulator.active.ReadFromRAM(regionPointer + vertexSize * 4, nearColors.CArray(), colorSize * 2 * 4);
 
 			// Derived from Spyro: Ripto's Rage
 			// Vertex Indexing [80024a00]
@@ -339,10 +339,10 @@ namespace SpyroScope {
 				let flipSide = regionFace.flipped;
 				var textureRotation = regionFace.renderInfo.rotation;
 
-				let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+				let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
 				TextureQuad* quad = ?;
 				TextureQuad* quadSet = &Terrain.textures[textureIndex * quadCount];
-				quad = quadSet = Emulator.installment == .SpyroTheDragon ? quadSet : quadSet + 1;
+				quad = quadSet = Emulator.active.installment == .SpyroTheDragon ? quadSet : quadSet + 1;
 				var partialUV = quad.GetVramPartialUV();
 
 				triangleUV[0] = .(partialUV.left, partialUV.rightY);
@@ -835,12 +835,12 @@ namespace SpyroScope {
 				((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2 + // Pass over all far data
 				(int)metadata.nearVertexCount + (int)metadata.nearColorCount * 2 + // Pass over previous near data
 				faceIndex * 4) * 4;// Index the face
-			Emulator.WriteToRAM(faceAddress, face, sizeof(NearFace));
+			Emulator.active.WriteToRAM(faceAddress, face, sizeof(NearFace));
 			nearFaces[faceIndex] = *face;
 
-			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+			let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
 			TextureQuad* quad = &Terrain.textures[face.renderInfo.textureIndex * quadCount];
-			if (Emulator.installment != .SpyroTheDragon) {
+			if (Emulator.active.installment != .SpyroTheDragon) {
 				quad++;
 			}
 
@@ -857,7 +857,7 @@ namespace SpyroScope {
 				quad++;
 			}
 
-			let transparent = Emulator.installment == .SpyroTheDragon ? quad.GetTransparency() : face.renderInfo.transparent;
+			let transparent = Emulator.active.installment == .SpyroTheDragon ? quad.GetTransparency() : face.renderInfo.transparent;
 
 			let affectedTriangles = scope List<int>();
 			let faceIndices = transparent ? nearFaceTransparentIndices : nearFaceIndices;
@@ -871,7 +871,7 @@ namespace SpyroScope {
 		}
 
 		public void DrawFar() {
-			Matrix3 scale = .Scale(16, 16, Emulator.installment == .SpyroTheDragon ? 8 : 16);
+			Matrix3 scale = .Scale(16, 16, Emulator.active.installment == .SpyroTheDragon ? 8 : 16);
 			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
 			farMesh.Draw();
 		}

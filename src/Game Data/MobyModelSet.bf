@@ -40,19 +40,19 @@ namespace SpyroScope {
 			List<Renderer.Color> activeColors;
 
 			uint32 modelCount = ?;
-			Emulator.ReadFromRAM(modelSetAddress, &modelCount, 4);
+			Emulator.active.ReadFromRAM(modelSetAddress, &modelCount, 4);
 			texturedModels = new .[modelCount];
 			solidModels = new .[modelCount];
 			shinyModels = new .[modelCount];
 
 			Emulator.Address[] modelAddresses = scope .[modelCount];
-			Emulator.ReadFromRAM(modelSetAddress + 4 * 5, &modelAddresses[0], 4 * modelCount);
+			Emulator.active.ReadFromRAM(modelSetAddress + 4 * 5, &modelAddresses[0], 4 * modelCount);
 
 			for	(let modelIndex < modelCount) {
 				Emulator.Address modelDataAddress = modelAddresses[modelIndex];
 
 				ModelMetadata modelMetadata = ?;
-				Emulator.ReadFromRAM(modelDataAddress, &modelMetadata, sizeof(ModelMetadata));
+				Emulator.active.ReadFromRAM(modelDataAddress, &modelMetadata, sizeof(ModelMetadata));
 	
 				List<Vector3> solidVertices = scope .();
 				List<Renderer.Color> solidColors = scope .();
@@ -64,13 +64,13 @@ namespace SpyroScope {
 				
 				if (modelMetadata.vertexCount > 0) {
 					uint32[] packedVertices = scope .[modelMetadata.vertexCount];
-					Emulator.ReadFromRAM(modelDataAddress + 0x10, &packedVertices[0], 4 * modelMetadata.vertexCount);
+					Emulator.active.ReadFromRAM(modelDataAddress + 0x10, &packedVertices[0], 4 * modelMetadata.vertexCount);
 
 					Renderer.Color4[] colors = scope .[modelMetadata.colorCount];
-					Emulator.ReadFromRAM(modelDataAddress + modelMetadata.colorDataOffset, &colors[0], 4 * modelMetadata.colorCount);
+					Emulator.active.ReadFromRAM(modelDataAddress + modelMetadata.colorDataOffset, &colors[0], 4 * modelMetadata.colorCount);
 					
 					uint16 offsets = ?;
-					Emulator.ReadFromRAM(modelDataAddress + modelMetadata.triangleDataOffset, &offsets, 2);
+					Emulator.active.ReadFromRAM(modelDataAddress + modelMetadata.triangleDataOffset, &offsets, 2);
 
 					uint32[4] triangleIndices = ?;
 					Vector3[4] triangleVertices = ?;
@@ -82,9 +82,9 @@ namespace SpyroScope {
 					Emulator.Address scanningEndAddress = scanningAddress + offsets;
 					while (scanningAddress < scanningEndAddress) {
 						uint32 packedTriangleIndex = ?;
-						Emulator.ReadFromRAM(scanningAddress, &packedTriangleIndex, 4);
+						Emulator.active.ReadFromRAM(scanningAddress, &packedTriangleIndex, 4);
 						uint32 extraData = ?;
-						Emulator.ReadFromRAM(scanningAddress + 4, &extraData, 4);
+						Emulator.active.ReadFromRAM(scanningAddress + 4, &extraData, 4);
 
 						let hasTextureData = extraData & 0x80000000 > 0;
 
@@ -169,7 +169,7 @@ namespace SpyroScope {
 
 						if (hasTextureData) {
 							ExtendedTextureQuad textureQuad = ?;
-							Emulator.ReadFromRAM(scanningAddress + 8, &textureQuad, sizeof(ExtendedTextureQuad));
+							Emulator.active.ReadFromRAM(scanningAddress + 8, &textureQuad, sizeof(ExtendedTextureQuad));
 
 							textureQuad.Decode();
 							
@@ -258,23 +258,23 @@ namespace SpyroScope {
 			List<Renderer.Color> textureColors = scope .();
 
 			Emulator.Address modelMetadataAddress = ?;
-			Emulator.ReadFromRAM(modelSetAddress + 4 * 15, &modelMetadataAddress, 4);
+			Emulator.active.ReadFromRAM(modelSetAddress + 4 * 15, &modelMetadataAddress, 4);
 
 			Emulator.Address vertexDataAddress = ?;
 			Emulator.Address faceDataAddress = ?;
 			Emulator.Address colorDataAddress = ?;
-			Emulator.ReadFromRAM(modelMetadataAddress + 4 * 3, &vertexDataAddress, 4);
-			Emulator.ReadFromRAM(modelMetadataAddress + 4 * 4, &faceDataAddress, 4);
-			Emulator.ReadFromRAM(modelMetadataAddress + 4 * 5, &colorDataAddress, 4);
+			Emulator.active.ReadFromRAM(modelMetadataAddress + 4 * 3, &vertexDataAddress, 4);
+			Emulator.active.ReadFromRAM(modelMetadataAddress + 4 * 4, &faceDataAddress, 4);
+			Emulator.active.ReadFromRAM(modelMetadataAddress + 4 * 5, &colorDataAddress, 4);
 
 			/*uint32[] packedVertices = scope .[modelMetadata.vertexCount];
-			Emulator.ReadFromRAM(modelDataAddress + 0x10, &packedVertices[0], 4 * modelMetadata.vertexCount);
+			Emulator.active.ReadFromRAM(modelDataAddress + 0x10, &packedVertices[0], 4 * modelMetadata.vertexCount);
 
 			Renderer.Color4[] colors = scope .[modelMetadata.colorCount];
-			Emulator.ReadFromRAM(modelDataAddress + modelMetadata.colorDataOffset, &colors[0], 4 * modelMetadata.colorCount);*/
+			Emulator.active.ReadFromRAM(modelDataAddress + modelMetadata.colorDataOffset, &colors[0], 4 * modelMetadata.colorCount);*/
 			
 			uint16 offsets = ?;
-			Emulator.ReadFromRAM(faceDataAddress, &offsets, 2);
+			Emulator.active.ReadFromRAM(faceDataAddress, &offsets, 2);
 
 			uint8[4] triangleIndices = ?;
 			Vector3[4] triangleVertices = ?;
@@ -285,9 +285,9 @@ namespace SpyroScope {
 			Emulator.Address scanningAddress = faceDataAddress + 4;
 			Emulator.Address scanningEndAddress = scanningAddress + offsets;
 			while (scanningAddress < scanningEndAddress) {
-				Emulator.ReadFromRAM(scanningAddress, &triangleIndices, 4);
+				Emulator.active.ReadFromRAM(scanningAddress, &triangleIndices, 4);
 				uint32 extraData = ?;
-				Emulator.ReadFromRAM(scanningAddress + 4, &extraData, 4);
+				Emulator.active.ReadFromRAM(scanningAddress + 4, &extraData, 4);
 
 				let hasTextureData = extraData & 0x80000000 > 0;
 
@@ -311,11 +311,11 @@ namespace SpyroScope {
 				}
 
 				uint32 vd = ?;
-				Emulator.ReadFromRAM(vertexDataAddress + (uint32)triangleIndices[1] * 4, &vd, 4);
+				Emulator.active.ReadFromRAM(vertexDataAddress + (uint32)triangleIndices[1] * 4, &vd, 4);
 				triangleVertices[0] = UnpackAnimatedVertex(vd);//packedVertices[triangleIndices[0]]);
-				Emulator.ReadFromRAM(vertexDataAddress + (uint32)triangleIndices[2] * 4, &vd, 4);
+				Emulator.active.ReadFromRAM(vertexDataAddress + (uint32)triangleIndices[2] * 4, &vd, 4);
 				triangleVertices[1] = UnpackAnimatedVertex(vd);//packedVertices[triangleIndices[1]]);
-				Emulator.ReadFromRAM(vertexDataAddress + (uint32)triangleIndices[3] * 4, &vd, 4);
+				Emulator.active.ReadFromRAM(vertexDataAddress + (uint32)triangleIndices[3] * 4, &vd, 4);
 				triangleVertices[2] = UnpackAnimatedVertex(vd);//packedVertices[triangleIndices[2]]);
 
 				// Derived from Spyro: Ripto's Rage [80047a98]
@@ -330,11 +330,11 @@ namespace SpyroScope {
 
 					if (materialMode == 0) {
 						Renderer.Color cd = ?;
-						Emulator.ReadFromRAM(colorDataAddress + (uint32)colorIndices[2] * 4, &cd, 3);
+						Emulator.active.ReadFromRAM(colorDataAddress + (uint32)colorIndices[2] * 4, &cd, 3);
 						activeColors.Add(cd);//activeColors.Add(colors[colorIndices[2]]);
-						Emulator.ReadFromRAM(colorDataAddress + (uint32)colorIndices[1] * 4, &cd, 3);
+						Emulator.active.ReadFromRAM(colorDataAddress + (uint32)colorIndices[1] * 4, &cd, 3);
 						activeColors.Add(cd);//activeColors.Add(colors[colorIndices[1]]);
-						Emulator.ReadFromRAM(colorDataAddress + (uint32)colorIndices[0] * 4, &cd, 3);
+						Emulator.active.ReadFromRAM(colorDataAddress + (uint32)colorIndices[0] * 4, &cd, 3);
 						activeColors.Add(cd);//activeColors.Add(colors[colorIndices[0]]);
 					} else {
 						activeColors.Add(.(255,255,255));
@@ -342,7 +342,7 @@ namespace SpyroScope {
 						activeColors.Add(.(255,255,255));
 					}
 				} else {
-					Emulator.ReadFromRAM(vertexDataAddress + (uint32)triangleIndices[0] * 4, &vd, 4);
+					Emulator.active.ReadFromRAM(vertexDataAddress + (uint32)triangleIndices[0] * 4, &vd, 4);
 					triangleVertices[3] = UnpackAnimatedVertex(vd);//packedVertices[triangleIndices[3]]);
 					
 					activeVertices.Add(triangleVertices[2]);
@@ -357,19 +357,19 @@ namespace SpyroScope {
 					
 					if (materialMode == 0) {
 						Renderer.Color cd = ?;
-						Emulator.ReadFromRAM(colorDataAddress + (uint32)colorIndices[2] * 4, &cd, 3);
+						Emulator.active.ReadFromRAM(colorDataAddress + (uint32)colorIndices[2] * 4, &cd, 3);
 						activeColors.Add(cd);//activeColors.Add(colors[colorIndices[2]]);
-						Emulator.ReadFromRAM(colorDataAddress + (uint32)colorIndices[0] * 4, &cd, 3);
+						Emulator.active.ReadFromRAM(colorDataAddress + (uint32)colorIndices[0] * 4, &cd, 3);
 						activeColors.Add(cd);//activeColors.Add(colors[colorIndices[0]]);
-						Emulator.ReadFromRAM(colorDataAddress + (uint32)colorIndices[1] * 4, &cd, 3);
+						Emulator.active.ReadFromRAM(colorDataAddress + (uint32)colorIndices[1] * 4, &cd, 3);
 						activeColors.Add(cd);//activeColors.Add(colors[colorIndices[1]]);
 
 						
-						Emulator.ReadFromRAM(colorDataAddress + (uint32)colorIndices[1] * 4, &cd, 3);
+						Emulator.active.ReadFromRAM(colorDataAddress + (uint32)colorIndices[1] * 4, &cd, 3);
 						activeColors.Add(cd);//activeColors.Add(colors[colorIndices[1]]);
-						Emulator.ReadFromRAM(colorDataAddress + (uint32)colorIndices[0] * 4, &cd, 3);
+						Emulator.active.ReadFromRAM(colorDataAddress + (uint32)colorIndices[0] * 4, &cd, 3);
 						activeColors.Add(cd);//activeColors.Add(colors[colorIndices[0]]);
-						Emulator.ReadFromRAM(colorDataAddress + (uint32)colorIndices[3] * 4, &cd, 3);
+						Emulator.active.ReadFromRAM(colorDataAddress + (uint32)colorIndices[3] * 4, &cd, 3);
 						activeColors.Add(cd);//activeColors.Add(colors[colorIndices[3]]);
 					} else {
 						activeColors.Add(.(255,255,255));
@@ -385,7 +385,7 @@ namespace SpyroScope {
 
 				if (hasTextureData) {
 					ExtendedTextureQuad textureQuad = ?;
-					Emulator.ReadFromRAM(scanningAddress + 8, &textureQuad, sizeof(ExtendedTextureQuad));
+					Emulator.active.ReadFromRAM(scanningAddress + 8, &textureQuad, sizeof(ExtendedTextureQuad));
 
 					textureQuad.Decode();
 					

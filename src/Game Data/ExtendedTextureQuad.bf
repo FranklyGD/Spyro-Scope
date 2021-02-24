@@ -29,7 +29,7 @@ namespace SpyroScope {
 			let pageOffsetX = tpageCell.x * 0.0625f;
 			let pageOffsetY = tpageCell.y * 0.5f;
 
-			let yAdjusted = Emulator.installment == .SpyroTheDragon ? uv.y + 0x1f : uv.y;
+			let yAdjusted = Emulator.active.installment == .SpyroTheDragon ? uv.y + 0x1f : uv.y;
 			return .(
 				pageOffsetX + (float)((uint16)uv.x + ((uv.x % 32 >= 16) ? 1 : 0)) / subPixels / 1024,
 				pageOffsetY + (float)((uint16)yAdjusted + ((yAdjusted % 32 >= 16) ? 1 : 0)) / 512

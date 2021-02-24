@@ -63,11 +63,11 @@ namespace SpyroScope {
 		public void DrawData() {
 			// This is incomplete and possible inefficient
 			// to work with when adding new entries
-			if (Emulator.installment == .RiptosRage) {
+			if (Emulator.active.installment == .RiptosRage) {
 				switch (objectTypeID) {
 					case 0x0078: { // Sparx
 						SparxData sparx = ?;
-						Emulator.ReadFromRAM(dataPointer, &sparx, sizeof(SparxData));
+						Emulator.active.ReadFromRAM(dataPointer, &sparx, sizeof(SparxData));
 						sparx.Draw(this);
 					}
 					case 0x01f0: { // Glimmer Blue Dino
@@ -75,7 +75,7 @@ namespace SpyroScope {
 					}
 					case 0x0189: { // Shady Oasis NPC
 						uint32 pathCount = ?;
-						Emulator.ReadFromRAM(dataPointer + 0x38, &pathCount, 4);
+						Emulator.active.ReadFromRAM(dataPointer + 0x38, &pathCount, 4);
 
 						for (let p < pathCount) {
 							DrawPath(dataPointer + 0x5c + p * 4);
@@ -89,31 +89,31 @@ namespace SpyroScope {
 					}
 					case 0x0400: { // Whirlwind
 						WhirlwindData whirlwind = ?;
-						Emulator.ReadFromRAM(dataPointer, &whirlwind, sizeof(WhirlwindData));
+						Emulator.active.ReadFromRAM(dataPointer, &whirlwind, sizeof(WhirlwindData));
 						whirlwind.Draw(this);
 					}
 				}
-			} else if (Emulator.installment == .YearOfTheDragon) {
+			} else if (Emulator.active.installment == .YearOfTheDragon) {
 				switch (objectTypeID) {
 					case 0x0078: { // Sparx
 						SparxData sparx = ?;
-						Emulator.ReadFromRAM(dataPointer, &sparx, sizeof(SparxData));
+						Emulator.active.ReadFromRAM(dataPointer, &sparx, sizeof(SparxData));
 						sparx.Draw(this);
 					}
 					case 0x03f3: { // ???
 						int32 objectIndex = ?;
-						Emulator.ReadFromRAM(dataPointer, &objectIndex, 4);
+						Emulator.active.ReadFromRAM(dataPointer, &objectIndex, 4);
 
 						Moby linkedMoby = ?;
 						Emulator.Address<Moby> objPointer = ?;
-						Emulator.objectArrayPointers[(int)Emulator.rom].Read(&objPointer);
-						Emulator.ReadFromRAM(objPointer + objectIndex * sizeof(Moby), &linkedMoby, sizeof(Moby));
+						Emulator.objectArrayPointers[(int)Emulator.active.rom].Read(&objPointer);
+						Emulator.active.ReadFromRAM(objPointer + objectIndex * sizeof(Moby), &linkedMoby, sizeof(Moby));
 
 						Renderer.DrawLine(position, linkedMoby.position, .(255,255,255), .(255,255,255));
 					}
 					case 0x03ff: { // Whirlwind
 						WhirlwindData whirlwind = ?;
-						Emulator.ReadFromRAM(dataPointer, &whirlwind, sizeof(WhirlwindData));
+						Emulator.active.ReadFromRAM(dataPointer, &whirlwind, sizeof(WhirlwindData));
 						whirlwind.Draw(this);
 					}
 				}
@@ -122,15 +122,15 @@ namespace SpyroScope {
 
 		void DrawPath(Emulator.Address pathAddress) {
 			Emulator.Address pathArrayPointer = ?;
-			Emulator.ReadFromRAM(pathAddress, &pathArrayPointer, 4);
+			Emulator.active.ReadFromRAM(pathAddress, &pathArrayPointer, 4);
 			uint16 waypointCount = ?;
-			Emulator.ReadFromRAM(pathArrayPointer, &waypointCount, 2);
+			Emulator.active.ReadFromRAM(pathArrayPointer, &waypointCount, 2);
 			if (waypointCount > 256) {
 				return; // There shouldn't be this many waypoints
 			}
 			if (waypointCount > 0) {
 				uint8[] dataBytes = scope .[4 * 4 * waypointCount];
-				Emulator.ReadFromRAM(pathArrayPointer + 12, &dataBytes[0], 4 * 4 * waypointCount);
+				Emulator.active.ReadFromRAM(pathArrayPointer + 12, &dataBytes[0], 4 * 4 * waypointCount);
 				for (let i < waypointCount) {
 					let position = *(Vector3Int*)&dataBytes[4 * 4 * i];
 
@@ -157,7 +157,7 @@ namespace SpyroScope {
 
 		[Inline]
 		public static Emulator.Address<Moby> GetAddress(int index) {
-			return Emulator.objectArrayAddress + index * sizeof(Moby);
+			return Emulator.active.objectArrayAddress + index * sizeof(Moby);
 		}
 	}
 }

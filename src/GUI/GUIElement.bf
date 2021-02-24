@@ -52,12 +52,20 @@ namespace SpyroScope {
 		}
 
 		public static void GUIUpdate() {
+			if (activeGUI == null) {
+				return;
+			}
+
 			for (let element in activeGUI) {
 				element.Update();
 			}
 		}
 
 		public static bool GUIEvent(SDL.Event event) {
+			if (activeGUI == null) {
+				return false;
+			}
+
 			let input = selectedElement as Input;
 			if (input != null && input.Input(event)) {
 				return true;

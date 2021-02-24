@@ -71,9 +71,9 @@ namespace SpyroScope {
 		public static void Reload() {
 			// Collision
 			Emulator.Address address = ?;
-			Emulator.collisionDataPointers[(int)Emulator.rom].Read(&address);
+			Emulator.collisionDataPointers[(int)Emulator.active.rom].Read(&address);
 			Emulator.Address deformAddress = ?;
-			Emulator.collisionDeformDataPointers[(int)Emulator.rom].Read(&deformAddress);
+			Emulator.collisionDeformDataPointers[(int)Emulator.active.rom].Read(&deformAddress);
 
 			delete collision;
 			collision = new .(address, deformAddress);
@@ -82,10 +82,10 @@ namespace SpyroScope {
 
 			// Locate scene region data and amount that are present in RAM
 			Emulator.Address<Emulator.Address> sceneDataRegionArrayAddress = ?;
-			let sceneDataRegionArrayPointer = Emulator.sceneRegionPointers[(int)Emulator.rom];
+			let sceneDataRegionArrayPointer = Emulator.sceneRegionPointers[(int)Emulator.active.rom];
 			sceneDataRegionArrayPointer.Read(&sceneDataRegionArrayAddress);
 			uint32 sceneRegionCount = ?;
-			Emulator.ReadFromRAM(sceneDataRegionArrayPointer + 4, &sceneRegionCount, 4);
+			Emulator.active.ReadFromRAM(sceneDataRegionArrayPointer + 4, &sceneRegionCount, 4);
 
 			// Remove any existing parsed data
 			DeleteContainerAndItems!(regions);
@@ -110,9 +110,9 @@ namespace SpyroScope {
 				delete textureScrollers;
 			}
 
-			let textureScrollerPointer = Emulator.textureScrollerPointers[(int)Emulator.rom];
+			let textureScrollerPointer = Emulator.textureScrollerPointers[(int)Emulator.active.rom];
 			uint32 textureScrollerCount = ?;
-			Emulator.ReadFromRAM(textureScrollerPointer - 4, &textureScrollerCount, 4);
+			Emulator.active.ReadFromRAM(textureScrollerPointer - 4, &textureScrollerCount, 4);
 			textureScrollers = new .[textureScrollerCount];
 			if (textureScrollerCount > 0) {
 				Emulator.Address<Emulator.Address> textureScrollerArrayAddress = ?;
@@ -136,9 +136,9 @@ namespace SpyroScope {
 				delete textureSwappers;
 			}
 
-			let textureSwapperPointer = Emulator.textureSwapperPointers[(int)Emulator.rom];
+			let textureSwapperPointer = Emulator.textureSwapperPointers[(int)Emulator.active.rom];
 			uint32 textureSwapperCount = ?;
-			Emulator.ReadFromRAM(textureSwapperPointer - 4, &textureSwapperCount, 4);
+			Emulator.active.ReadFromRAM(textureSwapperPointer - 4, &textureSwapperCount, 4);
 			textureSwappers = new .[textureSwapperCount];
 			if (textureSwapperCount > 0) {
 				Emulator.Address<Emulator.Address> textureScrollerArrayAddress = ?;
@@ -165,11 +165,11 @@ namespace SpyroScope {
 			if (textures != null) {
 				delete textures;
 			}
-			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+			let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
 
 			let totalQuadCount = (highestUsedIndex + 1) * quadCount;
 			Emulator.Address<TextureQuad> textureDataAddress = ?;
-			Emulator.textureDataPointers[(int)Emulator.rom].Read(&textureDataAddress);
+			Emulator.textureDataPointers[(int)Emulator.active.rom].Read(&textureDataAddress);
 			textures = new .[totalQuadCount];
 			textureDataAddress.ReadArray(&textures[0], totalQuadCount);
 
@@ -197,14 +197,14 @@ namespace SpyroScope {
 			/*float clock = 0;
 
 			Emulator.Address warpingRegionArrayPointer = ?;
-			Emulator.warpingRegionPointers[(int)Emulator.rom].Read(&warpingRegionArrayPointer);
+			Emulator.warpingRegionPointers[(int)Emulator.active.rom].Read(&warpingRegionArrayPointer);
 			uint32 waterRegionOffset = ?;
-			Emulator.ReadFromRAM(warpingRegionArrayPointer, &waterRegionOffset, 4);
+			Emulator.active.ReadFromRAM(warpingRegionArrayPointer, &waterRegionOffset, 4);
 			warpingRegionArrayPointer += waterRegionOffset;
 			uint32 waterRegionCount = ?;
-			Emulator.ReadFromRAM(warpingRegionArrayPointer, &waterRegionCount, 4);
+			Emulator.active.ReadFromRAM(warpingRegionArrayPointer, &waterRegionCount, 4);
 			uint32[] warpData = new .[waterRegionCount];
-			Emulator.ReadFromRAM(warpingRegionArrayPointer + 4, warpData.CArray(), waterRegionCount * 4);
+			Emulator.active.ReadFromRAM(warpingRegionArrayPointer + 4, warpData.CArray(), waterRegionCount * 4);
 			for (let i < waterRegionCount) {
 				let regionIndex = warpData[i] & 0xff;
 				let begin = warpingRegionArrayPointer + (warpData[i] >> 0x10);
@@ -212,7 +212,7 @@ namespace SpyroScope {
 				let count = (int)(end - begin) / 4;
 
 				uint32[] dataArray = scope .[count];
-				Emulator.ReadFromRAM(begin, dataArray.CArray(), count);
+				Emulator.active.ReadFromRAM(begin, dataArray.CArray(), count);
 				for (let ii < count) {
 					let data = dataArray[ii];
 					visualMeshes[regionIndex].vertices Math.Cos((float)(data + clock) / 128 * Math.PI_f * 2) * 20 + (data >> 0x10) |  & 0xfffffc00;
@@ -223,8 +223,8 @@ namespace SpyroScope {
 
 		public static void Decode() {
 			// Convert any used VRAM textures for previewing
-			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
-			let quadDecodeCount = Emulator.installment == .SpyroTheDragon ? 5 : 6;
+			let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
+			let quadDecodeCount = Emulator.active.installment == .SpyroTheDragon ? 5 : 6;
 
 			// Temporarily remove affected textures
 			if (textureScrollers != null) {
@@ -364,14 +364,14 @@ namespace SpyroScope {
 			}
 
 			uint32 count = ?;
-			Emulator.ReadFromRAM(Emulator.farRegionDeformPointers[(int)Emulator.rom] - 4, &count, 4);
+			Emulator.active.ReadFromRAM(Emulator.farRegionDeformPointers[(int)Emulator.active.rom] - 4, &count, 4);
 
 			farAnimations = new .[count];
 
 			Emulator.Address sceneDeformArray = ?;
-			Emulator.farRegionDeformPointers[(int)Emulator.rom].Read(&sceneDeformArray);
+			Emulator.farRegionDeformPointers[(int)Emulator.active.rom].Read(&sceneDeformArray);
 			var animationPointers = scope Emulator.Address[count];
-			Emulator.ReadFromRAM(sceneDeformArray, animationPointers.CArray(), 4 * count);
+			Emulator.active.ReadFromRAM(sceneDeformArray, animationPointers.CArray(), 4 * count);
 
 			for (let animationIndex < count) {
 				let animation = &farAnimations[animationIndex];
@@ -394,13 +394,13 @@ namespace SpyroScope {
 				delete nearAnimations;
 			}
 
-			Emulator.ReadFromRAM(Emulator.nearRegionDeformPointers[(int)Emulator.rom] - 4, &count, 4);
+			Emulator.active.ReadFromRAM(Emulator.nearRegionDeformPointers[(int)Emulator.active.rom] - 4, &count, 4);
 
 			nearAnimations = new .[count];
 
-			Emulator.nearRegionDeformPointers[(int)Emulator.rom].Read(&sceneDeformArray);
+			Emulator.nearRegionDeformPointers[(int)Emulator.active.rom].Read(&sceneDeformArray);
 			animationPointers = scope Emulator.Address[count];
-			Emulator.ReadFromRAM(sceneDeformArray, animationPointers.CArray(), 4 * count);
+			Emulator.active.ReadFromRAM(sceneDeformArray, animationPointers.CArray(), 4 * count);
 
 			for (let animationIndex < count) {
 				let animation = &nearAnimations[animationIndex];

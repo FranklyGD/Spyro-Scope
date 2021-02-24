@@ -165,7 +165,7 @@ namespace SpyroScope {
 
 				for (let i < inputs.Count) {
 					T value = ?;
-					Emulator.ReadFromRAM(inspector.dataAddress + dataOffset + i * sizeof(T), &value, sizeof(T));
+					Emulator.active.ReadFromRAM(inspector.dataAddress + dataOffset + i * sizeof(T), &value, sizeof(T));
 					inputs[i].SetValidText(scope String() .. AppendF("{}", value));
 				}
 			}
@@ -186,7 +186,7 @@ namespace SpyroScope {
 
 			void ModifyData(T* val) {
 				// Write to emulator
-				Emulator.WriteToRAM(inspector.dataAddress + dataOffset, val, sizeof(T));
+				Emulator.active.WriteToRAM(inspector.dataAddress + dataOffset, val, sizeof(T));
 
 				// Write to cached data
 				int8* data = (.)inspector.dataReference;

@@ -242,7 +242,7 @@ namespace SpyroScope {
 			textureIndexInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -5 + 1);
 			textureIndexInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
-					let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+					let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
 					if (val * quadCount < Terrain.textures.Count) {
 						let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 						int faceIndex = ?;
@@ -351,8 +351,8 @@ namespace SpyroScope {
 
 			GUIElement.PopParent();
 
-			Emulator.OnSceneChanged.Add(new => OnSceneChanged);
-			Emulator.OnSceneChanging.Add(new => OnSceneChanging);
+			Emulator.active.OnSceneChanged.Add(new => OnSceneChanged);
+			Emulator.active.OnSceneChanging.Add(new => OnSceneChanging);
 		}
 
 		public ~this() {
@@ -371,9 +371,9 @@ namespace SpyroScope {
 		}
 
 		public override void Enter() {
-			togglePauseButton.iconTexture = Emulator.PausedMode ? playTexture : pauseTexture;
-			toggleList[4].button.value = teleportButton.enabled = Emulator.CameraMode;
-			if (Emulator.CameraMode) {
+			togglePauseButton.iconTexture = Emulator.active.PausedMode ? playTexture : pauseTexture;
+			toggleList[4].button.value = teleportButton.enabled = Emulator.active.CameraMode;
+			if (Emulator.active.CameraMode) {
 				toggleList[4].button.iconTexture = toggleList[4].button.toggleIconTexture;
 			}
 		}
@@ -383,16 +383,16 @@ namespace SpyroScope {
 		}
 
 		public override void Update() {
-			Emulator.CheckEmulatorStatus();
-			Emulator.FindGame();
+			Emulator.active.CheckEmulatorStatus();
+			Emulator.active.FindGame();
 
 			// If there is no emulator or relevant game present, return to the setup screen
-			if (Emulator.emulator == .None || Emulator.rom == .None) {
+			if (Emulator.active == null || Emulator.active.rom == .None) {
 				windowApp.GoToState<SetupState>();
 				return;
 			}
 
-			Emulator.FetchImportantData();
+			Emulator.active.FetchImportantData();
 
 			if (!Terrain.decoded && VRAM.upToDate) {
 				Terrain.Decode();
@@ -400,11 +400,11 @@ namespace SpyroScope {
 
 			UpdateView();
 
-			var objPointer = Emulator.objectArrayAddress;
+			var objPointer = Emulator.active.objectArrayAddress;
 			objPointer.ReadArray(Moby.allocated.Ptr, Moby.allocated.Count);
 			objPointer += Moby.allocated.Count * sizeof(Moby);
 
-			if (Emulator.loadingStatus == .Idle) {
+			if (Emulator.active.loadingStatus == .Idle) {
 				while (true) {
 					Moby object = ?;
 					objPointer.Read(&object);
@@ -433,7 +433,7 @@ namespace SpyroScope {
 			sideInspectorInterp = Math.MoveTo(sideInspectorInterp, sideInspectorVisible ? 1 : 0, 0.1f);
 			sideInspector.offset = .(-300 * sideInspectorInterp,300 * (1 - sideInspectorInterp),0,0);
 
-			if (Emulator.loadingStatus == .Loading || Emulator.gameState > 0) {
+			if (Emulator.active.loadingStatus == .Loading || Emulator.active.gameState > 0) {
 				return;
 			}
 
@@ -464,8 +464,8 @@ namespace SpyroScope {
 				} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
 					Translator.Update(Terrain.collision.mesh.vertices[ViewerSelection.currentTriangleIndex * 3], .Identity);
 				} else {
-					Vector3 spyroPosition = Emulator.spyroPosition;
-					Translator.Update(spyroPosition, Emulator.spyroBasis.ToMatrixCorrected());
+					Vector3 spyroPosition = Emulator.active.spyroPosition;
+					Translator.Update(spyroPosition, Emulator.active.spyroBasis.ToMatrixCorrected());
 				}
 			}
 		}
@@ -474,7 +474,7 @@ namespace SpyroScope {
 			if (Terrain.renderMode == .Collision) {
 				Renderer.clearColor = .(0,0,0);
 			} else {
-				Emulator.backgroundClearColorAddress[(int)Emulator.rom].Read(&Renderer.clearColor);
+				Emulator.backgroundClearColorAddress[(int)Emulator.active.rom].Read(&Renderer.clearColor);
 				Renderer.clearColor.r = (.)(Math.Pow((float)Renderer.clearColor.r / 255, 2.2f) * 255);
 				Renderer.clearColor.g = (.)(Math.Pow((float)Renderer.clearColor.g / 255, 2.2f) * 255);
 				Renderer.clearColor.b = (.)(Math.Pow((float)Renderer.clearColor.b / 255, 2.2f) * 255);
@@ -538,23 +538,23 @@ namespace SpyroScope {
 
 			if (drawLimits) {
 				uint32 currentWorldId = ?;
-				Emulator.currentWorldIdAddress[(int)Emulator.rom].Read(&currentWorldId);
+				Emulator.currentWorldIdAddress[(int)Emulator.active.rom].Read(&currentWorldId);
 
 				uint32 deathHeight;
-				if (Emulator.installment == .YearOfTheDragon) {
+				if (Emulator.active.installment == .YearOfTheDragon) {
 					uint32 currentSubWorldId = ?;
-					Emulator.currentSubWorldIdAddress[(int)Emulator.rom - 7].Read(&currentSubWorldId);
+					Emulator.currentSubWorldIdAddress[(int)Emulator.active.rom - 7].Read(&currentSubWorldId);
 
-					deathHeight = Emulator.deathPlaneHeights[currentWorldId * 4 + currentSubWorldId];
+					deathHeight = Emulator.active.deathPlaneHeights[currentWorldId * 4 + currentSubWorldId];
 				} else {
-					deathHeight = Emulator.deathPlaneHeights[currentWorldId];
+					deathHeight = Emulator.active.deathPlaneHeights[currentWorldId];
 				}
 
 				if (Camera.position.z > deathHeight) {
 					DrawUtilities.Grid(.(0,0,deathHeight), .Identity, .(255,64,32));
 				}
 				
-				let flightHeight = Emulator.maxFreeflightHeights[currentWorldId];
+				let flightHeight = Emulator.active.maxFreeflightHeights[currentWorldId];
 				if (Camera.position.z < flightHeight) {
 					DrawUtilities.Grid(.(0,0,flightHeight), .Identity, .(32,64,255));
 				}
@@ -702,9 +702,9 @@ namespace SpyroScope {
 
 				let face = visualMesh.GetNearFace(faceIndex);
 				
-				let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+				let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
 				TextureQuad* textureInfo = &Terrain.textures[face.renderInfo.textureIndex * quadCount];
-				if (Emulator.installment != .SpyroTheDragon) {
+				if (Emulator.active.installment != .SpyroTheDragon) {
 					textureInfo++;
 				}
 			
@@ -806,7 +806,7 @@ namespace SpyroScope {
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("Gem-Value {}", (int8)object.heldGemValue), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
 			}*/
 
-			if (Emulator.loadingStatus == .Loading) {
+			if (Emulator.active.loadingStatus == .Loading) {
 				DrawLoadingOverlay();
 			}
 		}
@@ -817,7 +817,7 @@ namespace SpyroScope {
 					if (event.button.button == 3) {
 						SDL.SetRelativeMouseMode(viewMode != .Map);
 						cameraHijacked = true;
-						if (viewMode == .Game && !Emulator.CameraMode) {
+						if (viewMode == .Game && !Emulator.active.CameraMode) {
 							toggleList[4].button.Toggle();
 						}
 					}
@@ -842,12 +842,12 @@ namespace SpyroScope {
 										Terrain.collision.SetNearVertex((.)ViewerSelection.currentTriangleIndex, triangle, true);
 									});
 								} else {
-									Translator.OnDragBegin.Add(new => Emulator.KillSpyroUpdate);
+									Translator.OnDragBegin.Add(new => Emulator.active.KillSpyroUpdate);
 									Translator.OnDragged.Add(new (position) => {
-										Emulator.spyroPosition = (.)position;
-										Emulator.spyroPositionAddresses[(int)Emulator.rom].Write(&Emulator.spyroPosition);
+										Emulator.active.spyroPosition = (.)position;
+										Emulator.spyroPositionAddresses[(int)Emulator.active.rom].Write(&Emulator.active.spyroPosition);
 									});
-									Translator.OnDragEnd.Add(new => Emulator.RestoreSpyroUpdate);
+									Translator.OnDragEnd.Add(new => Emulator.active.RestoreSpyroUpdate);
 								}
 							}
 						}
@@ -877,17 +877,17 @@ namespace SpyroScope {
 							}
 							case .Game: {
 								int16[3] cameraEulerRotation = ?;	
-								Emulator.cameraEulerRotationAddress[(int)Emulator.rom].Read(&cameraEulerRotation);
+								Emulator.cameraEulerRotationAddress[(int)Emulator.active.rom].Read(&cameraEulerRotation);
 		
 								cameraEulerRotation[2] -= (.)event.motion.xrel * 2;
 								cameraEulerRotation[1] += (.)event.motion.yrel * 2;
 								cameraEulerRotation[1] = Math.Clamp(cameraEulerRotation[1], -0x400, 0x400);
 		
 								// Force camera view basis in game
-								Emulator.cameraBasisInv = MatrixInt.Euler(0, (float)cameraEulerRotation[1] / 0x800 * Math.PI_f, (float)cameraEulerRotation[2] / 0x800 * Math.PI_f);
+								Emulator.active.cameraBasisInv = MatrixInt.Euler(0, (float)cameraEulerRotation[1] / 0x800 * Math.PI_f, (float)cameraEulerRotation[2] / 0x800 * Math.PI_f);
 		
-								Emulator.cameraMatrixAddress[(int)Emulator.rom].Write(&Emulator.cameraBasisInv);
-								Emulator.cameraEulerRotationAddress[(int)Emulator.rom].Write(&cameraEulerRotation);
+								Emulator.cameraMatrixAddress[(int)Emulator.active.rom].Write(&Emulator.active.cameraBasisInv);
+								Emulator.cameraEulerRotationAddress[(int)Emulator.active.rom].Write(&cameraEulerRotation);
 							}
 							case .Map: {
 								var translationX = -Camera.size * event.motion.xrel / WindowApp.height;
@@ -898,7 +898,7 @@ namespace SpyroScope {
 							}
 						}
 					} else {
-						if (Emulator.loadingStatus == .Idle) {
+						if (Emulator.active.loadingStatus == .Idle) {
 							cornerMenuVisible = !Translator.dragged && (cornerMenuVisible && WindowApp.mousePosition.x < 200 || WindowApp.mousePosition.x < 10) && WindowApp.mousePosition.y < 260;
 							sideInspectorVisible = !Translator.dragged && ViewerSelection.currentObjIndex > -1 && (pinInspectorButton.value || (sideInspectorVisible && WindowApp.mousePosition.x > WindowApp.width - 300 || WindowApp.mousePosition.x > WindowApp.width - 10));
 						} else {
@@ -907,7 +907,7 @@ namespace SpyroScope {
 
 						if (showManipulator && Translator.MouseMove(WindowApp.mousePosition)) {
 							Selection.Clear();
-						} else if (Emulator.loadingStatus != .Loading && Emulator.gameState == 0) {
+						} else if (Emulator.active.loadingStatus != .Loading && Emulator.active.gameState == 0) {
 							Selection.Test();
 						}
 					}
@@ -954,10 +954,10 @@ namespace SpyroScope {
 							}
 							case .K : {
 								uint32 health = 0;
-								Emulator.healthAddresses[(int)Emulator.rom].Write(&health);
+								Emulator.healthAddresses[(int)Emulator.active.rom].Write(&health);
 							}
 							case .T : {
-								if (Emulator.CameraMode) {
+								if (Emulator.active.CameraMode) {
 									Teleport();
 								}
 							}
@@ -1051,7 +1051,7 @@ namespace SpyroScope {
 		}
 
 		void DrawMoby(Moby object) {
-			if (Emulator.installment == .SpyroTheDragon) {
+			if (Emulator.active.installment == .SpyroTheDragon) {
 				return; // Ignore drawing models for Spyro 1 for now
 			}
 
@@ -1065,10 +1065,10 @@ namespace SpyroScope {
 
 					Renderer.SetModel(object.position, basis);
 					Renderer.SetTint(object.IsActive ? .(255,255,255) : .(32,32,32));
-					modelSets[object.objectTypeID].QueueInstance(object.modelID, Emulator.shinyColors[object.color.r % 10][1]);
+					modelSets[object.objectTypeID].QueueInstance(object.modelID, Emulator.active.shinyColors[object.color.r % 10][1]);
 				} else {
 					Emulator.Address modelSetAddress = ?;
-					Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
+					Emulator.active.ReadFromRAM(Emulator.modelPointers[(int)Emulator.active.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
 
 					if (modelSetAddress != 0) {
 						modelSets.Add(object.objectTypeID, new .(modelSetAddress));
@@ -1130,10 +1130,11 @@ namespace SpyroScope {
 
 		void UpdateView() {
 			if (viewMode == .Game) {
-				Camera.position = Emulator.cameraPosition;
-				viewEulerRotation.x = (float)Emulator.cameraEulerRotation[1] / 0x800;
-				viewEulerRotation.y = (float)Emulator.cameraEulerRotation[0] / 0x800;
-				viewEulerRotation.z = (float)Emulator.cameraEulerRotation[2] / 0x800;
+				Camera.position = Emulator.active.cameraPosition;
+				int16[3] cameraEulerRotation = Emulator.active.cameraEulerRotation;
+				viewEulerRotation.x = (float)cameraEulerRotation[1] / 0x800;
+				viewEulerRotation.y = (float)cameraEulerRotation[0] / 0x800;
+				viewEulerRotation.z = (float)cameraEulerRotation[2] / 0x800;
 			}
 
 			viewEulerRotation.z = Math.Repeat(viewEulerRotation.z + 1, 2) - 1;
@@ -1155,8 +1156,8 @@ namespace SpyroScope {
 				if (viewMode == .Free) {
 					Camera.position += cameraMotionDirection;
 				} else {
-					Emulator.cameraPosition = (.)(Emulator.cameraPosition + cameraMotionDirection);
-					Emulator.SetCameraPosition(&Emulator.cameraPosition);
+					Emulator.active.cameraPosition = (.)(Emulator.active.cameraPosition + cameraMotionDirection);
+					Emulator.active.SetCameraPosition(&Emulator.active.cameraPosition);
 				}
 			}
 		}
@@ -1182,25 +1183,26 @@ namespace SpyroScope {
 		}
 
 		void DrawGameCameraFrustrum() {
-			let cameraBasis = Emulator.cameraBasisInv.ToMatrixCorrected().Transpose();
+			let cameraBasis = Emulator.active.cameraBasisInv.ToMatrixCorrected().Transpose();
 			let cameraBasisCorrected = Matrix3(cameraBasis.y, cameraBasis.z, -cameraBasis.x);
 
-			Renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector3(500,0,0), .(255,0,0), .(255,0,0));
-			Renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector3(0,500,0), .(0,255,0), .(0,255,0));
-			Renderer.DrawLine(Emulator.cameraPosition, Emulator.cameraPosition + cameraBasis * Vector3(0,0,500), .(0,0,255), .(0,0,255));
+			let cameraPosition = Emulator.active.cameraPosition;
+			Renderer.DrawLine(cameraPosition, cameraPosition + cameraBasis * Vector3(500,0,0), .(255,0,0), .(255,0,0));
+			Renderer.DrawLine(cameraPosition, cameraPosition + cameraBasis * Vector3(0,500,0), .(0,255,0), .(0,255,0));
+			Renderer.DrawLine(cameraPosition, cameraPosition + cameraBasis * Vector3(0,0,500), .(0,0,255), .(0,0,255));
 
 			let projectionMatrixInv = WindowApp.gameProjection.Inverse();
 			let viewProjectionMatrixInv = cameraBasisCorrected * projectionMatrixInv;
 
-			let farTopLeft = (Vector3)(viewProjectionMatrixInv * Vector4(-1,1,1,1)) + (Vector3)Emulator.cameraPosition;
-			let farTopRight = (Vector3)(viewProjectionMatrixInv * Vector4(1,1,1,1)) + Emulator.cameraPosition;
-			let farBottomLeft = (Vector3)(viewProjectionMatrixInv * Vector4(-1,-1,1,1)) + Emulator.cameraPosition;
-			let farBottomRight = (Vector3)(viewProjectionMatrixInv * Vector4(1,-1,1,1)) + Emulator.cameraPosition;
+			let farTopLeft = (Vector3)(viewProjectionMatrixInv * Vector4(-1,1,1,1)) + (Vector3)cameraPosition;
+			let farTopRight = (Vector3)(viewProjectionMatrixInv * Vector4(1,1,1,1)) + cameraPosition;
+			let farBottomLeft = (Vector3)(viewProjectionMatrixInv * Vector4(-1,-1,1,1)) + cameraPosition;
+			let farBottomRight = (Vector3)(viewProjectionMatrixInv * Vector4(1,-1,1,1)) + cameraPosition;
 
-			let nearTopLeft = (Vector3)(viewProjectionMatrixInv * Vector4(-1,1,-1,1)) + Emulator.cameraPosition;
-			let nearTopRight = (Vector3)(viewProjectionMatrixInv * Vector4(1,1,-1,1)) + Emulator.cameraPosition;
-			let nearBottomLeft = (Vector3)(viewProjectionMatrixInv * Vector4(-1,-1,-1,1)) + Emulator.cameraPosition;
-			let nearBottomRight = (Vector3)(viewProjectionMatrixInv * Vector4(1,-1,-1,1)) + Emulator.cameraPosition;
+			let nearTopLeft = (Vector3)(viewProjectionMatrixInv * Vector4(-1,1,-1,1)) + cameraPosition;
+			let nearTopRight = (Vector3)(viewProjectionMatrixInv * Vector4(1,1,-1,1)) + cameraPosition;
+			let nearBottomLeft = (Vector3)(viewProjectionMatrixInv * Vector4(-1,-1,-1,1)) + cameraPosition;
+			let nearBottomRight = (Vector3)(viewProjectionMatrixInv * Vector4(1,-1,-1,1)) + cameraPosition;
 
 			Renderer.DrawLine(nearTopLeft, farTopLeft , .(16,16,16), .(16,16,16));
 			Renderer.DrawLine(nearTopRight, farTopRight, .(16,16,16), .(16,16,16));
@@ -1219,19 +1221,19 @@ namespace SpyroScope {
 		}
 
 		void DrawSpyroInformation() {
-			let position = (Vector3)Emulator.spyroPosition;
+			let position = (Vector3)Emulator.active.spyroPosition;
 
-			DrawUtilities.Arrow(position, (Vector3)Emulator.spyroIntendedVelocity / 10, 25, .(255,255,0));
-			DrawUtilities.Arrow(position, (Vector3)Emulator.spyroPhysicsVelocity / 10, 50, .(255,128,0));
+			DrawUtilities.Arrow(position, (Vector3)Emulator.active.spyroIntendedVelocity / 10, 25, .(255,255,0));
+			DrawUtilities.Arrow(position, (Vector3)Emulator.active.spyroPhysicsVelocity / 10, 50, .(255,128,0));
 
-			let viewerSpyroBasis = Emulator.spyroBasis.ToMatrixCorrected();
+			let viewerSpyroBasis = Emulator.active.spyroBasis.ToMatrixCorrected();
 			Renderer.DrawLine(position, position + viewerSpyroBasis * Vector3(500,0,0), .(255,0,0), .(255,0,0));
 			Renderer.DrawLine(position, position + viewerSpyroBasis * Vector3(0,500,0), .(0,255,0), .(0,255,0));
 			Renderer.DrawLine(position, position + viewerSpyroBasis * Vector3(0,0,500), .(0,0,255), .(0,0,255));
 
 			uint32 radius = ?;
-			if (Emulator.installment == .YearOfTheDragon) {
-			    Emulator.collisionRadius[(int)Emulator.rom - 7].Read(&radius);
+			if (Emulator.active.installment == .YearOfTheDragon) {
+			    Emulator.collisionRadius[(int)Emulator.active.rom - 7].Read(&radius);
 			} else {
 			    radius = 0x164;
 			}
@@ -1319,7 +1321,7 @@ namespace SpyroScope {
 
 			var line = 0;
 			for (let i < 8) {
-				if (!Emulator.changedPointers[i]) {
+				if (!Emulator.active.changedPointers[i]) {
 					halfWidth = WindowApp.fontSmall.CalculateWidth(Emulator.pointerLabels[i]) / 2;
 					baseline = WindowApp.height / 2 + (.)(WindowApp.fontSmall.height * line);
 					WindowApp.fontSmall.Print(Emulator.pointerLabels[i], .(Math.Round(middleWindow - halfWidth), baseline), .(255,255,255));
@@ -1329,12 +1331,12 @@ namespace SpyroScope {
 		}
 
 		void TogglePause() {
-			if (Emulator.PausedMode) {
-				Emulator.RestoreUpdate();
+			if (Emulator.active.PausedMode) {
+				Emulator.active.RestoreUpdate();
 				PushMessageToFeed("Resumed Game Update");
 				togglePauseButton.iconTexture = pauseTexture;
 			} else {
-				Emulator.KillUpdate();
+				Emulator.active.KillUpdate();
 				PushMessageToFeed("Paused Game Update");
 				togglePauseButton.iconTexture = playTexture;
 			}
@@ -1342,7 +1344,7 @@ namespace SpyroScope {
 
 		void Step() {
 			togglePauseButton.iconTexture = playTexture;
-			Emulator.Step();
+			Emulator.active.Step();
 		}
 
 		void ToggleWireframe(bool toggle) {
@@ -1366,10 +1368,11 @@ namespace SpyroScope {
 				Camera.near = 100;
 				Camera.far = 500000;
 
-				Camera.position = Emulator.cameraPosition;
-				viewEulerRotation.x = (float)Emulator.cameraEulerRotation[1] / 0x800;
-				viewEulerRotation.y = (float)Emulator.cameraEulerRotation[0] / 0x800;
-				viewEulerRotation.z = (float)Emulator.cameraEulerRotation[2] / 0x800;
+				Camera.position = Emulator.active.cameraPosition;
+				int16[3] cameraEulerRotation = Emulator.active.cameraEulerRotation;
+				viewEulerRotation.x = (float)cameraEulerRotation[1] / 0x800;
+				viewEulerRotation.y = (float)cameraEulerRotation[0] / 0x800;
+				viewEulerRotation.z = (float)cameraEulerRotation[2] / 0x800;
 
 				WindowApp.viewerProjection = Camera.projection;
 			} else if (viewMode != .Map && mode == .Map)  {
@@ -1407,11 +1410,11 @@ namespace SpyroScope {
 
 		void ToggleFreeCamera(bool toggle) {
 			if (toggle) {
-				Emulator.KillCameraUpdate();
+				Emulator.active.KillCameraUpdate();
 				PushMessageToFeed("Free Camera");
 				teleportButton.enabled = true;
 			} else {
-				Emulator.RestoreCameraUpdate();
+				Emulator.active.RestoreCameraUpdate();
 				PushMessageToFeed("Game Camera");
 				teleportButton.enabled = false;
 			}
@@ -1442,8 +1445,8 @@ namespace SpyroScope {
 		}
 
 		void Teleport() {
-			Emulator.spyroPosition = (.)Camera.position;
-			Emulator.spyroPositionAddresses[(int)Emulator.rom].Write(&Emulator.spyroPosition);
+			Emulator.active.spyroPosition = (.)Camera.position;
+			Emulator.spyroPositionAddresses[(int)Emulator.active.rom].Write(&Emulator.active.spyroPosition);
 			PushMessageToFeed("Teleported Spyro to Game Camera");
 		}
 

@@ -16,7 +16,7 @@ namespace SpyroScope {
 		public uint8 CurrentKeyframe {
 			get {
 				uint8 currentKeyframe = ?;
-				Emulator.ReadFromRAM(address + 2, &currentKeyframe, 1);
+				Emulator.active.ReadFromRAM(address + 2, &currentKeyframe, 1);
 				return currentKeyframe;
 			}
 		}
@@ -26,7 +26,7 @@ namespace SpyroScope {
 
 			this.address = address;
 
-			Emulator.ReadFromRAM(address + 4, &textureIndex, 1);
+			Emulator.active.ReadFromRAM(address + 4, &textureIndex, 1);
 		}
 
 		public void Dispose() {
@@ -86,11 +86,11 @@ namespace SpyroScope {
 		}
 
 		public void Decode() {
-			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+			let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
 			for (let i < quadCount) {
 				let quad = (TextureQuad*)&Terrain.textures[textureIndex * quadCount + i];
 
-				let verticalQuad = ((quad.texturePage & 0x80 > 0) ? 3 : 2) - ((Emulator.installment == .SpyroTheDragon) ? 1 : 0);
+				let verticalQuad = ((quad.texturePage & 0x80 > 0) ? 3 : 2) - ((Emulator.active.installment == .SpyroTheDragon) ? 1 : 0);
 				quad.leftSkew = 0;
 				quad.rightSkew = (uint8)(verticalQuad * 0x20 - 1);
 				quad.Decode();
@@ -101,11 +101,11 @@ namespace SpyroScope {
 		// Derived from Spyro: Ripto's Rage [8002270c]
 		public void Update() {
 			uint8 verticalPosition = ?;
-			Emulator.ReadFromRAM(address + 6, &verticalPosition, 1);
+			Emulator.active.ReadFromRAM(address + 6, &verticalPosition, 1);
 
 			let quadVerticalPosition = verticalPosition >> 2;
 
-			if (Emulator.installment == .SpyroTheDragon) {
+			if (Emulator.active.installment == .SpyroTheDragon) {
 				let textureLOD = (TextureQuad*)&Terrain.textures[(int)textureIndex * 21];
 
 				textureLOD[0].leftSkew = textureLOD[0].rightSkew = quadVerticalPosition;
@@ -140,14 +140,14 @@ namespace SpyroScope {
 
 		public KeyframeData GetKeyframeData(uint8 keyframeIndex) {
 			KeyframeData keyframeData = ?;
-			Emulator.ReadFromRAM(address + 8 + ((uint32)keyframeIndex) * 4, &keyframeData, 4);
+			Emulator.active.ReadFromRAM(address + 8 + ((uint32)keyframeIndex) * 4, &keyframeData, 4);
 			return keyframeData;
 		}
 
 		public void UpdateUVs(bool transparent) {
-			let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
+			let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
 			TextureQuad* quad = &Terrain.textures[textureIndex * quadCount];
-			if (Emulator.installment != .SpyroTheDragon) {
+			if (Emulator.active.installment != .SpyroTheDragon) {
 				quad++;
 			}
 

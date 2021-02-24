@@ -21,7 +21,7 @@ namespace SpyroScope {
 		public this(uint8 id, int start, int count) {
 			this.start = start;
 
-			let i = (int)Emulator.rom - 4;
+			let i = (int)Emulator.active.rom - 4;
 			Emulator.spriteWidthArrayAddress[i].GetAtIndex(&width, id);
 			Emulator.spriteHeightArrayAddress[i].GetAtIndex(&height, id);
 			

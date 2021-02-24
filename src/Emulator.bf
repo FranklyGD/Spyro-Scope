@@ -4,9 +4,12 @@ using System.Diagnostics;
 using System.Threading;
 
 namespace SpyroScope {
-	static struct Emulator {
-		public static Windows.ProcessHandle processHandle;
-		public static Windows.HModule moduleHandle; // Also contains the base address directly
+	class Emulator {
+		public static Emulator active;
+		public static List<Emulator> emulators = new .() ~ delete _;
+
+		public Windows.ProcessHandle processHandle;
+		public Windows.HModule moduleHandle; // Also contains the base address directly
 		
 		public const String[5] emulatorNames = .(String.Empty, "Nocash PSX", "Bizhawk", "ePSXe", "Mednafen");
 		public enum EmulatorType {
@@ -16,9 +19,9 @@ namespace SpyroScope {
 			ePSXe,
 			Mednafen
 		}
-		public static EmulatorType emulator;
-		public static int RAMBaseAddress;
-		public static int VRAMBaseAddress;
+		public EmulatorType emulator;
+		public int RAMBaseAddress;
+		public int VRAMBaseAddress;
 
 		public enum SpyroROM {
 			None,
@@ -33,7 +36,7 @@ namespace SpyroScope {
 			YearOfTheDragon_1_0_PAL,
 			YearOfTheDragon_1_1_PAL
 		}
-		public static SpyroROM rom;
+		public SpyroROM rom;
 
 		public enum SpyroInstallment {
 			None,
@@ -41,7 +44,7 @@ namespace SpyroScope {
 			RiptosRage,
 			YearOfTheDragon
 		}
-		public static SpyroInstallment installment;
+		public SpyroInstallment installment;
 
 		public struct Address : uint32 {
 			public override void ToString(String strBuffer) {
@@ -52,41 +55,42 @@ namespace SpyroScope {
 
 			public const Address Null = 0;
 		}
+
 		public struct Address<T> : Address {
 			public override void ToString(String strBuffer) {
 				base.ToString(strBuffer);
 			}
 
 			public void Read(T* buffer) {
-				ReadFromRAM(this, buffer, sizeof(T));
+				active.ReadFromRAM(this, buffer, sizeof(T));
 			}
 
 			public void ReadArray(T* buffer, int count) {
-				ReadFromRAM(this, buffer, sizeof(T) * count);
+				active.ReadFromRAM(this, buffer, sizeof(T) * count);
 			}
 
 			public void Write(T* buffer) {
-				WriteToRAM(this, buffer, sizeof(T));
+				active.WriteToRAM(this, buffer, sizeof(T));
 			}
 
 			public void WriteArray(T* buffer, int count) {
-			    WriteToRAM(this, buffer, sizeof(T) * count);
+			    active.WriteToRAM(this, buffer, sizeof(T) * count);
 			}
 
 			public void GetAtIndex(T* buffer, int index) {
-			    ReadFromRAM(this + index * sizeof(T), buffer, sizeof(T));
+			    active.ReadFromRAM(this + index * sizeof(T), buffer, sizeof(T));
 			}
 
 			public void SetAtIndex(T* buffer, int index) {
-			    WriteToRAM(this + index * sizeof(T), buffer, sizeof(T));
+			    active.WriteToRAM(this + index * sizeof(T), buffer, sizeof(T));
 			}
 
 			public void ReadRange(T* buffer, int start, int count) {
-			    ReadFromRAM(this + start * sizeof(T), buffer, count * sizeof(T));
+			    active.ReadFromRAM(this + start * sizeof(T), buffer, count * sizeof(T));
 			}
 
 			public void WriteRange(T* buffer, int start, int count) {
-			    WriteToRAM(this + start * sizeof(T), buffer, count * sizeof(T));
+			    active.WriteToRAM(this + start * sizeof(T), buffer, count * sizeof(T));
 			}
 		}
 
@@ -100,8 +104,8 @@ namespace SpyroScope {
 			"Texture Scrollers",
 			"Texture Swappers"
 		);
-		public static Address[8] loadedPointers;
-		public static bool[8] changedPointers;
+		public Address[8] loadedPointers;
+		public bool[8] changedPointers;
 		public const Address<Address>[8][11] pointerSets = .(
 			sceneRegionPointers,
 			farRegionDeformPointers,
@@ -118,7 +122,7 @@ namespace SpyroScope {
 			Loading,
 			Done
 		}
-		public static LoadingStatus loadingStatus;
+		public LoadingStatus loadingStatus;
 
 		// Begin Spyro games information
 		
@@ -175,19 +179,19 @@ namespace SpyroScope {
 		public const uint32[11] gameInputValue = .(0, 0/*StD*/, 0, 0, 0xac2283a0/*RR*/, 0, 0, 0, 0xae220030/*YotD-1.1*/, 0, 0);
 
 		// Game Values
-		public static int32 gameState, loadState;
+		public int32 gameState, loadState;
 
-		public static Vector3Int cameraPosition, spyroPosition;
-		public static Vector3Int spyroIntendedVelocity, spyroPhysicsVelocity;
-		public static int16[3] cameraEulerRotation;
-		public static MatrixInt cameraBasisInv, spyroBasis;
-		public static int32 collidingTriangle = -1;
+		public Vector3Int cameraPosition, spyroPosition;
+		public Vector3Int spyroIntendedVelocity, spyroPhysicsVelocity;
+		public int16[3] cameraEulerRotation;
+		public MatrixInt cameraBasisInv, spyroBasis;
+		public int32 collidingTriangle = -1;
 		
-		public static Renderer.Color4[10][4] shinyColors;
-		public static uint32[] deathPlaneHeights ~ delete _;
-		public static uint32[] maxFreeflightHeights ~ delete _;
+		public Renderer.Color4[10][4] shinyColors;
+		public uint32[] deathPlaneHeights ~ delete _;
+		public uint32[] maxFreeflightHeights ~ delete _;
 
-		public static Address<Moby> objectArrayAddress;
+		public Address<Moby> objectArrayAddress;
 
 		// Game Constants
 		public static (String label, Renderer.Color color)[11] collisionTypes = .(
@@ -236,60 +240,70 @@ namespace SpyroScope {
 		) ~ delete _;
 		public static bool stepperInjected;
 
-		public static bool PausedMode { get {
+		public bool PausedMode { get {
 			uint32 value = ?;
 			ReadFromRAM(updateAddresses[(int)rom], &value, 4);
 			return value != updateJumpValue[(int)rom];
 		} }
 
-		public static bool CameraMode { get {
+		public bool CameraMode { get {
 			uint32 value = ?;
 			ReadFromRAM(cameraUpdateAddresses[(int)rom], &value, 4);
 			return value != cameraUpdateJumpValue[(int)rom];
 		} }
 
-		public static bool InputMode { get {
+		public bool InputMode { get {
 			uint32 value = ?;
 			ReadFromRAM(gameInputAddress[(int)rom], &value, 4);
 			return value != gameInputValue[(int)rom];
 		} }
 
 		// Events
-		public static Event<delegate void()> OnSceneChanged ~ _.Dispose();
-		public static Event<delegate void()> OnSceneChanging ~ _.Dispose();
+		public Event<delegate void()> OnSceneChanged ~ _.Dispose();
+		public Event<delegate void()> OnSceneChanging ~ _.Dispose();
 
-		public static void FindEmulator() {
-			processHandle.Close();
-			processHandle = 0;
-			moduleHandle = 0;
+		this(EmulatorType type, Windows.ProcessHandle process, Windows.HModule module) {
+			processHandle = process;
+			moduleHandle = module;
+			emulator = type;
 
-			emulator = .None;
-			rom = .None;
+			if (active == null) {
+				active = this;
+			}
+		}
 
-			let activeProcesses = scope List<Process>();
-			if (Process.GetProcesses(activeProcesses) == .Err) {
+		public static void FindEmulatorProcesses(List<Process> processes) {
+			if (Process.GetProcesses(processes) == .Err) {
 				Debug.FatalError("Failed to get process list");
 			}
 
-			for (let process in activeProcesses) {
+			processes.RemoveAll(scope (process) => {
 				switch (process.ProcessName) {
-					case "NO$PSX.EXE":
-						emulator = .NocashPSX;
-					case "EmuHawk.exe":
-						emulator = .Bizhawk;
-					case "ePSXe.exe":
-						emulator = .ePSXe;
-					case "mednafen.exe":
-						emulator = .Mednafen;
+					case "NO$PSX.EXE", "EmuHawk.exe", "ePSXe.exe", "mednafen.exe":
+						return false;
+					default:
+						delete process;
+						return true;
 				}
+			});
+		}
 
-				if (emulator != .None) {
-					processHandle = Windows.OpenProcess(Windows.PROCESS_ALL_ACCESS, false, process.Id);
-					break;
-				}
+		public static Emulator BindEmulatorProcess(Process process) {
+			Windows.ProcessHandle processHandle = Windows.OpenProcess(Windows.PROCESS_ALL_ACCESS, false, process.Id);
+
+			Emulator.EmulatorType emulator = .None;
+			switch (process.ProcessName) {
+				case "NO$PSX.EXE":
+					emulator = .NocashPSX;
+				case "EmuHawk.exe":
+					emulator = .Bizhawk;
+				case "ePSXe.exe":
+					emulator = .ePSXe;
+				case "mednafen.exe":
+					emulator = .Mednafen;
 			}
-			DeleteAndClearItems!(activeProcesses);
 
+			Windows.HModule moduleHandle = 0;
 			switch (emulator) {
 				case .NocashPSX:
 					moduleHandle = GetModule(processHandle, "NO$PSX.EXE");
@@ -300,20 +314,17 @@ namespace SpyroScope {
 				case .Mednafen:
 					moduleHandle = GetModule(processHandle, "mednafen.exe");
 				default:
-					return;
 			}
 
 			if (moduleHandle.IsInvalid) {
 				processHandle.Close();
-				processHandle = 0;
-				moduleHandle = 0;
-
-				emulator = .None;
-				rom = .None;
+				return null;
 			}
+
+			return new Emulator(emulator, processHandle, moduleHandle);
 		}
 
-		public static void FindGame() {
+		public void FindGame() {
 			FetchRAMBaseAddress();
 
 			SpyroROM newRom = .None;
@@ -380,20 +391,14 @@ namespace SpyroScope {
 			return 0;
 		}
 
-		public static void CheckEmulatorStatus() {
+		public void CheckEmulatorStatus() {
 			int32 exitCode;
 			if (Windows.GetExitCodeProcess(processHandle, out exitCode) && exitCode != 259 /*STILL_ACTIVE*/) {
-				emulator = .None;
-				rom = .None;
-
-				for (let i < 8) {
-					loadedPointers[i] = 0;
-					changedPointers[i] = false;
-				}
+				UnbindEmulatorProcess();
 			}
 		}
 
-		public static void CheckSources() {
+		public void CheckSources() {
 			for (let i < 8) {
 				Address newLoadedPointer = ?;
 				var pointerSet = pointerSets[i];
@@ -422,15 +427,30 @@ namespace SpyroScope {
 			}
 		}
 
-		public static void UnbindFromEmulator() {
-			if (emulator != .None) {
+		public void UnbindEmulatorProcess() {
+			if (emulator != .None && rom != .None) {
 				RestoreCameraUpdate();
 				RestoreInputRelay();
 				RestoreUpdate();
 			}
+
+			processHandle.Close();
+			processHandle = 0;
+			moduleHandle = 0;
+
+			for (let i < 8) {
+				loadedPointers[i] = 0;
+				changedPointers[i] = false;
+			}
 		}
 
-		public static void FetchRAMBaseAddress() {
+		public static void UnbindAllEmulators() {
+			for (let emulator in emulators) {
+				emulator.UnbindEmulatorProcess();
+			}
+		}
+
+		public void FetchRAMBaseAddress() {
 			switch (emulator) {
 				case .NocashPSX : {
 					// uint8* pointer = (uint8*)(void*)(moduleHandle + 0x00091E10)
@@ -459,7 +479,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public static void FetchVRAMBaseAddress() {
+		public void FetchVRAMBaseAddress() {
 			switch (emulator) {
 				case .NocashPSX : {
 					// uint8* pointer = (uint8*)(void*)(moduleHandle + 0x00092784)
@@ -487,16 +507,16 @@ namespace SpyroScope {
 		}
 
 		[Inline]
-		public static void* RawAddressFromRAM(Address address) {
+		public void* RawAddressFromRAM(Address address) {
 			return ((uint8*)null + RAMBaseAddress + ((uint32)address & 0x003fffff));
 		}
 
-		public static void ReadFromRAM(Address address, void* buffer, int size) {
+		public void ReadFromRAM(Address address, void* buffer, int size) {
 			let rawAddress = RawAddressFromRAM(address);
 			Windows.ReadProcessMemory(processHandle, rawAddress, buffer, size, null);
 		}
 
-		public static void WriteToRAM(Address address, void* buffer, int size) {
+		public void WriteToRAM(Address address, void* buffer, int size) {
 			if (loadingStatus == .Loading) {
 				return; // Do not try change anything while loading
 			}
@@ -505,7 +525,7 @@ namespace SpyroScope {
 		}
 
 		// Spyro
-		static void FetchStaticData() {
+		void FetchStaticData() {
 			delete maxFreeflightHeights;
 			delete deathPlaneHeights;
 
@@ -546,7 +566,7 @@ namespace SpyroScope {
 
 		
 
-		public static void FetchImportantData() {
+		public void FetchImportantData() {
 			gameStateAddresses[(int)rom].Read(&gameState);
 			loadStateAddresses[(int)rom].Read(&loadState);
 			spyroPositionAddresses[(int)rom].Read(&spyroPosition);
@@ -581,48 +601,48 @@ namespace SpyroScope {
 			objectArrayAddress = newObjectArrayAddress;
 		}
 
-		public static void SetSpyroPosition(Vector3Int* position) {
+		public void SetSpyroPosition(Vector3Int* position) {
 			spyroPositionAddresses[(int)rom].Write(position);
 		}
 
-		public static void KillSpyroUpdate() {
+		public void KillSpyroUpdate() {
 			uint32 v = 0;
 			spyroUpdateAddresses[(int)rom].Write(&v);
 		}
 
-		public static void RestoreSpyroUpdate() {
+		public void RestoreSpyroUpdate() {
 			uint32 v = spyroUpdateJumpValue[(int)rom];
 			spyroUpdateAddresses[(int)rom].Write(&v);
 		}
 
 		// Main Update
-		public static void KillUpdate() {
+		public void KillUpdate() {
 			uint32 v = stepperInjected ? 0x0C002400 : 0;
 			updateAddresses[(int)rom].Write(&v);
 		}
 
-		public static void RestoreUpdate() {
+		public void RestoreUpdate() {
 			uint32 v = updateJumpValue[(int)rom];
 			updateAddresses[(int)rom].Write(&v);
 		}
 
 		// Camera
-		public static void KillCameraUpdate() {
+		public void KillCameraUpdate() {
 			uint32 v = 0;
 			cameraUpdateAddresses[(int)rom].Write(&v);
 		}
 
-		public static void RestoreCameraUpdate() {
+		public void RestoreCameraUpdate() {
 			uint32 v = cameraUpdateJumpValue[(int)rom];
 			cameraUpdateAddresses[(int)rom].Write(&v);
 		}
 
-		public static void SetCameraPosition(Vector3Int* position) {
+		public void SetCameraPosition(Vector3Int* position) {
 			cameraPositionAddress[(int)rom].Write(position);
 		}
 
 		// Input
-		public static void KillInputRelay() {
+		public void KillInputRelay() {
 			uint32 v = 0;
 			gameInputAddress[(int)rom].Write(&v);
 
@@ -633,20 +653,20 @@ namespace SpyroScope {
 			// even after this is called
 		}
 
-		public static void RestoreInputRelay() {
+		public void RestoreInputRelay() {
 			uint32 v = gameInputValue[(int)rom];
 			gameInputAddress[(int)rom].Write(&v);
 		}
 
 		// Logic
-		public static void InjectStepperLogic() {
+		public void InjectStepperLogic() {
 			WriteToRAM(stepperAddress, &stepperLogic[0], 4 * stepperLogic.Count);
 			uint32 v = 0x0C002400; // (stepperAddress & 0x0fffffff) >> 2;
 			updateAddresses[(int)rom].Write(&v);
 			stepperInjected = true;
 		}
 
-		public static void Step() {
+		public void Step() {
 			if (!stepperInjected) {
 				InjectStepperLogic();
 			}
