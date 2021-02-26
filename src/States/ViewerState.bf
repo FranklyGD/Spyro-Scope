@@ -410,10 +410,14 @@ namespace SpyroScope {
 			UpdateView();
 
 			var objPointer = Emulator.active.objectArrayAddress;
+
+			// Read last known size amount of objects
 			objPointer.ReadArray(Moby.allocated.Ptr, Moby.allocated.Count);
+
 			objPointer += Moby.allocated.Count * sizeof(Moby);
 
 			if (Emulator.active.loadingStatus == .Idle) {
+				// Get remaining objects not saved in the allocated cache
 				while (true) {
 					Moby object = ?;
 					objPointer.Read(&object);
@@ -423,14 +427,6 @@ namespace SpyroScope {
 					}
 
 					Moby.allocated.Add(object);
-
-					if (!hideInactive || object.IsActive) {
-						if ((!showManipulator || ViewerSelection.currentObjIndex != Moby.allocated.Count) && drawObjectOrigins) {
-							object.DrawOriginAxis();
-						}
-	
-						DrawMoby(object);
-					}
 					
 					objPointer += sizeof(Moby);
 				}
