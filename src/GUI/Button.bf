@@ -10,7 +10,7 @@ namespace SpyroScope {
 		public Texture pressedTexture = pressedButtonTexture;
 
 		public Texture iconTexture;
-		public String text;
+		public String text ~ if (_ != null && _.IsDynAlloc) delete _;
 
 		public bool enabled = true;
 		public Event<delegate void()> OnActuated ~ _.Dispose();

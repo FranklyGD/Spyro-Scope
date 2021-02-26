@@ -117,7 +117,7 @@ namespace SpyroScope {
 			let lastHoveredElement = hoveredElement;
 			hoveredElement = null;
 			for (let element in activeGUI) {
-				element.MouseUpdate(WindowApp.mousePosition);
+				element.MouseUpdate(mousePosition);
 			}
 			if (lastHoveredElement != hoveredElement) {
 				lastHoveredElement?.MouseExit();
@@ -129,6 +129,22 @@ namespace SpyroScope {
 		public this() {
 			parent = parentStack.Count > 0 ? parentStack[parentStack.Count - 1] : null;
 			activeGUI.Add(this);
+		}
+
+		public ~this() {
+			if (hoveredElement == this) {
+				hoveredElement.MouseExit();
+				hoveredElement = null;
+			}
+
+			if (pressedElement == this) {
+				pressedElement = null;
+			}
+
+			if (selectedElement == this) {
+				selectedElement.Unselected();
+				selectedElement = null;
+			}
 		}
 
 		public virtual void Draw(Rect parentRect) {

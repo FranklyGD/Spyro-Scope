@@ -4,16 +4,22 @@ using System.Diagnostics;
 
 namespace SpyroScope {
 	class SetupState : WindowState {
+		List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
+
 		Stopwatch stopwatch = new .() ~ delete _;
 		public List<Process> processes = new .() ~ delete _;
 
 		public override void Enter() {
+			GUIElement.SetActiveGUI(guiElements);
+
 			Renderer.clearColor = .(0,0,0);
 			stopwatch.Start();
 		}
 		
 		public override void Exit() {
 			stopwatch.Reset();
+			
+			GUIElement.SetActiveGUI(null);
 		}
 
 		public override void Update() {
@@ -24,6 +30,7 @@ namespace SpyroScope {
 			} else if (stopwatch.ElapsedMilliseconds > 1000) {
 				if (Emulator.active == null) {
 					DeleteAndClearItems!(processes);
+					DeleteAndClearItems!(guiElements);
 
 					Emulator.FindEmulatorProcesses(processes);
 
@@ -32,8 +39,26 @@ namespace SpyroScope {
 						Emulator.BindEmulatorProcess(processes[0]);
 					} else {
 						// List out and let user choose applicable processes
+						for (let i < processes.Count) {
+							let process = processes[i];
+
+							Button processButton = new .();
+							processButton.anchor = .(0.5f, 0.5f, 0.5f, 0.5f);
+							processButton.offset = .(-128, 128, (i + 1) * 16, (i + 2) * 16);
+							processButton.text = new .() .. AppendF("{} - {}", process.ProcessName, process.Id);
+							processButton.OnActuated.Add(new () => {
+								Emulator.BindEmulatorProcess(processes[i]);
+
+								DeleteAndClearItems!(processes);
+								DeleteAndClearItems!(guiElements);
+							});
+
+							stopwatch.Restart();
+						}
 					}
-				} else {
+				}
+
+				if (Emulator.active != null) {
 					Emulator.active.CheckProcessStatus();
 					if (Emulator.active.emulator != .None) {
 						Emulator.active.FetchMainAddresses();
@@ -77,6 +102,13 @@ namespace SpyroScope {
 				let t = 1f - (float)stopwatch.ElapsedMilliseconds / 3000;
 				DrawUtilities.Rect(baseline + 2, baseline + 4, middleWindow - halfWidth * t, middleWindow + halfWidth * t,
 					.(255,255,255));
+			}
+
+			for (let element in guiElements) {
+				if (element.GetVisibility()) {
+					let parentRect = element.parent != null ? element.parent.drawn : Rect(0, WindowApp.width, 0, WindowApp.height);
+					element.Draw(parentRect);
+				}
 			}
 		}
 	}
