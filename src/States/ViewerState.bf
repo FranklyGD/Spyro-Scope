@@ -372,6 +372,8 @@ namespace SpyroScope {
 		}
 
 		public override void Enter() {
+			GUIElement.SetActiveGUI(guiElements);
+
 			togglePauseButton.iconTexture = Emulator.active.PausedMode ? playTexture : pauseTexture;
 			toggleList[4].button.value = teleportButton.enabled = Emulator.active.CameraMode;
 			if (Emulator.active.CameraMode) {
@@ -380,7 +382,7 @@ namespace SpyroScope {
 		}
 
 		public override void Exit() {
-
+			GUIElement.SetActiveGUI(null);
 		}
 
 		public override void Update() {
