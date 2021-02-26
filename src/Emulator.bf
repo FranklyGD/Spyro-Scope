@@ -6,7 +6,7 @@ using System.Threading;
 namespace SpyroScope {
 	class Emulator {
 		public static Emulator active;
-		public static List<Emulator> emulators = new .() ~ DeleteAndClearItems!(_);
+		public static List<Emulator> emulators = new .() ~ DeleteContainerAndItems!(_);
 
 		public Windows.ProcessHandle processHandle;
 		public Windows.HModule moduleHandle; // Also contains the base address directly
@@ -270,6 +270,8 @@ namespace SpyroScope {
 			if (active == null) {
 				active = this;
 			}
+
+			emulators.Add(this);
 		}
 
 		public static void FindEmulatorProcesses(List<Process> processes) {
@@ -461,7 +463,10 @@ namespace SpyroScope {
 		public static void UnbindAllEmulators() {
 			for (let emulator in emulators) {
 				emulator.UnbindEmulatorProcess();
+				delete emulator;
 			}
+
+			emulators.Clear();
 		}
 
 		public void FetchRAMBaseAddress() {
