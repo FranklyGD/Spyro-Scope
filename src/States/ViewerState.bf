@@ -4,6 +4,10 @@ using System.Collections;
 
 namespace SpyroScope {
 	class ViewerState : WindowState {
+		// Timestamps
+		DateTime lastUpdatedSceneChanging;
+		DateTime lastUpdatedSceneChange;
+
 		// View
 		enum ViewMode {
 			Game,
@@ -350,9 +354,6 @@ namespace SpyroScope {
 			});
 
 			GUIElement.PopParent();
-
-			Emulator.active.OnSceneChanged.Add(new => OnSceneChanged);
-			Emulator.active.OnSceneChanging.Add(new => OnSceneChanging);
 		}
 
 		public ~this() {
@@ -383,7 +384,7 @@ namespace SpyroScope {
 		}
 
 		public override void Update() {
-			Emulator.active.CheckEmulatorStatus();
+			Emulator.active.CheckProcessStatus();
 			Emulator.active.FindGame();
 
 			// If there is no emulator or relevant game present, return to the setup screen
@@ -393,6 +394,14 @@ namespace SpyroScope {
 			}
 
 			Emulator.active.FetchImportantData();
+
+			// Check if events occurred based on time
+			if (Emulator.active.lastSceneChanging > lastUpdatedSceneChanging) {
+				OnSceneChanging();
+			}
+			if (Emulator.active.lastSceneChange > lastUpdatedSceneChange) {
+				OnSceneChanged();
+			}
 
 			if (!Terrain.decoded && VRAM.upToDate) {
 				Terrain.Decode();
@@ -1171,11 +1180,15 @@ namespace SpyroScope {
 				delete modelSet;
 			}
 			modelSets.Clear();
+
+			lastUpdatedSceneChanging = .Now;
 		}
 
 		void OnSceneChanged() {
 			Terrain.Clear();
 			Terrain.Load();
+
+			lastUpdatedSceneChange = .Now;
 		}
 
 		void PushMessageToFeed(String message) {

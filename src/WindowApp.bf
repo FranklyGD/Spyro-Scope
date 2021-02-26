@@ -47,20 +47,21 @@ namespace SpyroScope {
 
 			state = new SetupState();
 			states.Add(state);
-			//states.Add(new ViewerState());
-			//states.Add(new VRAMViewerState());
+			states.Add(new ViewerState());
+			states.Add(new VRAMViewerState());
 
 			// Attempt to find and bind as the window is being opened
 			let processes = new List<Process>();
 			Emulator.FindEmulatorProcesses(processes);
 
 			if (processes.Count == 1) {
-				Emulator.BindEmulatorProcess(processes[1]);
+				Emulator.BindEmulatorProcess(processes[0]);
 			}
 
 			DeleteContainerAndItems!(processes);
 
 			if (Emulator.active != null && Emulator.active.emulator != .None) {
+				Emulator.active.FetchMainAddresses();
 				Emulator.active.FindGame();
 				if (Emulator.active.rom != .None) {
 					state = states[1];

@@ -52,9 +52,11 @@ namespace SpyroScope {
 		int hoveredTexturePage = -1, hoveredCLUTIndex = -1, hoveredTextureIDIndex = -1;
 		int selectedTexturePage = -1, selectedCLUTIndex = -1, selectedTextureIDIndex = -1;
 		bool panning;
+		
+		// Timestamps
+		DateTime lastUpdatedSceneChange;
 
 		public this() {
-			Emulator.active.OnSceneChanged.Add(new => OnSceneChanged);
 			VRAM.OnSnapshotTaken.Add(new => OnNewSnapshot);
 		}
 
@@ -77,6 +79,10 @@ namespace SpyroScope {
 
 		public override void Update() {
 			Emulator.active.FetchImportantData();
+
+			if (Emulator.active.lastSceneChange > lastUpdatedSceneChange) {
+				OnSceneChanged();
+			}
 
 			Terrain.UpdateTextureInfo(false);
 			blinkerTime = (blinkerTime + 1) % 50;
@@ -307,6 +313,8 @@ namespace SpyroScope {
 			if (Emulator.active.installment != .SpyroTheDragon) {
 				SpyroFont.Init();
 			}
+			
+			lastUpdatedSceneChange = .Now;
 		}
 
 		void OnNewSnapshot() {

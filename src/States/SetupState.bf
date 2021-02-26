@@ -5,6 +5,7 @@ using System.Diagnostics;
 namespace SpyroScope {
 	class SetupState : WindowState {
 		Stopwatch stopwatch = new .() ~ delete _;
+		public List<Process> processes = new .() ~ delete _;
 
 		public override void Enter() {
 			Renderer.clearColor = .(0,0,0);
@@ -22,12 +23,20 @@ namespace SpyroScope {
 				}
 			} else if (stopwatch.ElapsedMilliseconds > 1000) {
 				if (Emulator.active == null) {
-					let processes = new List<Process>();
+					DeleteAndClearItems!(processes);
+
 					Emulator.FindEmulatorProcesses(processes);
-					DeleteContainerAndItems!(processes);
+
+					if (processes.Count == 1) {
+						// Automatically bind to the process
+						Emulator.BindEmulatorProcess(processes[0]);
+					} else {
+						// List out and let user choose applicable processes
+					}
 				} else {
-					Emulator.active.CheckEmulatorStatus();
+					Emulator.active.CheckProcessStatus();
 					if (Emulator.active.emulator != .None) {
+						Emulator.active.FetchMainAddresses();
 						Emulator.active.FindGame();
 					}
 				}

@@ -6,7 +6,7 @@ using System.Threading;
 namespace SpyroScope {
 	class Emulator {
 		public static Emulator active;
-		public static List<Emulator> emulators = new .() ~ delete _;
+		public static List<Emulator> emulators = new .() ~ DeleteAndClearItems!(_);
 
 		public Windows.ProcessHandle processHandle;
 		public Windows.HModule moduleHandle; // Also contains the base address directly
@@ -258,9 +258,9 @@ namespace SpyroScope {
 			return value != gameInputValue[(int)rom];
 		} }
 
-		// Events
-		public Event<delegate void()> OnSceneChanged ~ _.Dispose();
-		public Event<delegate void()> OnSceneChanging ~ _.Dispose();
+		// Event Timestamps
+		public DateTime lastSceneChanging;
+		public DateTime lastSceneChange;
 
 		this(EmulatorType type, Windows.ProcessHandle process, Windows.HModule module) {
 			processHandle = process;
@@ -289,6 +289,7 @@ namespace SpyroScope {
 		}
 
 		public static Emulator BindEmulatorProcess(Process process) {
+			// Try to open and access the process
 			Windows.ProcessHandle processHandle = Windows.OpenProcess(Windows.PROCESS_ALL_ACCESS, false, process.Id);
 
 			Emulator.EmulatorType emulator = .None;
@@ -303,6 +304,7 @@ namespace SpyroScope {
 					emulator = .Mednafen;
 			}
 
+			// Attempt to get the main module
 			Windows.HModule moduleHandle = 0;
 			switch (emulator) {
 				case .NocashPSX:
@@ -316,7 +318,8 @@ namespace SpyroScope {
 				default:
 			}
 
-			if (moduleHandle.IsInvalid) {
+			// Cancel if the handles are valid
+			if (processHandle.IsInvalid || moduleHandle.IsInvalid) {
 				processHandle.Close();
 				return null;
 			}
@@ -325,8 +328,6 @@ namespace SpyroScope {
 		}
 
 		public void FindGame() {
-			FetchRAMBaseAddress();
-
 			SpyroROM newRom = .None;
 			for (int i < 10) {
 				let test = scope String();
@@ -361,7 +362,6 @@ namespace SpyroScope {
 			}
 
 			if (newRom != .None && newRom != rom) {
-				FetchVRAMBaseAddress();
 				FetchStaticData();
 			}
 
@@ -391,11 +391,25 @@ namespace SpyroScope {
 			return 0;
 		}
 
-		public void CheckEmulatorStatus() {
+		public void CheckProcessStatus() {
 			int32 exitCode;
 			if (Windows.GetExitCodeProcess(processHandle, out exitCode) && exitCode != 259 /*STILL_ACTIVE*/) {
 				UnbindEmulatorProcess();
 			}
+		}
+
+		public void FetchMainAddresses() {
+			// Do this once since all emulators have one location for its RAM/VRAM
+
+			if (RAMBaseAddress == 0) {
+				FetchRAMBaseAddress();
+			}
+
+			if (VRAMBaseAddress == 0) {
+				FetchVRAMBaseAddress();
+			}
+
+			// NOTE: Careful with getting VRAM once, since some emulators have multiple rendering engine that can be swapped out
 		}
 
 		public void CheckSources() {
@@ -410,7 +424,7 @@ namespace SpyroScope {
 					changedPointers[i] = true;
 
 					if (loadingStatus == .Idle) {
-						OnSceneChanging();
+						lastSceneChanging = .Now;
 					}
 
 					loadingStatus = .Loading;
@@ -586,7 +600,7 @@ namespace SpyroScope {
 				// as there is a big delay when loading the large data at once
 
 				loadingStatus = .Idle;
-				OnSceneChanged();
+				lastSceneChange = .Now;
 			}
 
 			if (!VRAM.upToDate && gameState != (installment == .SpyroTheDragon ? 2 : 4)) {
