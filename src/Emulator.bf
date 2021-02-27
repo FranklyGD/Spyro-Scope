@@ -61,36 +61,36 @@ namespace SpyroScope {
 				base.ToString(strBuffer);
 			}
 
-			public void Read(T* buffer) {
-				active.ReadFromRAM(this, buffer, sizeof(T));
+			public void Read(T* buffer, Emulator emulator = active) {
+				emulator.ReadFromRAM(this, buffer, sizeof(T));
 			}
 
-			public void ReadArray(T* buffer, int count) {
-				active.ReadFromRAM(this, buffer, sizeof(T) * count);
+			public void ReadArray(T* buffer, int count, Emulator emulator = active) {
+				emulator.ReadFromRAM(this, buffer, sizeof(T) * count);
 			}
 
-			public void Write(T* buffer) {
-				active.WriteToRAM(this, buffer, sizeof(T));
+			public void Write(T* buffer, Emulator emulator = active) {
+				emulator.WriteToRAM(this, buffer, sizeof(T));
 			}
 
-			public void WriteArray(T* buffer, int count) {
-			    active.WriteToRAM(this, buffer, sizeof(T) * count);
+			public void WriteArray(T* buffer, int count, Emulator emulator = active) {
+			    emulator.WriteToRAM(this, buffer, sizeof(T) * count);
 			}
 
-			public void GetAtIndex(T* buffer, int index) {
-			    active.ReadFromRAM(this + index * sizeof(T), buffer, sizeof(T));
+			public void GetAtIndex(T* buffer, int index, Emulator emulator = active) {
+			    emulator.ReadFromRAM(this + index * sizeof(T), buffer, sizeof(T));
 			}
 
-			public void SetAtIndex(T* buffer, int index) {
-			    active.WriteToRAM(this + index * sizeof(T), buffer, sizeof(T));
+			public void SetAtIndex(T* buffer, int index, Emulator emulator = active) {
+			    emulator.WriteToRAM(this + index * sizeof(T), buffer, sizeof(T));
 			}
 
-			public void ReadRange(T* buffer, int start, int count) {
-			    active.ReadFromRAM(this + start * sizeof(T), buffer, count * sizeof(T));
+			public void ReadRange(T* buffer, int start, int count, Emulator emulator = active) {
+			    emulator.ReadFromRAM(this + start * sizeof(T), buffer, count * sizeof(T));
 			}
 
-			public void WriteRange(T* buffer, int start, int count) {
-			    active.WriteToRAM(this + start * sizeof(T), buffer, count * sizeof(T));
+			public void WriteRange(T* buffer, int start, int count, Emulator emulator = active) {
+			    emulator.WriteToRAM(this + start * sizeof(T), buffer, count * sizeof(T));
 			}
 		}
 
@@ -420,7 +420,7 @@ namespace SpyroScope {
 				var pointerSet = pointerSets[i];
 				let pointer = pointerSet[(int)rom];
 
-				pointer.Read(&newLoadedPointer);
+				pointer.Read(&newLoadedPointer, this);
 				if (!newLoadedPointer.IsNull && loadedPointers[i] != newLoadedPointer) {
 					loadedPointers[i] = newLoadedPointer;
 					changedPointers[i] = true;
@@ -555,8 +555,8 @@ namespace SpyroScope {
 					deathPlaneHeights = new .[36];
 					maxFreeflightHeights = new .[36];
 
-					deathPlaneHeightsAddresses[(int)rom].ReadArray(&deathPlaneHeights[0], 36);
-					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&maxFreeflightHeights[0], 36);
+					deathPlaneHeightsAddresses[(int)rom].ReadArray(&deathPlaneHeights[0], 36, this);
+					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&maxFreeflightHeights[0], 36, this);
 				}
 
 				case .RiptosRage: {
@@ -566,8 +566,8 @@ namespace SpyroScope {
 					deathPlaneHeights = new .[32];
 					maxFreeflightHeights = new .[32];
 					
-					deathPlaneHeightsAddresses[(int)rom].ReadArray(&deathPlaneHeights[0], 32);
-					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&maxFreeflightHeights[0], 32);
+					deathPlaneHeightsAddresses[(int)rom].ReadArray(&deathPlaneHeights[0], 32, this);
+					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&maxFreeflightHeights[0], 32, this);
 				}
 
 				case .YearOfTheDragon: {
@@ -576,8 +576,8 @@ namespace SpyroScope {
 					deathPlaneHeights = new .[40 * 4];
 					maxFreeflightHeights = new .[40 * 4];
 
-					deathPlaneHeightsAddresses[(int)rom].ReadArray(&deathPlaneHeights[0], 40 * 4);
-					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&maxFreeflightHeights[0], 40);
+					deathPlaneHeightsAddresses[(int)rom].ReadArray(&deathPlaneHeights[0], 40 * 4, this);
+					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&maxFreeflightHeights[0], 40, this);
 				}
 				default : {}
 			}
@@ -586,16 +586,16 @@ namespace SpyroScope {
 		
 
 		public void FetchImportantData() {
-			gameStateAddresses[(int)rom].Read(&gameState);
-			loadStateAddresses[(int)rom].Read(&loadState);
-			spyroPositionAddresses[(int)rom].Read(&spyroPosition);
-			spyroMatrixAddresses[(int)rom].Read(&spyroBasis);
-			spyroIntendedVelocityAddresses[(int)rom].Read(&spyroIntendedVelocity);
-			spyroPhysicsVelocityAddresses[(int)rom].Read(&spyroPhysicsVelocity);
+			gameStateAddresses[(int)rom].Read(&gameState, this);
+			loadStateAddresses[(int)rom].Read(&loadState, this);
+			spyroPositionAddresses[(int)rom].Read(&spyroPosition, this);
+			spyroMatrixAddresses[(int)rom].Read(&spyroBasis, this);
+			spyroIntendedVelocityAddresses[(int)rom].Read(&spyroIntendedVelocity, this);
+			spyroPhysicsVelocityAddresses[(int)rom].Read(&spyroPhysicsVelocity, this);
 
-			cameraPositionAddress[(int)rom].Read(&cameraPosition);
-			cameraMatrixAddress[(int)rom].Read(&cameraBasisInv);
-			cameraEulerRotationAddress[(int)rom].Read(&cameraEulerRotation);
+			cameraPositionAddress[(int)rom].Read(&cameraPosition, this);
+			cameraMatrixAddress[(int)rom].Read(&cameraBasisInv, this);
+			cameraEulerRotationAddress[(int)rom].Read(&cameraEulerRotation, this);
 
 			//ReadFromRAM((.)0x8006a28c, &collidingTriangle, 4);
 
@@ -613,7 +613,7 @@ namespace SpyroScope {
 			}
 
 			Emulator.Address<Moby> newObjectArrayAddress = ?;
-			objectArrayPointers[(int)rom].Read(&newObjectArrayAddress);
+			objectArrayPointers[(int)rom].Read(&newObjectArrayAddress, this);
 			if (objectArrayAddress != newObjectArrayAddress) {
 				Moby.allocated.Clear();
 			}
@@ -621,49 +621,49 @@ namespace SpyroScope {
 		}
 
 		public void SetSpyroPosition(Vector3Int* position) {
-			spyroPositionAddresses[(int)rom].Write(position);
+			spyroPositionAddresses[(int)rom].Write(position, this);
 		}
 
 		public void KillSpyroUpdate() {
 			uint32 v = 0;
-			spyroUpdateAddresses[(int)rom].Write(&v);
+			spyroUpdateAddresses[(int)rom].Write(&v, this);
 		}
 
 		public void RestoreSpyroUpdate() {
 			uint32 v = spyroUpdateJumpValue[(int)rom];
-			spyroUpdateAddresses[(int)rom].Write(&v);
+			spyroUpdateAddresses[(int)rom].Write(&v, this);
 		}
 
 		// Main Update
 		public void KillUpdate() {
 			uint32 v = stepperInjected ? 0x0C002400 : 0;
-			updateAddresses[(int)rom].Write(&v);
+			updateAddresses[(int)rom].Write(&v, this);
 		}
 
 		public void RestoreUpdate() {
 			uint32 v = updateJumpValue[(int)rom];
-			updateAddresses[(int)rom].Write(&v);
+			updateAddresses[(int)rom].Write(&v, this);
 		}
 
 		// Camera
 		public void KillCameraUpdate() {
 			uint32 v = 0;
-			cameraUpdateAddresses[(int)rom].Write(&v);
+			cameraUpdateAddresses[(int)rom].Write(&v, this);
 		}
 
 		public void RestoreCameraUpdate() {
 			uint32 v = cameraUpdateJumpValue[(int)rom];
-			cameraUpdateAddresses[(int)rom].Write(&v);
+			cameraUpdateAddresses[(int)rom].Write(&v, this);
 		}
 
 		public void SetCameraPosition(Vector3Int* position) {
-			cameraPositionAddress[(int)rom].Write(position);
+			cameraPositionAddress[(int)rom].Write(position, this);
 		}
 
 		// Input
 		public void KillInputRelay() {
 			uint32 v = 0;
-			gameInputAddress[(int)rom].Write(&v);
+			gameInputAddress[(int)rom].Write(&v, this);
 
 			// Beyond the point of this function being called
 			// input should be written into RAM from the program
@@ -674,14 +674,14 @@ namespace SpyroScope {
 
 		public void RestoreInputRelay() {
 			uint32 v = gameInputValue[(int)rom];
-			gameInputAddress[(int)rom].Write(&v);
+			gameInputAddress[(int)rom].Write(&v, this);
 		}
 
 		// Logic
 		public void InjectStepperLogic() {
 			WriteToRAM(stepperAddress, &stepperLogic[0], 4 * stepperLogic.Count);
 			uint32 v = 0x0C002400; // (stepperAddress & 0x0fffffff) >> 2;
-			updateAddresses[(int)rom].Write(&v);
+			updateAddresses[(int)rom].Write(&v, this);
 			stepperInjected = true;
 		}
 
