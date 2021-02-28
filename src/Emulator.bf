@@ -181,7 +181,17 @@ namespace SpyroScope {
 		// Game Values
 		public int32 gameState, loadState;
 
-		public Vector3Int cameraPosition, spyroPosition;
+		Vector3Int cameraPosition;
+		public Vector3Int CameraPosition {
+			get => cameraPosition;
+
+			set {
+				cameraPosition = value;
+				cameraPositionAddress[(int)rom].Write(&cameraPosition, this);
+			}
+		}
+
+		public Vector3Int spyroPosition;
 		public Vector3Int spyroIntendedVelocity, spyroPhysicsVelocity;
 		public int16[3] cameraEulerRotation;
 		public MatrixInt cameraBasisInv, spyroBasis;

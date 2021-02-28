@@ -16,9 +16,15 @@ namespace SpyroScope {
 		}
 
 		ViewMode viewMode = .Game;
+
+		/// Is in-game camera no being updated externally
 		bool cameraHijacked;
+
 		float cameraSpeed = 64;
-		Vector3 cameraMotion;
+
+		/// The overall motion direction
+		Vector3 cameraMotionDirection;
+
 		Vector3 viewEulerRotation;
 		bool mapMode;
 
@@ -82,6 +88,7 @@ namespace SpyroScope {
 		Toggle mirrorToggle, doubleSidedToggle;
 
 		public this() {
+
 			ViewerSelection.Init();
 			GUIElement.SetActiveGUI(guiElements);
 
@@ -409,6 +416,7 @@ namespace SpyroScope {
 				Terrain.Decode();
 			}
 
+			UpdateCameraMotion();
 			UpdateView();
 
 			var objPointer = Emulator.active.objectArrayAddress;
@@ -923,7 +931,6 @@ namespace SpyroScope {
 					if (event.button.button == 3) {	
 						SDL.SetRelativeMouseMode(false);
 						cameraHijacked = false;
-						cameraMotion = .(0,0,0);
 					}
 
 					Translator.MouseRelease();
@@ -934,7 +941,7 @@ namespace SpyroScope {
 
 						WindowApp.viewerProjection = Camera.projection;
 					} else {
-						cameraSpeed += (.)event.wheel.y;
+						cameraSpeed += (.)event.wheel.y * 16;
 						if (cameraSpeed < 8) {
 							cameraSpeed = 8;
 						}
@@ -948,7 +955,6 @@ namespace SpyroScope {
 							}
 							case .LCtrl : {
 								cameraSpeed *= 8;
-								cameraMotion *= 8;
 							}
 							case .M : {
 								toggleList[0].button.Toggle();
@@ -999,44 +1005,11 @@ namespace SpyroScope {
 							}
 							default : {}
 						}
-	
-						switch (event.key.keysym.scancode) {
-							case .W :
-								cameraMotion.z -= cameraSpeed;
-							case .S :
-								cameraMotion.z += cameraSpeed;
-							case .A :
-								cameraMotion.x -= cameraSpeed;
-							case .D :
-								cameraMotion.x += cameraSpeed;
-							case .Space :
-								cameraMotion.y += cameraSpeed;
-							case .LShift :
-								cameraMotion.y -= cameraSpeed;
-							default :
-						}
 					}
 				}
 				case .KeyUp : {
 					if (event.key.keysym.scancode == .LCtrl) {
 						cameraSpeed /= 8;
-						cameraMotion /= 8;
-					}
-
-					switch (event.key.keysym.scancode) {
-						case .W :
-							cameraMotion.z = 0;
-						case .S :
-							cameraMotion.z = 0;
-						case .A :
-							cameraMotion.x = 0;
-						case .D :
-							cameraMotion.x = 0;
-						case .Space :
-							cameraMotion.y = 0;
-						case .LShift :
-							cameraMotion.y = 0;
-						default :
 					}
 				}
 				case .JoyDeviceAdded : {
@@ -1135,9 +1108,33 @@ namespace SpyroScope {
 			}
 		}
 
+		void UpdateCameraMotion() {
+			cameraMotionDirection = .Zero;
+
+			bool* keystates = SDL.GetKeyboardState(null);
+			if (keystates[(int)SDL.Scancode.W]) {
+				cameraMotionDirection.z -= 1;
+			}
+			if (keystates[(int)SDL.Scancode.S]) {
+				cameraMotionDirection.z += 1;
+			}
+			if (keystates[(int)SDL.Scancode.A]) {
+				cameraMotionDirection.x -= 1;
+			}
+			if (keystates[(int)SDL.Scancode.D]) {
+				cameraMotionDirection.x += 1;
+			}
+			if (keystates[(int)SDL.Scancode.Space]) {
+				cameraMotionDirection.y += 1;
+			}
+			if (keystates[(int)SDL.Scancode.LShift]) {
+				cameraMotionDirection.y -= 1;
+			}
+		}
+
 		void UpdateView() {
 			if (viewMode == .Game) {
-				Camera.position = Emulator.active.cameraPosition;
+				Camera.position = Emulator.active.CameraPosition;
 				int16[3] cameraEulerRotation = Emulator.active.cameraEulerRotation;
 				viewEulerRotation.x = (float)cameraEulerRotation[1] / 0x800;
 				viewEulerRotation.y = (float)cameraEulerRotation[0] / 0x800;
@@ -1155,16 +1152,14 @@ namespace SpyroScope {
 
 			// Move camera
 			if (viewMode == .Map) {
-				Camera.position.x += Camera.size / 0x1000 * cameraMotion.x;
-				Camera.position.y -= Camera.size / 0x1000 * cameraMotion.z;
+				Camera.position.x += Camera.size / 100 * cameraMotionDirection.x;
+				Camera.position.y -= Camera.size / 100 * cameraMotionDirection.z;
 			} else if (cameraHijacked) {
-				let cameraMotionDirection = Camera.basis * cameraMotion;
+				let cameraMotion = Camera.basis * cameraMotionDirection * cameraSpeed;
 				
-				if (viewMode == .Free) {
-					Camera.position += cameraMotionDirection;
-				} else {
-					Emulator.active.cameraPosition = (.)(Emulator.active.cameraPosition + cameraMotionDirection);
-					Emulator.active.SetCameraPosition(&Emulator.active.cameraPosition);
+				Camera.position += cameraMotion;
+				if (viewMode != .Free) {
+					Emulator.active.CameraPosition = (.)(Camera.position + cameraMotion);
 				}
 			}
 		}
@@ -1197,7 +1192,7 @@ namespace SpyroScope {
 			let cameraBasis = Emulator.active.cameraBasisInv.ToMatrixCorrected().Transpose();
 			let cameraBasisCorrected = Matrix3(cameraBasis.y, cameraBasis.z, -cameraBasis.x);
 
-			let cameraPosition = Emulator.active.cameraPosition;
+			let cameraPosition = Emulator.active.CameraPosition;
 			Renderer.DrawLine(cameraPosition, cameraPosition + cameraBasis * Vector3(500,0,0), .(255,0,0), .(255,0,0));
 			Renderer.DrawLine(cameraPosition, cameraPosition + cameraBasis * Vector3(0,500,0), .(0,255,0), .(0,255,0));
 			Renderer.DrawLine(cameraPosition, cameraPosition + cameraBasis * Vector3(0,0,500), .(0,0,255), .(0,0,255));
@@ -1379,7 +1374,7 @@ namespace SpyroScope {
 				Camera.near = 100;
 				Camera.far = 500000;
 
-				Camera.position = Emulator.active.cameraPosition;
+				Camera.position = Emulator.active.CameraPosition;
 				int16[3] cameraEulerRotation = Emulator.active.cameraEulerRotation;
 				viewEulerRotation.x = (float)cameraEulerRotation[1] / 0x800;
 				viewEulerRotation.y = (float)cameraEulerRotation[0] / 0x800;
