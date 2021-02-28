@@ -31,8 +31,7 @@ void main() {
     specular = dot((view * normalize(vec4(-1,1,2,0))).xyz, normal);
 
     // Output
-    color.rgb *= instanceTint;
-    color.rgb = pow(color.rgb, vec3(2.2));
+    color.rgb *= instanceTint * (1 + retroShading);
 
     float diffuse = mix((dot(normal, vec3(0,0,1)) + 1.03) / 2.03, 1, retroShading);
     float specDiffuse = (specular + 0.25) / 1.25;

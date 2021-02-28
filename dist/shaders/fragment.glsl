@@ -18,8 +18,9 @@ void main() {
         discard;
 
     // Final Shading
-    float power = (1 + retroShading * 3) * (1 + retroShading * (1 - tex.a) * 3);
-    vec3 finalColor = clamp((color.rgb * tex.rgb) * power, 0, 1) + vec3(specular);
+    float power = 1 + retroShading * (1 - tex.a);
+    vec3 linearColor = color.rgb * pow(tex.rgb, vec3(1.0 / 2.2)) * power;
+    vec3 finalColor = clamp(pow(linearColor, vec3(2.2)), 0, 1) + vec3(specular);
     fragColor.rgb = finalColor;
     fragColor.a = color.a * mix(tex.a, 1, retroShading);
 }
