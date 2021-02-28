@@ -484,11 +484,10 @@ namespace SpyroScope {
 				if (ViewerSelection.currentObjIndex > -1) {
 					let moby = Moby.allocated[ViewerSelection.currentObjIndex];
 					Translator.Update(moby.position, moby.basis);
-				} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
-					Translator.Update(Terrain.collision.mesh.vertices[ViewerSelection.currentTriangleIndex * 3], .Identity);
+				/*} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
+					Translator.Update(Terrain.collision.mesh.vertices[ViewerSelection.currentTriangleIndex * 3], .Identity);*/
 				} else {
-					Vector3 spyroPosition = Emulator.active.spyroPosition;
-					Translator.Update(spyroPosition, Emulator.active.spyroBasis.ToMatrixCorrected());
+					Translator.Update(Emulator.active.SpyroPosition, Emulator.active.spyroBasis.ToMatrixCorrected());
 				}
 			}
 		}
@@ -858,17 +857,16 @@ namespace SpyroScope {
 										moby.position = (.)position;
 										Moby.GetAddress(ViewerSelection.currentObjIndex).Write(&moby);
 									});
-								} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
+								/*} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
 									Translator.OnDragged.Add(new (position) => {
 										var triangle = Terrain.collision.triangles[ViewerSelection.currentTriangleIndex].Unpack(false);
 										triangle[0] = (.)position;
 										Terrain.collision.SetNearVertex((.)ViewerSelection.currentTriangleIndex, triangle, true);
-									});
+									});*/
 								} else {
 									Translator.OnDragBegin.Add(new => Emulator.active.KillSpyroUpdate);
 									Translator.OnDragged.Add(new (position) => {
-										Emulator.active.spyroPosition = (.)position;
-										Emulator.spyroPositionAddresses[(int)Emulator.active.rom].Write(&Emulator.active.spyroPosition);
+										Emulator.active.SpyroPosition = (.)position;
 									});
 									Translator.OnDragEnd.Add(new => Emulator.active.RestoreSpyroUpdate);
 								}
@@ -1177,7 +1175,7 @@ namespace SpyroScope {
 				}
 
 				if (viewMode == .Lock) {
-					Camera.position = Emulator.active.spyroPosition + lockOffset;
+					Camera.position = Emulator.active.SpyroPosition + lockOffset;
 				}
 			}
 		}
@@ -1245,7 +1243,7 @@ namespace SpyroScope {
 		}
 
 		void DrawSpyroInformation() {
-			let position = (Vector3)Emulator.active.spyroPosition;
+			let position = (Vector3)Emulator.active.SpyroPosition;
 
 			DrawUtilities.Arrow(position, (Vector3)Emulator.active.spyroIntendedVelocity / 10, 25, .(255,255,0));
 			DrawUtilities.Arrow(position, (Vector3)Emulator.active.spyroPhysicsVelocity / 10, 50, .(255,128,0));
@@ -1424,7 +1422,7 @@ namespace SpyroScope {
 			}
 
 			if (mode == .Lock) {
-				lockOffset = Camera.position - Emulator.active.spyroPosition;
+				lockOffset = Camera.position - Emulator.active.SpyroPosition;
 			}
 
 			viewMode = mode;
@@ -1474,8 +1472,7 @@ namespace SpyroScope {
 		}
 
 		void Teleport() {
-			Emulator.active.spyroPosition = (.)Camera.position;
-			Emulator.spyroPositionAddresses[(int)Emulator.active.rom].Write(&Emulator.active.spyroPosition);
+			Emulator.active.SpyroPosition = (.)Camera.position;
 			PushMessageToFeed("Teleported Spyro to Game Camera");
 		}
 

@@ -16,10 +16,10 @@ namespace SpyroScope {
 			let basis = Emulator.active.spyroBasis.ToMatrixCorrected();
 
 			let targetLocation = basis * Vector3(localPosition[0], localPosition[1], localPosition[2]);
-			Renderer.DrawLine(object.position, Emulator.active.spyroPosition + targetLocation, .(255,255,0), .(255,255,0));
+			Renderer.DrawLine(object.position, Emulator.active.SpyroPosition + targetLocation, .(255,255,0), .(255,255,0));
 
 			DrawUtilities.Circle(
-				Emulator.active.spyroPosition + targetLocation,
+				Emulator.active.SpyroPosition + targetLocation,
 				Matrix3.Identity * 200 * ((float)positionTimer / maxTime),
 				.(255,255,0)
 			);

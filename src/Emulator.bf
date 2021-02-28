@@ -184,14 +184,21 @@ namespace SpyroScope {
 		Vector3Int cameraPosition;
 		public Vector3Int CameraPosition {
 			get => cameraPosition;
-
 			set {
 				cameraPosition = value;
 				cameraPositionAddress[(int)rom].Write(&cameraPosition, this);
 			}
 		}
 
-		public Vector3Int spyroPosition;
+		Vector3Int spyroPosition;
+		public Vector3Int SpyroPosition {
+			get => spyroPosition;
+			set {
+				spyroPosition = value;
+				spyroPositionAddresses[(int)rom].Write(&spyroPosition, this);
+			}
+		}
+
 		public Vector3Int spyroIntendedVelocity, spyroPhysicsVelocity;
 		public int16[3] cameraEulerRotation;
 		public MatrixInt cameraBasisInv, spyroBasis;
