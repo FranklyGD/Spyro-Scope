@@ -12,6 +12,7 @@ namespace SpyroScope {
 		enum ViewMode {
 			Game,
 			Free,
+			Lock,
 			Map
 		}
 
@@ -26,7 +27,7 @@ namespace SpyroScope {
 		Vector3 cameraMotionDirection;
 
 		Vector3 viewEulerRotation;
-		bool mapMode;
+		Vector3 lockOffset;
 
 		// Options
 		bool drawObjectOrigins = true;
@@ -75,7 +76,7 @@ namespace SpyroScope {
 			(null, "Object (O)rigin Axis"),
 			(null, "Hide (I)nactive Objects"),
 			(null, "(H)eight Limits"),
-			(null, "Free (C)amera"),
+			(null, "Free Game (C)amera"),
 			(null, "Display Icons"),
 			(null, "All Visual Moby Data"),
 			(null, "(E)nable Manipulator")
@@ -88,7 +89,6 @@ namespace SpyroScope {
 		Toggle mirrorToggle, doubleSidedToggle;
 
 		public this() {
-
 			ViewerSelection.Init();
 			GUIElement.SetActiveGUI(guiElements);
 
@@ -114,65 +114,73 @@ namespace SpyroScope {
 			Button viewButton1 = new .();
 			Button viewButton2 = new .();
 			Button viewButton3 = new .();
-
-			viewButton1.offset = .(16,72,16,32);
-			viewButton2.offset = .(72,128,16,32);
-			viewButton3.offset = .(128,184,16,32);
+			Button viewButton4 = new .();
+			
+			viewButton1.offset = .(16,58,16,32);
+			viewButton2.offset = .(58,100,16,32);
+			viewButton3.offset = .(100,142,16,32);
+			viewButton4.offset = .(142,184,16,32);
 
 			viewButton1.text = "Game";
 			viewButton2.text = "Free";
-			viewButton3.text = "Map";
+			viewButton3.text = "Lock";
+			viewButton4.text = "Map";
 
 			viewButton1.enabled = false;
 
 			viewButton1.OnActuated.Add(new () => {
 				viewButton1.enabled = false;
-				viewButton2.enabled = viewButton3.enabled = true;
+				viewButton2.enabled = viewButton3.enabled = viewButton4.enabled = true;
 				ToggleView(.Game);
 			});
 			viewButton2.OnActuated.Add(new () => {
 				viewButton2.enabled = false;
-				viewButton1.enabled = viewButton3.enabled = true;
+				viewButton1.enabled = viewButton3.enabled = viewButton4.enabled = true;
 				ToggleView(.Free);
 			});
 			viewButton3.OnActuated.Add(new () => {
 				viewButton3.enabled = false;
-				viewButton2.enabled = viewButton1.enabled = true;
+				viewButton1.enabled = viewButton2.enabled = viewButton4.enabled = true;
+				ToggleView(.Lock);
+			});
+			viewButton4.OnActuated.Add(new () => {
+				viewButton4.enabled = false;
+				viewButton1.enabled = viewButton2.enabled = viewButton3.enabled = true;
 				ToggleView(.Map);
 			});
 
-			viewButton1 = new .();
-			viewButton2 = new .();
-			viewButton3 = new .();
+			Button renderButton1 = new .();
+			Button renderButton2 = new .();
+			Button renderButton3 = new .();
 
-			viewButton1.offset = .(16,72,36,52);
-			viewButton2.offset = .(72,128,36,52);
-			viewButton3.offset = .(128,184,36,52);
+			renderButton1.offset = .(16,72,36,52);
+			renderButton2.offset = .(72,128,36,52);
+			renderButton3.offset = .(128,184,36,52);
 
-			viewButton1.text = "Collision";
-			viewButton2.text = "Far";
-			viewButton3.text = "Near";
+			renderButton1.text = "Collision";
+			renderButton2.text = "Far";
+			renderButton3.text = "Near";
 
-			viewButton1.enabled = false;
+			renderButton1.enabled = false;
 
-			viewButton1.OnActuated.Add(new () => {
-				viewButton1.enabled = false;
-				viewButton2.enabled = viewButton3.enabled = cycleTerrainOverlayButton.enabled = true;
+			renderButton1.OnActuated.Add(new () => {
+				renderButton1.enabled = false;
+				renderButton2.enabled = renderButton3.enabled = cycleTerrainOverlayButton.enabled = true;
 				Terrain.renderMode = .Collision;
 				ViewerSelection.currentTriangleIndex = -1;
 				ViewerSelection.currentRegionIndex = -1;
 				faceMenu.visible = false;
 			});
-			viewButton2.OnActuated.Add(new () => {
-				viewButton2.enabled = cycleTerrainOverlayButton.enabled = false;
-				viewButton1.enabled = viewButton3.enabled = true;
+			renderButton2.OnActuated.Add(new () => {
+				renderButton2.enabled = cycleTerrainOverlayButton.enabled = false;
+				renderButton1.enabled = renderButton3.enabled = true;
 				Terrain.renderMode = .Far;
 				ViewerSelection.currentTriangleIndex = -1;
 				faceMenu.visible = false;
 			});
-			viewButton3.OnActuated.Add(new () => {
+			renderButton3.OnActuated.Add(new () => {
 				/*viewButton3.enabled =*/ cycleTerrainOverlayButton.enabled = false;
-				viewButton2.enabled = viewButton1.enabled = true;
+				renderButton2.enabled = renderButton1.enabled = true;
 				Terrain.renderMode = Terrain.renderMode == .NearLQ ? .NearHQ : .NearLQ;
 			});
 
@@ -885,7 +893,7 @@ namespace SpyroScope {
 				case .MouseMotion : {
 					if (cameraHijacked) {
 						switch (viewMode) {
-							case .Free: {
+							case .Free, .Lock: {
 								viewEulerRotation.z -= (.)event.motion.xrel * 0.001f;
 								viewEulerRotation.x += (.)event.motion.yrel * 0.001f;
 								viewEulerRotation.x = Math.Clamp(viewEulerRotation.x, -0.5f, 0.5f);
@@ -1154,12 +1162,22 @@ namespace SpyroScope {
 			if (viewMode == .Map) {
 				Camera.position.x += Camera.size / 100 * cameraMotionDirection.x;
 				Camera.position.y -= Camera.size / 100 * cameraMotionDirection.z;
-			} else if (cameraHijacked) {
-				let cameraMotion = Camera.basis * cameraMotionDirection * cameraSpeed;
-				
-				Camera.position += cameraMotion;
-				if (viewMode != .Free) {
-					Emulator.active.CameraPosition = (.)(Camera.position + cameraMotion);
+			} else {
+				if (cameraHijacked) {
+					let cameraMotion = Camera.basis * cameraMotionDirection * cameraSpeed;
+				 
+					if (viewMode == .Lock) {
+						lockOffset += cameraMotion;
+					} else {
+						Camera.position += cameraMotion;
+						if (viewMode != .Free) {
+							Emulator.active.CameraPosition = (.)(Camera.position + cameraMotion);
+						}
+					}
+				}
+
+				if (viewMode == .Lock) {
+					Camera.position = Emulator.active.spyroPosition + lockOffset;
 				}
 			}
 		}
@@ -1405,10 +1423,15 @@ namespace SpyroScope {
 				WindowApp.viewerProjection = Camera.projection;
 			}
 
+			if (mode == .Lock) {
+				lockOffset = Camera.position - Emulator.active.spyroPosition;
+			}
+
 			viewMode = mode;
 
 			switch (viewMode) {
 				case .Free: PushMessageToFeed("Free View");
+				case .Lock: PushMessageToFeed("Lock View");
 				case .Game: PushMessageToFeed("Game View");
 				case .Map: PushMessageToFeed("Map View");
 			}
