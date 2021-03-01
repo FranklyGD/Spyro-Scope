@@ -42,6 +42,16 @@ namespace SpyroScope {
 		// Objects
 		Dictionary<uint16, MobyModelSet> modelSets = new .();
 
+		// Other
+		struct SpyroFrame {
+			public Vector3Int position;
+			public Vector3Int eulerRotation;
+			public uint32 state;
+			public Vector3Int targetVelocity;
+		}
+		List<SpyroFrame> spyroRecording;
+		bool recording;
+
 		// UI
 		public static Vector3 cursor3DPosition;
 
@@ -71,7 +81,7 @@ namespace SpyroScope {
 
 		Inspector mainInspector;
 
-		(Toggle button, String label)[8] toggleList = .(
+		(Toggle button, String label)[9] toggleList = .(
 			(null, "Wirefra(m)e"),
 			(null, "Object (O)rigin Axis"),
 			(null, "Hide (I)nactive Objects"),
@@ -79,7 +89,8 @@ namespace SpyroScope {
 			(null, "Free Game (C)amera"),
 			(null, "Display Icons"),
 			(null, "All Visual Moby Data"),
-			(null, "(E)nable Manipulator")
+			(null, "(E)nable Manipulator"),
+			(null, "Record")
 		);
 
 		Toggle pinInspectorButton;
@@ -203,6 +214,19 @@ namespace SpyroScope {
 			toggleList[5].button.OnActuated.Add(new () => {displayIcons = toggleList[5].button.value;});
 			toggleList[6].button.OnActuated.Add(new () => {displayAllData = toggleList[6].button.value;});
 			toggleList[7].button.OnActuated.Add(new () => {showManipulator = toggleList[7].button.value;});
+			toggleList[8].button.OnActuated.Add(new () => {
+				if (toggleList[8].button.value) {
+					Record();
+				} else {
+					StopRecord();
+				}
+			});
+
+			Button clearRecordButton = new .();
+
+			clearRecordButton.offset = .(100, 180, 16 + (toggleList.Count + 1) * WindowApp.font.height, 32 + (toggleList.Count + 1) * WindowApp.font.height);
+			clearRecordButton.text = "Clear";
+			clearRecordButton.OnActuated.Add(new => ClearRecord);
 
 			cycleTerrainOverlayButton = new .();
 
@@ -384,6 +408,8 @@ namespace SpyroScope {
 				}
 			}
 			delete messageFeed;
+
+			ClearRecord();
 		}
 
 		public override void Enter() {
@@ -447,6 +473,14 @@ namespace SpyroScope {
 					Moby.allocated.Add(object);
 					
 					objPointer += sizeof(Moby);
+				}
+
+				// Add frames to the recording if Spyro has at least moved
+				if (recording) {
+					let lastestFrame = spyroRecording[spyroRecording.Count - 1];
+					if (lastestFrame.position != Emulator.active.SpyroPosition) {
+						AddRecordFrame();
+					}
 				}
 			}
 
@@ -579,6 +613,16 @@ namespace SpyroScope {
 				let flightHeight = Emulator.active.maxFreeflightHeights[currentWorldId];
 				if (Camera.position.z < flightHeight) {
 					DrawUtilities.Grid(.(0,0,flightHeight), .Identity, .(32,64,255));
+				}
+			}
+
+			// Draw recording path
+			if (spyroRecording != null) {
+				for	(let i < spyroRecording.Count - 1) {
+					let frame = spyroRecording[i];
+					let nextFrame = spyroRecording[i + 1];
+
+					Renderer.DrawLine(frame.position, nextFrame.position, .(255,0,0), .(255,255,0));
 				}
 			}
 
@@ -788,7 +832,7 @@ namespace SpyroScope {
 			if (!cornerMenuVisible) {
 				DrawMessageFeed();
 			}
-			DrawUtilities.Rect(0,260,0,200 * cornerMenuInterp, .(0,0,0,192));
+			DrawUtilities.Rect(0,280,0,200 * cornerMenuInterp, .(0,0,0,192));
 			DrawUtilities.Rect(0,WindowApp.height,WindowApp.width - 300 * sideInspectorInterp,WindowApp.width, .(0,0,0,192));
 
 			// Corner Menu
@@ -1479,6 +1523,35 @@ namespace SpyroScope {
 		void Reload() {
 			Terrain.Reload();
 			Terrain.ReloadAnimations();
+		}
+
+		void Record() {
+			if (!recording) {
+				if (spyroRecording == null) {
+					spyroRecording = new .();
+				}
+				AddRecordFrame();
+				recording = true;
+			}
+		}
+
+		void AddRecordFrame() {
+			SpyroFrame newFrame;
+
+			newFrame.position = Emulator.active.SpyroPosition;
+			newFrame.eulerRotation = Emulator.active.SpyroEulerRotation;
+			newFrame.state = Emulator.active.SpyroState;
+			newFrame.targetVelocity = Emulator.active.SpyroIntendedVelocity;
+
+			spyroRecording.Add(newFrame);
+		}
+
+		void StopRecord() {
+			recording = false;
+		}
+
+		void ClearRecord() {
+			DeleteAndNullify!(spyroRecording);
 		}
 	}
 }
