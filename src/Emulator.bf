@@ -133,7 +133,9 @@ namespace SpyroScope {
 		public const Address<int32>[11] loadStateAddresses = .(0, (.)0x80075864/*StD*/, 0, 0, (.)0x80066eec/*RR*/, 0, 0, 0, (.)0x8006c5f8/*YotD-1.1*/, 0, 0);
 
 		public const Address<Vector3Int>[11] spyroPositionAddresses = .(0, (.)0x80078a58/*StD*/, 0, 0, (.)0x80069ff0/*RR*/, 0, 0, (.)0x80070328, (.)0x80070408/*YotD-1.1*/, 0, 0);
+		public const Address<Vector3Int>[11] spyroEulerRotationAddresses = .(0, 0/*StD*/, 0, 0, (.)0x8006a054/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
 		public const Address<MatrixInt>[11] spyroMatrixAddresses = .(0, (.)0x80078a8c/*StD*/, 0, 0, (.)0x8006a020/*RR*/, 0, 0, (.)0x80070358, (.)0x80070438/*YotD-1.1*/, 0, 0);
+		public const Address<uint32>[11] spyroStateAddresses = .(0, 0/*StD*/, 0, 0, (.)0x8006a040/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0); 
 		public const Address<Vector3Int>[11] spyroIntendedVelocityAddresses = .(0, (.)0x80078b4c/*StD*/, 0, 0, (.)0x8006a084/*RR*/, 0, 0, (.)0x800703B4, (.)0x80070494/*YotD-1.1*/, 0, 0);
 		public const Address<Vector3Int>[11] spyroPhysicsVelocityAddresses = .(0, (.)0x80078b64/*StD*/, 0, 0, (.)0x8006a090/*RR*/, 0, 0, (.)0x800703c0, (.)0x800704a0/*YotD-1.1*/, 0, 0);
 
@@ -178,6 +180,9 @@ namespace SpyroScope {
 		public const Address<uint32>[11] gameInputAddress = .(0, 0/*StD*/, 0, 0, (.)0x8001291c/*RR*/, 0, 0, 0, (.)0x8003a7a0/*YotD-1.1*/, 0, 0);
 		public const uint32[11] gameInputValue = .(0, 0/*StD*/, 0, 0, 0xac2283a0/*RR*/, 0, 0, 0, 0xae220030/*YotD-1.1*/, 0, 0);
 
+		public const Address<uint32>[11] spyroStateChangeAddress = .(0, 0/*StD*/, 0, 0, (.)0x80035d04/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
+		public const uint32[11] spyroStateChangeValue = .(0, 0/*StD*/, 0, 0, 0xac33a004/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
+
 		// Game Values
 		public int32 gameState, loadState;
 
@@ -191,6 +196,7 @@ namespace SpyroScope {
 		}
 
 		Vector3Int spyroPosition;
+		/// Current location of Spyro
 		public Vector3Int SpyroPosition {
 			get => spyroPosition;
 			set {
@@ -199,7 +205,46 @@ namespace SpyroScope {
 			}
 		}
 
-		public Vector3Int spyroIntendedVelocity, spyroPhysicsVelocity;
+		Vector3Int spyroEulerRotation;
+		/// Current rotation of Spyro
+		public Vector3Int SpyroEulerRotation {
+			get => spyroEulerRotation;
+			set {
+				spyroEulerRotation = value;
+				spyroEulerRotationAddresses[(int)rom].Write(&spyroEulerRotation, this);
+			}
+		}
+
+		uint32 spyroState;
+		/// Current state of Spyro
+		public uint32 SpyroState {
+			get => spyroState;
+			set {
+				spyroState = value;
+				spyroStateAddresses[(int)rom].Write(&spyroState, this);
+			}
+		}
+
+		Vector3Int spyroIntendedVelocity;
+		/// The motion the game will test that will make Spyro move
+		public Vector3Int SpyroIntendedVelocity {
+			get => spyroIntendedVelocity;
+			set {
+				spyroIntendedVelocity = value;
+				spyroIntendedVelocityAddresses[(int)rom].Write(&spyroIntendedVelocity, this);
+			}
+		}
+
+		Vector3Int spyroPhysicsVelocity;
+		/// The net motion the game makes that will move Spyro
+		public Vector3Int SpyroPhysicsVelocity {
+			get => spyroPhysicsVelocity;
+			set {
+				spyroPhysicsVelocity = value;
+				spyroPhysicsVelocityAddresses[(int)rom].Write(&spyroPhysicsVelocity, this);
+			}
+		}
+
 		public int16[3] cameraEulerRotation;
 		public MatrixInt cameraBasisInv, spyroBasis;
 		public int32 collidingTriangle = -1;
@@ -465,6 +510,8 @@ namespace SpyroScope {
 				RestoreCameraUpdate();
 				RestoreInputRelay();
 				RestoreUpdate();
+				RestoreSpyroUpdate();
+				RestoreSpyroStateChange();
 			}
 
 			processHandle.Close();
@@ -603,10 +650,14 @@ namespace SpyroScope {
 		
 
 		public void FetchImportantData() {
+			// Load static address values
 			gameStateAddresses[(int)rom].Read(&gameState, this);
 			loadStateAddresses[(int)rom].Read(&loadState, this);
+
 			spyroPositionAddresses[(int)rom].Read(&spyroPosition, this);
+			spyroEulerRotationAddresses[(int)rom].Read(&spyroEulerRotation, this);
 			spyroMatrixAddresses[(int)rom].Read(&spyroBasis, this);
+			spyroStateAddresses[(int)rom].Read(&spyroState, this);
 			spyroIntendedVelocityAddresses[(int)rom].Read(&spyroIntendedVelocity, this);
 			spyroPhysicsVelocityAddresses[(int)rom].Read(&spyroPhysicsVelocity, this);
 
@@ -637,10 +688,7 @@ namespace SpyroScope {
 			objectArrayAddress = newObjectArrayAddress;
 		}
 
-		public void SetSpyroPosition(Vector3Int* position) {
-			spyroPositionAddresses[(int)rom].Write(position, this);
-		}
-
+		// Spyro Update
 		public void KillSpyroUpdate() {
 			uint32 v = 0;
 			spyroUpdateAddresses[(int)rom].Write(&v, this);
@@ -649,6 +697,16 @@ namespace SpyroScope {
 		public void RestoreSpyroUpdate() {
 			uint32 v = spyroUpdateJumpValue[(int)rom];
 			spyroUpdateAddresses[(int)rom].Write(&v, this);
+		}
+
+		public void KillSpyroStateChange() {
+			uint32 v = 0;
+			spyroStateChangeAddress[(int)rom].Write(&v, this);
+		}
+
+		public void RestoreSpyroStateChange() {
+			uint32 v = spyroStateChangeValue[(int)rom];
+			spyroStateChangeAddress[(int)rom].Write(&v, this);
 		}
 
 		// Main Update

@@ -1245,8 +1245,8 @@ namespace SpyroScope {
 		void DrawSpyroInformation() {
 			let position = (Vector3)Emulator.active.SpyroPosition;
 
-			DrawUtilities.Arrow(position, (Vector3)Emulator.active.spyroIntendedVelocity / 10, 25, .(255,255,0));
-			DrawUtilities.Arrow(position, (Vector3)Emulator.active.spyroPhysicsVelocity / 10, 50, .(255,128,0));
+			DrawUtilities.Arrow(position, (Vector3)Emulator.active.SpyroIntendedVelocity / 10, 25, .(255,255,0));
+			DrawUtilities.Arrow(position, (Vector3)Emulator.active.SpyroPhysicsVelocity / 10, 50, .(255,128,0));
 
 			let viewerSpyroBasis = Emulator.active.spyroBasis.ToMatrixCorrected();
 			Renderer.DrawLine(position, position + viewerSpyroBasis * Vector3(500,0,0), .(255,0,0), .(255,0,0));
