@@ -181,7 +181,7 @@ namespace SpyroScope {
 		public const uint32[11] gameInputValue = .(0, 0/*StD*/, 0, 0, 0xac2283a0/*RR*/, 0, 0, 0, 0xae220030/*YotD-1.1*/, 0, 0);
 
 		public const Address<uint32>[11] spyroStateChangeAddress = .(0, 0/*StD*/, 0, 0, (.)0x80035d04/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
-		public const uint32[11] spyroStateChangeValue = .(0, 0/*StD*/, 0, 0, 0xac33a004/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
+		public const uint32[11] spyroStateChangeValue = .(0, 0/*StD*/, 0, 0, 0xac33a040/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
 
 		// Game Values
 		public int32 gameState, loadState;
