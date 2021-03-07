@@ -133,11 +133,12 @@ namespace SpyroScope {
 		public const Address<int32>[11] loadStateAddresses = .(0, (.)0x80075864/*StD*/, 0, 0, (.)0x80066eec/*RR*/, 0, 0, 0, (.)0x8006c5f8/*YotD-1.1*/, 0, 0);
 
 		public const Address<Vector3Int>[11] spyroPositionAddresses = .(0, (.)0x80078a58/*StD*/, 0, 0, (.)0x80069ff0/*RR*/, 0, 0, (.)0x80070328, (.)0x80070408/*YotD-1.1*/, 0, 0);
-		public const Address<Vector3Int>[11] spyroEulerRotationAddresses = .(0, 0/*StD*/, 0, 0, (.)0x8006a054/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
+		public const Address<Vector3Int>[11] spyroEulerRotationAddresses = .(0, (.)0x80078b74/*StD*/, 0, 0, (.)0x8006a054/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
 		public const Address<MatrixInt>[11] spyroMatrixAddresses = .(0, (.)0x80078a8c/*StD*/, 0, 0, (.)0x8006a020/*RR*/, 0, 0, (.)0x80070358, (.)0x80070438/*YotD-1.1*/, 0, 0);
-		public const Address<uint32>[11] spyroStateAddresses = .(0, 0/*StD*/, 0, 0, (.)0x8006a040/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0); 
+		public const Address<uint32>[11] spyroStateAddresses = .(0, (.)0x80078ad0/*StD*/, 0, 0, (.)0x8006a040/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0); 
 		public const Address<Vector3Int>[11] spyroIntendedVelocityAddresses = .(0, (.)0x80078b4c/*StD*/, 0, 0, (.)0x8006a084/*RR*/, 0, 0, (.)0x800703B4, (.)0x80070494/*YotD-1.1*/, 0, 0);
 		public const Address<Vector3Int>[11] spyroPhysicsVelocityAddresses = .(0, (.)0x80078b64/*StD*/, 0, 0, (.)0x8006a090/*RR*/, 0, 0, (.)0x800703c0, (.)0x800704a0/*YotD-1.1*/, 0, 0);
+		public const Address<Vector3Int>[4] spyroIntendedAirVelocityAddress = .(0, (.)0x80078b40/*StD*/, 0, 0); // Exclusive to Spyro the Dragon
 
 		public const Address<Address>[11] objectArrayPointers = .(0, (.)0x80075828/*StD*/, 0, 0, (.)0x80066f14/*RR*/, 0, 0, (.)0x8006c550, (.)0x8006c630/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] modelPointers = .(0, 0/*StD*/, 0, 0, (.)0x80068c94/*RR*/, 0, 0, (.)0x8006ee2c, (.)0x8006ef0c/*YotD-1.1*/, 0, 0); //!!
@@ -180,8 +181,8 @@ namespace SpyroScope {
 		public const Address<uint32>[11] gameInputAddress = .(0, 0/*StD*/, 0, 0, (.)0x8001291c/*RR*/, 0, 0, 0, (.)0x8003a7a0/*YotD-1.1*/, 0, 0);
 		public const uint32[11] gameInputValue = .(0, 0/*StD*/, 0, 0, 0xac2283a0/*RR*/, 0, 0, 0, 0xae220030/*YotD-1.1*/, 0, 0);
 
-		public const Address<uint32>[11] spyroStateChangeAddress = .(0, 0/*StD*/, 0, 0, (.)0x80035d04/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
-		public const uint32[11] spyroStateChangeValue = .(0, 0/*StD*/, 0, 0, 0xac33a040/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
+		public const Address<uint32>[11] spyroStateChangeAddress = .(0, (.)0x8003fd5c/*StD*/, 0, 0, (.)0x80035d04/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
+		public const uint32[11] spyroStateChangeValue = .(0, 0xac358ad0/*StD*/, 0, 0, 0xac33a040/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
 
 		// Game Values
 		public int32 gameState, loadState;
