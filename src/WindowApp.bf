@@ -11,7 +11,7 @@ namespace SpyroScope {
 		List<WindowState> states = new .();
 
 		public readonly uint32 id;
-		public static uint width, height;
+		public static int width, height;
 		public static Vector2 mousePosition;
 
 		public bool closed { get; private set; }
@@ -24,8 +24,8 @@ namespace SpyroScope {
 		public static readonly Matrix4 gameProjection = .Perspective(gameFoV * Math.PI_f / 180, 4f/3f, 300, 175000);
 
 		public static BitmapFont bitmapFont ~ delete _;
-		public static SpyroScope.Font font ~ delete _;
-		public static SpyroScope.Font fontSmall  ~ delete _;
+		public static FTFont font ~ delete _;
+		public static FTFont fontSmall  ~ delete _;
 
 		public this() {
 			width = 750;
@@ -118,8 +118,8 @@ namespace SpyroScope {
 			let versionString = scope String() .. AppendF("Spyro Scope {}", Program.versionInfo.FileVersion);
 			let openglVersionString = scope String() .. AppendF("OpenGL {}.{}", majorVersion, minorVersion);
 
-			bitmapFont.Print(versionString, .((.)WindowApp.width - bitmapFont.characterWidth * versionString.Length, 0), .(255,255,255,8));
-			bitmapFont.Print(openglVersionString, .((.)WindowApp.width - bitmapFont.characterWidth * 10, bitmapFont.characterHeight), .(255,255,255,8));
+			bitmapFont.Print(versionString, .(WindowApp.width - bitmapFont.characterWidth * versionString.Length, 0), .(255,255,255,8));
+			bitmapFont.Print(openglVersionString, .(WindowApp.width - bitmapFont.characterWidth * 10, bitmapFont.height), .(255,255,255,8));
 
 			Renderer.Draw();
 			Renderer.Sync();
@@ -146,10 +146,10 @@ namespace SpyroScope {
 			closed = true;
 		}
 
-		void Resize(uint width, uint height) {
+		void Resize(int width, int height) {
 			WindowApp.width = width;
 			WindowApp.height = height;
-			GL.glViewport(0, 0, (.)width, (.)height);
+			GL.glViewport(0, 0, width, height);
 
 			viewerProjection = Camera.projection;
 			uiProjection = .Screen(width, height);
@@ -163,7 +163,7 @@ namespace SpyroScope {
 							closed = true;
 						}
 						case .Resized: {
-							Resize((.)event.window.data1, (.)event.window.data2);
+							Resize(event.window.data1, event.window.data2);
 						}
 						default:
 					}

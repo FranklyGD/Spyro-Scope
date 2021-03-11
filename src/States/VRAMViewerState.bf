@@ -291,13 +291,13 @@ namespace SpyroScope {
 
 				Rect bgRect;
 				bgRect.start = WindowApp.mousePosition + .(16,16);
-				bgRect.end = bgRect.start + .(WindowApp.bitmapFont.characterWidth * text.Length, WindowApp.bitmapFont.characterHeight);
+				bgRect.end = bgRect.start + .(WindowApp.bitmapFont.characterWidth * text.Length, WindowApp.bitmapFont.height);
 				DrawUtilities.Rect(bgRect, .(0,0,0,128));
 				WindowApp.bitmapFont.Print(text, bgRect.start + .(0,3), .(255,255,255));
 			}
 
 			WindowApp.bitmapFont.Print(scope String() .. AppendF("<{},{}>", (int)testPosition.x, (int)testPosition.y), .Zero, .(255,255,255));
-			WindowApp.bitmapFont.Print(scope String() .. AppendF("T-page {}", hoveredTexturePage), .(0, WindowApp.bitmapFont.characterHeight), .(255,255,255));
+			WindowApp.bitmapFont.Print(scope String() .. AppendF("T-page {}", hoveredTexturePage), .(0, WindowApp.bitmapFont.height), .(255,255,255));
 
 			if (!spritesDecoded) {
 				DrawLoadingOverlay();

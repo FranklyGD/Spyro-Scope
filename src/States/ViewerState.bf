@@ -285,8 +285,8 @@ namespace SpyroScope {
 
 			textureIndexInput = new .();
 			textureIndexInput.Anchor = .(0, 0, 1, 1);
-			textureIndexInput.Offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
-			textureIndexInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -5 + 1);
+			textureIndexInput.Offset = .(0,64,0,WindowApp.bitmapFont.height - 2);
+			textureIndexInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -5 + 1);
 			textureIndexInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
@@ -312,8 +312,8 @@ namespace SpyroScope {
 
 			rotationInput = new .();
 			rotationInput.Anchor = .(0, 0, 1, 1);
-			rotationInput.Offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
-			rotationInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -4 + 1);
+			rotationInput.Offset = .(0,64,0,WindowApp.bitmapFont.height - 2);
+			rotationInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -4 + 1);
 			rotationInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
@@ -336,8 +336,8 @@ namespace SpyroScope {
 
 			depthOffsetInput = new .();
 			depthOffsetInput.Anchor = .(0, 0, 1, 1);
-			depthOffsetInput.Offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
-			depthOffsetInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -2 + 1);
+			depthOffsetInput.Offset = .(0,64,0,WindowApp.bitmapFont.height - 2);
+			depthOffsetInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -2 + 1);
 			depthOffsetInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
@@ -361,7 +361,7 @@ namespace SpyroScope {
 			mirrorToggle = new .();
 			mirrorToggle.Anchor = .(0, 0, 1, 1);
 			mirrorToggle.Offset = .(0,16,0,16);
-			mirrorToggle.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -3 + 2);
+			mirrorToggle.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -3 + 2);
 			mirrorToggle.toggleIconTexture = toggledTexture;
 			mirrorToggle.OnActuated.Add(new () => {
 				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
@@ -379,7 +379,7 @@ namespace SpyroScope {
 			doubleSidedToggle = new .();
 			doubleSidedToggle.Anchor = .(0, 0, 1, 1);
 			doubleSidedToggle.Offset = .(0,16,0,16);
-			doubleSidedToggle.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -1 + 2);
+			doubleSidedToggle.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -1 + 2);
 			doubleSidedToggle.toggleIconTexture = toggledTexture;
 			doubleSidedToggle.OnActuated.Add(new () => {
 				if (faceMenu.visible) {
@@ -711,14 +711,14 @@ namespace SpyroScope {
 						screenPosition.y += screenSize;
 						screenPosition.x = Math.Floor(screenPosition.x);
 						screenPosition.y = Math.Floor(screenPosition.y);
-						DrawUtilities.Rect(screenPosition.y, screenPosition.y + WindowApp.bitmapFont.characterHeight * 2, screenPosition.x, screenPosition.x + WindowApp.bitmapFont.characterWidth * 10,
+						DrawUtilities.Rect(screenPosition.y, screenPosition.y + WindowApp.bitmapFont.height * 2, screenPosition.x, screenPosition.x + WindowApp.bitmapFont.characterWidth * 10,
 							.(0,0,0,192));
 
 						screenPosition.y += 2;
 						WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", Moby.GetAddress(ViewerSelection.currentObjIndex)),
 							(Vector2)screenPosition, .(255,255,255));
 						WindowApp.bitmapFont.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
-							(Vector2)screenPosition + .(0,WindowApp.bitmapFont.characterHeight), .(255,255,255));
+							(Vector2)screenPosition + .(0,WindowApp.bitmapFont.height), .(255,255,255));
 					}
 				}
 			}
@@ -763,18 +763,18 @@ namespace SpyroScope {
 
 						// Background
 						let backgroundHeight = 18 * 6;
-						DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 14 + 8,
+						DrawUtilities.Rect(WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 14 + 8,
 							.(0,0,0,192));
 
 						// Content
 						let currentKeyframe = animationGroup.CurrentKeyframe;
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("Group Index {}", ViewerSelection.currentAnimGroupIndex), .(8, (.)WindowApp.height - (18 * 5 + 8 + 15)), .(255,255,255));
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("Keyframe {}", (uint)currentKeyframe), .(8, (.)WindowApp.height - (18 * 4 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("Group Index {}", ViewerSelection.currentAnimGroupIndex), .(8, WindowApp.height - (18 * 5 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("Keyframe {}", (uint)currentKeyframe), .(8, WindowApp.height - (18 * 4 + 8 + 15)), .(255,255,255));
 						let keyframeData = animationGroup.GetKeyframeData(currentKeyframe);
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("Flag {}", (uint)keyframeData.flag), .(8, (.)WindowApp.height - (18 * 3 + 8 + 15)), .(255,255,255));
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("Interp. {}", (uint)keyframeData.interpolation), .(8, (.)WindowApp.height - (18 * 2 + 8 + 15)), .(255,255,255));
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("From State {}", (uint)keyframeData.fromState), .(8, (.)WindowApp.height - (18 * 1 + 8 + 15)), .(255,255,255));
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("To State {}", (uint)keyframeData.toState), .(8, (.)WindowApp.height - (18 * 0 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("Flag {}", (uint)keyframeData.flag), .(8, WindowApp.height - (18 * 3 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("Interp. {}", (uint)keyframeData.interpolation), .(8, WindowApp.height - (18 * 2 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("From State {}", (uint)keyframeData.fromState), .(8, WindowApp.height - (18 * 1 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope String() .. AppendF("To State {}", (uint)keyframeData.toState), .(8, WindowApp.height - (18 * 0 + 8 + 15)), .(255,255,255));
 					} else if (Terrain.collision.animationGroups != null) {
 						for (let animationGroup in Terrain.collision.animationGroups) {
 							var screenPosition = Camera.SceneToScreen(animationGroup.center);
@@ -790,10 +790,10 @@ namespace SpyroScope {
 				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 				let metadata = visualMesh.metadata;
 				
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", ViewerSelection.currentRegionIndex), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 11), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Center: <{},{},{}>", (int)metadata.centerX * 16, (int)metadata.centerY * 16, (int)metadata.centerZ * 16), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 10), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Offset: <{},{},{}>", (int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 9), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Scaled Vertically: {}", metadata.verticallyScaledDown), .(0, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 8), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", ViewerSelection.currentRegionIndex), .(0, WindowApp.height - (.)WindowApp.bitmapFont.height * 11), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Center: <{},{},{}>", (int)metadata.centerX * 16, (int)metadata.centerY * 16, (int)metadata.centerZ * 16), .(0, WindowApp.height - WindowApp.bitmapFont.height * 10), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Offset: <{},{},{}>", (int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .(0, WindowApp.height - WindowApp.bitmapFont.height * 9), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Scaled Vertically: {}", metadata.verticallyScaledDown), .(0, WindowApp.height - WindowApp.bitmapFont.height * 8), .(255,255,255));
 
 				int faceIndex = ?;
 				if (ViewerSelection.currentRegionTransparent) {
@@ -816,7 +816,7 @@ namespace SpyroScope {
 				var partialUV = textureInfo[0].GetVramPartialUV();
 				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 0,128, partialUV.leftY, partialUV.leftY + (1f / 16), partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
 
-				const uint[4][2] offsets = .(
+				const int[4][2] offsets = .(
 					(128, 64),
 					(128 + 64, 64),
 					(128, 0),
@@ -829,29 +829,29 @@ namespace SpyroScope {
 					DrawUtilities.Rect(WindowApp.height - (offset[1] + 64), WindowApp.height - offset[1], offset[0], offset[0] + 64, partialUV.leftY, partialUV.leftY + (1f / 16), partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
 				}
 				
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Face Index: {}", faceIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 6), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Tex Index"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 5), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Rotation"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 4), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Mirror"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 3), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Depth Offset"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 2), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Double Sided"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Face Index: {}", faceIndex), .(260, WindowApp.height - WindowApp.bitmapFont.height * 6), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Tex Index"), .(260, WindowApp.height - WindowApp.bitmapFont.height * 5), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Rotation"), .(260, WindowApp.height - WindowApp.bitmapFont.height * 4), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Mirror"), .(260, WindowApp.height - WindowApp.bitmapFont.height * 3), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Depth Offset"), .(260, WindowApp.height - WindowApp.bitmapFont.height * 2), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Double Sided"), .(260, WindowApp.height - WindowApp.bitmapFont.height), .(255,255,255));
 
 			}
 
 			if (!Translator.hovered) {
 				// Print list of objects currently under the cursor
 				if (ViewerSelection.hoveredObjects.Count > 0) {
-					DrawUtilities.Rect(WindowApp.mousePosition.y + 16, WindowApp.mousePosition.y + 16 + WindowApp.bitmapFont.characterHeight * ViewerSelection.hoveredObjects.Count, WindowApp.mousePosition.x + 16, WindowApp.mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(0,0,0,192));
+					DrawUtilities.Rect(WindowApp.mousePosition.y + 16, WindowApp.mousePosition.y + 16 + WindowApp.bitmapFont.height * ViewerSelection.hoveredObjects.Count, WindowApp.mousePosition.x + 16, WindowApp.mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(0,0,0,192));
 				}
 				for	(let i < ViewerSelection.hoveredObjects.Count) {
 					let hoveredObject = ViewerSelection.hoveredObjects[i];
 					Renderer.Color textColor = .(255,255,255);
 					if (hoveredObject.index == ViewerSelection.currentObjIndex) {
 						textColor = .(0,0,0);
-						DrawUtilities.Rect(WindowApp.mousePosition.y + 16 + i * WindowApp.bitmapFont.characterHeight, WindowApp.mousePosition.y + 16 + (i + 1) * WindowApp.bitmapFont.characterHeight, WindowApp.mousePosition.x + 16, WindowApp.mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(255,255,255,192));
+						DrawUtilities.Rect(WindowApp.mousePosition.y + 16 + i * WindowApp.bitmapFont.height, WindowApp.mousePosition.y + 16 + (i + 1) * WindowApp.bitmapFont.height, WindowApp.mousePosition.x + 16, WindowApp.mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(255,255,255,192));
 					}
-					DrawMobyIcon(Moby.allocated[hoveredObject.index], .(WindowApp.mousePosition.x + 28 + WindowApp.bitmapFont.characterWidth * 16, WindowApp.mousePosition.y + 16 + WindowApp.bitmapFont.characterHeight * (0.5f + i), 0), 0.75f);
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]: {:X4}", Moby.GetAddress(hoveredObject.index), Moby.allocated[hoveredObject.index].objectTypeID), .(WindowApp.mousePosition.x + 16,  WindowApp.mousePosition.y + 18 + i * WindowApp.bitmapFont.characterHeight), textColor);
+					DrawMobyIcon(Moby.allocated[hoveredObject.index], .(WindowApp.mousePosition.x + 28 + WindowApp.bitmapFont.characterWidth * 16, WindowApp.mousePosition.y + 16 + WindowApp.bitmapFont.height * (0.5f + i), 0), 0.75f);
+					WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]: {:X4}", Moby.GetAddress(hoveredObject.index), Moby.allocated[hoveredObject.index].objectTypeID), .(WindowApp.mousePosition.x + 16,  WindowApp.mousePosition.y + 18 + i * WindowApp.bitmapFont.height), textColor);
 				}
 			}
 
@@ -1387,7 +1387,7 @@ namespace SpyroScope {
 					var screenPosition = (Vector2)Camera.SceneToScreen(cursor3DPosition);
 					screenPosition.x = Math.Floor(screenPosition.x);
 					screenPosition.y = Math.Floor(screenPosition.y);
-					DrawUtilities.Rect(screenPosition.y, screenPosition.y + WindowApp.bitmapFont.characterHeight, screenPosition.x, screenPosition.x + WindowApp.bitmapFont.characterWidth * 10,
+					DrawUtilities.Rect(screenPosition.y, screenPosition.y + WindowApp.bitmapFont.height, screenPosition.x, screenPosition.x + WindowApp.bitmapFont.characterWidth * 10,
 						.(0,0,0,192));
 		
 					screenPosition.y += 2;
@@ -1402,7 +1402,7 @@ namespace SpyroScope {
 
 			// Background
 			let backgroundHeight = 18 * Terrain.collision.collisionTypes.Count + 2;
-			DrawUtilities.Rect((.)WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
+			DrawUtilities.Rect(WindowApp.height - (bottomPaddingBG * 2 + backgroundHeight), WindowApp.height - bottomPaddingBG, leftPaddingBG, leftPaddingBG + 12 * 8 + 36,
 				.(0,0,0,192));
 
 			// Content
@@ -1416,9 +1416,9 @@ namespace SpyroScope {
 
 				let leftPadding = 8;
 				let bottomPadding = 8 + 18 * i;
-				DrawUtilities.Rect((.)WindowApp.height - (bottomPadding + 16), (.)WindowApp.height - bottomPadding, leftPadding, leftPadding + 16, color);
+				DrawUtilities.Rect(WindowApp.height - (bottomPadding + 16), WindowApp.height - bottomPadding, leftPadding, leftPadding + 16, color);
 
-				WindowApp.bitmapFont.Print(label, .(leftPadding + 24, (.)WindowApp.height - (bottomPadding + 15)), .(255,255,255));
+				WindowApp.bitmapFont.Print(label, .(leftPadding + 24, WindowApp.height - (bottomPadding + 15)), .(255,255,255));
 			}
 		}
 
@@ -1436,7 +1436,7 @@ namespace SpyroScope {
 			for (let i < 8) {
 				if (!Emulator.active.changedPointers[i]) {
 					halfWidth = WindowApp.fontSmall.CalculateWidth(Emulator.pointerLabels[i]) / 2;
-					baseline = WindowApp.height / 2 + (.)(WindowApp.fontSmall.height * line);
+					baseline = WindowApp.height / 2 + WindowApp.fontSmall.height * line;
 					WindowApp.fontSmall.Print(Emulator.pointerLabels[i], .(Math.Round(middleWindow - halfWidth), baseline), .(255,255,255));
 					line++;
 				}

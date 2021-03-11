@@ -44,7 +44,7 @@ namespace SpyroScope {
 			let halfHeight = Math.Floor(WindowApp.fontSmall.height / 2);
 
 			textStart = .(Math.Round(drawn.left) + 4, vcenter - halfHeight);
-			textStart = WindowApp.fontSmall.Print(preText, textStart, .(0,0,0,128));
+			textStart.x = WindowApp.fontSmall.Print(preText, textStart, .(0,0,0,128));
 
 			Vector2 postTextStart;
 			var cursorPos = 0f;
@@ -71,11 +71,12 @@ namespace SpyroScope {
 					}
 				}
 				
-				postTextStart = WindowApp.fontSmall.Print(text, textStart, .(0,0,0));
+				postTextStart.x = WindowApp.fontSmall.Print(text, textStart, .(0,0,0));
 			} else {
-				postTextStart = WindowApp.fontSmall.Print(lastValidText, textStart, .(0,0,0, 128));
+				postTextStart.x = WindowApp.fontSmall.Print(lastValidText, textStart, .(0,0,0, 128));
 			}
 
+			postTextStart.y = textStart.y;
 			WindowApp.fontSmall.Print(postText, postTextStart, .(0,0,0,128));
 
 			if (selectedElement == this) {

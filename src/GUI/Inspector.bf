@@ -21,13 +21,13 @@ namespace SpyroScope {
 
 			input = new Input();
 			input.Anchor = .(0,1,0,0);
-			input.Offset = .(labelWidth,0,0,WindowApp.bitmapFont.characterHeight);
+			input.Offset = .(labelWidth,0,0,WindowApp.bitmapFont.height);
 			input.enabled = false;
 			input.preText = "0x";
 
 			area = new GUIElement();
 			area.Anchor = .(0,1,0,1);
-			area.Offset = .(WindowApp.bitmapFont.characterWidth, 0, WindowApp.bitmapFont.characterHeight, 0);
+			area.Offset = .(WindowApp.bitmapFont.characterWidth, 0, WindowApp.bitmapFont.height, 0);
 
 			GUIElement.PopParent();
 		}
@@ -45,13 +45,13 @@ namespace SpyroScope {
 
 			property.Anchor = .(0,1,0,0);
 			if (components.Length > 1) {
-				property.Offset = .(0, 0, 0, WindowApp.bitmapFont.characterHeight * 2);
+				property.Offset = .(0, 0, 0, WindowApp.bitmapFont.height * 2);
 				property.Offset.Shift(0, nextPropertyPos);
-				nextPropertyPos += WindowApp.bitmapFont.characterHeight * 2;
+				nextPropertyPos += WindowApp.bitmapFont.height * 2;
 			} else {
-				property.Offset = .(0, 0, 0, WindowApp.bitmapFont.characterHeight);
+				property.Offset = .(0, 0, 0, WindowApp.bitmapFont.height);
 				property.Offset.Shift(0, nextPropertyPos);
-				nextPropertyPos += WindowApp.bitmapFont.characterHeight;
+				nextPropertyPos += WindowApp.bitmapFont.height;
 			}
 
 			properties.Add(property);
@@ -176,7 +176,7 @@ namespace SpyroScope {
 				WindowApp.bitmapFont.Print(label, .(drawn.left, drawn.top + 3), .(255,255,255));
 				
 				for (let i < components.Length) {
-					WindowApp.bitmapFont.Print(.(components, i, 1), .(Math.Round(Math.Lerp(drawn.left+WindowApp.bitmapFont.characterWidth, drawn.right, (float)i / components.Length)), WindowApp.bitmapFont.characterHeight + drawn.top + 3), .(255,255,255));
+					WindowApp.bitmapFont.Print(.(components, i, 1), .(Math.Round(Math.Lerp(drawn.left+WindowApp.bitmapFont.characterWidth, drawn.right, (float)i / components.Length)), WindowApp.bitmapFont.height + drawn.top + 3), .(255,255,255));
 				}
 			}
 
