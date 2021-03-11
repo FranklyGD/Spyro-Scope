@@ -43,8 +43,8 @@ namespace SpyroScope {
 							let process = processes[i];
 
 							Button processButton = new .();
-							processButton.anchor = .(0.5f, 0.5f, 0.5f, 0.5f);
-							processButton.offset = .(-128, 128, (i + 1) * 16, (i + 2) * 16);
+							processButton.Anchor = .(0.5f, 0.5f, 0.5f, 0.5f);
+							processButton.Offset = .(-128, 128, (i + 1) * 16, (i + 2) * 16);
 							processButton.text = new .() .. AppendF("{} - {}", process.ProcessName, process.Id);
 							processButton.OnActuated.Add(new () => {
 								Emulator.BindEmulatorProcess(processes[i]);
@@ -106,8 +106,7 @@ namespace SpyroScope {
 
 			for (let element in guiElements) {
 				if (element.GetVisibility()) {
-					let parentRect = element.parent != null ? element.parent.drawn : Rect(0, WindowApp.width, 0, WindowApp.height);
-					element.Draw(parentRect);
+					element.Draw();
 				}
 			}
 		}

@@ -18,8 +18,8 @@ namespace SpyroScope {
 		Renderer.Color color = normalColor;
 		Texture texture = normalTexture;
 
-		public override void Draw(Rect parentRect) {
-			base.Draw(parentRect);
+		public override void Draw() {
+			base.Draw();
 
 			Renderer.Color color = this.color;
 			Texture texture = this.texture;

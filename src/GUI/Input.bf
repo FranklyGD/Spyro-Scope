@@ -25,8 +25,8 @@ namespace SpyroScope {
 		public Event<delegate void(StringView text)> OnChanged ~ _.Dispose();
 		public delegate bool(String text) OnValidate ~ delete _;
 
-		public override void Draw(Rect parentRect) {
-			base.Draw(parentRect);
+		public override void Draw() {
+			base.Draw();
 
 			Renderer.Color color = ?;
 			Texture texture = normalTexture;

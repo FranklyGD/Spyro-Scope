@@ -15,6 +15,11 @@ namespace SpyroScope {
 			end.x = right; end.y = bottom;
 		}
 
+		public this(Vector2 origin, Vector2 size) {
+			start.x = origin.x; end.x = origin.x + size.x;
+			start.y = origin.y; end.y = origin.y + size.y;
+		}
+
 		public void Shift(Vector2 shift) mut {
 			start += shift;
 			end += shift;

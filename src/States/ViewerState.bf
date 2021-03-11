@@ -109,21 +109,21 @@ namespace SpyroScope {
 
 			togglePauseButton = new .();
 
-			togglePauseButton.anchor = .(0.5f, 0.5f, 0, 0);
-			togglePauseButton.offset = .(-16, 16, -16, 16);
-			togglePauseButton.offset.Shift(-16, 32);
+			togglePauseButton.Anchor = .(0.5f, 0.5f, 0, 0);
+			togglePauseButton.Offset = .(-16, 16, -16, 16);
+			togglePauseButton.Offset.Shift(-16, 32);
 			togglePauseButton.OnActuated.Add(new => TogglePause);
 
 			stepButton = new .();
 
-			stepButton.anchor = .(0.5f, 0.5f, 0, 0);
-			stepButton.offset = .(-16, 16, -16, 16);
-			stepButton.offset.Shift(16, 32);
+			stepButton.Anchor = .(0.5f, 0.5f, 0, 0);
+			stepButton.Offset = .(-16, 16, -16, 16);
+			stepButton.Offset.Shift(16, 32);
 			stepButton.iconTexture = stepTexture;
 			stepButton.OnActuated.Add(new => Step);
 
 			cornerMenu = new .();
-			cornerMenu.offset = .(0,260,0,200);
+			cornerMenu.Offset = .(.Zero, .(260,200));
 			GUIElement.PushParent(cornerMenu);
 
 			Button viewButton1 = new .();
@@ -131,10 +131,10 @@ namespace SpyroScope {
 			Button viewButton3 = new .();
 			Button viewButton4 = new .();
 			
-			viewButton1.offset = .(16,58,16,32);
-			viewButton2.offset = .(58,100,16,32);
-			viewButton3.offset = .(100,142,16,32);
-			viewButton4.offset = .(142,184,16,32);
+			viewButton1.Offset = .(16,58,16,32);
+			viewButton2.Offset = .(58,100,16,32);
+			viewButton3.Offset = .(100,142,16,32);
+			viewButton4.Offset = .(142,184,16,32);
 
 			viewButton1.text = "Game";
 			viewButton2.text = "Free";
@@ -168,9 +168,9 @@ namespace SpyroScope {
 			Button renderButton2 = new .();
 			Button renderButton3 = new .();
 
-			renderButton1.offset = .(16,72,36,52);
-			renderButton2.offset = .(72,128,36,52);
-			renderButton3.offset = .(128,184,36,52);
+			renderButton1.Offset = .(16,72,36,52);
+			renderButton2.Offset = .(72,128,36,52);
+			renderButton3.Offset = .(128,184,36,52);
 
 			renderButton1.text = "Collision";
 			renderButton2.text = "Far";
@@ -202,7 +202,7 @@ namespace SpyroScope {
 			for (let i < toggleList.Count) {
 				Toggle button = new .();
 
-				button.offset = .(16, 32, 16 + (i + 2) * WindowApp.font.height, 32 + (i + 2) * WindowApp.font.height);
+				button.Offset = .(16, 32, 16 + (i + 2) * WindowApp.font.height, 32 + (i + 2) * WindowApp.font.height);
 				button.toggleIconTexture = toggledTexture;
 
 				toggleList[i].button = button;
@@ -228,19 +228,19 @@ namespace SpyroScope {
 
 			Button clearRecordButton = new .();
 
-			clearRecordButton.offset = .(100, 180, 16 + (toggleList.Count + 1) * WindowApp.font.height, 32 + (toggleList.Count + 1) * WindowApp.font.height);
+			clearRecordButton.Offset = .(100, 180, 16 + (toggleList.Count + 1) * WindowApp.font.height, 32 + (toggleList.Count + 1) * WindowApp.font.height);
 			clearRecordButton.text = "Clear";
 			clearRecordButton.OnActuated.Add(new => ClearRecord);
 
 			cycleTerrainOverlayButton = new .();
 
-			cycleTerrainOverlayButton.offset = .(16, 180, 16 + (toggleList.Count + 2) * WindowApp.font.height, 32 + (toggleList.Count + 2) * WindowApp.font.height);
+			cycleTerrainOverlayButton.Offset = .(16, 180, 16 + (toggleList.Count + 2) * WindowApp.font.height, 32 + (toggleList.Count + 2) * WindowApp.font.height);
 			cycleTerrainOverlayButton.text = "Terrain Over(l)ay";
 			cycleTerrainOverlayButton.OnActuated.Add(new => CycleTerrainOverlay);
 
 			teleportButton = new .();
 
-			teleportButton.offset = .(16, 180, 16 + (toggleList.Count + 3) * WindowApp.font.height, 32 + (toggleList.Count + 3) * WindowApp.font.height);
+			teleportButton.Offset = .(16, 180, 16 + (toggleList.Count + 3) * WindowApp.font.height, 32 + (toggleList.Count + 3) * WindowApp.font.height);
 			teleportButton.text = "(T)eleport";
 			teleportButton.OnActuated.Add(new => Teleport);
 			teleportButton.enabled = false;
@@ -248,19 +248,19 @@ namespace SpyroScope {
 			GUIElement.PopParent();
 			
 			sideInspector = new .();
-			sideInspector.anchor = .(1,1,0,1);
-			sideInspector.offset = .(-300,0,0,0);
+			sideInspector.Anchor = .(1,1,0,1);
+			sideInspector.Offset = .(-300,0,0,0);
 			GUIElement.PushParent(sideInspector);
 
 			pinInspectorButton = new .();
 
-			pinInspectorButton.offset = .(0, 16, 0, 16);
-			pinInspectorButton.offset.Shift(2,2);
+			pinInspectorButton.Offset = .(0, 16, 0, 16);
+			pinInspectorButton.Offset.Shift(2,2);
 			pinInspectorButton.toggleIconTexture = toggledTexture;
 			
 			mainInspector = new .("Object");
-			mainInspector.anchor = .(0,1,0,1);
-			mainInspector.offset = .(4,-4,24,-4);
+			mainInspector.Anchor = .(0,1,0,1);
+			mainInspector.Offset = .(4,-4,24,-4);
 
 			mainInspector.AddProperty<int8>("State", 0x48).ReadOnly = true;
 
@@ -278,15 +278,15 @@ namespace SpyroScope {
 			GUIElement.PopParent();
 
 			faceMenu = new .();
-			faceMenu.anchor = .(0, 0, 1, 1);
-			faceMenu.offset = .(0,490,-128,0);
+			faceMenu.Anchor = .(0, 0, 1, 1);
+			faceMenu.Offset = .(0,490,-128,0);
 			faceMenu.visible = false;
 			GUIElement.PushParent(faceMenu);
 
 			textureIndexInput = new .();
-			textureIndexInput.anchor = .(0, 0, 1, 1);
-			textureIndexInput.offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
-			textureIndexInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -5 + 1);
+			textureIndexInput.Anchor = .(0, 0, 1, 1);
+			textureIndexInput.Offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
+			textureIndexInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -5 + 1);
 			textureIndexInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
@@ -311,9 +311,9 @@ namespace SpyroScope {
 			};
 
 			rotationInput = new .();
-			rotationInput.anchor = .(0, 0, 1, 1);
-			rotationInput.offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
-			rotationInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -4 + 1);
+			rotationInput.Anchor = .(0, 0, 1, 1);
+			rotationInput.Offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
+			rotationInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -4 + 1);
 			rotationInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
@@ -335,9 +335,9 @@ namespace SpyroScope {
 			};
 
 			depthOffsetInput = new .();
-			depthOffsetInput.anchor = .(0, 0, 1, 1);
-			depthOffsetInput.offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
-			depthOffsetInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -2 + 1);
+			depthOffsetInput.Anchor = .(0, 0, 1, 1);
+			depthOffsetInput.Offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
+			depthOffsetInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -2 + 1);
 			depthOffsetInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
@@ -359,9 +359,9 @@ namespace SpyroScope {
 			};
 
 			mirrorToggle = new .();
-			mirrorToggle.anchor = .(0, 0, 1, 1);
-			mirrorToggle.offset = .(0,16,0,16);
-			mirrorToggle.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -3 + 2);
+			mirrorToggle.Anchor = .(0, 0, 1, 1);
+			mirrorToggle.Offset = .(0,16,0,16);
+			mirrorToggle.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -3 + 2);
 			mirrorToggle.toggleIconTexture = toggledTexture;
 			mirrorToggle.OnActuated.Add(new () => {
 				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
@@ -377,9 +377,9 @@ namespace SpyroScope {
 			});
 
 			doubleSidedToggle = new .();
-			doubleSidedToggle.anchor = .(0, 0, 1, 1);
-			doubleSidedToggle.offset = .(0,16,0,16);
-			doubleSidedToggle.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -1 + 2);
+			doubleSidedToggle.Anchor = .(0, 0, 1, 1);
+			doubleSidedToggle.Offset = .(0,16,0,16);
+			doubleSidedToggle.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -1 + 2);
 			doubleSidedToggle.toggleIconTexture = toggledTexture;
 			doubleSidedToggle.OnActuated.Add(new () => {
 				if (faceMenu.visible) {
@@ -501,10 +501,10 @@ namespace SpyroScope {
 			}
 
 			cornerMenuInterp = Math.MoveTo(cornerMenuInterp, cornerMenuVisible ? 1 : 0, 0.1f);
-			cornerMenu.offset = .(-200 * (1 - cornerMenuInterp),0,0,240);
+			cornerMenu.Offset = .(.(-200 * (1 - cornerMenuInterp), 0), .(200,280));
 
 			sideInspectorInterp = Math.MoveTo(sideInspectorInterp, sideInspectorVisible ? 1 : 0, 0.1f);
-			sideInspector.offset = .(-300 * sideInspectorInterp,300 * (1 - sideInspectorInterp),0,0);
+			sideInspector.Offset = .(.(-300 * sideInspectorInterp,0), .(300,0));
 
 			if (Emulator.active.loadingStatus == .Loading || Emulator.active.gameState > 0) {
 				return;
@@ -879,8 +879,7 @@ namespace SpyroScope {
 			// Corner Menu
 			for (let element in guiElements) {
 				if (element.GetVisibility()) {
-					let parentRect = element.parent != null ? element.parent.drawn : Rect(0, WindowApp.width, 0, WindowApp.height);
-					element.Draw(parentRect);
+					element.Draw();
 				}
 			}
 

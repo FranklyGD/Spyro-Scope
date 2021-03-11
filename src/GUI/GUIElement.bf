@@ -10,13 +10,33 @@ namespace SpyroScope {
 
 		public static bool debug;
 
-		public Rect anchor;
-		public Rect offset;
+		private Rect anchor;
+		public ref Rect Anchor {
+			get => ref anchor;
+			set {
+				if (anchor == value) return;
+				anchor = value;
+				Resize();
+			}
+		}
+
+		private Rect offset;
+		public ref Rect Offset {
+			get => ref offset;
+			set {
+				if (offset == value) return;
+				offset = value;
+				Resize();
+			}
+		}
+
 		public Rect drawn;
 
 		public bool visible = true;
 
 		public GUIElement parent;
+		public List<GUIElement> children = new .();
+
 		static List<GUIElement> parentStack = new .() ~ delete _;
 		static List<GUIElement> activeGUI;
 
@@ -41,6 +61,12 @@ namespace SpyroScope {
 
 		public static void SetActiveGUI(List<GUIElement> GUI) {
 			activeGUI = GUI;
+
+			if (activeGUI != null) {
+				for (let element in activeGUI) {
+					element.Resize();
+				}
+			}
 		}
 
 		public static void PushParent(GUIElement parent) {
@@ -72,6 +98,14 @@ namespace SpyroScope {
 			}
 
 			switch (event.type) {
+				case .WindowEvent: 
+					if (event.window.windowEvent == .Resized) {
+						for (let element in activeGUI) {
+							element.Resize();
+						}
+					}
+					return false;
+
 				case .MouseMotion: return !ignoreMotion && GUIMouseUpdate(WindowApp.mousePosition);
 				case .MouseButtonUp:
 					if (GUIMouseRelease(event.button.button)) {
@@ -116,19 +150,26 @@ namespace SpyroScope {
 		static bool GUIMouseUpdate(Vector2 mousePosition) {
 			let lastHoveredElement = hoveredElement;
 			hoveredElement = null;
+
 			for (let element in activeGUI) {
 				element.MouseUpdate(mousePosition);
 			}
+
 			if (lastHoveredElement != hoveredElement) {
 				lastHoveredElement?.MouseExit();
 				hoveredElement?.MouseEnter();
 			}
+
 			return hoveredElement != null;
 		}
 
 		public this() {
 			parent = parentStack.Count > 0 ? parentStack[parentStack.Count - 1] : null;
-			activeGUI.Add(this);
+			if (parent != null) {
+				parent.children.Add(this);
+			} else {
+				activeGUI.Add(this);
+			}
 		}
 
 		public ~this() {
@@ -145,10 +186,18 @@ namespace SpyroScope {
 				selectedElement.Unselected();
 				selectedElement = null;
 			}
+
+			DeleteContainerAndItems!(children);
 		}
 
-		public virtual void Draw(Rect parentRect) {
-			CalculateDrawingRect(parentRect);
+		public virtual void Draw() {
+			if (!visible) {
+				return;
+			}
+
+			for (let child in children) {
+				child.Draw();
+			}
 
 			if (!debug) {
 				return;
@@ -193,6 +242,15 @@ namespace SpyroScope {
 		protected virtual void MouseEnter() {}
 		protected virtual void MouseExit() {}
 
+		void Resize() {
+			let parentRect = parent == null ? Rect(0, WindowApp.width, 0, WindowApp.height): parent.drawn;
+			CalculateDrawingRect(parentRect);
+
+			for (let child in children) {
+				child.Resize();
+			}
+		}
+
 		public void MouseUpdate(Vector2 mousePosition) {
 			if (visible &&
 				mousePosition.x > drawn.left &&
@@ -201,6 +259,10 @@ namespace SpyroScope {
 				mousePosition.y < drawn.bottom) {
 
 				hoveredElement = this;
+
+				for (let child in children) {
+					child.MouseUpdate(mousePosition);
+				}
 			}
 		}
 

@@ -20,20 +20,20 @@ namespace SpyroScope {
 			GUIElement.PushParent(this);
 
 			input = new Input();
-			input.anchor = .(0,1,0,0);
-			input.offset = .(labelWidth,0,0,WindowApp.bitmapFont.characterHeight);
+			input.Anchor = .(0,1,0,0);
+			input.Offset = .(labelWidth,0,0,WindowApp.bitmapFont.characterHeight);
 			input.enabled = false;
 			input.preText = "0x";
 
 			area = new GUIElement();
-			area.anchor = .(0,1,0,1);
-			area.offset = .(WindowApp.bitmapFont.characterWidth, 0, WindowApp.bitmapFont.characterHeight, 0);
+			area.Anchor = .(0,1,0,1);
+			area.Offset = .(WindowApp.bitmapFont.characterWidth, 0, WindowApp.bitmapFont.characterHeight, 0);
 
 			GUIElement.PopParent();
 		}
 
-		public override void Draw(Rect parentRect) {
-			base.Draw(parentRect);
+		public override void Draw() {
+			base.Draw();
 
 			WindowApp.bitmapFont.Print(label, .(drawn.left, drawn.top + 3), .(255,255,255));
 		}
@@ -43,14 +43,14 @@ namespace SpyroScope {
 
 			let property = new Property<T>(this, label, offset, components);
 
-			property.anchor = .(0,1,0,0);
+			property.Anchor = .(0,1,0,0);
 			if (components.Length > 1) {
-				property.offset = .(0, 0, 0, WindowApp.bitmapFont.characterHeight * 2);
-				property.offset.Shift(0, nextPropertyPos);
+				property.Offset = .(0, 0, 0, WindowApp.bitmapFont.characterHeight * 2);
+				property.Offset.Shift(0, nextPropertyPos);
 				nextPropertyPos += WindowApp.bitmapFont.characterHeight * 2;
 			} else {
-				property.offset = .(0, 0, 0, WindowApp.bitmapFont.characterHeight);
-				property.offset.Shift(0, nextPropertyPos);
+				property.Offset = .(0, 0, 0, WindowApp.bitmapFont.characterHeight);
+				property.Offset.Shift(0, nextPropertyPos);
 				nextPropertyPos += WindowApp.bitmapFont.characterHeight;
 			}
 
@@ -109,16 +109,16 @@ namespace SpyroScope {
 
 					GUIElement.PushParent(area);
 
-					area.anchor = .(0,1,0.5f,1);
-					area.offset = .(WindowApp.bitmapFont.characterWidth,0,0,0);
+					area.Anchor = .(0,1,0.5f,1);
+					area.Offset = .(WindowApp.bitmapFont.characterWidth,0,0,0);
 
 					inputs = new Input[components.Length];
 					for (let i < components.Length) {
 						let input = new Input();
 						inputs[i] = input;
 		
-						input.anchor = .((float)i / components.Length, (float)(i + 1) / components.Length,0,1);
-						input.offset = .(WindowApp.bitmapFont.characterWidth + 2,-2,0,0);
+						input.Anchor = .((float)i / components.Length, (float)(i + 1) / components.Length,0,1);
+						input.Offset = .(WindowApp.bitmapFont.characterWidth + 2,-2,0,0);
 		
 						input.OnValidate = new => ValidateNumber;
 						input.OnChanged.Add(new (text) => {
@@ -139,8 +139,8 @@ namespace SpyroScope {
 					let input = new Input();
 					inputs[0] = input;
 	
-					input.anchor = .(0,1,0,1);
-					input.offset = .(inspector.labelWidth,0,1,-1);
+					input.Anchor = .(0,1,0,1);
+					input.Offset = .(inspector.labelWidth,0,1,-1);
 	
 					input.OnValidate = new => ValidateNumber;
 					input.OnChanged.Add(new (text) => {
@@ -170,8 +170,8 @@ namespace SpyroScope {
 				}
 			}
 
-			public override void Draw(Rect parentRect) {
-				base.Draw(parentRect);
+			public override void Draw() {
+				base.Draw();
 
 				WindowApp.bitmapFont.Print(label, .(drawn.left, drawn.top + 3), .(255,255,255));
 				

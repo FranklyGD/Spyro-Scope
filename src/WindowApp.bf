@@ -156,27 +156,27 @@ namespace SpyroScope {
 		}
 
 		public void OnEvent(SDL.Event event) {
+			switch (event.type) {
+				case .WindowEvent: {
+					switch (event.window.windowEvent) {
+						case .Close: {
+							closed = true;
+						}
+						case .Resized: {
+							Resize((.)event.window.data1, (.)event.window.data2);
+						}
+						default:
+					}
+				}
+				default:
+			}
+
 			if (event.type == .MouseMotion) {
 				mousePosition = .(event.motion.x, event.motion.y);
 			}
 
 			if (GUIElement.GUIEvent(event) || state.OnEvent(event)) {
 				return;
-			}
-
-			switch (event.type) {
-				case .WindowEvent : {
-					switch (event.window.windowEvent) {
-						case .Close : {
-							closed = true;
-						}
-						case .Resized : {
-							Resize((.)event.window.data1, (.)event.window.data2);
-						}
-						default : {}
-					}
-				}
-				default : {}
 			}
 		}
 	}
