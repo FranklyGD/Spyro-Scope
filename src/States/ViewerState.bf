@@ -42,20 +42,6 @@ namespace SpyroScope {
 		// Objects
 		Dictionary<uint16, MobyModelSet> modelSets = new .();
 
-		// Other
-		struct SpyroFrame {
-			public Vector3Int position;
-			public Vector3Int eulerRotation;
-			public uint32 state;
-			public Vector3Int targetVelocity;
-		}
-		List<SpyroFrame> spyroRecording;
-		bool recording;
-		bool replaying;
-		DateTime time;
-		int currentReplayFrame;
-		float highestRecordedSpeed;
-
 		// UI
 		public static Vector3 cursor3DPosition;
 
@@ -98,7 +84,9 @@ namespace SpyroScope {
 		);
 
 		Toggle pinInspectorButton;
-		
+
+		Timeline timeline;
+
 		GUIElement faceMenu;
 		Input textureIndexInput, rotationInput, depthOffsetInput;
 		Toggle mirrorToggle, doubleSidedToggle;
@@ -220,17 +208,12 @@ namespace SpyroScope {
 			toggleList[7].button.OnActuated.Add(new () => {showManipulator = toggleList[7].button.value;});
 			toggleList[8].button.OnActuated.Add(new () => {
 				if (toggleList[8].button.value) {
-					Record();
+					Recording.Record();
+					timeline.visible = true;
 				} else {
-					StopRecord();
+					Recording.StopRecord();
 				}
 			});
-
-			Button clearRecordButton = new .();
-
-			clearRecordButton.Offset = .(100, 180, 16 + (toggleList.Count + 1) * WindowApp.font.height, 32 + (toggleList.Count + 1) * WindowApp.font.height);
-			clearRecordButton.text = "Clear";
-			clearRecordButton.OnActuated.Add(new => ClearRecord);
 
 			cycleTerrainOverlayButton = new .();
 
@@ -276,6 +259,11 @@ namespace SpyroScope {
 			mainInspector.AddProperty<uint8>("LOD Distance", 0x4e).postTextInput = " x 1000";
 
 			GUIElement.PopParent();
+
+			timeline = new .();
+			timeline.Anchor = .(0, 1, 1, 1);
+			timeline.Offset = .(0, 0, -64, 0);
+			timeline.visible = false;
 
 			faceMenu = new .();
 			faceMenu.Anchor = .(0, 0, 1, 1);
@@ -413,13 +401,15 @@ namespace SpyroScope {
 			}
 			delete messageFeed;
 
-			ClearRecord();
+			Recording.ClearRecord();
 		}
 
 		public override void Enter() {
 			GUIElement.SetActiveGUI(guiElements);
 
-			togglePauseButton.iconTexture = Emulator.active.PausedMode ? playTexture : pauseTexture;
+			togglePauseButton.iconTexture = Emulator.active.Paused ? playTexture : pauseTexture;
+			stepButton.enabled = Emulator.active.Paused;
+
 			toggleList[4].button.value = teleportButton.enabled = Emulator.active.CameraMode;
 			if (Emulator.active.CameraMode) {
 				toggleList[4].button.iconTexture = toggleList[4].button.toggleIconTexture;
@@ -479,25 +469,7 @@ namespace SpyroScope {
 					objPointer += sizeof(Moby);
 				}
 
-				// Add frames to the recording if Spyro has at least moved
-				if (recording) {
-					let lastestFrame = spyroRecording[spyroRecording.Count - 1];
-					if (lastestFrame.position != Emulator.active.SpyroPosition ||
-						lastestFrame.eulerRotation != Emulator.active.SpyroEulerRotation) {
-						AddRecordFrame();
-					}
-				} else if (replaying) {
-					let span = DateTime.Now - time;
-					let oneFrameSpan = TimeSpan(TimeSpan.TicksPerSecond / 30);
-
-					if (span > oneFrameSpan) {
-						currentReplayFrame = (currentReplayFrame + 1) % spyroRecording.Count;
-
-						ReplayFrame(currentReplayFrame);
-
-						time += oneFrameSpan;
-					}
-				}
+				Recording.Update();
 			}
 
 			cornerMenuInterp = Math.MoveTo(cornerMenuInterp, cornerMenuVisible ? 1 : 0, 0.1f);
@@ -633,32 +605,30 @@ namespace SpyroScope {
 			}
 
 			// Draw recording path
-			if (spyroRecording != null) {
-				for	(let i < spyroRecording.Count - 1) {
-					let frame = spyroRecording[i];
-					let nextFrame = spyroRecording[i + 1];
+			for	(let i < Recording.FrameCount - 1) {
+				let frame = Recording.GetFrame(i);
+				let nextFrame = Recording.GetFrame(i + 1);
 
-					Renderer.DrawLine(frame.position, nextFrame.position, .(255,0,0), .(255,255,0));
+				Renderer.DrawLine(frame.position, nextFrame.position, .(255,0,0), .(255,255,0));
 
-					// Every second
-					if (i % 30 == 0) {
-						let direction = ((Vector3)nextFrame.position - frame.position).Normalized();
-						let pdir = Vector3.Cross(direction, Camera.basis.z).Normalized();
+				// Every second
+				if (i % 30 == 0) {
+					let direction = ((Vector3)nextFrame.position - frame.position).Normalized();
+					let pdir = Vector3.Cross(direction, Camera.basis.z).Normalized();
 
-						let size = Vector3.Dot(Camera.position - frame.position, Camera.basis.z) / 50;
-						Renderer.DrawLine(frame.position, frame.position + (pdir - direction) * size, .(255,255,255), .(255,255,255));
-						Renderer.DrawLine(frame.position, frame.position - (pdir + direction) * size, .(255,255,255), .(255,255,255));
-					}
+					let size = Vector3.Dot(Camera.position - frame.position, Camera.basis.z) / 50;
+					Renderer.DrawLine(frame.position, frame.position + (pdir - direction) * size, .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(frame.position, frame.position - (pdir + direction) * size, .(255,255,255), .(255,255,255));
+				}
 
-					// Every state change
-					if (frame.state != nextFrame.state) {
-						let direction = ((Vector3)nextFrame.position - frame.position).Normalized();
-						let pdir = Vector3.Cross(direction, Camera.basis.z).Normalized();
+				// Every state change
+				if (frame.state != nextFrame.state) {
+					let direction = ((Vector3)nextFrame.position - frame.position).Normalized();
+					let pdir = Vector3.Cross(direction, Camera.basis.z).Normalized();
 
-						let size = Vector3.Dot(Camera.position - frame.position, Camera.basis.z) / 100;
-						Renderer.DrawLine(nextFrame.position, nextFrame.position + pdir * size, .(255,255,255), .(255,255,255));
-						Renderer.DrawLine(nextFrame.position, nextFrame.position - pdir * size, .(255,255,255), .(255,255,255));
-					}
+					let size = Vector3.Dot(Camera.position - frame.position, Camera.basis.z) / 100;
+					Renderer.DrawLine(nextFrame.position, nextFrame.position + pdir * size, .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(nextFrame.position, nextFrame.position - pdir * size, .(255,255,255), .(255,255,255));
 				}
 			}
 
@@ -870,11 +840,6 @@ namespace SpyroScope {
 			}
 			DrawUtilities.Rect(0,280,0,200 * cornerMenuInterp, .(0,0,0,192));
 			DrawUtilities.Rect(0,WindowApp.height,WindowApp.width - 300 * sideInspectorInterp,WindowApp.width, .(0,0,0,192));
-
-			// Timeline
-			if (spyroRecording != null) {
-				DrawTimeline();
-			}
 
 			// Corner Menu
 			for (let element in guiElements) {
@@ -1094,10 +1059,10 @@ namespace SpyroScope {
 								Reload();
 							}
 							case .F : {
-								if (replaying) {
-									StopReplay();
+								if (Recording.Playing) {
+									Recording.StopReplay();
 								} else {
-									Replay();
+									Recording.Replay();
 								}
 							}
 							default : {}
@@ -1444,14 +1409,16 @@ namespace SpyroScope {
 		}
 
 		void TogglePause() {
-			if (Emulator.active.PausedMode) {
+			if (Emulator.active.Paused) {
 				Emulator.active.RestoreUpdate();
 				PushMessageToFeed("Resumed Game Update");
 				togglePauseButton.iconTexture = pauseTexture;
+				stepButton.enabled = false;
 			} else {
 				Emulator.active.KillUpdate();
 				PushMessageToFeed("Paused Game Update");
 				togglePauseButton.iconTexture = playTexture;
+				stepButton.enabled = true;
 			}
 		}
 
@@ -1570,90 +1537,6 @@ namespace SpyroScope {
 		void Reload() {
 			Terrain.Reload();
 			Terrain.ReloadAnimations();
-		}
-
-		void Record() {
-			if (!recording) {
-				if (spyroRecording == null) {
-					spyroRecording = new .();
-				}
-				AddRecordFrame();
-				recording = true;
-			}
-		}
-
-		void AddRecordFrame() {
-			SpyroFrame newFrame;
-
-			newFrame.position = Emulator.active.SpyroPosition;
-			newFrame.eulerRotation = Emulator.active.SpyroEulerRotation;
-			newFrame.state = Emulator.active.SpyroState;
-			newFrame.targetVelocity = Emulator.active.SpyroIntendedVelocity;
-
-			currentReplayFrame = spyroRecording.Count;
-			spyroRecording.Add(newFrame);
-
-			let speed = Emulator.active.SpyroIntendedVelocity.Length();
-			if (speed> highestRecordedSpeed) {
-				highestRecordedSpeed = speed;
-			}
-		}
-
-		void StopRecord() {
-			recording = false;
-		}
-
-		void ClearRecord() {
-			DeleteAndNullify!(spyroRecording);
-		}
-
-		void Replay() {
-			if (!replaying) {
-				time = DateTime.Now;
-				currentReplayFrame = -1;
-				Emulator.active.KillSpyroStateChange();
-				replaying = true;
-			}
-		}
-
-		void ReplayFrame(int frameIndex) {
-			let frame = spyroRecording[frameIndex];
-			let emulator = Emulator.active;
-
-			emulator.SpyroPosition = frame.position;
-			emulator.SpyroEulerRotation = frame.eulerRotation;
-			emulator.SpyroState = frame.state;
-			emulator.SpyroIntendedVelocity = frame.targetVelocity;
-		}
-
-		void StopReplay() {
-			Emulator.active.RestoreSpyroStateChange();
-			replaying = false;
-		}
-
-		void DrawTimeline() {
-			let start = Math.Max(0, currentReplayFrame - 90);
-			let end = Math.Min(spyroRecording.Count, currentReplayFrame + 90);
-			var offset = start - currentReplayFrame;
-
-			let hcenter = WindowApp.width / 2;
-
-			for (var i = start; i < end; i++) {
-				let frame = spyroRecording[i];
-
-				var color = Renderer.Color(0,0,0);
-				let speed = frame.targetVelocity.Length();
-				if (speed > 0) {
-					let speedScale = speed / highestRecordedSpeed;
-					color = .((.)(255 * (1 - speedScale)), (.)(255 * speedScale), 0);
-				}
-
-				DrawUtilities.Rect(WindowApp.height - (i == currentReplayFrame ? 16 : 8), WindowApp.height - 4, hcenter - 1.5f + offset * 3, hcenter + 1.5f + offset * 3, color);
-				if (i % 30 == 0) {
-					Renderer.DrawLine(.((int)hcenter + offset * 3,WindowApp.height - 8,0), .((int)hcenter + offset * 3,WindowApp.height - 16,0), .(255,255,255), .(255,255,255));
-				}
-				offset++;
-			}
 		}
 	}
 }

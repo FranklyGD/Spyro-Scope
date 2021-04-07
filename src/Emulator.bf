@@ -303,10 +303,16 @@ namespace SpyroScope {
 		) ~ delete _;
 		public static bool stepperInjected;
 
-		public bool PausedMode { get {
+		public bool Paused { get {
 			uint32 value = ?;
 			ReadFromRAM(updateAddresses[(int)rom], &value, 4);
 			return value != updateJumpValue[(int)rom];
+		} }
+
+		public bool InStep { get {
+			uint32 v = ?;
+			ReadFromRAM(stepperAddress + (8 * 4), &v, 4);
+			return v > 0;
 		} }
 
 		public bool CameraMode { get {

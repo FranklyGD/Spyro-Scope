@@ -5,6 +5,8 @@ namespace SpyroScope {
 	class GUIElement {
 		public static SDL.SDL_Cursor* arrow;
 		public static SDL.SDL_Cursor* Ibeam;
+		public static SDL.SDL_Cursor* Harrows;
+		public static SDL.SDL_Cursor* Varrows;
 
 		static bool ignoreMotion;
 
@@ -52,6 +54,8 @@ namespace SpyroScope {
 		public static void Init() {
 			arrow = SDL.CreateSystemCursor(.SDL_SYSTEM_CURSOR_ARROW);
 			Ibeam = SDL.CreateSystemCursor(.SDL_SYSTEM_CURSOR_IBEAM);
+			Harrows = SDL.CreateSystemCursor(.SDL_SYSTEM_CURSOR_SIZEWE);
+			Varrows = SDL.CreateSystemCursor(.SDL_SYSTEM_CURSOR_SIZENS);
 
 			normalButtonTexture = new .("images/ui/button_normal.png");
 			pressedButtonTexture = new .("images/ui/button_pressed.png");
@@ -106,7 +110,7 @@ namespace SpyroScope {
 					}
 					return false;
 
-				case .MouseMotion: return !ignoreMotion && GUIMouseUpdate(WindowApp.mousePosition);
+				case .MouseMotion: return !ignoreMotion && GUIMouseUpdate(.(event.motion.xrel, event.motion.yrel));
 				case .MouseButtonUp:
 					if (GUIMouseRelease(event.button.button)) {
 						return true;
@@ -147,12 +151,14 @@ namespace SpyroScope {
 			return false;
 		}
 
-		static bool GUIMouseUpdate(Vector2 mousePosition) {
+		static bool GUIMouseUpdate(Vector2 mouseDelta) {
 			let lastHoveredElement = hoveredElement;
 			hoveredElement = null;
 
+			pressedElement?.Dragged(mouseDelta);
+
 			for (let element in activeGUI) {
-				element.MouseUpdate(mousePosition);
+				element.MouseUpdate();
 			}
 
 			if (lastHoveredElement != hoveredElement) {
@@ -191,10 +197,6 @@ namespace SpyroScope {
 		}
 
 		public virtual void Draw() {
-			if (!visible) {
-				return;
-			}
-
 			for (let child in children) {
 				child.Draw();
 			}
@@ -236,6 +238,7 @@ namespace SpyroScope {
 
 		protected virtual void Update() {}
 		protected virtual void Pressed() {}
+		protected virtual void Dragged(Vector2 mouseDelta) {}
 		protected virtual void Unpressed() {}
 		protected virtual void Selected() {}
 		protected virtual void Unselected() {}
@@ -251,17 +254,17 @@ namespace SpyroScope {
 			}
 		}
 
-		public void MouseUpdate(Vector2 mousePosition) {
+		public void MouseUpdate() {
 			if (visible &&
-				mousePosition.x > drawn.left &&
-				mousePosition.x < drawn.right &&
-				mousePosition.y > drawn.top &&
-				mousePosition.y < drawn.bottom) {
+				WindowApp.mousePosition.x > drawn.left &&
+				WindowApp.mousePosition.x < drawn.right &&
+				WindowApp.mousePosition.y > drawn.top &&
+				WindowApp.mousePosition.y < drawn.bottom) {
 
 				hoveredElement = this;
 
 				for (let child in children) {
-					child.MouseUpdate(mousePosition);
+					child.MouseUpdate();
 				}
 			}
 		}
