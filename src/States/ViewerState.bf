@@ -45,9 +45,9 @@ namespace SpyroScope {
 		// UI
 		public static Vector3 cursor3DPosition;
 
-		List<(String message, DateTime time)> messageFeed = new .();
 		List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
+		MessageFeed messageFeed;
 		Button togglePauseButton, stepButton, cycleTerrainOverlayButton, teleportButton;
 
 		Texture playTexture = new .("images/ui/play.png") ~ delete _; 
@@ -113,6 +113,9 @@ namespace SpyroScope {
 			cornerMenu = new .();
 			cornerMenu.Offset = .(.Zero, .(260,200));
 			GUIElement.PushParent(cornerMenu);
+
+			messageFeed = new .();
+			messageFeed.Anchor.start = .(1,0);
 
 			Button viewButton1 = new .();
 			Button viewButton2 = new .();
@@ -394,12 +397,6 @@ namespace SpyroScope {
 				delete modelSet;
 			}
 			delete modelSets;
-			for (let feedItem in messageFeed) {
-				if (feedItem.message.IsDynAlloc) {
-					delete feedItem.message;
-				}
-			}
-			delete messageFeed;
 
 			Recording.ClearRecord();
 		}
@@ -835,13 +832,9 @@ namespace SpyroScope {
 			}
 
 			// Begin window relative position UI
-			if (!cornerMenuVisible) {
-				DrawMessageFeed();
-			}
 			DrawUtilities.Rect(0,280,0,200 * cornerMenuInterp, .(0,0,0,192));
 			DrawUtilities.Rect(0,WindowApp.height,WindowApp.width - 300 * sideInspectorInterp,WindowApp.width, .(0,0,0,192));
 
-			// Corner Menu
 			for (let element in guiElements) {
 				if (element.GetVisibility()) {
 					element.Draw();
@@ -853,29 +846,6 @@ namespace SpyroScope {
 					WindowApp.fontSmall.Print(toggle.label, .(toggle.button.drawn.right + 8, toggle.button.drawn.top + 1), .(255,255,255));
 				}
 			}
-
-			// Side Inspector
-			/*if (ViewerSelection.currentObjIndex > -1) {
-				WindowApp.bitmapFont.Print("Address", .(sideInspector.drawn.left + 24, 3, 0), .(255,255,255));
-
-				let object = Moby.allocated[ViewerSelection.currentObjIndex];
-				int line = 0;
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("State {} ({})", object.updateState, object.IsActive ? "Active" : "Inactive"), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				line++;
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Pos {}", object.position), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Rot {},{},{}", object.eulerRotation.x,object.eulerRotation.y,object.eulerRotation.z),
-					.(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Model {}:{}", object.objectTypeID, object.modelID), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("LOD Distance {} ({})", object.lodDistance, object.lodDistance * 1000), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Color {},{},{},{}", object.color.r, object.color.g, object.color.b, object.color.a), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				line++;
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Type {}", object.objectTypeID), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Sub-Type? {}", object.objectSubTypeID), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Variant? {}", object.variantID), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Data [{}]", object.dataPointer), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				line++;
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Gem-Value {}", (int8)object.heldGemValue), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-			}*/
 
 			if (Emulator.active.loadingStatus == .Loading) {
 				DrawLoadingOverlay();
@@ -1041,10 +1011,10 @@ namespace SpyroScope {
 								/*// Does not currently work as intended
 								if (Emulator.InputMode) {
 									Emulator.RestoreInputRelay();
-									PushMessageToFeed("Emulator Input");
+									messageFeed.PushMessage("Emulator Input");
 								} else {
 									Emulator.KillInputRelay();
-									PushMessageToFeed("Manual Input");
+									messageFeed.PushMessage("Manual Input");
 								}*/
 							}
 							case .E : {
@@ -1256,10 +1226,6 @@ namespace SpyroScope {
 			lastUpdatedSceneChange = .Now;
 		}
 
-		void PushMessageToFeed(String message) {
-			messageFeed.Add((message, .Now + TimeSpan(0, 0, 2)));
-		}
-
 		void DrawGameCameraFrustrum() {
 			let cameraBasis = Emulator.active.cameraBasisInv.ToMatrixCorrected().Transpose();
 			let cameraBasisCorrected = Matrix3(cameraBasis.y, cameraBasis.z, -cameraBasis.x);
@@ -1317,29 +1283,6 @@ namespace SpyroScope {
 			}
 
 			DrawUtilities.WireframeSphere(position, viewerSpyroBasis, radius, .(32,32,32));
-		}
-
-		void DrawMessageFeed() {
-			let now = DateTime.Now;
-
-			messageFeed.RemoveAll(scope (x) => {
-				let pendingRemove = now > x.time;
-				if (pendingRemove && x.message.IsDynAlloc) {
-					delete x.message;
-				}
-				return now > x.time;
-			});
-
-			for (let i < messageFeed.Count) {
-				let feedItem = messageFeed[i];
-				let message = feedItem.message;
-				let age = feedItem.time - now;
-				let fade = Math.Min(age.TotalSeconds, 1);
-				let offsetOrigin = Vector2(0,(messageFeed.Count - i - 1) * WindowApp.font.height);
-				DrawUtilities.Rect(offsetOrigin.y, offsetOrigin.y + WindowApp.font.height, offsetOrigin.x, offsetOrigin.x + WindowApp.font.CalculateWidth(message) + 4,
-					.(0,0,0,(.)(192 * fade)));
-				WindowApp.font.Print(message, offsetOrigin + .(2,0), .(255,255,255,(.)(255 * fade)));
-			}
 		}
 
 		void DrawFlagsOverlay() {
@@ -1411,12 +1354,12 @@ namespace SpyroScope {
 		void TogglePause() {
 			if (Emulator.active.Paused) {
 				Emulator.active.RestoreUpdate();
-				PushMessageToFeed("Resumed Game Update");
+				messageFeed.PushMessage("Resumed Game Update");
 				togglePauseButton.iconTexture = pauseTexture;
 				stepButton.enabled = false;
 			} else {
 				Emulator.active.KillUpdate();
-				PushMessageToFeed("Paused Game Update");
+				messageFeed.PushMessage("Paused Game Update");
 				togglePauseButton.iconTexture = playTexture;
 				stepButton.enabled = true;
 			}
@@ -1429,17 +1372,17 @@ namespace SpyroScope {
 
 		void ToggleWireframe(bool toggle) {
 			Terrain.wireframe = toggle;
-			PushMessageToFeed("Toggled Wireframe");
+			messageFeed.PushMessage("Toggled Wireframe");
 		}
 
 		void ToggleOrigins(bool toggle) {
 			drawObjectOrigins = toggle;
-			PushMessageToFeed("Toggled Object Origins");
+			messageFeed.PushMessage("Toggled Object Origins");
 		}
 
 		void ToggleInactive(bool toggle) {
 			hideInactive = toggle;
-			PushMessageToFeed("Toggled Inactive Visibility");
+			messageFeed.PushMessage("Toggled Inactive Visibility");
 		}
 
 		void ToggleView(ViewMode mode) {
@@ -1486,28 +1429,28 @@ namespace SpyroScope {
 			viewMode = mode;
 
 			switch (viewMode) {
-				case .Free: PushMessageToFeed("Free View");
-				case .Lock: PushMessageToFeed("Lock View");
-				case .Game: PushMessageToFeed("Game View");
-				case .Map: PushMessageToFeed("Map View");
+				case .Free: messageFeed.PushMessage("Free View");
+				case .Lock: messageFeed.PushMessage("Lock View");
+				case .Game: messageFeed.PushMessage("Game View");
+				case .Map: messageFeed.PushMessage("Map View");
 			}
 		}
 
 		void ToggleFreeCamera(bool toggle) {
 			if (toggle) {
 				Emulator.active.KillCameraUpdate();
-				PushMessageToFeed("Free Camera");
+				messageFeed.PushMessage("Free Camera");
 				teleportButton.enabled = true;
 			} else {
 				Emulator.active.RestoreCameraUpdate();
-				PushMessageToFeed("Game Camera");
+				messageFeed.PushMessage("Game Camera");
 				teleportButton.enabled = false;
 			}
 		}
 
 		void ToggleLimits(bool toggle) {
 			drawLimits = toggle;
-			PushMessageToFeed("Toggled Height Limits");
+			messageFeed.PushMessage("Toggled Height Limits");
 		}
 
 		void CycleTerrainOverlay() {
@@ -1526,12 +1469,12 @@ namespace SpyroScope {
 				case .Sound: overlayType = "Sound";
 				case .Platform: overlayType = "Platform";
 			}
-			PushMessageToFeed(new String() .. AppendF("Terrain Overlay [{}]", overlayType));
+			messageFeed.PushMessage(new String() .. AppendF("Terrain Overlay [{}]", overlayType));
 		}
 
 		void Teleport() {
 			Emulator.active.SpyroPosition = (.)Camera.position;
-			PushMessageToFeed("Teleported Spyro to Game Camera");
+			messageFeed.PushMessage("Teleported Spyro to Game Camera");
 		}
 
 		void Reload() {
