@@ -966,10 +966,16 @@ namespace SpyroScope {
 
 						WindowApp.viewerProjection = Camera.projection;
 					} else {
-						cameraSpeed += (.)event.wheel.y * 16;
-						if (cameraSpeed < 8) {
-							cameraSpeed = 8;
+						var newSpeed = cameraSpeed + event.wheel.y * 16;
+						if (newSpeed < 8) {
+							newSpeed = 8;
 						}
+
+						if (newSpeed != cameraSpeed) {
+							messageFeed.PushMessage(new String() .. AppendF("Camera Speed ({}/f)", newSpeed));
+						}
+
+						cameraSpeed = newSpeed;
 					}
 				}
 				case .KeyDown : {

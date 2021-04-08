@@ -24,7 +24,7 @@ namespace SpyroScope {
 				if (pendingRemove && x.message.IsDynAlloc) {
 					delete x.message;
 				}
-				return now > x.time;
+				return pendingRemove;
 			});
 
 			for (let i < messageFeed.Count) {
@@ -41,6 +41,10 @@ namespace SpyroScope {
 
 		public void PushMessage(String message) {
 			messageFeed.Add((message, .Now + TimeSpan(0, 0, 2)));
+			if (messageFeed.Count > 8) {
+				delete messageFeed[0].message;
+				messageFeed.RemoveAt(0);
+			}
 		}
 	}
 }
