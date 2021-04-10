@@ -465,8 +465,6 @@ namespace SpyroScope {
 					
 					objPointer += sizeof(Moby);
 				}
-
-				Recording.Update();
 			}
 
 			cornerMenuInterp = Math.MoveTo(cornerMenuInterp, cornerMenuVisible ? 1 : 0, 0.1f);

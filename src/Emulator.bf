@@ -301,12 +301,41 @@ namespace SpyroScope {
 			0x03e00008, // jr ra
 			0x00000000, // _nop
 		) ~ delete _;
-		public static bool stepperInjected;
+		public bool stepperInjected;
 
-		public bool Paused { get {
+		bool paused;
+		public bool Paused {
+			get {
+				return paused;
+			}
+
+			set {
+				if (value) {
+					KillUpdate();
+				} else {
+					if (!Lockstep) {
+						RestoreUpdate();
+					}
+				}
+
+				paused = value;
+			}
+		}
+
+		public enum UpdateMode {
+			None,
+			Normal,
+			Manual,
+		}
+
+		public UpdateMode UpdateMode { get {
 			uint32 value = ?;
 			ReadFromRAM(updateAddresses[(int)rom], &value, 4);
-			return value != updateJumpValue[(int)rom];
+			switch (value) {
+				case 0: return .None;
+				case updateJumpValue[(int)rom]: return .Normal;
+				default: return .Manual;
+			}
 		} }
 
 		public bool InStep { get {
@@ -326,6 +355,33 @@ namespace SpyroScope {
 			ReadFromRAM(gameInputAddress[(int)rom], &value, 4);
 			return value != gameInputValue[(int)rom];
 		} }
+
+		bool lockstep;
+		public bool Lockstep {
+			get {
+				return lockstep;
+			}
+			private set {
+				if (value) {
+					InjectStepperLogic();
+				}
+
+				if (!paused) {
+					if (value) {
+						KillUpdate();
+					} else {
+						RestoreUpdate();
+					}
+				}
+
+				lockstep = value;
+			}
+		}
+
+		// Using lock-step method as the program will be
+		// running much faster than the actual emulator speed
+		// The emulator will not appear to slow down or lag
+		Event<delegate void()> OnStep; 
 
 		// Event Timestamps
 		public DateTime lastSceneChanging;
@@ -693,6 +749,11 @@ namespace SpyroScope {
 				Moby.allocated.Clear();
 			}
 			objectArrayAddress = newObjectArrayAddress;
+
+			if (Lockstep && !InStep && !Paused) {
+				OnStep();
+				Step();
+			}
 		}
 
 		// Spyro Update
@@ -718,6 +779,8 @@ namespace SpyroScope {
 
 		// Main Update
 		public void KillUpdate() {
+			// If stepper code injection exists, jump to that code instead of nop'ing it out
+			// since the code will not cause one from of the game loop to occur by default
 			uint32 v = stepperInjected ? 0x0C002400 : 0;
 			updateAddresses[(int)rom].Write(&v, this);
 		}
@@ -774,6 +837,16 @@ namespace SpyroScope {
 			KillUpdate();
 			uint32 v = updateJumpValue[(int)rom];
 			WriteToRAM(stepperAddress + (8 * 4), &v, 4);
+		}
+
+		public void AddStepListener(delegate void() listener) {
+			OnStep.Add(listener);
+			Lockstep = true;
+		}
+
+		public void RemoveStepListener(delegate void() listener) {
+			OnStep.Remove(listener);
+			Lockstep = OnStep.HasListeners;
 		}
 	}
 }

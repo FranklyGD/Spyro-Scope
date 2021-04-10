@@ -24,30 +24,18 @@ namespace SpyroScope {
 
 		static float TotalTime { get => (FrameCount - 1) * (1f / 30); }
 
-		public static void Update() {
-			// Using lock-step method as the program will be
-			// running much faster than the actual emulator speed
-			// The emulator will not appear to slow down or lag
-
-			if (Active) {
-				// Add frames to the recording
-				if (!Emulator.active.InStep) { // Wait for game step to finish
-					AddRecordFrame();
-					Emulator.active.Step();
-				}
-			} else if (Playing) {
-				if (!Emulator.active.InStep) { // Wait for game step to finish
-					CurrentFrame = (CurrentFrame + 1) % record.Count;
-					ApplyFrame(CurrentFrame);
-					Emulator.active.Step();
-				}
-			}
-		}
+		public static delegate void() RecordStep = new => AddRecordFrame ~ delete _;
+		public static delegate void() ReplayStep = new => PlayFrames ~ delete _;
 
 		public static void Record() {
 			if (!Active) {
 				AddRecordFrame();
 				Active = true;
+				Emulator.active.AddStepListener(RecordStep);
+			}
+
+			if (Playing) {
+				StopReplay();
 			}
 		}
 
@@ -69,8 +57,8 @@ namespace SpyroScope {
 		}
 
 		public static void StopRecord() {
-			Emulator.active.RestoreUpdate();
 			Active = false;
+			Emulator.active.RemoveStepListener(RecordStep);
 		}
 
 		public static void ClearRecord() {
@@ -98,6 +86,12 @@ namespace SpyroScope {
 				Emulator.active.KillSpyroStateChange();
 
 				Playing = true;
+				
+				Emulator.active.AddStepListener(ReplayStep);
+			}
+
+			if (Active) {
+				StopRecord();
 			}
 		}
 
@@ -113,13 +107,29 @@ namespace SpyroScope {
 			CurrentFrame = frameIndex;
 		}
 
+		static void PlayFrames() {
+			CurrentFrame = (CurrentFrame + 1) % record.Count;
+			ApplyFrame(CurrentFrame);
+		}
+
 		public static void PauseReplay() {
 			Emulator.active.KillSpyroUpdate();
+
+			if (Playing) {
+				Emulator.active.RemoveStepListener(ReplayStep); 
+			}
+
 			Playing = false;
 		}
 
 		public static void StopReplay() {
+			Emulator.active.RestoreSpyroUpdate();
 			Emulator.active.RestoreSpyroStateChange();
+			
+			if (Playing) {
+				Emulator.active.RemoveStepListener(ReplayStep); 
+			}
+
 			Playing = false;
 		}
 	}

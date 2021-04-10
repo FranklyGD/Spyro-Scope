@@ -4,6 +4,7 @@ using System;
 namespace SpyroScope {
 	class Timeline : GUIElement {
 		Button replayButton;
+		Button stopReplayButton;
 
 		Texture playTexture = new .("images/ui/play.png") ~ delete _; 
 		Texture pauseTexture = new .("images/ui/pause.png") ~ delete _;
@@ -17,9 +18,21 @@ namespace SpyroScope {
 			
 			replayButton.Anchor = .(0.5f, 0.5f, 0, 0);
 			replayButton.Offset = .(-16, 16, -8, 8);
-			replayButton.Offset.Shift(0, 10);
+			replayButton.Offset.Shift(-16, 10);
 			replayButton.iconTexture = playTexture;
 			replayButton.OnActuated.Add(new => ToggleReplay);
+
+			stopReplayButton = new .();
+			
+			stopReplayButton.Anchor = .(0.5f, 0.5f, 0, 0);
+			stopReplayButton.Offset = .(-16, 16, -8, 8);
+			stopReplayButton.Offset.Shift(16, 10);
+			stopReplayButton.text = "Stop";
+			stopReplayButton.OnActuated.Add(new () => {
+				stopReplayButton.enabled = false;
+				Recording.StopReplay();
+			});
+			stopReplayButton.enabled = false;
 
 			Button clearButton = new .();
 			
@@ -29,7 +42,10 @@ namespace SpyroScope {
 			clearButton.text = "Clear";
 			clearButton.OnActuated.Add(new () => {
 				Recording.ClearRecord();
-				visible = false;
+				if (!Recording.Active) {
+					visible = false;
+					Recording.StopReplay();
+				}
 			});
 
 			clearButton = new .();
@@ -53,6 +69,11 @@ namespace SpyroScope {
 			});
 
 			PopParent();
+		}
+
+		protected override void Update() {
+			replayButton.enabled = !Recording.Active;
+			replayButton.iconTexture = Recording.Playing ? pauseTexture : playTexture;
 		}
 
 		public override void Draw() {
@@ -96,7 +117,12 @@ namespace SpyroScope {
 
 		protected override void Dragged(Vector2 mouseDelta) {
 			subDragged -= (int)mouseDelta.x;
-			Recording.ApplyFrame(Math.Clamp(Recording.CurrentFrame + subDragged / 3, 0, Recording.FrameCount - 1));
+			if (subDragged / 3 != 0) {
+				Recording.PauseReplay();
+				Recording.ApplyFrame(Math.Clamp(Recording.CurrentFrame + subDragged / 3, 0, Recording.FrameCount - 1));
+
+				stopReplayButton.enabled = true;
+			}
 			subDragged %= 3;
 		}
 
@@ -117,6 +143,7 @@ namespace SpyroScope {
 				Recording.PauseReplay();
 			} else {
 				Recording.Replay();
+				stopReplayButton.enabled = true;
 			}
 			
 			replayButton.iconTexture = Recording.Playing ? pauseTexture : playTexture;
