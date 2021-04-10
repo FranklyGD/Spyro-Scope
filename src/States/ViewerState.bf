@@ -1356,16 +1356,16 @@ namespace SpyroScope {
 		}
 
 		void TogglePause() {
+			Emulator.active.Paused = !Emulator.active.Paused;
+
 			if (Emulator.active.Paused) {
-				Emulator.active.RestoreUpdate();
-				messageFeed.PushMessage("Resumed Game Update");
-				togglePauseButton.iconTexture = pauseTexture;
-				stepButton.enabled = false;
-			} else {
-				Emulator.active.KillUpdate();
 				messageFeed.PushMessage("Paused Game Update");
 				togglePauseButton.iconTexture = playTexture;
 				stepButton.enabled = true;
+			} else {
+				messageFeed.PushMessage("Resumed Game Update");
+				togglePauseButton.iconTexture = pauseTexture;
+				stepButton.enabled = false;
 			}
 		}
 
