@@ -240,6 +240,7 @@ namespace SpyroScope {
 			textureIndexInput.anchor = .(0, 0, 1, 1);
 			textureIndexInput.offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
 			textureIndexInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -5 + 1);
+			textureIndexInput.OnXcrement = new => Inspector.Property<int>.XcrementNumber;
 			textureIndexInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
@@ -271,6 +272,7 @@ namespace SpyroScope {
 			rotationInput.anchor = .(0, 0, 1, 1);
 			rotationInput.offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
 			rotationInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -4 + 1);
+			rotationInput.OnXcrement = new => Inspector.Property<int>.XcrementNumber;
 			rotationInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let maskedVal = BitEdit.Get!(val, 0b0011);
@@ -300,6 +302,7 @@ namespace SpyroScope {
 			depthOffsetInput.anchor = .(0, 0, 1, 1);
 			depthOffsetInput.offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
 			depthOffsetInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -2 + 1);
+			depthOffsetInput.OnXcrement = new => Inspector.Property<int>.XcrementNumber;
 			depthOffsetInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let maskedVal = BitEdit.Get!(val, 0b0011);

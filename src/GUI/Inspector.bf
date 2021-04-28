@@ -121,6 +121,7 @@ namespace SpyroScope {
 						input.offset = .(WindowApp.bitmapFont.characterWidth + 2,-2,0,0);
 		
 						input.OnValidate = new => ValidateNumber;
+						input.OnXcrement = new => XcrementNumber;
 						input.OnSubmit.Add(new (text) => {
 							if (Float.Parse(text) case .Ok(var val)) {
 								var castedVal = (int)val;
@@ -143,6 +144,7 @@ namespace SpyroScope {
 					input.offset = .(inspector.labelWidth,0,1,-1);
 	
 					input.OnValidate = new => ValidateNumber;
+					input.OnXcrement = new => XcrementNumber;
 					input.OnSubmit.Add(new (text) => {
 						if (Float.Parse(text) case .Ok(var val)) {
 							var castedVal = (int)val;
@@ -182,6 +184,12 @@ namespace SpyroScope {
 
 			static bool ValidateNumber(String text) {
 				return Float.Parse(text) case .Ok;
+			}
+
+			public static void XcrementNumber(String text, int delta) {
+				if (Float.Parse(text) case .Ok(let val)) {
+					text .. Clear().AppendF("{}", (int)val + delta);
+				}
 			}
 
 			void ModifyData(T* val) {

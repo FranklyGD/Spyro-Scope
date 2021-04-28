@@ -24,6 +24,7 @@ namespace SpyroScope {
 		public Event<delegate void(StringView text)> OnSubmit ~ _.Dispose();
 		public Event<delegate void(StringView text)> OnChanged ~ _.Dispose();
 		public delegate bool(String text) OnValidate ~ delete _;
+		public delegate void(String text, int delta) OnXcrement ~ delete _;
 
 		public override void Draw(Rect parentRect) {
 			base.Draw(parentRect);
@@ -177,6 +178,26 @@ namespace SpyroScope {
 
 						if (event.key.keysym.mod & .SHIFT == 0) {
 							selectBegin = cursor;
+						}
+					}
+	
+					if (event.key.keysym.sym == .UP) {
+						if (OnXcrement != null) {
+							OnXcrement(text, 1);
+							CheckText();
+							
+							cursor = text.Length;
+							selectBegin = 0;
+						}
+					}
+	
+					if (event.key.keysym.sym == .DOWN) {
+						if (OnXcrement != null) {
+							OnXcrement(text, -1);
+							CheckText();
+							
+							cursor = text.Length;
+							selectBegin = 0;
 						}
 					}
 
