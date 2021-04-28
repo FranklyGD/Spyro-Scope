@@ -255,7 +255,6 @@ namespace SpyroScope {
 			if (selectedElement != this) {
 				text.Set(validText);
 			}
-			lastValidText.Set(validText);
 		}
 
 		[Inline]

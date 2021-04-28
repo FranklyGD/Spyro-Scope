@@ -244,18 +244,7 @@ namespace SpyroScope {
 				if (int.Parse(text) case .Ok(let val)) {
 					let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 					if (val * quadCount < Terrain.textures.Count) {
-						let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
-						int faceIndex = ?;
-						if (ViewerSelection.currentRegionTransparent) {
-							faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
-						} else {
-							faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
-						}
-						let face = visualMesh.GetNearFace(faceIndex);
-						face.renderInfo.textureIndex = (.)val;
-						visualMesh.SetNearFace(face, faceIndex);
-
-						text .. Clear().AppendF("{}", face.renderInfo.textureIndex);
+						text .. Clear().AppendF("{}", BitEdit.Get!(val, 0x7f));
 
 						return true;
 					}
@@ -263,12 +252,37 @@ namespace SpyroScope {
 				return false;
 			};
 
+			textureIndexInput.OnSubmit.Add(new (text) => {
+				if (int.Parse(text) case .Ok(var val)) {
+					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
+					int faceIndex = ?;
+					if (ViewerSelection.currentRegionTransparent) {
+						faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
+					} else {
+						faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
+					}
+					let face = visualMesh.GetNearFace(faceIndex);
+					face.renderInfo.textureIndex = (.)val;
+					visualMesh.SetNearFace(face, faceIndex);
+				}
+			});
+
 			rotationInput = new .();
 			rotationInput.anchor = .(0, 0, 1, 1);
 			rotationInput.offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
 			rotationInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -4 + 1);
 			rotationInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
+					let maskedVal = BitEdit.Get!(val, 0b0011);
+					text .. Clear().AppendF("{}", maskedVal);
+					
+					return true;
+				}
+				return false;
+			};
+
+			rotationInput.OnSubmit.Add(new (text) => {
+				if (int.Parse(text) case .Ok(var val)) {
 					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 					int faceIndex = ?;
 					if (ViewerSelection.currentRegionTransparent) {
@@ -279,19 +293,24 @@ namespace SpyroScope {
 					let face = visualMesh.GetNearFace(faceIndex);
 					face.renderInfo.rotation = (.)val;
 					visualMesh.SetNearFace(face, faceIndex);
-
-					text .. Clear().AppendF("{}", face.renderInfo.rotation);
-					
-					return true;
 				}
-				return false;
-			};
+			});
 
 			depthOffsetInput = new .();
 			depthOffsetInput.anchor = .(0, 0, 1, 1);
 			depthOffsetInput.offset = .(0,64,0,WindowApp.bitmapFont.characterHeight - 2);
 			depthOffsetInput.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -2 + 1);
 			depthOffsetInput.OnValidate = new (text) => {
+				if (int.Parse(text) case .Ok(let val)) {
+					let maskedVal = BitEdit.Get!(val, 0b0011);
+					text .. Clear().AppendF("{}", maskedVal);
+					
+					return true;
+				}
+				return false;
+			};
+
+			depthOffsetInput.OnSubmit.Add(new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 					int faceIndex = ?;
@@ -303,13 +322,8 @@ namespace SpyroScope {
 					let face = visualMesh.GetNearFace(faceIndex);
 					face.renderInfo.depthOffset = (.)val;
 					visualMesh.SetNearFace(face, faceIndex);
-					
-					text .. Clear().AppendF("{}", face.renderInfo.depthOffset);
-					
-					return true;
 				}
-				return false;
-			};
+			});
 
 			mirrorToggle = new .();
 			mirrorToggle.anchor = .(0, 0, 1, 1);

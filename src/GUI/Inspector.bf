@@ -121,7 +121,7 @@ namespace SpyroScope {
 						input.offset = .(WindowApp.bitmapFont.characterWidth + 2,-2,0,0);
 		
 						input.OnValidate = new => ValidateNumber;
-						input.OnChanged.Add(new (text) => {
+						input.OnSubmit.Add(new (text) => {
 							if (Float.Parse(text) case .Ok(var val)) {
 								var castedVal = (int)val;
 								ModifyData((.)&castedVal);
@@ -143,7 +143,7 @@ namespace SpyroScope {
 					input.offset = .(inspector.labelWidth,0,1,-1);
 	
 					input.OnValidate = new => ValidateNumber;
-					input.OnChanged.Add(new (text) => {
+					input.OnSubmit.Add(new (text) => {
 						if (Float.Parse(text) case .Ok(var val)) {
 							var castedVal = (int)val;
 							ModifyData((.)&castedVal);
