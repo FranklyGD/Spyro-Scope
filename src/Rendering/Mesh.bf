@@ -28,6 +28,16 @@ namespace SpyroScope {
 		matrixBufferObject,
 		tintBufferObject;
 
+		public this(Vector3[] vertices, float[][2] uvs, Vector3[] normals, Renderer.Color4[] colors, uint32[] indices) {
+			this.vertices = vertices;
+			this.normals = normals;
+			this.colors = colors;
+			this.uvs = uvs;
+			this.indices = indices;
+
+			Init();
+		}
+
 		public this(Vector3[] vertices, float[][2] uvs, Vector3[] normals, Renderer.Color4[] colors) {
 			this.vertices = vertices;
 			this.normals = normals;
