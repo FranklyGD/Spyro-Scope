@@ -75,7 +75,7 @@ namespace SpyroScope {
 		
 		GUIElement faceMenu;
 		Input textureIndexInput, rotationInput, depthOffsetInput;
-		Toggle mirrorToggle, doubleSidedToggle;
+		Toggle flipNormalToggle, doubleSidedToggle;
 
 		public this() {
 			ViewerSelection.Init();
@@ -328,12 +328,12 @@ namespace SpyroScope {
 				}
 			});
 
-			mirrorToggle = new .();
-			mirrorToggle.anchor = .(0, 0, 1, 1);
-			mirrorToggle.offset = .(0,16,0,16);
-			mirrorToggle.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -3 + 2);
-			mirrorToggle.toggleIconTexture = toggledTexture;
-			mirrorToggle.OnActuated.Add(new () => {
+			flipNormalToggle = new .();
+			flipNormalToggle.anchor = .(0, 0, 1, 1);
+			flipNormalToggle.offset = .(0,16,0,16);
+			flipNormalToggle.offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.characterHeight * -3 + 2);
+			flipNormalToggle.toggleIconTexture = toggledTexture;
+			flipNormalToggle.OnActuated.Add(new () => {
 				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 				int faceIndex = ?;
 				if (ViewerSelection.currentRegionTransparent) {
@@ -342,7 +342,7 @@ namespace SpyroScope {
 					faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
 				}
 				let face = visualMesh.GetNearFace(faceIndex);
-				face.flipped = mirrorToggle.value;
+				face.flipped = flipNormalToggle.value;
 				visualMesh.SetNearFace(face, faceIndex);
 			});
 
@@ -468,7 +468,7 @@ namespace SpyroScope {
 				textureIndexInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.textureIndex));
 				rotationInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.rotation));
 				depthOffsetInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.depthOffset));
-				mirrorToggle.SetValue(face.flipped);
+				flipNormalToggle.SetValue(face.flipped);
 				doubleSidedToggle.SetValue(face.renderInfo.doubleSided);
 			}
 
@@ -739,7 +739,7 @@ namespace SpyroScope {
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("Face Index: {}", faceIndex), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 6), .(255,255,255));
 				WindowApp.bitmapFont.Print(scope String() .. Append("Tex Index"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 5), .(255,255,255));
 				WindowApp.bitmapFont.Print(scope String() .. Append("Rotation"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 4), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Mirror"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 3), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Flip Normal"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 3), .(255,255,255));
 				WindowApp.bitmapFont.Print(scope String() .. Append("Depth Offset"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight * 2), .(255,255,255));
 				WindowApp.bitmapFont.Print(scope String() .. Append("Double Sided"), .(260, WindowApp.height - (.)WindowApp.bitmapFont.characterHeight), .(255,255,255));
 

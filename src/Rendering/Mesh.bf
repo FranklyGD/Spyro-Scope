@@ -7,7 +7,7 @@ namespace SpyroScope {
 		public Renderer.Color4[] colors ~ delete _;
 		public float[][2] uvs ~ delete _;
 
-		uint32[] indices ~ delete _;
+		public uint32[] indices ~ delete _;
 
 		bool dirty = false;
 
@@ -243,6 +243,10 @@ namespace SpyroScope {
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, uvBufferObject);
 			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(float[2]), &uvs[0], GL.GL_STATIC_DRAW); 
 			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(float[2]), &uvs[0]);
+
+			GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
+			GL.glBufferData(GL.GL_ELEMENT_ARRAY_BUFFER, indices.Count * sizeof(uint32), &indices[0], GL.GL_STATIC_DRAW); 
+			GL.glBufferSubData(GL.GL_ELEMENT_ARRAY_BUFFER, 0, indices.Count * sizeof(uint32), &indices[0]);
 
 			GL.glBindVertexArray(0);
 
