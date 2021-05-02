@@ -344,6 +344,8 @@ namespace SpyroScope {
 				let textureIndex = regionFace.renderInfo.textureIndex;
 				let flipSide = regionFace.flipped;
 				var textureRotation = regionFace.renderInfo.rotation;
+				
+				uint8[2] indexSwap = flipSide ? .(2,1) : .(1,2);
 
 				let quadCount = Emulator.installment == .SpyroTheDragon ? 21 : 6;
 				TextureQuad* quad = ?;
@@ -407,11 +409,10 @@ namespace SpyroScope {
 						triangleUV[(3 - textureRotation) & 3]
 					);
 
-					const uint8[2][2] indexSwap = .(.(1,2), .(2,1));
 
 					indices[0] = baseIndex;
-					indices[1] = baseIndex + indexSwap[(uint8)flipSide][0];
-					indices[2] = baseIndex + indexSwap[(uint8)flipSide][1];
+					indices[1] = baseIndex + indexSwap[0];
+					indices[2] = baseIndex + indexSwap[1];
 
 					M2Gindices[0] = trianglesIndices[3];
 					M2Gindices[1] = trianglesIndices[2];
@@ -474,8 +475,8 @@ namespace SpyroScope {
 						let offset = ti * 3;
 
 						indices[0 + offset] = baseIndex + (.)offset;
-						indices[1 + offset] = baseIndex + (.)offset + indexSwap[(uint8)flipSide][0];
-						indices[2 + offset] = baseIndex + (.)offset + indexSwap[(uint8)flipSide][1];
+						indices[1 + offset] = baseIndex + (.)offset + indexSwap[0];
+						indices[2 + offset] = baseIndex + (.)offset + indexSwap[1];
 
 						vertices[0 + offset] = subQuadVertices[ti][2];
 						vertices[1 + offset] = subQuadVertices[ti][1];
@@ -512,8 +513,8 @@ namespace SpyroScope {
 
 					// Center triangle
 					indices[9] = baseIndex + 9;
-					indices[10] = baseIndex + 9 + indexSwap[(uint8)flipSide][0];
-					indices[11] = baseIndex + 9 + indexSwap[(uint8)flipSide][1];
+					indices[10] = baseIndex + 9 + indexSwap[0];
+					indices[11] = baseIndex + 9 + indexSwap[1];
 
 					vertices[9] = subQuadVertices[3][2];
 					vertices[10] = subQuadVertices[3][1];
@@ -560,14 +561,13 @@ namespace SpyroScope {
 					var M2Gindices = activeNearMesh2GameIndices.GrowUnitialized(6);
 
 					const uint8[2][2] swap = .(.(0,2), .(2,0));
-					const uint8[2][2] indexSwap = .(.(1,2), .(2,1));
 					const int8[2] oppositeIndex = .(1,3);
 					for (let qti < 2) {
 						let offset = qti * 3;
 
 						indices[0 + offset] = baseIndex + (.)offset;
-						indices[1 + offset] = baseIndex + (.)offset + indexSwap[(uint8)flipSide][0];
-						indices[2 + offset] = baseIndex + (.)offset + indexSwap[(uint8)flipSide][1];
+						indices[1 + offset] = baseIndex + (.)offset + indexSwap[0];
+						indices[2 + offset] = baseIndex + (.)offset + indexSwap[1];
 
 						M2Gindices[0 + offset] = trianglesIndices[oppositeIndex[qti]];
 						M2Gindices[1 + offset] = trianglesIndices[swap[qti][0]];
@@ -623,24 +623,6 @@ namespace SpyroScope {
 					uvs = activeUvSubList.GrowUnitialized(24);
 
 					for (let qi < 4) {
-						let offset = qi * 6;
-
-						indices[0 + offset] = baseIndex + (.)offset;
-						indices[1 + offset] = baseIndex + (.)offset + indexSwap[(uint8)flipSide][0];
-						indices[2 + offset] = baseIndex + (.)offset + indexSwap[(uint8)flipSide][1];
-
-						indices[3 + offset] = baseIndex + (.)offset + 2 + indexSwap[(uint8)flipSide][0];
-						indices[4 + offset] = baseIndex + (.)offset + 2 + indexSwap[(uint8)flipSide][1];
-						indices[5 + offset] = baseIndex + (.)offset + 5;
-
-						vertices[0 + offset] = subQuadVertices[qi][3];
-						vertices[1 + offset] = subQuadVertices[qi][2];
-						vertices[2 + offset] = subQuadVertices[qi][0];
-						
-						vertices[3 + offset] = subQuadVertices[qi][0];
-						vertices[4 + offset] = subQuadVertices[qi][2];
-						vertices[5 + offset] = subQuadVertices[qi][1];
-
 						quad++;
 						partialUV = quad.GetVramPartialUV();
 						let quadRotation = quad.GetQuadRotation();
@@ -650,14 +632,6 @@ namespace SpyroScope {
 						triangleUV[1] = .(partialUV.right, partialUV.rightY);
 						triangleUV[2] = .(partialUV.right, partialUV.leftY);
 						triangleUV[3] = .(partialUV.left, partialUV.leftY);
-
-						colors[0 + offset] = subQuadColors[qi][3];
-						colors[1 + offset] = subQuadColors[qi][2];
-						colors[2 + offset] = subQuadColors[qi][0];
-						
-						colors[3 + offset] = subQuadColors[qi][0];
-						colors[4 + offset] = subQuadColors[qi][2];
-						colors[5 + offset] = subQuadColors[qi][1];
 
 						float[4][2] rotatedTriangleUV = .(
 							triangleUV[(0 - quadRotation) & 3],
@@ -669,14 +643,26 @@ namespace SpyroScope {
 						if (quadFlip) {
 							Swap!(rotatedTriangleUV[0], rotatedTriangleUV[2]);
 						}
-						
-						uvs[0 + offset] = rotatedTriangleUV[3];
-						uvs[1 + offset] = rotatedTriangleUV[2];
-						uvs[2 + offset] = rotatedTriangleUV[0];
-						
-						uvs[3 + offset] = rotatedTriangleUV[0];
-						uvs[4 + offset] = rotatedTriangleUV[2];
-						uvs[5 + offset] = rotatedTriangleUV[1];
+
+						for (let qti < 2) {
+							let offset = qi * 6 + qti * 3;
+							
+							indices[0 + offset] = baseIndex + (.)offset;
+							indices[1 + offset] = baseIndex + (.)offset + indexSwap[0];
+							indices[2 + offset] = baseIndex + (.)offset + indexSwap[1];
+
+							vertices[0 + offset] = subQuadVertices[qi][oppositeIndex[qti]];
+							vertices[1 + offset] = subQuadVertices[qi][swap[qti][0]];
+							vertices[2 + offset] = subQuadVertices[qi][swap[qti][1]];
+
+							colors[0 + offset] = subQuadColors[qi][oppositeIndex[qti]];
+							colors[1 + offset] = subQuadColors[qi][swap[qti][0]];
+							colors[2 + offset] = subQuadColors[qi][swap[qti][1]];
+
+							uvs[0 + offset] = rotatedTriangleUV[oppositeIndex[qti]];
+							uvs[1 + offset] = rotatedTriangleUV[swap[qti][0]];
+							uvs[2 + offset] = rotatedTriangleUV[swap[qti][1]];
+						}
 					}
 
 					activeNearFaceIndices.Add(i);
@@ -843,14 +829,14 @@ namespace SpyroScope {
 						regionMeshSubdivided.uvs[10 + subdividedVertexIndex] = rotatedTriangleUV[2];
 						regionMeshSubdivided.uvs[11 + subdividedVertexIndex] = rotatedTriangleUV[0];
 					} else {
-						const int8[2][2] indexSwap = .(.(0,2), .(2,0));
+						const int8[2][2] swap = .(.(0,2), .(2,0));
 						const int8[2] oppositeIndex = .(1,3);
 						for (let qti < 2) {
 							let offset = qti * 3;
 
 							regionMesh.uvs[0 + offset + vertexIndex] = triangleUV[oppositeIndex[qti]];
-							regionMesh.uvs[1 + offset + vertexIndex] = triangleUV[indexSwap[(uint8)qti][0]];
-							regionMesh.uvs[2 + offset + vertexIndex] = triangleUV[indexSwap[(uint8)qti][1]];
+							regionMesh.uvs[1 + offset + vertexIndex] = triangleUV[swap[qti][0]];
+							regionMesh.uvs[2 + offset + vertexIndex] = triangleUV[swap[qti][1]];
 						}
 
 						// There hasn't seem to be a use for animated rotated subquads...
@@ -858,7 +844,6 @@ namespace SpyroScope {
 						let quadRotation = 0;
 
 						for (let qi < 4) {
-							let offset = qi * 6;
 							let offset2 = (1 + qi) * 4;
 
 							float[4][2] rotatedTriangleUV = .(
@@ -872,13 +857,14 @@ namespace SpyroScope {
 								Swap!(rotatedTriangleUV[0], rotatedTriangleUV[2]);
 							}*/
 
-							regionMeshSubdivided.uvs[0 + offset + subdividedVertexIndex] = rotatedTriangleUV[3];
-							regionMeshSubdivided.uvs[1 + offset + subdividedVertexIndex] = rotatedTriangleUV[2];
-							regionMeshSubdivided.uvs[2 + offset + subdividedVertexIndex] = rotatedTriangleUV[0];
 							
-							regionMeshSubdivided.uvs[3 + offset + subdividedVertexIndex] = rotatedTriangleUV[0];
-							regionMeshSubdivided.uvs[4 + offset + subdividedVertexIndex] = rotatedTriangleUV[2];
-							regionMeshSubdivided.uvs[5 + offset + subdividedVertexIndex] = rotatedTriangleUV[1];
+							for (let qti < 2) {
+								let offset = qi * 6 + qti * 3;
+
+								regionMeshSubdivided.uvs[0 + offset + subdividedVertexIndex] = rotatedTriangleUV[oppositeIndex[qti]];
+								regionMeshSubdivided.uvs[1 + offset + subdividedVertexIndex] = rotatedTriangleUV[swap[qti][0]];
+								regionMeshSubdivided.uvs[2 + offset + subdividedVertexIndex] = rotatedTriangleUV[swap[qti][1]];
+							}
 						}
 
 						i++;
@@ -934,37 +920,29 @@ namespace SpyroScope {
 			UpdateUVs(affectedTriangles, triangleUV, transparent);
 
 			// Flip normals by swapping index order
-			Mesh[2][2] meshMap = .(.(nearMesh, nearMeshSubdivided), .(nearMeshTransparent, nearMeshTransparentSubdivided));
-			Mesh[2]* meshSet = &meshMap[(uint8)transparent];
+			Mesh[2] meshSet = transparent ? .(nearMeshTransparent, nearMeshTransparentSubdivided) : .(nearMesh, nearMeshSubdivided);
 
+			var di0 = 1 + (uint8)face.flipped % 2;
+			var di1 = 1 + ((uint8)face.flipped + 1) % 2;
 			for (let triangleIndex in affectedTriangles) {
 				let baseTriangleIndex = triangleIndex * 3;
 
-				if (face.flipped) {
-					(*meshSet)[0].indices[baseTriangleIndex + 1] = (.)baseTriangleIndex + 2;
-					(*meshSet)[0].indices[baseTriangleIndex + 2] = (.)baseTriangleIndex + 1;
-					
-					for (let i < 4) {
-						let baseSubdividedTriangleIndex = baseTriangleIndex * 4 + i * 3;
-						
-						(*meshSet)[1].indices[baseSubdividedTriangleIndex + 1] = (.)baseSubdividedTriangleIndex + 2;
-						(*meshSet)[1].indices[baseSubdividedTriangleIndex + 2] = (.)baseSubdividedTriangleIndex + 1;
-					}
-				} else {
-					(*meshSet)[0].indices[baseTriangleIndex + 1] = (.)baseTriangleIndex + 1;
-					(*meshSet)[0].indices[baseTriangleIndex + 2] = (.)baseTriangleIndex + 2;
+				// Low LOD
+				meshSet[0].indices[baseTriangleIndex + 1] = (.)baseTriangleIndex + di0;
+				meshSet[0].indices[baseTriangleIndex + 2] = (.)baseTriangleIndex + di1;
 
-					for (let i < 4) {
-						let baseSubdividedTriangleIndex = baseTriangleIndex * 4 + i * 3;
-						
-						(*meshSet)[1].indices[baseSubdividedTriangleIndex + 1] = (.)baseSubdividedTriangleIndex + 1;
-						(*meshSet)[1].indices[baseSubdividedTriangleIndex + 2] = (.)baseSubdividedTriangleIndex + 2;
-					}
+				// High LOD
+				for (let i < 4) {
+					let baseSubdividedTriangleIndex = baseTriangleIndex * 4 + i * 3;
+					
+					meshSet[1].indices[baseSubdividedTriangleIndex + 1] = (.)baseSubdividedTriangleIndex + di0;
+					meshSet[1].indices[baseSubdividedTriangleIndex + 2] = (.)baseSubdividedTriangleIndex + di1;
 				}
 			}
 
-			(*meshSet)[0].Update();
-			(*meshSet)[1].Update();
+			// Force update the region's mesh
+			meshSet[0].Update();
+			meshSet[1].Update();
 		}
 
 		public void DrawFar() {
