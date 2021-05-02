@@ -39,7 +39,7 @@ namespace SpyroScope {
 				let y = screenPosition.y / WindowApp.height - 0.5f;
 
 				let aspect = (float)WindowApp.width / WindowApp.height;
-				return position - basis.x * x * aspect * size - basis.y * y * size;
+				return position - basis.x * x * aspect / (aspect < 1 ? aspect : 1) * size - basis.y * y / (aspect < 1 ? aspect : 1) * size;
 			} else {
 				return position;
 			}
@@ -51,9 +51,9 @@ namespace SpyroScope {
 			} else {
 				let x = 1 - (screenPosition.x / WindowApp.width * 2);
 				let y = screenPosition.y / WindowApp.height * 2 - 1;
-				let tangent = Math.Tan(fov * Math.PI_f / 360);
-	
 				let aspect = (float)WindowApp.width / WindowApp.height;
+				let tangent = Math.Tan(fov * Math.PI_f / 360) / (aspect < 1 ? aspect : 1);
+	
 				return basis * Vector3(-x * tangent * aspect, -y * tangent, -1);
 			}
 		}
