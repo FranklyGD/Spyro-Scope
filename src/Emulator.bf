@@ -7,8 +7,11 @@ namespace SpyroScope {
 	static struct Emulator {
 		public static Windows.ProcessHandle processHandle;
 		public static Windows.HModule moduleHandle; // Also contains the base address directly
-		
+
+		// NOTE: Eventually make this read from external file
 		public const String[5] emulatorNames = .(String.Empty, "Nocash PSX", "Bizhawk", "ePSXe", "Mednafen");
+		public const String[5] emulatorVersions = .("Unknown", "2.0", "2.6.1", "2.0.5", "1.24.3");
+		public const int[5] moduleSizes = .(0, 0x00190000, 0x0063F000, 0x0182A000, 0x05EEC000);
 		public enum EmulatorType {
 			None,
 			NocashPSX,
@@ -17,6 +20,7 @@ namespace SpyroScope {
 			Mednafen
 		}
 		public static EmulatorType emulator;
+		public static bool supported;
 		public static int RAMBaseAddress;
 		public static int VRAMBaseAddress;
 
@@ -308,6 +312,12 @@ namespace SpyroScope {
 
 				emulator = .None;
 				rom = .None;
+			} else {
+				// Check if the module size is the same
+				var size = GetModuleSize(processHandle, moduleHandle);
+
+				supported = size == moduleSizes[(int)emulator];
+
 			}
 		}
 
@@ -373,6 +383,23 @@ namespace SpyroScope {
 			}
 
 			return 0;
+		}
+		
+		[CRepr]
+		struct ModuleInfo {
+			public void* baseOfDLL;
+			public uint32 sizeOfImage;
+			public void* entryPoint;
+		}
+
+		[Import("psapi.lib"),CLink, CallingConvention(.Stdcall)]
+		static extern Windows.IntBool GetModuleInformation(Windows.ProcessHandle process, Windows.HModule module, ModuleInfo* moduleInfo, uint32 cb);
+
+		static uint32 GetModuleSize(Windows.ProcessHandle process, Windows.HModule module) {
+			ModuleInfo info = ?;
+			GetModuleInformation(process, module, &info, sizeof(ModuleInfo));
+
+			return info.sizeOfImage;
 		}
 
 		public static void CheckEmulatorStatus() {

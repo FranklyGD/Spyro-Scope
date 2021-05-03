@@ -39,16 +39,18 @@ namespace SpyroScope {
 			if (Emulator.emulator == .None) {
 				message = "Waiting for Emulator";
 			} else {
-				if (Emulator.rom == .None) {
+				if (!Emulator.supported) {
+					message = "Unsupported Version";
+				} else if (Emulator.rom == .None) {
 					message = "Waiting for Game";
 				} else {
 					message = Emulator.gameNames[(int)Emulator.rom];
 				}
 				
 				let baseline = WindowApp.height / 2 - WindowApp.font.height * 1.5f;
-				let emulator = Emulator.emulatorNames[(int)Emulator.emulator];
+				let emulator = scope String() .. AppendF("{} ({})", Emulator.emulatorNames[(int)Emulator.emulator], Emulator.emulatorVersions[Emulator.supported ? (int)Emulator.emulator : 0]);
 				let halfWidth = Math.Round(WindowApp.font.CalculateWidth(emulator) / 2);
-				WindowApp.font.Print(emulator, .(middleWindow - halfWidth, baseline), .(255,255,255));
+				WindowApp.font.Print(emulator, .(middleWindow - halfWidth, baseline), Emulator.supported ? .(255,255,255) : .(255,255,0));
 			}
 
 			var baseline = (WindowApp.height - WindowApp.font.height) / 2;
