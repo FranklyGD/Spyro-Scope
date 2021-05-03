@@ -16,6 +16,6 @@ void main() {
 
     float power = (1 + retroShading * 3) * (1 + retroShading * (1 - tex.a) * 3);
     vec3 finalColor = clamp(color.rgb * tex.rgb * power, 0, 1);
-    fragColor.rgb = finalColor;
+    fragColor.rgb = pow(finalColor, vec3(0.475));
     fragColor.a = color.a * (tex.a * (1 - retroShading) + retroShading);
 }
