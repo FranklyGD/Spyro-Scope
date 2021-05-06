@@ -9,10 +9,13 @@ namespace SpyroScope {
 		public static Windows.HModule moduleHandle; // Also contains the base address directly
 
 		static int emulatorIndex = -1, versionIndex = -1;
+		static uint mainSize = 0;
 
-		public static StringView Name { get => emulatorIndex > -1 ? EmulatorsConfig.emulators[emulatorIndex].label : ""; }
+		public static StringView Name { get => ProcessFound ? EmulatorsConfig.emulators[emulatorIndex].label : ""; }
 		public static StringView Version { get => versionIndex > -1 ? EmulatorsConfig.emulators[emulatorIndex].versions[versionIndex].label : "Unknown"; }
-		public static bool Supported { get => emulatorIndex > -1 && versionIndex > -1; }
+		public static uint MainModuleSize { get => mainSize; }
+		public static bool ProcessFound { get => emulatorIndex > -1; }
+		public static bool Supported { get => ProcessFound && versionIndex > -1; }
 
 		public static int RAMBaseAddress;
 		public static int VRAMBaseAddress;
@@ -268,7 +271,7 @@ namespace SpyroScope {
 			for (let process in activeProcesses) {
 				emulatorIndex = EmulatorsConfig.emulators.FindIndex(scope (x) => x.processName == process.ProcessName);
 
-				if (emulatorIndex > -1) {
+				if (ProcessFound) {
 					Debug.WriteLine(scope String() .. AppendF("Emulator Process: {}", process.ProcessName));
 					processHandle = Windows.OpenProcess(Windows.PROCESS_ALL_ACCESS, false, process.Id);
 					break;
@@ -276,13 +279,13 @@ namespace SpyroScope {
 			}
 			DeleteAndClearItems!(activeProcesses);
 
-			if (emulatorIndex > -1) {
+			if (ProcessFound) {
 				let mainModuleHandle = GetModule(processHandle, EmulatorsConfig.emulators[emulatorIndex].processName);
-				let moduleSize = GetModuleSize(processHandle, mainModuleHandle);
+				mainSize = GetModuleSize(processHandle, mainModuleHandle);
 
-				Debug.WriteLine(scope String() .. AppendF("Main Module Size: {:x} bytes", moduleSize));
+				Debug.WriteLine(scope String() .. AppendF("Main Module Size: {:x} bytes", mainSize));
 
-				versionIndex = EmulatorsConfig.emulators[emulatorIndex].versions.FindIndex(scope (x) => x.moduleSize == moduleSize);
+				versionIndex = EmulatorsConfig.emulators[emulatorIndex].versions.FindIndex(scope (x) => x.moduleSize == mainSize);
 
 				Debug.WriteLine(scope String() .. AppendF("Emulator Version: {}", versionIndex > -1 ? EmulatorsConfig.emulators[emulatorIndex].versions[versionIndex].label : "Unknown"));
 			}
