@@ -7,7 +7,7 @@ namespace SpyroScope {
 		List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
 		Stopwatch stopwatch = new .() ~ delete _;
-		public List<Process> processes = new .() ~ delete _;
+		public List<Process> processes = new .() ~ DeleteContainerAndItems!(_);
 
 		public override void Enter() {
 			GUIElement.SetActiveGUI(guiElements);
@@ -30,8 +30,6 @@ namespace SpyroScope {
 			} else if (stopwatch.ElapsedMilliseconds > 1000) {
 				if (Emulator.active == null) {
 					ClearAndDeleteItems!(processes);
-					ClearAndDeleteItems!(guiElements);
-
 					Emulator.FindProcesses(processes);
 
 					if (processes.Count == 1) {
@@ -39,22 +37,33 @@ namespace SpyroScope {
 						Emulator.BindEmulatorProcess(processes[0]);
 					} else {
 						// List out and let user choose applicable processes
+						if (processes.Count > guiElements.Count) {
+							for (var i = guiElements.Count; i < processes.Count; i++) {
+								Button processButton = new .();
+								processButton.Anchor = .(0.5f, 0.5f, 0.5f, 0.5f);
+								processButton.Offset = .(-128, 128, (i + 1) * 16, (i + 2) * 16);
+								processButton.text = new String();
+							}
+						} else {
+							for (var i = processes.Count; i < guiElements.Count; i++) {
+								delete guiElements.PopBack();
+							}
+						}
+
 						for (let i < processes.Count) {
 							let process = processes[i];
+							let processButton = (Button)guiElements[i];
 
-							Button processButton = new .();
-							processButton.Anchor = .(0.5f, 0.5f, 0.5f, 0.5f);
-							processButton.Offset = .(-128, 128, (i + 1) * 16, (i + 2) * 16);
-							processButton.text = new .() .. AppendF("{} - {}", process.ProcessName, process.Id);
-							processButton.OnActuated.Add(new () => {
+							processButton.text.Set(scope String() .. AppendF("{} - PID: {}", process.ProcessName, process.Id));
+							processButton.OnActuated .. Dispose() .Add(new () => {
 								Emulator.BindEmulatorProcess(processes[i]);
-
+	
 								ClearAndDeleteItems!(processes);
 								ClearAndDeleteItems!(guiElements);
 							});
-
-							stopwatch.Restart();
 						}
+
+						stopwatch.Restart();
 					}
 				}
 
