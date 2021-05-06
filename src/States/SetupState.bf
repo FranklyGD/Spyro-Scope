@@ -29,8 +29,8 @@ namespace SpyroScope {
 				}
 			} else if (stopwatch.ElapsedMilliseconds > 1000) {
 				if (Emulator.active == null) {
-					DeleteAndClearItems!(processes);
-					DeleteAndClearItems!(guiElements);
+					ClearAndDeleteItems!(processes);
+					ClearAndDeleteItems!(guiElements);
 
 					Emulator.FindProcesses(processes);
 
@@ -49,8 +49,8 @@ namespace SpyroScope {
 							processButton.OnActuated.Add(new () => {
 								Emulator.BindEmulatorProcess(processes[i]);
 
-								DeleteAndClearItems!(processes);
-								DeleteAndClearItems!(guiElements);
+								ClearAndDeleteItems!(processes);
+								ClearAndDeleteItems!(guiElements);
 							});
 
 							stopwatch.Restart();
