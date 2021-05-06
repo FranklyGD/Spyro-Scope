@@ -14,16 +14,16 @@ namespace SpyroScope {
 		}
 
 		public override void Update() {
-			if (!(Emulator.emulator == .None || Emulator.rom == .None)) {
+			if (Emulator.Supported && Emulator.rom != .None) {
 				if (stopwatch.ElapsedMilliseconds > 3000) {
 					windowApp.GoToState<ViewerState>();
 				}
 			} else if (stopwatch.ElapsedMilliseconds > 1000) {
-				if (Emulator.emulator == .None) {
+				if (!Emulator.Supported) {
 					Emulator.FindEmulator();
 				} else {
 					Emulator.CheckEmulatorStatus();
-					if (Emulator.emulator != .None) {
+					if (Emulator.Supported) {
 						Emulator.FindGame();
 					}
 				}
@@ -36,21 +36,21 @@ namespace SpyroScope {
 			let middleWindow = WindowApp.width / 2;
 
 			String message = .Empty;
-			if (Emulator.emulator == .None) {
+			if (!Emulator.Supported) {
 				message = "Waiting for Emulator";
 			} else {
-				if (!Emulator.supported) {
+				if (!Emulator.Supported) {
 					message = "Unsupported Version";
 				} else if (Emulator.rom == .None) {
 					message = "Waiting for Game";
 				} else {
 					message = Emulator.gameNames[(int)Emulator.rom];
 				}
-				
+
 				let baseline = WindowApp.height / 2 - WindowApp.font.height * 1.5f;
-				let emulator = scope String() .. AppendF("{} ({})", Emulator.emulatorNames[(int)Emulator.emulator], Emulator.emulatorVersions[Emulator.supported ? (int)Emulator.emulator : 0]);
+				let emulator = scope String() .. AppendF("{} ({})", Emulator.Name, Emulator.Version);
 				let halfWidth = Math.Round(WindowApp.font.CalculateWidth(emulator) / 2);
-				WindowApp.font.Print(emulator, .(middleWindow - halfWidth, baseline), Emulator.supported ? .(255,255,255) : .(255,255,0));
+				WindowApp.font.Print(emulator, .(middleWindow - halfWidth, baseline), Emulator.Supported ? .(255,255,255) : .(255,255,0));
 			}
 
 			var baseline = (WindowApp.height - WindowApp.font.height) / 2;
@@ -58,7 +58,7 @@ namespace SpyroScope {
 			WindowApp.font.Print(message, .(middleWindow - halfWidth, baseline), .(255,255,255));
 
 			baseline += WindowApp.font.penLine;
-			if (Emulator.emulator == .None || Emulator.rom == .None) {
+			if (!Emulator.Supported || Emulator.rom == .None) {
 				let t = (float)stopwatch.ElapsedMilliseconds / 1000 * 3.14f;
 				DrawUtilities.Rect(baseline + 2, baseline + 4, middleWindow - halfWidth * Math.Sin(t), middleWindow + halfWidth * Math.Sin(t),
 					.(255,255,255));

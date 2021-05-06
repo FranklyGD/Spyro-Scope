@@ -404,7 +404,7 @@ namespace SpyroScope {
 			Emulator.FindGame();
 
 			// If there is no emulator or relevant game present, return to the setup screen
-			if (Emulator.emulator == .None || Emulator.rom == .None) {
+			if (!Emulator.Supported || Emulator.rom == .None) {
 				windowApp.GoToState<SetupState>();
 				return;
 			}

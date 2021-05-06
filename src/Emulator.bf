@@ -8,19 +8,12 @@ namespace SpyroScope {
 		public static Windows.ProcessHandle processHandle;
 		public static Windows.HModule moduleHandle; // Also contains the base address directly
 
-		// NOTE: Eventually make this read from external file
-		public const String[5] emulatorNames = .(String.Empty, "Nocash PSX", "Bizhawk", "ePSXe", "Mednafen");
-		public const String[5] emulatorVersions = .("Unknown", "2.0", "2.6.1", "2.0.5", "1.24.3");
-		public const int[5] moduleSizes = .(0, 0x00190000, 0x0063F000, 0x0182A000, 0x05EEC000);
-		public enum EmulatorType {
-			None,
-			NocashPSX,
-			Bizhawk,
-			ePSXe,
-			Mednafen
-		}
-		public static EmulatorType emulator;
-		public static bool supported;
+		static int emulatorIndex = -1, versionIndex = -1;
+
+		public static StringView Name { get => emulatorIndex > -1 ? EmulatorsConfig.emulators[emulatorIndex].label : ""; }
+		public static StringView Version { get => versionIndex > -1 ? EmulatorsConfig.emulators[emulatorIndex].versions[versionIndex].label : "Unknown"; }
+		public static bool Supported { get => emulatorIndex > -1 && versionIndex > -1; }
+
 		public static int RAMBaseAddress;
 		public static int VRAMBaseAddress;
 
@@ -265,7 +258,6 @@ namespace SpyroScope {
 			processHandle = 0;
 			moduleHandle = 0;
 
-			emulator = .None;
 			rom = .None;
 
 			let activeProcesses = scope List<Process>();
@@ -274,50 +266,25 @@ namespace SpyroScope {
 			}
 
 			for (let process in activeProcesses) {
-				switch (process.ProcessName) {
-					case "NO$PSX.EXE":
-						emulator = .NocashPSX;
-					case "EmuHawk.exe":
-						emulator = .Bizhawk;
-					case "ePSXe.exe":
-						emulator = .ePSXe;
-					case "mednafen.exe":
-						emulator = .Mednafen;
-				}
+				emulatorIndex = EmulatorsConfig.emulators.FindIndex(scope (x) => x.processName == process.ProcessName);
 
-				if (emulator != .None) {
+				if (emulatorIndex > -1) {
+					Debug.WriteLine(scope String() .. AppendF("Emulator Process: {}", process.ProcessName));
 					processHandle = Windows.OpenProcess(Windows.PROCESS_ALL_ACCESS, false, process.Id);
 					break;
 				}
 			}
 			DeleteAndClearItems!(activeProcesses);
 
-			switch (emulator) {
-				case .NocashPSX:
-					moduleHandle = GetModule(processHandle, "NO$PSX.EXE");
-				case .ePSXe:
-					moduleHandle = GetModule(processHandle, "ePSXe.exe");
-				case .Bizhawk:
-					moduleHandle = GetModule(processHandle, "octoshock.dll");
-				case .Mednafen:
-					moduleHandle = GetModule(processHandle, "mednafen.exe");
-				default:
-					return;
-			}
+			if (emulatorIndex > -1) {
+				let mainModuleHandle = GetModule(processHandle, EmulatorsConfig.emulators[emulatorIndex].processName);
+				let moduleSize = GetModuleSize(processHandle, mainModuleHandle);
 
-			if (moduleHandle.IsInvalid) {
-				processHandle.Close();
-				processHandle = 0;
-				moduleHandle = 0;
+				Debug.WriteLine(scope String() .. AppendF("Main Module Size: {:x} bytes", moduleSize));
 
-				emulator = .None;
-				rom = .None;
-			} else {
-				// Check if the module size is the same
-				var size = GetModuleSize(processHandle, moduleHandle);
+				versionIndex = EmulatorsConfig.emulators[emulatorIndex].versions.FindIndex(scope (x) => x.moduleSize == moduleSize);
 
-				supported = size == moduleSizes[(int)emulator];
-
+				Debug.WriteLine(scope String() .. AppendF("Emulator Version: {}", versionIndex > -1 ? EmulatorsConfig.emulators[emulatorIndex].versions[versionIndex].label : "Unknown"));
 			}
 		}
 
@@ -405,7 +372,8 @@ namespace SpyroScope {
 		public static void CheckEmulatorStatus() {
 			int32 exitCode;
 			if (Windows.GetExitCodeProcess(processHandle, out exitCode) && exitCode != 259 /*STILL_ACTIVE*/) {
-				emulator = .None;
+				emulatorIndex = -1;
+				versionIndex = -1;
 				rom = .None;
 
 				for (let i < 8) {
@@ -445,7 +413,7 @@ namespace SpyroScope {
 		}
 
 		public static void UnbindFromEmulator() {
-			if (emulator != .None) {
+			if (Supported) {
 				RestoreCameraUpdate();
 				RestoreInputRelay();
 				RestoreUpdate();
@@ -453,59 +421,43 @@ namespace SpyroScope {
 		}
 
 		public static void FetchRAMBaseAddress() {
-			switch (emulator) {
-				case .NocashPSX : {
-					// uint8* pointer = (uint8*)(void*)(moduleHandle + 0x00091E10)
-					// No need to use module base address since its always loaded at 0x00400000
-					uint8* pointer = (uint8*)(void*)0x00491E10;
-					Windows.ReadProcessMemory(processHandle, pointer, &pointer, 4, null);
-					pointer -= 0x1fc;
-					Windows.ReadProcessMemory(processHandle, pointer, &RAMBaseAddress, 4, null);
-				}
-				case .Bizhawk : {
-					// Static address
-					RAMBaseAddress = (.)moduleHandle + 0x0030DF90;
-				}
-				case .ePSXe : {
-					// Static address
-					RAMBaseAddress = (.)moduleHandle + 0x00A82020;
-				}
-				case .Mednafen : {
-					// Static address
-					RAMBaseAddress = (.)moduleHandle + 0x025BC280;
-				}
-
-				case .None: {
-					// Can't do much if you don't have an emulator to work with
-				}
+			if (versionIndex == -1) {
+				return;
 			}
+
+			let version = EmulatorsConfig.emulators[emulatorIndex].versions[versionIndex];
+			let moduleHandle = GetModule(processHandle, version.ramModuleName);
+
+			if (moduleHandle.IsInvalid) {
+				return;
+			}
+
+			RAMBaseAddress = PointerOffsetsToAddress((.)moduleHandle, version.offsetsToRAM);
 		}
 
 		public static void FetchVRAMBaseAddress() {
-			switch (emulator) {
-				case .NocashPSX : {
-					// uint8* pointer = (uint8*)(void*)(moduleHandle + 0x00092784)
-					// No need to use module base address since its always loaded at 0x00400000
-					uint8* pointer = (uint8*)(void*)0x00492784;
-					Windows.ReadProcessMemory(processHandle, pointer, &VRAMBaseAddress, 4, null);
-				}
-				case .Bizhawk : {
-					// Static address
-					VRAMBaseAddress = (.)moduleHandle + 0x005280D0;
-				}
-				case .ePSXe : {
-					// Plugin address
-					let gpuModuleHandle = GetModule(processHandle, "gpuPeteOpenGL2.dll");
-					VRAMBaseAddress = (.)gpuModuleHandle + 0x00051F80;
-					// NOTE: According to Cheat Engine this should work, however...
-					// the module is not being listed and therefore cannot be found
-				}
-				case .Mednafen : {
-					// Static address
-					VRAMBaseAddress = (.)moduleHandle + 0x027d0eb8;
-				}
-				default : // Well this is awkward...
+			if (versionIndex == -1) {
+				return;
 			}
+
+			let version = EmulatorsConfig.emulators[emulatorIndex].versions[versionIndex];
+			let moduleHandle = GetModule(processHandle, version.vramModuleName);
+
+			if (moduleHandle.IsInvalid) {
+				return;
+			}
+
+			VRAMBaseAddress = PointerOffsetsToAddress((.)moduleHandle, version.offsetsToVRAM);
+		}
+
+		static int PointerOffsetsToAddress(int baseAddress, List<int> offsets) {
+			var address = baseAddress;
+			address += offsets[0];
+			for (var i = 1; i < offsets.Count; i++) {
+				Windows.ReadProcessMemory(processHandle, (.)address, &address, 4, null);
+				address += offsets[i];
+			}
+			return address;
 		}
 
 		[Inline]

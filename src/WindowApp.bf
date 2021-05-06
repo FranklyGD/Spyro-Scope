@@ -52,7 +52,7 @@ namespace SpyroScope {
 
 			// Attempt to find and bind as the window is being opened
 			Emulator.FindEmulator();
-			if (Emulator.emulator != .None) {
+			if (Emulator.Supported) {
 				Emulator.FindGame();
 				if (Emulator.rom != .None) {
 					state = states[1];
