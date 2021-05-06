@@ -22,6 +22,7 @@ namespace SpyroScope {
 
 			SDL.Init(.Video | .Events);// | .GameController);
 			FT.Init();
+			EmulatorsConfig.Load();
 
 			let mainWindow = scope WindowApp();
 

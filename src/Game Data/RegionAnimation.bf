@@ -189,10 +189,6 @@ namespace SpyroScope {
 						(midpoints[2], midpoints[1], midpoints[0])
 					);
 
-					if (regionFace.flipped) {
-						Swap!(subQuadVertices[1], subQuadVertices[2]);
-					}
-
 					// Corner triangles
 					vertices = &region.nearMeshSubdivided.vertices[triangleIndex * 4];
 					for (let ti < 3) {
@@ -223,22 +219,19 @@ namespace SpyroScope {
 						.(vertices[5], midpoints[1], midpoints[4], midpoints[2]),
 						.(midpoints[1], vertices[0], midpoints[3], midpoints[4]),
 					);
-
-					if (regionFace.flipped) {
-						Swap!(subQuadVertices[1], subQuadVertices[2]);
-					}
+					
+					const uint8[2][2] swap = .(.(0,2), .(2,0));
+					const int8[2] oppositeIndex = .(1,3);
 
 					vertices = &region.nearMeshSubdivided.vertices[triangleIndex * 4];
 					for (let qi < 4) {
-						let offset = qi * 6;
+						for (let qti < 2) {
+							let offset = qi * 6 + qti * 3;
 
-						vertices[0 + offset] = subQuadVertices[qi][3];
-						vertices[1 + offset] = subQuadVertices[qi][2];
-						vertices[2 + offset] = subQuadVertices[qi][0];
-
-						vertices[3 + offset] = subQuadVertices[qi][0];
-						vertices[4 + offset] = subQuadVertices[qi][2];
-						vertices[5 + offset] = subQuadVertices[qi][1];
+							vertices[0 + offset] = subQuadVertices[qi][oppositeIndex[qti]];
+							vertices[1 + offset] = subQuadVertices[qi][swap[qti][0]];
+							vertices[2 + offset] = subQuadVertices[qi][swap[qti][1]];
+						}
 					}
 
 					i++;

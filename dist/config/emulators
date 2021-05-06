@@ -1,0 +1,17 @@
+NO$PSX.EXE Nocash PSX
+2.0 190000
+NO$PSX.EXE 91e10 -1fc 0
+NO$PSX.EXE 92784 0
+
+EmuHawk.exe Bizhawk
+2.6.1 456000
+octoshock.dll 310f80
+octoshock.dll 52b0c0
+
+mednafen.exe Mednafen
+1.26.1 5e83000
+mednafen.exe 2553280
+mednafen.exe 2767eb8
+1.24.3 5eec000
+mednafen.exe 25bc280
+mednafen.exe 27d0eb8

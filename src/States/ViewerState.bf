@@ -89,7 +89,7 @@ namespace SpyroScope {
 
 		GUIElement faceMenu;
 		Input textureIndexInput, rotationInput, depthOffsetInput;
-		Toggle mirrorToggle, doubleSidedToggle;
+		Toggle flipNormalToggle, doubleSidedToggle;
 
 		public this() {
 			ViewerSelection.Init();
@@ -278,22 +278,13 @@ namespace SpyroScope {
 			textureIndexInput.Anchor = .(0, 0, 1, 1);
 			textureIndexInput.Offset = .(0,64,0,WindowApp.bitmapFont.height - 2);
 			textureIndexInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -5 + 1);
+			textureIndexInput.OnXcrement = new => Inspector.Property<int>.XcrementNumber;
+
 			textureIndexInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
 					if (val * quadCount < Terrain.textures.Count) {
-						let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
-						int faceIndex = ?;
-						if (ViewerSelection.currentRegionTransparent) {
-							faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
-						} else {
-							faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
-						}
-						let face = visualMesh.GetNearFace(faceIndex);
-						face.renderInfo.textureIndex = (.)val;
-						visualMesh.SetNearFace(face, faceIndex);
-
-						text .. Clear().AppendF("{}", face.renderInfo.textureIndex);
+						text .. Clear().AppendF("{}", BitEdit.Get!(val, 0x7f));
 
 						return true;
 					}
@@ -301,12 +292,38 @@ namespace SpyroScope {
 				return false;
 			};
 
+			textureIndexInput.OnSubmit.Add(new (text) => {
+				if (int.Parse(text) case .Ok(var val)) {
+					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
+					int faceIndex = ?;
+					if (ViewerSelection.currentRegionTransparent) {
+						faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
+					} else {
+						faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
+					}
+					let face = visualMesh.GetNearFace(faceIndex);
+					face.renderInfo.textureIndex = (.)val;
+					visualMesh.SetNearFace(face, faceIndex);
+				}
+			});
+
 			rotationInput = new .();
 			rotationInput.Anchor = .(0, 0, 1, 1);
 			rotationInput.Offset = .(0,64,0,WindowApp.bitmapFont.height - 2);
 			rotationInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -4 + 1);
+			rotationInput.OnXcrement = new => Inspector.Property<int>.XcrementNumber;
 			rotationInput.OnValidate = new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
+					let maskedVal = BitEdit.Get!(val, 0b0011);
+					text .. Clear().AppendF("{}", maskedVal);
+					
+					return true;
+				}
+				return false;
+			};
+
+			rotationInput.OnSubmit.Add(new (text) => {
+				if (int.Parse(text) case .Ok(var val)) {
 					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 					int faceIndex = ?;
 					if (ViewerSelection.currentRegionTransparent) {
@@ -317,19 +334,25 @@ namespace SpyroScope {
 					let face = visualMesh.GetNearFace(faceIndex);
 					face.renderInfo.rotation = (.)val;
 					visualMesh.SetNearFace(face, faceIndex);
+				}
+			});
 
-					text .. Clear().AppendF("{}", face.renderInfo.rotation);
+			depthOffsetInput = new .();
+			depthOffsetInput.Anchor = .(0, 0, 1, 1);
+			depthOffsetInput.Offset = .(0,64,0,WindowApp.bitmapFont.height - 2);
+			depthOffsetInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -2 + 1);
+			depthOffsetInput.OnXcrement = new => Inspector.Property<int>.XcrementNumber;
+			depthOffsetInput.OnValidate = new (text) => {
+				if (int.Parse(text) case .Ok(let val)) {
+					let maskedVal = BitEdit.Get!(val, 0b0011);
+					text .. Clear().AppendF("{}", maskedVal);
 					
 					return true;
 				}
 				return false;
 			};
 
-			depthOffsetInput = new .();
-			depthOffsetInput.Anchor = .(0, 0, 1, 1);
-			depthOffsetInput.Offset = .(0,64,0,WindowApp.bitmapFont.height - 2);
-			depthOffsetInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -2 + 1);
-			depthOffsetInput.OnValidate = new (text) => {
+			depthOffsetInput.OnSubmit.Add(new (text) => {
 				if (int.Parse(text) case .Ok(let val)) {
 					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 					int faceIndex = ?;
@@ -341,20 +364,15 @@ namespace SpyroScope {
 					let face = visualMesh.GetNearFace(faceIndex);
 					face.renderInfo.depthOffset = (.)val;
 					visualMesh.SetNearFace(face, faceIndex);
-					
-					text .. Clear().AppendF("{}", face.renderInfo.depthOffset);
-					
-					return true;
 				}
-				return false;
-			};
+			});
 
-			mirrorToggle = new .();
-			mirrorToggle.Anchor = .(0, 0, 1, 1);
-			mirrorToggle.Offset = .(0,16,0,16);
-			mirrorToggle.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -3 + 2);
-			mirrorToggle.toggleIconTexture = toggledTexture;
-			mirrorToggle.OnActuated.Add(new () => {
+			flipNormalToggle = new .();
+			flipNormalToggle.Anchor = .(0, 0, 1, 1);
+			flipNormalToggle.Offset = .(0,16,0,16);
+			flipNormalToggle.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -3 + 2);
+			flipNormalToggle.toggleIconTexture = toggledTexture;
+			flipNormalToggle.OnActuated.Add(new () => {
 				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 				int faceIndex = ?;
 				if (ViewerSelection.currentRegionTransparent) {
@@ -363,7 +381,7 @@ namespace SpyroScope {
 					faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
 				}
 				let face = visualMesh.GetNearFace(faceIndex);
-				face.flipped = mirrorToggle.value;
+				face.flipped = flipNormalToggle.value;
 				visualMesh.SetNearFace(face, faceIndex);
 			});
 
@@ -491,7 +509,7 @@ namespace SpyroScope {
 				textureIndexInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.textureIndex));
 				rotationInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.rotation));
 				depthOffsetInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.depthOffset));
-				mirrorToggle.SetValue(face.flipped);
+				flipNormalToggle.SetValue(face.flipped);
 				doubleSidedToggle.SetValue(face.renderInfo.doubleSided);
 			}
 
@@ -797,10 +815,9 @@ namespace SpyroScope {
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("Face Index: {}", faceIndex), .(260, WindowApp.height - WindowApp.bitmapFont.height * 6), .(255,255,255));
 				WindowApp.bitmapFont.Print(scope String() .. Append("Tex Index"), .(260, WindowApp.height - WindowApp.bitmapFont.height * 5), .(255,255,255));
 				WindowApp.bitmapFont.Print(scope String() .. Append("Rotation"), .(260, WindowApp.height - WindowApp.bitmapFont.height * 4), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Mirror"), .(260, WindowApp.height - WindowApp.bitmapFont.height * 3), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. Append("Flip Normal"), .(260, WindowApp.height - WindowApp.bitmapFont.height * 3), .(255,255,255));
 				WindowApp.bitmapFont.Print(scope String() .. Append("Depth Offset"), .(260, WindowApp.height - WindowApp.bitmapFont.height * 2), .(255,255,255));
 				WindowApp.bitmapFont.Print(scope String() .. Append("Double Sided"), .(260, WindowApp.height - WindowApp.bitmapFont.height), .(255,255,255));
-
 			}
 
 			if (!Translator.hovered) {

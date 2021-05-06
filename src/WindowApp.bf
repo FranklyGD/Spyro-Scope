@@ -52,7 +52,7 @@ namespace SpyroScope {
 
 			// Attempt to find and bind as the window is being opened
 			let processes = new List<Process>();
-			Emulator.FindEmulatorProcesses(processes);
+			Emulator.FindProcesses(processes);
 
 			if (processes.Count == 1) {
 				Emulator.BindEmulatorProcess(processes[0]);
@@ -60,7 +60,7 @@ namespace SpyroScope {
 
 			DeleteContainerAndItems!(processes);
 
-			if (Emulator.active != null && Emulator.active.emulator != .None) {
+			if (Emulator.active != null && Emulator.active.Supported) {
 				Emulator.active.FetchMainAddresses();
 				Emulator.active.FindGame();
 				if (Emulator.active.rom != .None) {

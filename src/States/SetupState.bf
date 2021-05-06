@@ -32,7 +32,7 @@ namespace SpyroScope {
 					DeleteAndClearItems!(processes);
 					DeleteAndClearItems!(guiElements);
 
-					Emulator.FindEmulatorProcesses(processes);
+					Emulator.FindProcesses(processes);
 
 					if (processes.Count == 1) {
 						// Automatically bind to the process
@@ -60,7 +60,7 @@ namespace SpyroScope {
 
 				if (Emulator.active != null) {
 					Emulator.active.CheckProcessStatus();
-					if (Emulator.active.emulator != .None) {
+					if (Emulator.active.Supported) {
 						Emulator.active.FetchMainAddresses();
 						Emulator.active.FindGame();
 					}
@@ -73,35 +73,40 @@ namespace SpyroScope {
 		public override void DrawGUI() {
 			let middleWindow = WindowApp.width / 2;
 
-			String message = .Empty;
-			if (Emulator.active == null) {
-				message = "Waiting for Emulator";
-			} else {
-				if (Emulator.active.rom == .None) {
-					message = "Waiting for Game";
+			Message : {
+				Emulator activeEmulator = Emulator.active;
+				String message = .Empty;
+				if (activeEmulator == null) {
+					message = "Waiting for Emulator";
 				} else {
-					message = Emulator.gameNames[(int)Emulator.active.rom];
+					if (!activeEmulator.Supported) {
+						message = scope:Message String() .. AppendF("Unknown Module Size: (0x{:x})", activeEmulator.MainModuleSize);
+					} else if (activeEmulator.rom == .None) {
+						message = "Waiting for Game";
+					} else {
+						message = Emulator.gameNames[(int)activeEmulator.rom];
+					}
+	
+					let baseline = WindowApp.height / 2 - WindowApp.font.height * 1.5f;
+					let emulatorName = scope String() .. AppendF("{} ({})", activeEmulator.Name, activeEmulator.Version);
+					let halfWidth = Math.Round(WindowApp.font.CalculateWidth(emulatorName) / 2);
+					WindowApp.font.Print(emulatorName, .(middleWindow - halfWidth, baseline), activeEmulator.Supported ? .(255,255,255) : .(255,255,0));
 				}
-				
-				let baseline = WindowApp.height / 2 - WindowApp.font.height * 1.5f;
-				let emulator = Emulator.emulatorNames[(int)Emulator.active.emulator];
-				let halfWidth = Math.Round(WindowApp.font.CalculateWidth(emulator) / 2);
-				WindowApp.font.Print(emulator, .(middleWindow - halfWidth, baseline), .(255,255,255));
-			}
-
-			var baseline = (WindowApp.height - WindowApp.font.height) / 2;
-			let halfWidth = Math.Round(WindowApp.font.CalculateWidth(message) / 2);
-			WindowApp.font.Print(message, .(middleWindow - halfWidth, baseline), .(255,255,255));
-
-			baseline += WindowApp.font.penLine;
-			if (Emulator.active == null || Emulator.active.rom == .None) {
-				let t = (float)stopwatch.ElapsedMilliseconds / 1000 * 3.14f;
-				DrawUtilities.Rect(baseline + 2, baseline + 4, middleWindow - halfWidth * Math.Sin(t), middleWindow + halfWidth * Math.Sin(t),
-					.(255,255,255));
-			} else {
-				let t = 1f - (float)stopwatch.ElapsedMilliseconds / 3000;
-				DrawUtilities.Rect(baseline + 2, baseline + 4, middleWindow - halfWidth * t, middleWindow + halfWidth * t,
-					.(255,255,255));
+	
+				var baseline = (WindowApp.height - WindowApp.font.height) / 2;
+				let halfWidth = Math.Round(WindowApp.font.CalculateWidth(message) / 2);
+				WindowApp.font.Print(message, .(middleWindow - halfWidth, baseline), .(255,255,255));
+	
+				baseline += WindowApp.font.penLine;
+				if (activeEmulator == null || activeEmulator.rom == .None) {
+					let t = (float)stopwatch.ElapsedMilliseconds / 1000 * 3.14f;
+					DrawUtilities.Rect(baseline + 2, baseline + 4, middleWindow - halfWidth * Math.Sin(t), middleWindow + halfWidth * Math.Sin(t),
+						.(255,255,255));
+				} else {
+					let t = 1f - (float)stopwatch.ElapsedMilliseconds / 3000;
+					DrawUtilities.Rect(baseline + 2, baseline + 4, middleWindow - halfWidth * t, middleWindow + halfWidth * t,
+						.(255,255,255));
+				}
 			}
 
 			for (let element in guiElements) {
