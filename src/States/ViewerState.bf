@@ -450,10 +450,6 @@ namespace SpyroScope {
 			sideInspectorInterp = Math.MoveTo(sideInspectorInterp, sideInspectorVisible ? 1 : 0, 0.1f);
 			sideInspector.offset = .(-300 * sideInspectorInterp,300 * (1 - sideInspectorInterp),0,0);
 
-			if (Emulator.loadingStatus == .Loading || Emulator.gameState > 0) {
-				return;
-			}
-
 			if (faceMenu.visible) {
 				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 				int faceIndex = ?;
@@ -470,6 +466,10 @@ namespace SpyroScope {
 				depthOffsetInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.depthOffset));
 				flipNormalToggle.SetValue(face.flipped);
 				doubleSidedToggle.SetValue(face.renderInfo.doubleSided);
+			}
+
+			if (Emulator.loadingStatus == .Loading || Emulator.gameState > 0) {
+				return;
 			}
 
 			Terrain.Update();
@@ -641,7 +641,7 @@ namespace SpyroScope {
 				}
 			}
 
-			if (Terrain.renderMode == .Collision) {
+			if (Terrain.collision != null && Terrain.renderMode == .Collision) {
 				if (Terrain.collision.overlay == .Flags) {
 					DrawFlagsOverlay();
 				} else if (Terrain.collision.overlay == .Deform) {
@@ -907,7 +907,7 @@ namespace SpyroScope {
 							}
 						}
 					} else {
-						if (Emulator.loadingStatus == .Idle) {
+						if (Emulator.loadingStatus == .Idle || Emulator.loadingStatus == .CutsceneIdle) {
 							cornerMenuVisible = !Translator.dragged && (cornerMenuVisible && WindowApp.mousePosition.x < 200 || WindowApp.mousePosition.x < 10) && WindowApp.mousePosition.y < 260;
 							sideInspectorVisible = !Translator.dragged && ViewerSelection.currentObjIndex > -1 && (pinInspectorButton.value || (sideInspectorVisible && WindowApp.mousePosition.x > WindowApp.width - 300 || WindowApp.mousePosition.x > WindowApp.width - 10));
 						} else {
@@ -916,7 +916,7 @@ namespace SpyroScope {
 
 						if (showManipulator && Translator.MouseMove(WindowApp.mousePosition)) {
 							Selection.Clear();
-						} else if (Emulator.loadingStatus != .Loading && Emulator.gameState == 0) {
+						} else if (Emulator.loadingStatus == .Idle && Emulator.gameState == 0 || Emulator.loadingStatus == .CutsceneIdle) {
 							Selection.Test();
 						}
 					}
@@ -1375,24 +1375,27 @@ namespace SpyroScope {
 
 				WindowApp.viewerProjection = Camera.projection;
 			} else if (viewMode != .Map && mode == .Map)  {
-				let upperBound = Terrain.collision.upperBound;
-				let lowerBound = Terrain.collision.lowerBound;
-
+				if (Terrain.collision != null) {
+					let upperBound = Terrain.collision.upperBound;
+					let lowerBound = Terrain.collision.lowerBound;
+					
+					Camera.far = upperBound.z * 1.1f;
+	
+					Camera.position.x = (upperBound.x + lowerBound.x) / 2;
+					Camera.position.y = (upperBound.y + lowerBound.y) / 2;
+					Camera.position.z = upperBound.z * 1.1f;
+	
+					let mapSize = upperBound - lowerBound;
+					let aspect = (float)WindowApp.width / WindowApp.height;
+					if (mapSize.x / mapSize.y > aspect) {
+						Camera.size = mapSize.x / aspect;
+					} else {
+						Camera.size = mapSize.y;
+					}
+				}
+				
 				Camera.orthographic = true;
 				Camera.near = 0;
-				Camera.far = upperBound.z * 1.1f;
-
-				Camera.position.x = (upperBound.x + lowerBound.x) / 2;
-				Camera.position.y = (upperBound.y + lowerBound.y) / 2;
-				Camera.position.z = upperBound.z * 1.1f;
-
-				let mapSize = upperBound - lowerBound;
-				let aspect = (float)WindowApp.width / WindowApp.height;
-				if (mapSize.x / mapSize.y > aspect) {
-					Camera.size = mapSize.x / aspect;
-				} else {
-					Camera.size = mapSize.y;
-				}
 
 				viewEulerRotation = .(0.5f,0,0.5f);
 				WindowApp.viewerProjection = Camera.projection;

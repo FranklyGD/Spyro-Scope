@@ -27,7 +27,10 @@ namespace SpyroScope {
 
 		public static void Load() {
 			Reload();
-			ReloadAnimations();
+
+			if (Emulator.loadingStatus == .Idle) {
+				ReloadAnimations();
+			}
 		}
 
 		public static void Clear() {
@@ -70,13 +73,18 @@ namespace SpyroScope {
 
 		public static void Reload() {
 			// Collision
-			Emulator.Address address = ?;
-			Emulator.collisionDataPointers[(int)Emulator.rom].Read(&address);
-			Emulator.Address deformAddress = ?;
-			Emulator.collisionDeformDataPointers[(int)Emulator.rom].Read(&deformAddress);
-
 			delete collision;
-			collision = new .(address, deformAddress);
+			if (Emulator.installment == .SpyroTheDragon && (Emulator.gameState == 13 || Emulator.gameState == 14)) {
+				collision = null;
+			} else {
+				Emulator.Address address = ?;
+				Emulator.collisionDataPointers[(int)Emulator.rom].Read(&address);
+
+				Emulator.Address deformAddress = ?;
+				Emulator.collisionDeformDataPointers[(int)Emulator.rom].Read(&deformAddress);
+
+				collision = new .(address, deformAddress);
+			}
 
 			usedTextureIndices.Clear();
 
@@ -110,9 +118,12 @@ namespace SpyroScope {
 				delete textureScrollers;
 			}
 
+			uint32 textureScrollerCount = 0;
 			let textureScrollerPointer = Emulator.textureScrollerPointers[(int)Emulator.rom];
-			uint32 textureScrollerCount = ?;
-			Emulator.ReadFromRAM(textureScrollerPointer - 4, &textureScrollerCount, 4);
+			if (Emulator.loadingStatus == .Idle) {
+				Emulator.ReadFromRAM(textureScrollerPointer - 4, &textureScrollerCount, 4);
+			}
+
 			textureScrollers = new .[textureScrollerCount];
 			if (textureScrollerCount > 0) {
 				Emulator.Address<Emulator.Address> textureScrollerArrayAddress = ?;
@@ -136,9 +147,12 @@ namespace SpyroScope {
 				delete textureSwappers;
 			}
 
+			uint32 textureSwapperCount = 0;
 			let textureSwapperPointer = Emulator.textureSwapperPointers[(int)Emulator.rom];
-			uint32 textureSwapperCount = ?;
-			Emulator.ReadFromRAM(textureSwapperPointer - 4, &textureSwapperCount, 4);
+			if (Emulator.loadingStatus == .Idle) {
+				Emulator.ReadFromRAM(textureSwapperPointer - 4, &textureSwapperCount, 4);
+			}
+
 			textureSwappers = new .[textureSwapperCount];
 			if (textureSwapperCount > 0) {
 				Emulator.Address<Emulator.Address> textureScrollerArrayAddress = ?;
@@ -348,7 +362,7 @@ namespace SpyroScope {
 					Renderer.BeginDefaultShading();
 				}
 				case .Collision : {
-					collision.Draw(wireframe);
+					collision?.Draw(wireframe);
 				}
 			}
 				
