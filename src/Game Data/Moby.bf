@@ -15,9 +15,12 @@ namespace SpyroScope {
 		public uint8 objectSubTypeID; // 58
 		uint8 f; // 59
 		public uint8 modelID; // 60
-		uint8 g; // 61
-		uint16 h; // 62
-		uint32 i; // 64
+		public uint8 nextModelID; // 61
+		public uint8 keyframe; // 62
+		public uint8 nextKeyframe; // 63
+		uint8 i; // 64
+		public bool animating; // 65
+		uint16 j; // 66
 		public Vector3Byte eulerRotation; // 68
 		public uint8 updateState; // 72
 		public uint8 variantID; // 73

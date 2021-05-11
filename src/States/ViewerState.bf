@@ -59,6 +59,9 @@ namespace SpyroScope {
 		float sideInspectorInterp;
 
 		Inspector mainInspector;
+		Inspector.Property<uint8> nextModelProperty;
+		Inspector.Property<uint8> keyframeProperty;
+		Inspector.Property<uint8> nextKeyframeProperty;
 
 		(Toggle button, String label)[8] toggleList = .(
 			(null, "Wirefra(m)e"),
@@ -224,7 +227,11 @@ namespace SpyroScope {
 			mainInspector.AddProperty<Emulator.Address>("Data", 0x0).ReadOnly = true;
 			mainInspector.AddProperty<int8>("Held Value", 0x50);
 
-			mainInspector.AddProperty<uint16>("Model #ID", 0x3c);
+			mainInspector.AddProperty<uint8>("Model/Anim", 0x3c);
+			nextModelProperty = mainInspector.AddProperty<uint8>("Nxt Mdl/Anim", 0x3d);
+			keyframeProperty = mainInspector.AddProperty<uint8>("Keyframe", 0x3e);
+			nextKeyframeProperty = mainInspector.AddProperty<uint8>("Nxt Keyframe", 0x3f);
+
 			mainInspector.AddProperty<uint8>("Color", 0x54, "RGBA");
 			mainInspector.AddProperty<uint8>("LOD Distance", 0x4e).postTextInput = " x 1000";
 
@@ -868,6 +875,14 @@ namespace SpyroScope {
 								let address = Moby.GetAddress(ViewerSelection.currentObjIndex);
 								let reference = &Moby.allocated[ViewerSelection.currentObjIndex];
 								mainInspector.SetData(address, reference);
+
+								Emulator.Address modelSetAddress = ?;
+								Emulator.modelPointers[(int)Emulator.rom].GetAtIndex(&modelSetAddress, reference.objectTypeID);
+
+								let possiblyAnimated = reference.HasModel && (int32)modelSetAddress < 0;
+								nextModelProperty.ReadOnly = !possiblyAnimated;
+								keyframeProperty.ReadOnly = !possiblyAnimated;
+								nextKeyframeProperty.ReadOnly = !possiblyAnimated;
 							} else {
 								mainInspector.SetData(.Null, null);
 							}
@@ -1077,7 +1092,7 @@ namespace SpyroScope {
 					modelSets[object.objectTypeID].models[object.modelID].QueueInstance();
 				} else {
 					Emulator.Address modelSetAddress = ?;
-					Emulator.ReadFromRAM(Emulator.modelPointers[(int)Emulator.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
+					Emulator.modelPointers[(int)Emulator.rom].GetAtIndex(&modelSetAddress, object.objectTypeID);
 
 					if (modelSetAddress != 0 && (int32)modelSetAddress > 0) {
 						modelSets.Add(object.objectTypeID, new .(modelSetAddress));
