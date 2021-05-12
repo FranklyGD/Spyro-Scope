@@ -132,26 +132,26 @@ namespace SpyroScope {
 			viewButton3.text = "Lock";
 			viewButton4.text = "Map";
 
-			viewButton1.enabled = false;
+			viewButton1.Enabled = false;
 
 			viewButton1.OnActuated.Add(new () => {
-				viewButton1.enabled = false;
-				viewButton2.enabled = viewButton3.enabled = viewButton4.enabled = true;
+				viewButton1.Enabled = false;
+				viewButton2.Enabled = viewButton3.Enabled = viewButton4.Enabled = true;
 				ToggleView(.Game);
 			});
 			viewButton2.OnActuated.Add(new () => {
-				viewButton2.enabled = false;
-				viewButton1.enabled = viewButton3.enabled = viewButton4.enabled = true;
+				viewButton2.Enabled = false;
+				viewButton1.Enabled = viewButton3.Enabled = viewButton4.Enabled = true;
 				ToggleView(.Free);
 			});
 			viewButton3.OnActuated.Add(new () => {
-				viewButton3.enabled = false;
-				viewButton1.enabled = viewButton2.enabled = viewButton4.enabled = true;
+				viewButton3.Enabled = false;
+				viewButton1.Enabled = viewButton2.Enabled = viewButton4.Enabled = true;
 				ToggleView(.Lock);
 			});
 			viewButton4.OnActuated.Add(new () => {
-				viewButton4.enabled = false;
-				viewButton1.enabled = viewButton2.enabled = viewButton3.enabled = true;
+				viewButton4.Enabled = false;
+				viewButton1.Enabled = viewButton2.Enabled = viewButton3.Enabled = true;
 				ToggleView(.Map);
 			});
 
@@ -167,26 +167,26 @@ namespace SpyroScope {
 			renderButton2.text = "Far";
 			renderButton3.text = "Near";
 
-			renderButton1.enabled = false;
+			renderButton1.Enabled = false;
 
 			renderButton1.OnActuated.Add(new () => {
-				renderButton1.enabled = false;
-				renderButton2.enabled = renderButton3.enabled = cycleTerrainOverlayButton.enabled = true;
+				renderButton1.Enabled = false;
+				renderButton2.Enabled = renderButton3.Enabled = cycleTerrainOverlayButton.Enabled = true;
 				Terrain.renderMode = .Collision;
 				ViewerSelection.currentTriangleIndex = -1;
 				ViewerSelection.currentRegionIndex = -1;
 				faceMenu.visible = false;
 			});
 			renderButton2.OnActuated.Add(new () => {
-				renderButton2.enabled = cycleTerrainOverlayButton.enabled = false;
-				renderButton1.enabled = renderButton3.enabled = true;
+				renderButton2.Enabled = cycleTerrainOverlayButton.Enabled = false;
+				renderButton1.Enabled = renderButton3.Enabled = true;
 				Terrain.renderMode = .Far;
 				ViewerSelection.currentTriangleIndex = -1;
 				faceMenu.visible = false;
 			});
 			renderButton3.OnActuated.Add(new () => {
-				/*viewButton3.enabled =*/ cycleTerrainOverlayButton.enabled = false;
-				renderButton2.enabled = renderButton1.enabled = true;
+				/*viewButton3.Enabled =*/ cycleTerrainOverlayButton.Enabled = false;
+				renderButton2.Enabled = renderButton1.Enabled = true;
 				Terrain.renderMode = Terrain.renderMode == .NearLQ ? .NearHQ : .NearLQ;
 			});
 
@@ -229,7 +229,7 @@ namespace SpyroScope {
 			teleportButton.Offset = .(16, 180, 16 + (toggleList.Count + 3) * WindowApp.font.height, 32 + (toggleList.Count + 3) * WindowApp.font.height);
 			teleportButton.text = "(T)eleport";
 			teleportButton.OnActuated.Add(new => Teleport);
-			teleportButton.enabled = false;
+			teleportButton.Enabled = false;
 
 			GUIElement.PopParent();
 			
@@ -423,9 +423,9 @@ namespace SpyroScope {
 			GUIElement.SetActiveGUI(guiElements);
 
 			togglePauseButton.iconTexture = Emulator.active.Paused ? playTexture : pauseTexture;
-			stepButton.enabled = Emulator.active.Paused;
+			stepButton.Enabled = Emulator.active.Paused;
 
-			toggleList[4].button.value = teleportButton.enabled = Emulator.active.CameraMode;
+			toggleList[4].button.value = teleportButton.Enabled = Emulator.active.CameraMode;
 			if (Emulator.active.CameraMode) {
 				toggleList[4].button.iconTexture = toggleList[4].button.toggleIconTexture;
 			}
@@ -1378,11 +1378,11 @@ namespace SpyroScope {
 			if (Emulator.active.Paused) {
 				messageFeed.PushMessage("Paused Game Update");
 				togglePauseButton.iconTexture = playTexture;
-				stepButton.enabled = true;
+				stepButton.Enabled = true;
 			} else {
 				messageFeed.PushMessage("Resumed Game Update");
 				togglePauseButton.iconTexture = pauseTexture;
-				stepButton.enabled = false;
+				stepButton.Enabled = false;
 			}
 		}
 
@@ -1461,11 +1461,11 @@ namespace SpyroScope {
 			if (toggle) {
 				Emulator.active.KillCameraUpdate();
 				messageFeed.PushMessage("Free Camera");
-				teleportButton.enabled = true;
+				teleportButton.Enabled = true;
 			} else {
 				Emulator.active.RestoreCameraUpdate();
 				messageFeed.PushMessage("Game Camera");
-				teleportButton.enabled = false;
+				teleportButton.Enabled = false;
 			}
 		}
 

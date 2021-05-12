@@ -22,7 +22,7 @@ namespace SpyroScope {
 			input = new Input();
 			input.Anchor = .(0,1,0,0);
 			input.Offset = .(labelWidth,0,0,WindowApp.bitmapFont.height);
-			input.enabled = false;
+			input.Enabled = false;
 			input.preText = "0x";
 
 			area = new GUIElement();
@@ -82,8 +82,8 @@ namespace SpyroScope {
 			int dataOffset;
 
 			public bool ReadOnly {
-				get => !inputs[0].enabled;
-				set { for (let input in inputs) input.enabled = !value; }
+				get => !inputs[0].Enabled;
+				set { for (let input in inputs) input.Enabled = !value; }
 			}
 
 			public StringView preTextInput {

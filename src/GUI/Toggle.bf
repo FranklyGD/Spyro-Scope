@@ -5,7 +5,7 @@ namespace SpyroScope {
 		public Texture toggleIconTexture;
 
 		protected override void Unpressed() {
-			if (hoveredElement == this && enabled) {
+			if (Hovered && Enabled) {
 				SetValue(!value);
 			}
 

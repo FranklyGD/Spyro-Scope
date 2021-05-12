@@ -51,6 +51,9 @@ namespace SpyroScope {
 		public static Texture normalInputTexture ~ delete _; 
 		public static Texture activeInputTexture ~ delete _;
 
+		public bool Hovered { get => hoveredElement == this; }
+		public bool Pressed { get => pressedElement == this; }
+
 		public static void Init() {
 			arrow = SDL.CreateSystemCursor(.SDL_SYSTEM_CURSOR_ARROW);
 			Ibeam = SDL.CreateSystemCursor(.SDL_SYSTEM_CURSOR_IBEAM);
@@ -133,11 +136,11 @@ namespace SpyroScope {
 			pressedElement = hoveredElement;
 			pressedElement?.Pressed();
 
-			if (selectedElement != hoveredElement) {
+			if (selectedElement != hoveredElement && hoveredElement is GUIInteractable) {
 				selectedElement?.Unselected();
 				hoveredElement?.Selected();
+				selectedElement = hoveredElement;
 			}
-			selectedElement = hoveredElement;
 
 			return hoveredElement != null;
 		}
@@ -205,7 +208,7 @@ namespace SpyroScope {
 				return;
 			}
 
-			Renderer.Color debugColor = hoveredElement == this ? .(128,128,16) : .(16,16,16);
+			Renderer.Color debugColor = Hovered ? .(128,128,16) : .(16,16,16);
 
 			Renderer.DrawLine(
 				.(drawn.left, drawn.bottom, 0),

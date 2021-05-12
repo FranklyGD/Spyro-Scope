@@ -29,10 +29,10 @@ namespace SpyroScope {
 			stopReplayButton.Offset.Shift(16, 10);
 			stopReplayButton.text = "Stop";
 			stopReplayButton.OnActuated.Add(new () => {
-				stopReplayButton.enabled = false;
+				stopReplayButton.Enabled = false;
 				Recording.StopReplay();
 			});
-			stopReplayButton.enabled = false;
+			stopReplayButton.Enabled = false;
 
 			Button clearButton = new .();
 			
@@ -72,7 +72,7 @@ namespace SpyroScope {
 		}
 
 		protected override void Update() {
-			replayButton.enabled = !Recording.Active;
+			replayButton.Enabled = !Recording.Active;
 			replayButton.iconTexture = Recording.Playing ? pauseTexture : playTexture;
 		}
 
@@ -121,7 +121,7 @@ namespace SpyroScope {
 				Recording.PauseReplay();
 				Recording.ApplyFrame(Math.Clamp(Recording.CurrentFrame + subDragged / 3, 0, Recording.FrameCount - 1));
 
-				stopReplayButton.enabled = true;
+				stopReplayButton.Enabled = true;
 			}
 			subDragged %= 3;
 		}
@@ -143,7 +143,7 @@ namespace SpyroScope {
 				Recording.PauseReplay();
 			} else {
 				Recording.Replay();
-				stopReplayButton.enabled = true;
+				stopReplayButton.Enabled = true;
 			}
 			
 			replayButton.iconTexture = Recording.Playing ? pauseTexture : playTexture;

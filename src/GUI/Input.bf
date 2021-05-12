@@ -2,15 +2,12 @@ using SDL2;
 using System;
 
 namespace SpyroScope {
-	class Input : GUIElement {
+	class Input : GUIInteractable {
 		public static int cursor, selectBegin;
 		public static bool dragging, underlyingChanged;
 		
-		public Renderer.Color normalColor = .(255, 255, 255);
 		public Renderer.Color activeColor = .(255, 255, 128);
-		public Renderer.Color disabledColor = .(128, 128, 128);
 
-		public Texture normalTexture = normalInputTexture;
 		public Texture activeTexture = activeInputTexture;
 
 		String lastValidText = new .() ~ delete _;
@@ -19,26 +16,34 @@ namespace SpyroScope {
 		public StringView postText;
 		Vector2 textStart;
 		
-		public bool enabled = true;
 		public bool displayUnderlying = true;
 		public Event<delegate void(StringView text)> OnSubmit ~ _.Dispose();
 		public Event<delegate void(StringView text)> OnChanged ~ _.Dispose();
 		public delegate bool(String text) OnValidate ~ delete _;
 		public delegate void(String text, int delta) OnXcrement ~ delete _;
 
+		public this() : base() {
+			normalTexture = normalInputTexture;
+			pressedTexture = activeInputTexture;
+		}
+
 		public override void Draw() {
 			base.Draw();
 
-			Renderer.Color color = ?;
-			Texture texture = normalTexture;
-			if (!enabled) {
-				color = disabledColor;
-			} else if (selectedElement == this) {
-				color = activeColor;
-				texture = activeTexture;
+			Renderer.Color color;
+			Texture texture;
+
+			if (Selected) {
+				color = hoveredColor; texture = pressedTexture;
 			} else {
-				color = normalColor;
+				switch (state) {
+					case .Normal: color = normalColor; texture = normalTexture;
+					case .Hovered: color = hoveredColor; texture = normalTexture;
+					case .Pressed: color = pressedColor; texture = pressedTexture;
+					case .Disabled: color = disabledColor; texture = normalTexture;
+				}
 			}
+
 			DrawUtilities.SlicedRect(drawn.bottom, drawn.top, drawn.left, drawn.right, 0,1,0,1, 0.3f,0.7f,0.3f,0.7f, texture, color);
 
 			let vcenter = (drawn.top + drawn.bottom) / 2;
@@ -50,7 +55,7 @@ namespace SpyroScope {
 			Vector2 postTextStart;
 			var cursorPos = 0f;
 			if (text != null && !text.IsEmpty) {
-				if (selectedElement == this) {
+				if (Selected) {
 					cursorPos = WindowApp.fontSmall.CalculateWidth(.(text,0,cursor));
 
 					if (SelectionExists()) {
@@ -80,7 +85,7 @@ namespace SpyroScope {
 			postTextStart.y = textStart.y;
 			WindowApp.fontSmall.Print(postText, postTextStart, .(0,0,0,128));
 
-			if (selectedElement == this) {
+			if (Selected) {
 				cursorPos += textStart.x;
 				Renderer.DrawLine(.(cursorPos, vcenter - halfHeight, 0), .(cursorPos, vcenter + halfHeight, 0), .(0,0,0), .(0,0,0));
 
@@ -99,7 +104,7 @@ namespace SpyroScope {
 
 			switch (event.type) {
 				case .KeyDown:
-					if (enabled && event.key.keysym.sym == .BACKSPACE && text.Length > 0) {
+					if (Enabled && event.key.keysym.sym == .BACKSPACE && text.Length > 0) {
 						if (SelectionExists()) {
 							let left = GetLeft();
 							text.Remove(left, GetRight() - left);
@@ -120,7 +125,7 @@ namespace SpyroScope {
 							Copy();
 						}
 
-						if (enabled) {
+						if (Enabled) {
 							// Cut
 							if (event.key.keysym.sym == .X) {
 								if (SelectionExists()) {
@@ -212,7 +217,7 @@ namespace SpyroScope {
 				return true;
 
 				case .TextInput:
-					if (enabled) {
+					if (Enabled) {
 						if (SelectionExists()) {
 							let left = GetLeft();
 							text.Remove(left, GetRight() - left);
@@ -236,19 +241,27 @@ namespace SpyroScope {
 		}
 
 		protected override void MouseEnter() {
+			base.MouseEnter();
+
 			SDL.SetCursor(Ibeam);
 		}
 
 		protected override void MouseExit() {
+			base.MouseExit();
+
 			SDL.SetCursor(arrow);
 		}
 
 		protected override void Pressed() {
+			base.Pressed();
+
 			selectBegin = cursor = WindowApp.fontSmall.NearestTextIndex(text, WindowApp.mousePosition.x - (drawn.left + 4));
 			dragging = true;
 		}
 
 		protected override void Unpressed() {
+			base.Unpressed();
+
 			dragging = false;
 		}
 

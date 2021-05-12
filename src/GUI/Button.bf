@@ -1,32 +1,29 @@
 using System;
 namespace SpyroScope {
-	class Button : GUIElement {
-		public Renderer.Color normalColor = .(255, 255, 255);
-		public Renderer.Color hoveredColor = .(255, 255, 128);
-		public Renderer.Color pressedColor = .(255, 255, 255);
-		public Renderer.Color disabledColor = .(128, 128, 128);
-
-		public Texture normalTexture = normalButtonTexture;
-		public Texture pressedTexture = pressedButtonTexture;
-
+	class Button : GUIInteractable {
 		public Texture iconTexture;
 		public String text ~ if (_ != null && _.IsDynAlloc) delete _;
 
-		public bool enabled = true;
 		public Event<delegate void()> OnActuated ~ _.Dispose();
 
-		Renderer.Color color = normalColor;
-		Texture texture = normalTexture;
+		public this() : base() {
+			normalTexture = normalButtonTexture;
+			pressedTexture = pressedButtonTexture;
+		}
 
 		public override void Draw() {
 			base.Draw();
 
-			Renderer.Color color = this.color;
-			Texture texture = this.texture;
-			if (!enabled) {
-				color = disabledColor;
-				texture = normalTexture;
+			Renderer.Color color;
+			Texture texture;
+
+			switch (state) {
+				case .Normal: color = normalColor; texture = normalTexture;
+				case .Hovered: color = hoveredColor; texture = normalTexture;
+				case .Pressed: color = pressedColor; texture = pressedTexture;
+				case .Disabled: color = disabledColor; texture = normalTexture;
 			}
+
 			DrawUtilities.SlicedRect(drawn.bottom, drawn.top, drawn.left, drawn.right, 0,1,0,1, 0.3f,0.7f,0.3f,0.7f, texture, color);
 
 			if (iconTexture != null) {
@@ -47,40 +44,11 @@ namespace SpyroScope {
 			}
 		}
 
-		protected override void Pressed() {
-			color = pressedColor;
-			texture = pressedTexture;
-		}
-
 		protected override void Unpressed() {
-			texture = normalTexture;
-			if (hoveredElement == this) {
-				color = hoveredColor;
-			} else {
-				color = normalColor;
-			}
+			base.Unpressed();
 
-			if (hoveredElement == this && enabled) {
+			if (Hovered && Enabled) {
 				OnActuated();
-			}
-		}
-
-		protected override void MouseEnter() {
-			if (pressedElement == this) {
-				color = pressedColor;
-				texture = pressedTexture;
-			} else {
-				color = hoveredColor;
-				texture = normalTexture;
-			}
-		}
-
-		protected override void MouseExit() {
-			if (pressedElement == this) {
-				color = hoveredColor;
-				texture = normalTexture;
-			} else {
-				color = normalColor;
 			}
 		}
 	}
