@@ -90,7 +90,7 @@ namespace SpyroScope {
 			}
 
 			for (let element in activeGUI) {
-				element.Update();
+				element.UpdateInternal();
 			}
 		}
 
@@ -237,6 +237,13 @@ namespace SpyroScope {
 				debugColor,
 				debugColor
 			);
+		}
+
+		void UpdateInternal() {
+			Update();
+			for (let child in children) {
+				child.UpdateInternal();
+			}
 		}
 
 		protected virtual void Update() {}
