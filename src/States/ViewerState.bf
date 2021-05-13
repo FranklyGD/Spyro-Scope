@@ -1187,6 +1187,8 @@ namespace SpyroScope {
 		
 		void OnSceneChanging() {
 			Selection.Reset();
+			faceMenu.visible = false;
+			sideInspectorVisible = false;
 		}
 
 		void OnSceneChanged() {
