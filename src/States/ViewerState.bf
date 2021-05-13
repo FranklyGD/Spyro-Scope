@@ -799,28 +799,15 @@ namespace SpyroScope {
 				}
 			}
 
-			// Side Inspector
-			/*if (ViewerSelection.currentObjIndex > -1) {
-				WindowApp.bitmapFont.Print("Address", .(sideInspector.drawn.left + 24, 3, 0), .(255,255,255));
-
-				let object = Moby.allocated[ViewerSelection.currentObjIndex];
-				int line = 0;
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("State {} ({})", object.updateState, object.IsActive ? "Active" : "Inactive"), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				line++;
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Pos {}", object.position), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Rot {},{},{}", object.eulerRotation.x,object.eulerRotation.y,object.eulerRotation.z),
-					.(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Model {}:{}", object.objectTypeID, object.modelID), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("LOD Distance {} ({})", object.lodDistance, object.lodDistance * 1000), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Color {},{},{},{}", object.color.r, object.color.g, object.color.b, object.color.a), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				line++;
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Type {}", object.objectTypeID), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Sub-Type? {}", object.objectSubTypeID), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Variant? {}", object.variantID), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Data [{}]", object.dataPointer), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-				line++;
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Gem-Value {}", (int8)object.heldGemValue), .(sideInspector.drawn.left + 8, 32 + 20 * line++, 0), .(255,255,255));
-			}*/
+			// Draw view axis at the top right empty area
+			var axisBasis = Matrix3.Scale(20,-20,0.01f) * Camera.basis.Transpose();
+			let hudAxisOrigin = Vector3(sideInspector.drawn.left - 30, 30, 0);
+			Renderer.DrawLine(hudAxisOrigin, hudAxisOrigin + axisBasis.x, .(255,255,255), axisBasis.x.z > 0 ? .(255,0,0) : .(128,0,0));
+			Renderer.DrawLine(hudAxisOrigin, hudAxisOrigin + axisBasis.y, .(255,255,255), axisBasis.y.z > 0 ? .(0,255,0) : .(0,128,0));
+			Renderer.DrawLine(hudAxisOrigin, hudAxisOrigin + axisBasis.z, .(255,255,255), axisBasis.z.z > 0 ? .(0,0,255) : .(0,0,128));
+			WindowApp.fontSmall.Print("X", .(sideInspector.drawn.left - 30 + axisBasis.x.x, 30 + axisBasis.x.y), axisBasis.x.z > 0 ? .(255,64,64) : .(128,64,64));
+			WindowApp.fontSmall.Print("Y", .(sideInspector.drawn.left - 30 + axisBasis.y.x, 30 + axisBasis.y.y), axisBasis.y.z > 0 ? .(64,255,64) : .(64,128,64));
+			WindowApp.fontSmall.Print("Z", .(sideInspector.drawn.left - 30 + axisBasis.z.x, 30 + axisBasis.z.y), axisBasis.z.z > 0 ? .(64,64,255) : .(64,64,128));
 
 			if (Emulator.loadingStatus == .Loading) {
 				DrawLoadingOverlay();
