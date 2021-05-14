@@ -136,9 +136,11 @@ namespace SpyroScope {
 			pressedElement = hoveredElement;
 			pressedElement?.Pressed();
 
-			if (selectedElement != hoveredElement && hoveredElement is GUIInteractable) {
+			if (selectedElement != hoveredElement) {
 				selectedElement?.Unselected();
-				hoveredElement?.Selected();
+				if (hoveredElement is GUIInteractable) {
+					hoveredElement?.Selected();
+				}
 				selectedElement = hoveredElement;
 			}
 
