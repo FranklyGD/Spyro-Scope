@@ -263,8 +263,12 @@ namespace SpyroScope {
 				DeleteAndNullify!(animationGroups);
 			}
 
-			uint32 count = ?;
-			Emulator.active.ReadFromRAM(Emulator.collisionDeformDataPointers[(int)Emulator.active.rom] - 4, &count, 4);
+
+			uint32 count = 0;
+			if (Emulator.active.loadingStatus == .Idle) {
+				Emulator.active.ReadFromRAM(Emulator.collisionDeformDataPointers[(int)Emulator.active.rom] - 4, &count, 4);
+			}
+
 			delete animationGroups;
 			animationGroups = new .[count];
 

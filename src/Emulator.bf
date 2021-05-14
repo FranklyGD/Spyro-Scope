@@ -119,6 +119,8 @@ namespace SpyroScope {
 		public enum LoadingStatus {
 			Idle,
 			Loading,
+			CutsceneDone,
+			CutsceneIdle,
 			Done
 		}
 		public LoadingStatus loadingStatus;
@@ -557,13 +559,25 @@ namespace SpyroScope {
 				}
 			}
 
-			if (loadingStatus == .Loading && loadState == -1) {
-				loadingStatus = .Done;
+			if (loadingStatus == .Loading) {
+				if (loadState == -1) { // Loaded everything the game needs for a level
+					loadingStatus = .Done;
+	
+					for (let i < 8) {
+						changedPointers[i] = false;
+					}
+					VRAM.upToDate = false;
+				} else if (
+					installment == .SpyroTheDragon && (gameState == 13 || gameState == 14) ||
+					installment != .SpyroTheDragon && (gameState == 6 || gameState == 11)
+				) {
+					loadingStatus = .CutsceneDone;
 
-				for (let i < 8) {
-					changedPointers[i] = false;
+					for (let i < 8) {
+						changedPointers[i] = false;
+					}
+					VRAM.upToDate = false;
 				}
-				VRAM.upToDate = false;
 			}
 		}
 
@@ -715,11 +729,11 @@ namespace SpyroScope {
 			//ReadFromRAM((.)0x8006a28c, &collidingTriangle, 4);
 
 			CheckSources();
-			if (loadingStatus == .Done) {
+			if (loadingStatus == .Done || loadingStatus == .CutsceneDone) {
 				Thread.Sleep(500); // This is mainly needed for when emulators load snapshots/savestates
 				// as there is a big delay when loading the large data at once
-
-				loadingStatus = .Idle;
+				
+				loadingStatus = loadingStatus == .CutsceneDone ? .CutsceneIdle : .Idle;
 				lastSceneChange = .Now;
 			}
 

@@ -125,7 +125,7 @@ namespace SpyroScope {
 						input.OnSubmit.Add(new (text) => {
 							if (Float.Parse(text) case .Ok(var val)) {
 								var castedVal = (int)val;
-								ModifyData((.)&castedVal);
+								ModifyData((.)&castedVal, i);
 							}
 						});
 
@@ -192,13 +192,13 @@ namespace SpyroScope {
 				}
 			}
 
-			void ModifyData(T* val) {
+			void ModifyData(T* val, int index = 0) {
 				// Write to emulator
-				Emulator.active.WriteToRAM(inspector.dataAddress + dataOffset, val, sizeof(T));
+				Emulator.active.WriteToRAM(inspector.dataAddress + dataOffset + index * sizeof(T), val, sizeof(T));
 
 				// Write to cached data
 				int8* data = (.)inspector.dataReference;
-				*(T*)(data + dataOffset) = *val;
+				*(T*)(data + dataOffset + index * sizeof(T)) = *val;
 			}
 		}
 	}

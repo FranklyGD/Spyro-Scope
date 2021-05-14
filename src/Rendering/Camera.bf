@@ -13,8 +13,13 @@ namespace SpyroScope {
 		public static Matrix4 projection {
 			get {
 				let aspect = (float)WindowApp.width / WindowApp.height;
-				return orthographic ? .Orthographic(size * aspect, size, near, far):
-				.Perspective(fov * Math.PI_f / 180, aspect, near, far);
+				return orthographic ?
+				aspect > 1 ?
+					.Orthographic(size * aspect, size, near, far):
+					.Orthographic(size, size / aspect, near, far):
+				aspect > 1 ?
+					.Perspective(fov * Math.PI_f / 180, aspect, near, far):
+					.PerspectiveAlt(fov * Math.PI_f / 180, aspect, near, far);
 			}
 		};
 
@@ -54,7 +59,9 @@ namespace SpyroScope {
 				let tangent = Math.Tan(fov * Math.PI_f / 360);
 	
 				let aspect = (float)WindowApp.width / WindowApp.height;
-				return basis * Vector3(-x * tangent * aspect, -y * tangent, -1);
+				return aspect > 1 ?
+					basis * Vector3(-x * tangent * aspect, -y * tangent, -1):
+					basis * Vector3(-x * tangent, -y * tangent / aspect, -1);
 			}
 		}
 	}

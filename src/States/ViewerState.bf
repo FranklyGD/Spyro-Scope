@@ -70,6 +70,9 @@ namespace SpyroScope {
 		float sideInspectorInterp;
 
 		Inspector mainInspector;
+		Inspector.Property<uint8> nextModelProperty;
+		Inspector.Property<uint8> keyframeProperty;
+		Inspector.Property<uint8> nextKeyframeProperty;
 
 		(Toggle button, String label)[9] toggleList = .(
 			(null, "Wirefra(m)e"),
@@ -257,7 +260,11 @@ namespace SpyroScope {
 			mainInspector.AddProperty<Emulator.Address>("Data", 0x0).ReadOnly = true;
 			mainInspector.AddProperty<int8>("Held Value", 0x50);
 
-			mainInspector.AddProperty<uint16>("Model #ID", 0x3c);
+			mainInspector.AddProperty<uint8>("Model/Anim", 0x3c);
+			nextModelProperty = mainInspector.AddProperty<uint8>("Nxt Mdl/Anim", 0x3d);
+			keyframeProperty = mainInspector.AddProperty<uint8>("Keyframe", 0x3e);
+			nextKeyframeProperty = mainInspector.AddProperty<uint8>("Nxt Keyframe", 0x3f);
+
 			mainInspector.AddProperty<uint8>("Color", 0x54, "RGBA");
 			mainInspector.AddProperty<uint8>("LOD Distance", 0x4e).postTextInput = " x 1000";
 
@@ -491,10 +498,6 @@ namespace SpyroScope {
 			sideInspectorInterp = Math.MoveTo(sideInspectorInterp, sideInspectorVisible ? 1 : 0, 0.1f);
 			sideInspector.Offset = .(.(-300 * sideInspectorInterp,0), .(300,0));
 
-			if (Emulator.active.loadingStatus == .Loading || Emulator.active.gameState > 0) {
-				return;
-			}
-
 			if (faceMenu.visible) {
 				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 				int faceIndex = ?;
@@ -511,6 +514,10 @@ namespace SpyroScope {
 				depthOffsetInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.depthOffset));
 				flipNormalToggle.SetValue(face.flipped);
 				doubleSidedToggle.SetValue(face.renderInfo.doubleSided);
+			}
+
+			if (Emulator.active.loadingStatus == .Loading || Emulator.active.gameState > 0) {
+				return;
 			}
 
 			Terrain.Update();
@@ -862,6 +869,16 @@ namespace SpyroScope {
 				}
 			}
 
+			// Draw view axis at the top right empty area
+			var axisBasis = Matrix3.Scale(20,-20,0.01f) * Camera.basis.Transpose();
+			let hudAxisOrigin = Vector3(sideInspector.drawn.left - 30, 30, 0);
+			Renderer.DrawLine(hudAxisOrigin, hudAxisOrigin + axisBasis.x, .(255,255,255), axisBasis.x.z > 0 ? .(255,0,0) : .(128,0,0));
+			Renderer.DrawLine(hudAxisOrigin, hudAxisOrigin + axisBasis.y, .(255,255,255), axisBasis.y.z > 0 ? .(0,255,0) : .(0,128,0));
+			Renderer.DrawLine(hudAxisOrigin, hudAxisOrigin + axisBasis.z, .(255,255,255), axisBasis.z.z > 0 ? .(0,0,255) : .(0,0,128));
+			WindowApp.fontSmall.Print("X", .(sideInspector.drawn.left - 30 + axisBasis.x.x, 30 + axisBasis.x.y), axisBasis.x.z > 0 ? .(255,64,64) : .(128,64,64));
+			WindowApp.fontSmall.Print("Y", .(sideInspector.drawn.left - 30 + axisBasis.y.x, 30 + axisBasis.y.y), axisBasis.y.z > 0 ? .(64,255,64) : .(64,128,64));
+			WindowApp.fontSmall.Print("Z", .(sideInspector.drawn.left - 30 + axisBasis.z.x, 30 + axisBasis.z.y), axisBasis.z.z > 0 ? .(64,64,255) : .(64,64,128));
+
 			if (Emulator.active.loadingStatus == .Loading) {
 				DrawLoadingOverlay();
 			}
@@ -914,6 +931,14 @@ namespace SpyroScope {
 								let address = Moby.GetAddress(ViewerSelection.currentObjIndex);
 								let reference = &Moby.allocated[ViewerSelection.currentObjIndex];
 								mainInspector.SetData(address, reference);
+
+								Emulator.Address modelSetAddress = ?;
+								Emulator.modelPointers[(int)Emulator.active.rom].GetAtIndex(&modelSetAddress, reference.objectTypeID);
+
+								let possiblyAnimated = reference.HasModel && (int32)modelSetAddress < 0;
+								nextModelProperty.ReadOnly = !possiblyAnimated;
+								keyframeProperty.ReadOnly = !possiblyAnimated;
+								nextKeyframeProperty.ReadOnly = !possiblyAnimated;
 							} else {
 								mainInspector.SetData(.Null, null);
 							}
@@ -953,7 +978,7 @@ namespace SpyroScope {
 							}
 						}
 					} else {
-						if (Emulator.active.loadingStatus == .Idle) {
+						if (Emulator.active.loadingStatus == .Idle || Emulator.active.loadingStatus == .CutsceneIdle) {
 							cornerMenuVisible = !Translator.dragged && (cornerMenuVisible && WindowApp.mousePosition.x < 200 || WindowApp.mousePosition.x < 10) && WindowApp.mousePosition.y < 260;
 							sideInspectorVisible = !Translator.dragged && ViewerSelection.currentObjIndex > -1 && (pinInspectorButton.value || (sideInspectorVisible && WindowApp.mousePosition.x > WindowApp.width - 300 || WindowApp.mousePosition.x > WindowApp.width - 10));
 						} else {
@@ -962,7 +987,7 @@ namespace SpyroScope {
 
 						if (showManipulator && Translator.MouseMove(WindowApp.mousePosition)) {
 							Selection.Clear();
-						} else if (Emulator.active.loadingStatus != .Loading && Emulator.active.gameState == 0) {
+						} else if (Emulator.active.loadingStatus == .Idle && Emulator.active.gameState == 0 || Emulator.active.loadingStatus == .CutsceneIdle) {
 							Selection.Test();
 						}
 					}
@@ -1101,7 +1126,7 @@ namespace SpyroScope {
 					modelSets[object.objectTypeID].QueueInstance(object.modelID, Emulator.active.shinyColors[object.color.r % 10][1]);
 				} else {
 					Emulator.Address modelSetAddress = ?;
-					Emulator.active.ReadFromRAM(Emulator.modelPointers[(int)Emulator.active.rom] + 4 * object.objectTypeID, &modelSetAddress, 4);
+					Emulator.modelPointers[(int)Emulator.active.rom].GetAtIndex(&modelSetAddress, object.objectTypeID);
 
 					if (modelSetAddress != 0) {
 						modelSets.Add(object.objectTypeID, new .(modelSetAddress));
@@ -1238,6 +1263,9 @@ namespace SpyroScope {
 			modelSets.Clear();
 
 			lastUpdatedSceneChanging = .Now;
+
+			faceMenu.visible = false;
+			sideInspectorVisible = false;
 		}
 
 		void OnSceneChanged() {
@@ -1420,24 +1448,27 @@ namespace SpyroScope {
 
 				WindowApp.viewerProjection = Camera.projection;
 			} else if (viewMode != .Map && mode == .Map)  {
-				let upperBound = Terrain.collision.upperBound;
-				let lowerBound = Terrain.collision.lowerBound;
-
+				if (Terrain.collision != null) {
+					let upperBound = Terrain.collision.upperBound;
+					let lowerBound = Terrain.collision.lowerBound;
+					
+					Camera.far = upperBound.z * 1.1f;
+	
+					Camera.position.x = (upperBound.x + lowerBound.x) / 2;
+					Camera.position.y = (upperBound.y + lowerBound.y) / 2;
+					Camera.position.z = upperBound.z * 1.1f;
+	
+					let mapSize = upperBound - lowerBound;
+					let aspect = (float)WindowApp.width / WindowApp.height;
+					if (mapSize.x / mapSize.y > aspect) {
+						Camera.size = mapSize.x / aspect;
+					} else {
+						Camera.size = mapSize.y;
+					}
+				}
+				
 				Camera.orthographic = true;
 				Camera.near = 0;
-				Camera.far = upperBound.z * 1.1f;
-
-				Camera.position.x = (upperBound.x + lowerBound.x) / 2;
-				Camera.position.y = (upperBound.y + lowerBound.y) / 2;
-				Camera.position.z = upperBound.z * 1.1f;
-
-				let mapSize = upperBound - lowerBound;
-				let aspect = (float)WindowApp.width / WindowApp.height;
-				if (mapSize.x / mapSize.y > aspect) {
-					Camera.size = mapSize.x / aspect;
-				} else {
-					Camera.size = mapSize.y;
-				}
 
 				viewEulerRotation = .(0.5f,0,0.5f);
 				WindowApp.viewerProjection = Camera.projection;

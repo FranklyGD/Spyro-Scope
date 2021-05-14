@@ -143,7 +143,7 @@ namespace SpyroScope {
 			GL.glTexSubImage2D(GL.GL_TEXTURE_2D,
 				0, x * pWidth, y,
 				width * pWidth, height,
-				GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &pixels[0]
+				GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, pixels.CArray()
 			);
 
 			for (let localx < width * pWidth) {
