@@ -223,10 +223,12 @@ namespace SpyroScope {
 						let vertexIndex = animationGroup.start * 3 + i;
 						mesh.colors[vertexIndex] = transitionColor;
 					}
+					
+					mesh.SetDirty(.Color);
 				}
 			}
 			
-			mesh.SetDirty();
+			mesh.SetDirty(.Vertex);
 			mesh.Update();
 		}
 
@@ -377,8 +379,7 @@ namespace SpyroScope {
 			}
 
 			// Send changed color data
-			mesh.SetDirty();
-			mesh.Update();
+			mesh.SetDirty(.Color);
 		}
 
 		void ClearColor() {

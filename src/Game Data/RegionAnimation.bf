@@ -166,7 +166,7 @@ namespace SpyroScope {
 				mesh.vertices[animatedTriangles[i / 3] + (i % 3)] = fromVertex + (toVertex - fromVertex) * interpolation;
 			}
 
-			mesh.SetDirty();
+			mesh.SetDirty(.Vertex);
 		}
 
 		public void UpdateSubdivided(TerrainRegion region) {
@@ -238,7 +238,7 @@ namespace SpyroScope {
 				}
 			}
 
-			region.nearMeshSubdivided.SetDirty();
+			region.nearMeshSubdivided.SetDirty(.Vertex);
 		}
 
 		public KeyframeData GetKeyframeData(uint8 keyframeIndex) {

@@ -9,7 +9,14 @@ namespace SpyroScope {
 
 		public uint32[] indices ~ delete _;
 
-		bool dirty = false;
+		public enum UpdateFlags {
+			Vertex = 	1 << 0,
+			Color = 	1 << 1,
+			UV = 		1 << 2,
+			Normal = 	1 << 3,
+			Element = 	1 << 4,
+		}
+		UpdateFlags dirty = 0;
 
 		uint16 instanceCount;
 		//Matrix4[] instanceMatrices = new .[128] ~ delete _;
@@ -211,10 +218,6 @@ namespace SpyroScope {
 		}
 
 		public void Update() {
-			if (!dirty) {
-				return;
-			}
-
 			IsValid =
 				vertices.Count > 3 &&
 				vertices.Count == normals.Count &&
@@ -228,33 +231,43 @@ namespace SpyroScope {
 			let vertexCount = vertices.Count;
 			GL.glBindVertexArray(vertexArrayObject);
 
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vertexBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector3), null, GL.GL_STATIC_DRAW);
-			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector3), &vertices[0]);
-
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, normalBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector3), null, GL.GL_STATIC_DRAW); 
-			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector3), &normals[0]);
-
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, colorBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Renderer.Color4), null, GL.GL_STATIC_DRAW);
-			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Renderer.Color4), &colors[0]);
+			if (dirty.HasFlag(.Vertex)) {
+				GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vertexBufferObject);
+				GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector3), null, GL.GL_STATIC_DRAW);
+				GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector3), &vertices[0]);
+			}
 			
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, uvBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(float[2]), &uvs[0], GL.GL_STATIC_DRAW); 
-			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(float[2]), &uvs[0]);
+			if (dirty.HasFlag(.Normal)) {
+				GL.glBindBuffer(GL.GL_ARRAY_BUFFER, normalBufferObject);
+				GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector3), null, GL.GL_STATIC_DRAW); 
+				GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector3), &normals[0]);
+			}
 
-			GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
-			GL.glBufferData(GL.GL_ELEMENT_ARRAY_BUFFER, indices.Count * sizeof(uint32), &indices[0], GL.GL_STATIC_DRAW); 
-			GL.glBufferSubData(GL.GL_ELEMENT_ARRAY_BUFFER, 0, indices.Count * sizeof(uint32), &indices[0]);
+			if (dirty.HasFlag(.Color)) {
+				GL.glBindBuffer(GL.GL_ARRAY_BUFFER, colorBufferObject);
+				GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Renderer.Color4), null, GL.GL_STATIC_DRAW);
+				GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Renderer.Color4), &colors[0]);
+			}
+
+			if (dirty.HasFlag(.UV)) {
+				GL.glBindBuffer(GL.GL_ARRAY_BUFFER, uvBufferObject);
+				GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(float[2]), &uvs[0], GL.GL_STATIC_DRAW); 
+				GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(float[2]), &uvs[0]);
+			}
+
+			if (dirty.HasFlag(.Element)) {
+				GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
+				GL.glBufferData(GL.GL_ELEMENT_ARRAY_BUFFER, indices.Count * sizeof(uint32), &indices[0], GL.GL_STATIC_DRAW); 
+				GL.glBufferSubData(GL.GL_ELEMENT_ARRAY_BUFFER, 0, indices.Count * sizeof(uint32), &indices[0]);
+			}
 
 			GL.glBindVertexArray(0);
 
-			dirty = false;
+			dirty = 0;
 		}
 
-		public void SetDirty() {
-			dirty = true;
+		public void SetDirty(UpdateFlags flags = (.)~0) {
+			dirty |= flags;
 		}
 	}
 }

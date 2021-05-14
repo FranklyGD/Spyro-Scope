@@ -871,8 +871,8 @@ namespace SpyroScope {
 					}
 				}
 				
-				regionMesh.SetDirty();
-				regionMeshSubdivided.SetDirty();
+				regionMesh.SetDirty(.UV);
+				regionMeshSubdivided.SetDirty(.UV);
 			}
 		}
 
