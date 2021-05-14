@@ -51,6 +51,17 @@ namespace SpyroScope {
 			);
 		}
 
+		public static Self PerspectiveAlt(float FoV, float aspect, float near, float far) {
+			let tanFoV2 = Math.Tan(FoV / 2);
+			let space = far - near;
+			return .(
+				.(1f / (tanFoV2),0,0,0),
+				.(0,aspect / tanFoV2,0,0),
+				.(0,0,-(far) / space,-1),
+				.(0,0,-(far * near) / space,0)
+			);
+		}
+
 		public static Self Orthographic(float width, float height, float near, float far) {
 			let space = far - near;
 			return .(
