@@ -175,12 +175,7 @@ namespace SpyroScope {
 		}
 
 		public this() {
-			parent = parentStack.Count > 0 ? parentStack[parentStack.Count - 1] : null;
-			if (parent != null) {
-				parent.children.Add(this);
-			} else {
-				activeGUI.Add(this);
-			}
+			Parent(parentStack.Count > 0 ? parentStack[parentStack.Count - 1] : null);
 		}
 
 		public ~this() {
@@ -203,7 +198,9 @@ namespace SpyroScope {
 
 		public virtual void Draw() {
 			for (let child in children) {
-				child.Draw();
+				if (child.visible) {
+					child.Draw();
+				}
 			}
 
 			if (!debug) {
@@ -301,6 +298,28 @@ namespace SpyroScope {
 				return parent.GetVisibility() && visible;
 			}
 			return visible;
+		}
+
+		public void Parent(GUIElement parent) {
+			if (this.parent != null) {
+				this.parent.children.Remove(this);
+			} else {
+				activeGUI.Remove(this);
+			}
+
+			if (parent != null) {
+				parent.children.Add(this);
+			} else {
+				activeGUI.Add(this);
+			}
+			
+			this.parent = parent;
+		}
+
+		public void MoveToTop() {
+			List<GUIElement> list = parent != null ? parent.children : activeGUI;
+			list.Remove(this);
+			list.Add(this);
 		}
 	}
 }

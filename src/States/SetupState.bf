@@ -119,7 +119,7 @@ namespace SpyroScope {
 			}
 
 			for (let element in guiElements) {
-				if (element.GetVisibility()) {
+				if (element.visible) {
 					element.Draw();
 				}
 			}

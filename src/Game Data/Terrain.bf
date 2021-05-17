@@ -22,7 +22,43 @@ namespace SpyroScope {
 			NearHQ
 		}
 		public static RenderMode renderMode = .Collision;
-		public static bool wireframe;
+		
+		public static bool solid = true;
+		public static bool wireframe = false;
+		public static bool textured = true;
+
+		static bool useFade = false;
+		public static bool UsingFade {
+			get => useFade;
+			set {
+				if (colored) {
+					for (let region in regions) {
+						region.ApplyNearColor(value);
+					}
+				}
+
+				useFade = value;
+			}
+		}
+
+		static bool colored = true;
+		public static bool Colored {
+			get => colored;
+			set {
+				if (value) {
+					for (let region in regions) {
+						region.ApplyNearColor(useFade);
+					}
+				} else {
+					for (let region in regions) {
+						region.ClearNearColor();
+					}
+				}
+
+				colored = value;
+			}
+		}
+
 		public static bool decoded;
 
 		public static void Load() {
@@ -317,49 +353,50 @@ namespace SpyroScope {
 			Renderer.SetTint(.(255,255,255));
 			Renderer.BeginSolid();
 
-			if (wireframe) {
-				Renderer.BeginWireframe();
-			}
-
 			if (renderMode == .Collision && collision != null) {
 				collision.Draw(wireframe);
 			} else if (regions != null) {
 				Renderer.BeginRetroShading();
+				Renderer.halfWhiteTexture.Bind();
 
 				if (renderMode == .Far) {
-					Renderer.halfWhiteTexture.Bind();
-
-					for (let visualMesh in regions) {
-						visualMesh.DrawFar();
-					}
-				} else {
-					VRAM.decoded?.Bind();
-
-					if (renderMode == .NearLQ) {
+					if (solid) {
 						for (let visualMesh in regions) {
-							visualMesh.DrawNear();
-						}
-					} else {
-						for (let visualMesh in regions) {
-							visualMesh.DrawNearSubdivided();
+							visualMesh.DrawFar();
 						}
 					}
-						
-					GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
-					GL.glDepthMask(GL.GL_FALSE);  
+
+					if (wireframe) {
+						if (solid) {
+							Renderer.SetTint(.(192,192,192));
+						}
+
+						Renderer.BeginWireframe();
+						for (let visualMesh in regions) {
+							visualMesh.DrawFar();
+						}
+					}
 					
-					if (renderMode == .NearLQ) {
-						for (let visualMesh in regions) {
-							visualMesh.DrawNearTransparent();
-						}
-					} else {
-						for (let visualMesh in regions) {
-							visualMesh.DrawNearTransparentSubdivided();
-						}
+					Renderer.SetTint(.(255,255,255));
+				} else {
+					if (textured && !useFade && VRAM.decoded != null) {
+						VRAM.decoded.Bind();
 					}
 
-					GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-					GL.glDepthMask(GL.GL_TRUE);
+					if (solid) {
+						DrawNearLQ();
+					}
+
+					if (wireframe) {
+						if (solid) {
+							Renderer.SetTint(.(192,192,192));
+						}
+
+						Renderer.BeginWireframe();
+						DrawNearLQ();
+					}
+					
+					Renderer.SetTint(.(255,255,255));
 				}
 				
 				Renderer.BeginDefaultShading();
@@ -368,6 +405,34 @@ namespace SpyroScope {
 				
 			// Restore polygon mode to default
 			Renderer.BeginSolid();
+		}
+
+		static void DrawNearLQ() {
+			if (renderMode == .NearLQ) {
+				for (let visualMesh in regions) {
+					visualMesh.DrawNear();
+				}
+			} else {
+				for (let visualMesh in regions) {
+					visualMesh.DrawNearSubdivided();
+				}
+			}
+				
+			GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
+			GL.glDepthMask(GL.GL_FALSE);  
+
+			if (renderMode == .NearLQ) {
+				for (let visualMesh in regions) {
+					visualMesh.DrawNearTransparent();
+				}
+			} else {
+				for (let visualMesh in regions) {
+					visualMesh.DrawNearTransparentSubdivided();
+				}
+			}
+
+			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+			GL.glDepthMask(GL.GL_TRUE);
 		}
 
 		public static void ReloadAnimations() {

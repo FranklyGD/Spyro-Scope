@@ -974,5 +974,137 @@ namespace SpyroScope {
 			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
 			nearMeshTransparentSubdivided.Draw();
 		}
+
+		public void ClearNearColor() {
+			for (let i < nearFaces.Count) {
+				for (var color in ref nearMesh.colors) {
+					color = .(128,128,128);
+				}
+				for (var color in ref nearMeshSubdivided.colors) {
+					color = .(128,128,128);
+				}
+				for (var color in ref nearMeshTransparent.colors) {
+					color = .(128,128,128);
+				}
+				for (var color in ref nearMeshTransparentSubdivided.colors) {
+					color = .(128,128,128);
+				}
+
+			}
+
+			nearMesh.SetDirty(.Color);
+			nearMeshSubdivided.SetDirty(.Color);
+			nearMeshTransparent.SetDirty(.Color);
+			nearMeshTransparentSubdivided.SetDirty(.Color);
+		}
+
+		public void ApplyNearColor(bool useFadeColor) {
+			Mesh activeMesh, activeMeshSub;
+
+			var nearColorHalf = nearColors.Ptr;
+			if (useFadeColor) {
+				nearColorHalf += nearColors.Count / 2;
+			}
+
+			var index = 0;
+			for (let i < nearFaces.Count) {
+				var regionFace = nearFaces[i];
+				var colorIndices = regionFace.colorsIndices;
+				var textureIndex = regionFace.renderInfo.textureIndex;
+				
+				let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
+				TextureQuad* quad = ?;
+				TextureQuad* quadSet = &Terrain.textures[textureIndex * quadCount];
+				quad = quadSet = Emulator.active.installment == .SpyroTheDragon ? quadSet : quadSet + 1;
+
+				if (quad.GetTransparency() || regionFace.renderInfo.transparent) {
+					activeMesh = nearMeshTransparent;
+					activeMeshSub = nearMeshTransparentSubdivided;
+				} else {
+					activeMesh = nearMesh;
+					activeMeshSub = nearMeshSubdivided;
+				}
+
+				if (regionFace.isTriangle) {
+					var colors = activeMesh.colors.Ptr + index;
+
+					colors[0] = (Renderer.Color)nearColorHalf[colorIndices[3]];
+					colors[1] = (Renderer.Color)nearColorHalf[colorIndices[2]];
+					colors[2] = (Renderer.Color)nearColorHalf[colorIndices[1]];
+
+					Renderer.Color[5] midcolors = ?;
+					midcolors[0] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f);
+					midcolors[1] = Renderer.Color.Lerp(colors[1], colors[2], 0.5f);
+					midcolors[2] = Renderer.Color.Lerp(colors[2], colors[0], 0.5f);
+
+					Renderer.Color[4][3] subQuadColors = .(
+						(midcolors[2], midcolors[0], colors[0]),
+						(midcolors[1], colors[1], midcolors[0]),
+						(colors[2], midcolors[1], midcolors[2]),
+						(midcolors[2], midcolors[1], midcolors[0])
+					);
+
+					// Corner triangles
+					colors = activeMeshSub.colors.Ptr + index * 4;
+
+					for (let ti < 3) {
+						let offset = ti * 3;
+						colors[0 + offset] = subQuadColors[ti][2];
+						colors[1 + offset] = subQuadColors[ti][1];
+						colors[2 + offset] = subQuadColors[ti][0];
+					}
+
+					// Center triangle
+					colors[9] = subQuadColors[3][2];
+					colors[10] = subQuadColors[3][1];
+					colors[11] = subQuadColors[3][0];
+
+					index += 3;
+				} else {
+					var colors = activeMesh.colors.Ptr + index;
+
+					const uint8[2][2] swap = .(.(0,2), .(2,0));
+					const int8[2] oppositeIndex = .(1,3);
+					for (let qti < 2) {
+						let offset = qti * 3;
+						colors[0 + offset] = (Renderer.Color)nearColorHalf[colorIndices[oppositeIndex[qti]]];
+						colors[1 + offset] = (Renderer.Color)nearColorHalf[colorIndices[swap[qti][0]]];
+						colors[2 + offset] = (Renderer.Color)nearColorHalf[colorIndices[swap[qti][1]]];
+					}
+
+					Renderer.Color[5] midcolors = ?;
+					midcolors[0] = Renderer.Color.Lerp(colors[3], colors[4], 0.5f);
+					midcolors[1] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f);
+					midcolors[2] = Renderer.Color.Lerp(colors[3], colors[5], 0.5f);
+					midcolors[3] = Renderer.Color.Lerp(colors[0], colors[2], 0.5f);
+					midcolors[4] = Renderer.Color.Lerp(colors[1], colors[4], 0.5f);
+
+					Renderer.Color[4][4] subQuadColors = .(
+						.(midcolors[2], midcolors[4], midcolors[0], colors[3]),
+						.(midcolors[4], midcolors[3], colors[2], midcolors[0]),
+						.(colors[5], midcolors[1], midcolors[4], midcolors[2]),
+						.(midcolors[1], colors[0], midcolors[3], midcolors[4]),
+					);
+
+					colors = activeMeshSub.colors.CArray() + index * 4;
+
+					for (let qi < 4) {
+						for (let qti < 2) {
+							let offset = qi * 6 + qti * 3;
+							colors[0 + offset] = subQuadColors[qi][oppositeIndex[qti]];
+							colors[1 + offset] = subQuadColors[qi][swap[qti][0]];
+							colors[2 + offset] = subQuadColors[qi][swap[qti][1]];
+						}
+					}
+					
+					index += 6;
+				}
+			}
+
+			nearMesh.SetDirty(.Color);
+			nearMeshSubdivided.SetDirty(.Color);
+			nearMeshTransparent.SetDirty(.Color);
+			nearMeshTransparentSubdivided.SetDirty(.Color);
+		}
 	}
 }

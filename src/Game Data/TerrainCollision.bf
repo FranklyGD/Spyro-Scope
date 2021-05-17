@@ -346,19 +346,6 @@ namespace SpyroScope {
 			ClearColor();
 		}
 
-		public void CycleOverlay() {
-			switch (overlay) {
-				case .None: overlay = .Flags;
-				case .Flags: overlay = .Deform;
-				case .Deform: overlay = .Water;
-				case .Water: overlay = .Sound;
-				case .Sound: overlay = .Platform;
-				case .Platform: overlay = .None;
-			}
-
-			SetOverlay(overlay);
-		}
-
 		public void SetOverlay(Overlay overlay) {
 			// Reset colors before highlighting
 			ClearColor();
