@@ -42,7 +42,9 @@ namespace SpyroScope {
 		public void PushMessage(String message) {
 			messageFeed.Add((message, .Now + TimeSpan(0, 0, 2)));
 			if (messageFeed.Count > 8) {
-				delete messageFeed[0].message;
+				if (messageFeed[0].message.IsDynAlloc) {
+					delete messageFeed[0].message;
+				}
 				messageFeed.RemoveAt(0);
 			}
 		}
