@@ -84,14 +84,15 @@ namespace SpyroScope {
 		Inspector.Property<uint8> keyframeProperty;
 		Inspector.Property<uint8> nextKeyframeProperty;
 
-		(Toggle button, String label, delegate void() event)[7] toggleList = .(
+		Toggle freecamToggle;
+
+		(Toggle button, String label, delegate void() event)[6] toggleList = .(
 			(null, "Object (O)rigin Axis", new () => ToggleOrigins(toggleList[0].button.value)),
 			(null, "Hide (I)nactive Objects", new () => ToggleOrigins(toggleList[1].button.value)),
 			(null, "(H)eight Limits", new () => ToggleLimits(toggleList[2].button.value)),
-			(null, "Free Game (C)amera", new () => ToggleFreeCamera(toggleList[3].button.value)),
-			(null, "Display Icons", new () => {displayIcons = toggleList[4].button.value;}),
-			(null, "All Visual Moby Data", new () => {displayAllData = toggleList[5].button.value;}),
-			(null, "(E)nable Manipulator", new () => {showManipulator = toggleList[6].button.value;}),
+			(null, "Display Icons", new () => {displayIcons = toggleList[3].button.value;}),
+			(null, "All Visual Moby Data", new () => {displayAllData = toggleList[4].button.value;}),
+			(null, "Enable Manipulator", new () => {showManipulator = toggleList[5].button.value;}),
 		);
 
 		Toggle pinInspectorButton;
@@ -137,8 +138,13 @@ namespace SpyroScope {
 			dropdown.Value = 0;
 			dropdown.OnItemSelect.Add(new (option) => ChangeView((.)option));
 
+			freecamToggle = new .();
+			freecamToggle.Offset = .(16, 32, 16 + 1 * WindowApp.font.height, 32 + 1 * WindowApp.font.height);
+			freecamToggle.toggleIconTexture = toggledTexture;
+			freecamToggle.OnActuated.Add(new () => ToggleFreeCamera(freecamToggle.value));
+
 			dropdown = new DropdownList();
-			dropdown.Offset = .(100,184,36,52);
+			dropdown.Offset = .(100,184,56,72);
 			dropdown.AddItem("Collision");
 			dropdown.AddItem("Far");
 			dropdown.AddItem("Near LQ");
@@ -147,7 +153,7 @@ namespace SpyroScope {
 			dropdown.OnItemSelect.Add(new (option) => ChangeRender((.)option));
 
 			colOverlayDropdown = new DropdownList();
-			colOverlayDropdown.Offset = .(100,184,76,92);
+			colOverlayDropdown.Offset = .(100,184,96,112);
 			colOverlayDropdown.AddItem("None");
 			colOverlayDropdown.AddItem("Flags");
 			colOverlayDropdown.AddItem("Deform");
@@ -158,19 +164,20 @@ namespace SpyroScope {
 			colOverlayDropdown.OnItemSelect.Add(new (option) => Terrain.collision.SetOverlay((.)option));
 
 			Toggle button = new .();
-			button.Offset = .(16, 32, 16 + 2 * WindowApp.font.height, 32 + 2 * WindowApp.font.height);
+			button.Offset = .(16, 32, 16 + 3 * WindowApp.font.height, 32 + 3 * WindowApp.font.height);
 			button.toggleIconTexture = toggledTexture;
 			button.OnActuated.Add(new () => ToggleSolid(button.value));
 			button.SetValue(true);
 
 			button = new .();
-			button.Offset = .(100, 116, 16 + 2 * WindowApp.font.height, 32 + 2 * WindowApp.font.height);
+			button.Offset = .(100, 116, 16 + 3 * WindowApp.font.height, 32 + 3 * WindowApp.font.height);
 			button.toggleIconTexture = toggledTexture;
 			button.OnActuated.Add(new () => ToggleWireframe(button.value));
+			button.SetValue(true);
 
 			nearTerrainToggleGroup = new .();
 			nearTerrainToggleGroup.Anchor = .(0,1,0,0);
-			nearTerrainToggleGroup.Offset = .(16,-16, 16 + 3 * WindowApp.font.height, 16 + 5 * WindowApp.font.height);
+			nearTerrainToggleGroup.Offset = .(16,-16, 16 + 4 * WindowApp.font.height, 16 + 6 * WindowApp.font.height);
 			nearTerrainToggleGroup.visible = false;
 			GUIElement.PushParent(nearTerrainToggleGroup);
 
@@ -200,7 +207,7 @@ namespace SpyroScope {
 			for (let i < toggleList.Count) {
 				button = new .();
 
-				button.Offset = .(16, 32, 16 + (i + 5) * WindowApp.font.height, 32 + (i + 5) * WindowApp.font.height);
+				button.Offset = .(16, 32, 16 + (i + 6) * WindowApp.font.height, 32 + (i + 6) * WindowApp.font.height);
 				button.toggleIconTexture = toggledTexture;
 				button.OnActuated.Add(toggleList[i].event);
 
@@ -211,7 +218,7 @@ namespace SpyroScope {
 
 			teleportButton = new .();
 
-			teleportButton.Offset = .(16, 180, 16 + (toggleList.Count + 5) * WindowApp.font.height, 32 + (toggleList.Count + 5) * WindowApp.font.height);
+			teleportButton.Offset = .(16, 180, 16 + (toggleList.Count + 6) * WindowApp.font.height, 32 + (toggleList.Count + 6) * WindowApp.font.height);
 			teleportButton.text = "(T)eleport";
 			teleportButton.OnActuated.Add(new => Teleport);
 			teleportButton.Enabled = false;
@@ -840,27 +847,33 @@ namespace SpyroScope {
 			// Begin window relative position UI
 			DrawUtilities.Rect(0,280,0,200 * cornerMenuInterp, .(0,0,0,192));
 			DrawUtilities.Rect(0,WindowApp.height,WindowApp.width - 300 * sideInspectorInterp,WindowApp.width, .(0,0,0,192));
-
-			for (let element in guiElements) {
-				if (element.visible) {
-					element.Draw();
-				}
-			}
 			
 			WindowApp.fontSmall.Print("View", .(16 + cornerMenu.drawn.left, 16), .(255,255,255));
-			WindowApp.fontSmall.Print("Render", .(16 + cornerMenu.drawn.left, 16 + 1 * WindowApp.font.height), .(255,255,255));
-			WindowApp.fontSmall.Print("Solid", .(40 + cornerMenu.drawn.left, 16 + 2 * WindowApp.font.height), .(255,255,255));
-			WindowApp.fontSmall.Print("Wireframe", .(124 + cornerMenu.drawn.left, 16 + 2 * WindowApp.font.height), .(255,255,255));
+			WindowApp.fontSmall.Print("Free Game (C)amera", .(40 + cornerMenu.drawn.left, 16 + 1 * WindowApp.font.height), .(255,255,255));
+
+			WindowApp.fontSmall.Print("Render", .(16 + cornerMenu.drawn.left, 16 + 2 * WindowApp.font.height), .(255,255,255));
+			WindowApp.fontSmall.Print("Solid", .(40 + cornerMenu.drawn.left, 16 + 3 * WindowApp.font.height), .(255,255,255));
+			WindowApp.fontSmall.Print("Wireframe", .(124 + cornerMenu.drawn.left, 16 + 3 * WindowApp.font.height), .(255,255,255));
+
+			if (Terrain.renderMode == .Collision) {
+				WindowApp.fontSmall.Print("Overlay", .(16 + cornerMenu.drawn.left, 16 + 4 * WindowApp.font.height), .(255,255,255));
+			}
 
 			if (nearTerrainToggleGroup.visible) {
-				WindowApp.fontSmall.Print("Color", .(40 + cornerMenu.drawn.left, 16 + 3 * WindowApp.font.height), .(255,255,255));
-				WindowApp.fontSmall.Print("Texture", .(124 + cornerMenu.drawn.left, 16 + 3 * WindowApp.font.height), .(255,255,255));
-				WindowApp.fontSmall.Print("Show Fade", .(40 + cornerMenu.drawn.left, 16 + 4 * WindowApp.font.height), .(255,255,255));
+				WindowApp.fontSmall.Print("Color", .(40 + cornerMenu.drawn.left, 16 + 4 * WindowApp.font.height), .(255,255,255));
+				WindowApp.fontSmall.Print("Texture", .(124 + cornerMenu.drawn.left, 16 + 4 * WindowApp.font.height), .(255,255,255));
+				WindowApp.fontSmall.Print("Show Fade Color", .(40 + cornerMenu.drawn.left, 16 + 5 * WindowApp.font.height), .(255,255,255));
 			}
 
 			for (let toggle in toggleList) {
 				if (toggle.button.visible) {
 					WindowApp.fontSmall.Print(toggle.label, .(toggle.button.drawn.right + 8, toggle.button.drawn.top + 1), .(255,255,255));
+				}
+			}
+
+			for (let element in guiElements) {
+				if (element.visible) {
+					element.Draw();
 				}
 			}
 
@@ -886,7 +899,7 @@ namespace SpyroScope {
 						SDL.SetRelativeMouseMode(viewMode != .Map);
 						cameraHijacked = true;
 						if (viewMode == .Game && !Emulator.active.CameraMode) {
-							toggleList[5].button.Toggle();
+							freecamToggle.Toggle();
 						}
 					}
 					if (event.button.button == 1) {
@@ -1032,7 +1045,7 @@ namespace SpyroScope {
 								}
 							}
 							case .C : {
-								toggleList[3].button.Toggle();
+								freecamToggle.Toggle();
 							}
 							case .H : {
 								toggleList[2].button.Toggle();
@@ -1048,11 +1061,6 @@ namespace SpyroScope {
 									Emulator.KillInputRelay();
 									messageFeed.PushMessage("Manual Input");
 								}*/
-							}
-							case .E : {
-								if (!Translator.dragged) {
-									toggleList[6].button.OnActuated();
-								}
 							}
 							case .V : {
 								windowApp.GoToState<VRAMViewerState>();

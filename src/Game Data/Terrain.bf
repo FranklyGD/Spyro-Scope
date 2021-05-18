@@ -24,7 +24,7 @@ namespace SpyroScope {
 		public static RenderMode renderMode = .Collision;
 		
 		public static bool solid = true;
-		public static bool wireframe = false;
+		public static bool wireframe = true;
 		public static bool textured = true;
 
 		static bool useFade = false;
@@ -354,7 +354,17 @@ namespace SpyroScope {
 			Renderer.BeginSolid();
 
 			if (renderMode == .Collision && collision != null) {
-				collision.Draw(wireframe);
+				if (solid) {
+					collision.Draw();
+				}
+				if (wireframe) {
+					if (solid) {
+						Renderer.SetTint(.(192,192,192));
+					}
+
+					Renderer.BeginWireframe();
+					collision.Draw();
+				}
 			} else if (regions != null) {
 				Renderer.BeginRetroShading();
 				Renderer.halfWhiteTexture.Bind();

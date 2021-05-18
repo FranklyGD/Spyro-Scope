@@ -232,19 +232,12 @@ namespace SpyroScope {
 			mesh.Update();
 		}
 
-		public void Draw(bool wireframe) {
+		public void Draw() {
 			if (mesh == null) {
 				return;
 			}
 
 			Renderer.SetModel(.Zero, .Identity);
-
-			if (!wireframe) {
-				mesh.Draw();
-				Renderer.SetTint(.(192,192,192));
-			}
-
-			Renderer.BeginWireframe();
 			mesh.Draw();
 
 			if (overlay == .Deform) {
