@@ -1001,7 +1001,7 @@ namespace SpyroScope {
 		public void ApplyNearColor(bool useFadeColor) {
 			Mesh activeMesh, activeMeshSub;
 
-			var nearColorHalf = nearColors.Ptr;
+			var nearColorHalf = nearColors.CArray();
 			if (useFadeColor) {
 				nearColorHalf += nearColors.Count / 2;
 			}
@@ -1026,7 +1026,7 @@ namespace SpyroScope {
 				}
 
 				if (regionFace.isTriangle) {
-					var colors = activeMesh.colors.Ptr + index;
+					var colors = activeMesh.colors.CArray() + index;
 
 					colors[0] = (Renderer.Color)nearColorHalf[colorIndices[3]];
 					colors[1] = (Renderer.Color)nearColorHalf[colorIndices[2]];
@@ -1045,7 +1045,7 @@ namespace SpyroScope {
 					);
 
 					// Corner triangles
-					colors = activeMeshSub.colors.Ptr + index * 4;
+					colors = activeMeshSub.colors.CArray() + index * 4;
 
 					for (let ti < 3) {
 						let offset = ti * 3;
@@ -1061,7 +1061,7 @@ namespace SpyroScope {
 
 					index += 3;
 				} else {
-					var colors = activeMesh.colors.Ptr + index;
+					var colors = activeMesh.colors.CArray() + index;
 
 					const uint8[2][2] swap = .(.(0,2), .(2,0));
 					const int8[2] oppositeIndex = .(1,3);
