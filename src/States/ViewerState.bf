@@ -38,7 +38,7 @@ namespace SpyroScope {
 
 		// Options
 		bool drawObjectOrigins = true;
-		public static bool hideInactive = false;
+		public static bool showInactive = false;
 		bool displayIcons = false;
 		bool displayAllData = false;
 		bool showManipulator = false;
@@ -88,7 +88,7 @@ namespace SpyroScope {
 
 		(Toggle button, String label, delegate void() event)[6] toggleList = .(
 			(null, "Object (O)rigin Axis", new () => ToggleOrigins(toggleList[0].button.value)),
-			(null, "Hide (I)nactive Objects", new () => ToggleOrigins(toggleList[1].button.value)),
+			(null, "(I)nactive Objects", new () => ToggleInactive(toggleList[1].button.value)),
 			(null, "(H)eight Limits", new () => ToggleLimits(toggleList[2].button.value)),
 			(null, "Display Icons", new () => {displayIcons = toggleList[3].button.value;}),
 			(null, "All Visual Moby Data", new () => {displayAllData = toggleList[4].button.value;}),
@@ -484,7 +484,7 @@ namespace SpyroScope {
 			}
 
 			cornerMenuInterp = Math.MoveTo(cornerMenuInterp, cornerMenuVisible ? 1 : 0, 0.1f);
-			cornerMenu.Offset = .(.(-200 * (1 - cornerMenuInterp), 0), .(200,280));
+			cornerMenu.Offset = .(.(-200 * (1 - cornerMenuInterp), 0), .(200,400));
 
 			sideInspectorInterp = Math.MoveTo(sideInspectorInterp, sideInspectorVisible ? 1 : 0, 0.1f);
 			sideInspector.Offset = .(.(-300 * sideInspectorInterp,0), .(300,0));
@@ -543,7 +543,7 @@ namespace SpyroScope {
 			}
 			
 			for (let object in Moby.allocated) {
-				if (!hideInactive || object.IsActive) {
+				if (object.IsActive || showInactive) {
 					if ((!showManipulator || ViewerSelection.currentObjIndex != Moby.allocated.Count) && drawObjectOrigins) {
 						object.DrawOriginAxis();
 					}
@@ -663,18 +663,16 @@ namespace SpyroScope {
 		public override void DrawGUI() {
 			if (displayIcons) {
 				for	(let object in Moby.allocated) {
-					if (hideInactive && !object.IsActive) {
-						continue;
-					}
-	
-					var offsettedPosition = object.position;
-					if (object.objectTypeID != 1) {
-						offsettedPosition.z += 0x100;
-					}
-	
-					var screenPosition = Camera.SceneToScreen(offsettedPosition);
-					if (screenPosition.z > 10000) { // Must be in front of view
-						DrawMobyIcon(object, screenPosition, 1);
+					if (object.IsActive || showInactive) {
+						var offsettedPosition = object.position;
+						if (object.objectTypeID != 1) {
+							offsettedPosition.z += 0x100;
+						}
+		
+						var screenPosition = Camera.SceneToScreen(offsettedPosition);
+						if (screenPosition.z > 10000) { // Must be in front of view
+							DrawMobyIcon(object, screenPosition, 1);
+						}
 					}
 				}
 			}
@@ -845,7 +843,7 @@ namespace SpyroScope {
 			}
 
 			// Begin window relative position UI
-			DrawUtilities.Rect(0,280,0,200 * cornerMenuInterp, .(0,0,0,192));
+			DrawUtilities.Rect(0,400,0,200 * cornerMenuInterp, .(0,0,0,192));
 			DrawUtilities.Rect(0,WindowApp.height,WindowApp.width - 300 * sideInspectorInterp,WindowApp.width, .(0,0,0,192));
 			
 			WindowApp.fontSmall.Print("View", .(16 + cornerMenu.drawn.left, 16), .(255,255,255));
@@ -1444,7 +1442,7 @@ namespace SpyroScope {
 		}
 
 		void ToggleInactive(bool toggle) {
-			hideInactive = toggle;
+			showInactive = toggle;
 			messageFeed.PushMessage("Toggled Inactive Visibility");
 		}
 

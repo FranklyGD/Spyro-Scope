@@ -88,23 +88,21 @@ namespace SpyroScope {
 			for (int objectIndex = 0; objectIndex < Moby.allocated.Count; objectIndex++) {
 				let object = Moby.allocated[objectIndex];
 
-				if (!object.IsActive && ViewerState.hideInactive) {
-					continue;
-				}
-
-				let screenPosition = Camera.SceneToScreen(object.position);
-
-				if (screenPosition.z == 0) {
-					continue;
-				}
-
-				let selectSize = Camera.SceneSizeToScreenSize(200, screenPosition.z);
-				if (WindowApp.mousePosition.x < screenPosition.x + selectSize && WindowApp.mousePosition.x > screenPosition.x - selectSize &&
-					WindowApp.mousePosition.y < screenPosition.y + selectSize && WindowApp.mousePosition.y > screenPosition.y - selectSize) {
-
-
-					if (screenPosition.z < distance) {
-						hoveredObjects.Add((screenPosition.z, objectIndex));
+				if (object.IsActive || ViewerState.showInactive) {
+					let screenPosition = Camera.SceneToScreen(object.position);
+	
+					if (screenPosition.z == 0) {
+						continue;
+					}
+	
+					let selectSize = Camera.SceneSizeToScreenSize(200, screenPosition.z);
+					if (WindowApp.mousePosition.x < screenPosition.x + selectSize && WindowApp.mousePosition.x > screenPosition.x - selectSize &&
+						WindowApp.mousePosition.y < screenPosition.y + selectSize && WindowApp.mousePosition.y > screenPosition.y - selectSize) {
+	
+	
+						if (screenPosition.z < distance) {
+							hoveredObjects.Add((screenPosition.z, objectIndex));
+						}
 					}
 				}
 			}
