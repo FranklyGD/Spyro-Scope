@@ -507,7 +507,7 @@ namespace SpyroScope {
 				doubleSidedToggle.SetValue(face.renderInfo.doubleSided);
 			}
 
-			if (Emulator.active.loadingStatus == .Loading || Emulator.active.gameState > 0) {
+			if (Emulator.active.loadingStatus == .Loading || Emulator.active.gameState > 1) {
 				return;
 			}
 
@@ -993,7 +993,7 @@ namespace SpyroScope {
 
 						if (showManipulator && Translator.MouseMove(WindowApp.mousePosition)) {
 							Selection.Clear();
-						} else if (Emulator.active.loadingStatus == .Idle && Emulator.active.gameState == 0 || Emulator.active.loadingStatus == .CutsceneIdle) {
+						} else if (Emulator.active.loadingStatus == .Idle && Emulator.active.gameState <= 1 || Emulator.active.loadingStatus == .CutsceneIdle) {
 							Selection.Test();
 						}
 					}
