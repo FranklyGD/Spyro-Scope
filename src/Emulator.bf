@@ -645,6 +645,9 @@ namespace SpyroScope {
 			address += offsets[0];
 			for (var i = 1; i < offsets.Count; i++) {
 				Windows.ReadProcessMemory(processHandle, (.)address, &address, 4, null);
+				if (address == 0) {
+					return 0;
+				}
 				address += offsets[i];
 			}
 			return address;
