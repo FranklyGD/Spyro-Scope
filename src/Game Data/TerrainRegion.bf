@@ -285,12 +285,10 @@ namespace SpyroScope {
 		void GenerateNearMesh(Emulator.Address regionPointer, int vertexSize, int colorSize, int faceSize) {
 			List<uint32> activeIndexList = ?;
 			List<Vector3> activeVertexList = ?;
-			List<Renderer.Color> activeColorList = ?;
 			List<float[2]> activeUvList = ?;
 			
 			List<uint32> activeIndexSubList = ?;
 			List<Vector3> activeVertexSubList = ?;
-			List<Renderer.Color> activeColorSubList = ?;
 			List<float[2]> activeUvSubList = ?;
 
 			List<uint8> activeNearMesh2GameIndices = ?;
@@ -308,22 +306,18 @@ namespace SpyroScope {
 			
 			List<uint32> indexList = scope .();
 			List<Vector3> vertexList = scope .();
-			List<Renderer.Color> colorList = scope .();
 			List<float[2]> uvList = scope .();
 			
 			List<uint32> indexTransparentList = scope .();
 			List<Vector3> vertexTransparentList = scope .();
-			List<Renderer.Color> colorTransparentList = scope .();
 			List<float[2]> uvTransparentList = scope .();
 
 			List<uint32> indexSubList = scope .();
 			List<Vector3> vertexSubList = scope .();
-			List<Renderer.Color> colorSubList = scope .();
 			List<float[2]> uvSubList = scope .();
 
 			List<uint32> indexTransparentSubList = scope .();
 			List<Vector3> vertexTransparentSubList = scope .();
-			List<Renderer.Color> colorTransparentSubList = scope .();
 			List<float[2]> uvTransparentSubList = scope .();
 
 			if (nearFaces == null) {
@@ -331,7 +325,7 @@ namespace SpyroScope {
 				Emulator.active.ReadFromRAM(regionPointer + (vertexSize + colorSize * 2) * 4, nearFaces.CArray(), faceSize * sizeof(NearFace));
 			}
 
-			nearColors = new .[colorSize * 2];
+			nearColors = new .[colorSize * 2]; // First half is vertex color tint texture, second half is the fade to solid color
 			Emulator.active.ReadFromRAM(regionPointer + vertexSize * 4, nearColors.CArray(), colorSize * 2 * 4);
 
 			// Derived from Spyro: Ripto's Rage
@@ -340,7 +334,6 @@ namespace SpyroScope {
 			for (let i < faceSize) {
 				var regionFace = nearFaces[i];
 				var trianglesIndices = regionFace.trianglesIndices;
-				var colorIndices = regionFace.colorsIndices;
 				let textureIndex = regionFace.renderInfo.textureIndex;
 				let flipSide = regionFace.flipped;
 				var textureRotation = regionFace.renderInfo.rotation;
@@ -362,13 +355,11 @@ namespace SpyroScope {
 					// Low LOD
 					activeIndexList = indexTransparentList;
 					activeVertexList = vertexTransparentList;
-					activeColorList = colorTransparentList;
 					activeUvList = uvTransparentList;
 
 					// High LOD
 					activeIndexSubList = indexTransparentSubList;
 					activeVertexSubList = vertexTransparentSubList;
-					activeColorSubList = colorTransparentSubList;
 					activeUvSubList = uvTransparentSubList;
 
 					// Conversion Table
@@ -378,13 +369,11 @@ namespace SpyroScope {
 					// Low LOD
 					activeIndexList = indexList;
 					activeVertexList = vertexList;
-					activeColorList = colorList;
 					activeUvList = uvList;
 					
 					// High LOD
 					activeIndexSubList = indexSubList;
 					activeVertexSubList = vertexSubList;
-					activeColorSubList = colorSubList;
 					activeUvSubList = uvSubList;
 					
 					// Conversion Table
@@ -398,7 +387,6 @@ namespace SpyroScope {
 					
 					var indices = activeIndexList.GrowUnitialized(3);
 					var vertices = activeVertexList.GrowUnitialized(3);
-					var colors = activeColorList.GrowUnitialized(3);
 					var uvs = activeUvList.GrowUnitialized(3);
 
 					var M2Gindices = activeNearMesh2GameIndices.GrowUnitialized(3);
@@ -422,10 +410,6 @@ namespace SpyroScope {
 					vertices[1] = nearVertices[M2Gindices[1]];
 					vertices[2] = nearVertices[M2Gindices[2]];
 					
-					colors[0] = nearColors[colorIndices[3]];
-					colors[1] = nearColors[colorIndices[2]];
-					colors[2] = nearColors[colorIndices[1]];
-					
 					uvs[0] = rotatedTriangleUV[2];
 					uvs[1] = rotatedTriangleUV[1];
 					uvs[2] = rotatedTriangleUV[0];
@@ -436,23 +420,11 @@ namespace SpyroScope {
 					midpoints[1] = (vertices[1] + vertices[2]) / 2; // Diagonal
 					midpoints[2] = (vertices[2] + vertices[0]) / 2; // Left
 
-					Renderer.Color[5] midcolors = ?;
-					midcolors[0] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f);
-					midcolors[1] = Renderer.Color.Lerp(colors[1], colors[2], 0.5f);
-					midcolors[2] = Renderer.Color.Lerp(colors[2], colors[0], 0.5f);
-
 					Vector3[4][3] subQuadVertices = .(
 						(midpoints[2], midpoints[0], vertices[0]),
 						(midpoints[1], vertices[1], midpoints[0]),
 						(vertices[2], midpoints[1], midpoints[2]),
 						(midpoints[2], midpoints[1], midpoints[0])
-					);
-
-					Renderer.Color[4][3] subQuadColors = .(
-						(midcolors[2], midcolors[0], colors[0]),
-						(midcolors[1], colors[1], midcolors[0]),
-						(colors[2], midcolors[1], midcolors[2]),
-						(midcolors[2], midcolors[1], midcolors[0])
 					);
 
 					const uint8[4][3] rotationOrder = .(
@@ -468,7 +440,6 @@ namespace SpyroScope {
 					
 					indices = activeIndexSubList.GrowUnitialized(12);
 					vertices = activeVertexSubList.GrowUnitialized(12);
-					colors = activeColorSubList.GrowUnitialized(12);
 					uvs = activeUvSubList.GrowUnitialized(12);
 
 					for (let ti < 3) {
@@ -481,10 +452,6 @@ namespace SpyroScope {
 						vertices[0 + offset] = subQuadVertices[ti][2];
 						vertices[1 + offset] = subQuadVertices[ti][1];
 						vertices[2 + offset] = subQuadVertices[ti][0];
-
-						colors[0 + offset] = subQuadColors[ti][2];
-						colors[1 + offset] = subQuadColors[ti][1];
-						colors[2 + offset] = subQuadColors[ti][0];
 
 						quad = quadSet + 1 + subQuadIndexRotation[ti];
 						partialUV = quad.GetVramPartialUV();
@@ -520,10 +487,6 @@ namespace SpyroScope {
 					vertices[10] = subQuadVertices[3][1];
 					vertices[11] = subQuadVertices[3][0];
 
-					colors[9] = subQuadColors[3][2];
-					colors[10] = subQuadColors[3][1];
-					colors[11] = subQuadColors[3][0];
-
 					quad = quadSet + 1 + subQuadIndexRotation[0];
 					partialUV = quad.GetVramPartialUV();
 					let quadRotation = quad.GetQuadRotation();
@@ -555,7 +518,6 @@ namespace SpyroScope {
 
 					var indices = activeIndexList.GrowUnitialized(6);
 					var vertices = activeVertexList.GrowUnitialized(6);
-					var colors = activeColorList.GrowUnitialized(6);
 					var uvs = activeUvList.GrowUnitialized(6);
 					
 					var M2Gindices = activeNearMesh2GameIndices.GrowUnitialized(6);
@@ -577,10 +539,6 @@ namespace SpyroScope {
 						vertices[1 + offset] = nearVertices[M2Gindices[1 + offset]];
 						vertices[2 + offset] = nearVertices[M2Gindices[2 + offset]];
 
-						colors[0 + offset] = nearColors[colorIndices[oppositeIndex[qti]]];
-						colors[1 + offset] = nearColors[colorIndices[swap[qti][0]]];
-						colors[2 + offset] = nearColors[colorIndices[swap[qti][1]]];
-
 						uvs[0 + offset] = triangleUV[oppositeIndex[qti]];
 						uvs[1 + offset] = triangleUV[swap[qti][0]];
 						uvs[2 + offset] = triangleUV[swap[qti][1]];
@@ -594,13 +552,6 @@ namespace SpyroScope {
 					midpoints[3] = (vertices[0] + vertices[2]) / 2; // Right
 					midpoints[4] = (midpoints[0] + midpoints[1]) / 2;
 
-					Renderer.Color[5] midcolors = ?;
-					midcolors[0] = Renderer.Color.Lerp(colors[3], colors[4], 0.5f);
-					midcolors[1] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f);
-					midcolors[2] = Renderer.Color.Lerp(colors[3], colors[5], 0.5f);
-					midcolors[3] = Renderer.Color.Lerp(colors[0], colors[2], 0.5f);
-					midcolors[4] = Renderer.Color.Lerp(colors[1], colors[4], 0.5f);
-
 					Vector3[4][4] subQuadVertices = .(
 						.(midpoints[2], midpoints[4], midpoints[0], vertices[3]),
 						.(midpoints[4], midpoints[3], vertices[2], midpoints[0]),
@@ -608,18 +559,10 @@ namespace SpyroScope {
 						.(midpoints[1], vertices[0], midpoints[3], midpoints[4]),
 					);
 
-					Renderer.Color[4][4] subQuadColors = .(
-						.(midcolors[2], midcolors[4], midcolors[0], colors[3]),
-						.(midcolors[4], midcolors[3], colors[2], midcolors[0]),
-						.(colors[5], midcolors[1], midcolors[4], midcolors[2]),
-						.(midcolors[1], colors[0], midcolors[3], midcolors[4]),
-					);
-					
 					baseIndex = (uint32)activeIndexSubList.Count;
 
 					indices = activeIndexSubList.GrowUnitialized(24);
 					vertices = activeVertexSubList.GrowUnitialized(24);
-					colors = activeColorSubList.GrowUnitialized(24);
 					uvs = activeUvSubList.GrowUnitialized(24);
 
 					for (let qi < 4) {
@@ -655,10 +598,6 @@ namespace SpyroScope {
 							vertices[1 + offset] = subQuadVertices[qi][swap[qti][0]];
 							vertices[2 + offset] = subQuadVertices[qi][swap[qti][1]];
 
-							colors[0 + offset] = subQuadColors[qi][oppositeIndex[qti]];
-							colors[1 + offset] = subQuadColors[qi][swap[qti][0]];
-							colors[2 + offset] = subQuadColors[qi][swap[qti][1]];
-
 							uvs[0 + offset] = rotatedTriangleUV[oppositeIndex[qti]];
 							uvs[1 + offset] = rotatedTriangleUV[swap[qti][0]];
 							uvs[2 + offset] = rotatedTriangleUV[swap[qti][1]];
@@ -684,7 +623,6 @@ namespace SpyroScope {
 			for (let i < vertexList.Count) {
 				v[i] = vertexList[i];
 				n[i] = .(0,0,1);
-				c[i] = colorList[i];
 				u[i] = uvList[i];
 			}
 
@@ -704,7 +642,6 @@ namespace SpyroScope {
 			for (let i < vertexSubList.Count) {
 				v[i] = vertexSubList[i];
 				n[i] = .(0,0,1);
-				c[i] = colorSubList[i];
 				u[i] = uvSubList[i];
 			}
 			
@@ -724,7 +661,6 @@ namespace SpyroScope {
 			for (let i < vertexTransparentList.Count) {
 				v[i] = vertexTransparentList[i];
 				n[i] = .(0,0,1);
-				c[i] = colorTransparentList[i];
 				u[i] = uvTransparentList[i];
 			}
 
@@ -744,7 +680,6 @@ namespace SpyroScope {
 			for (let i < vertexTransparentSubList.Count) {
 				v[i] = vertexTransparentSubList[i];
 				n[i] = .(0,0,1);
-				c[i] = colorTransparentSubList[i];
 				u[i] = uvTransparentSubList[i];
 			}
 
@@ -976,18 +911,19 @@ namespace SpyroScope {
 		}
 
 		public void ClearNearColor() {
+			const Renderer.Color4 clearColor = .(128,128,128);
 			for (let i < nearFaces.Count) {
 				for (var color in ref nearMesh.colors) {
-					color = .(128,128,128);
+					color = clearColor;
 				}
 				for (var color in ref nearMeshSubdivided.colors) {
-					color = .(128,128,128);
+					color = clearColor;
 				}
 				for (var color in ref nearMeshTransparent.colors) {
-					color = .(128,128,128);
+					color = clearColor;
 				}
 				for (var color in ref nearMeshTransparentSubdivided.colors) {
-					color = .(128,128,128);
+					color = clearColor;
 				}
 
 			}
@@ -1000,13 +936,14 @@ namespace SpyroScope {
 
 		public void ApplyNearColor(bool useFadeColor) {
 			Mesh activeMesh, activeMeshSub;
+			var index = 0, indexSub = 0;
+			int* activeIndex;
 
 			var nearColorHalf = nearColors.CArray();
 			if (useFadeColor) {
 				nearColorHalf += nearColors.Count / 2;
 			}
-
-			var index = 0;
+			
 			for (let i < nearFaces.Count) {
 				var regionFace = nearFaces[i];
 				var colorIndices = regionFace.colorsIndices;
@@ -1020,13 +957,15 @@ namespace SpyroScope {
 				if (quad.GetTransparency() || regionFace.renderInfo.transparent) {
 					activeMesh = nearMeshTransparent;
 					activeMeshSub = nearMeshTransparentSubdivided;
+					activeIndex = &indexSub;
 				} else {
 					activeMesh = nearMesh;
 					activeMeshSub = nearMeshSubdivided;
+					activeIndex = &index;
 				}
 
 				if (regionFace.isTriangle) {
-					var colors = activeMesh.colors.CArray() + index;
+					var colors = activeMesh.colors.CArray() + *activeIndex;
 
 					colors[0] = (Renderer.Color)nearColorHalf[colorIndices[3]];
 					colors[1] = (Renderer.Color)nearColorHalf[colorIndices[2]];
@@ -1045,7 +984,7 @@ namespace SpyroScope {
 					);
 
 					// Corner triangles
-					colors = activeMeshSub.colors.CArray() + index * 4;
+					colors = activeMeshSub.colors.CArray() + *activeIndex * 4;
 
 					for (let ti < 3) {
 						let offset = ti * 3;
@@ -1059,9 +998,9 @@ namespace SpyroScope {
 					colors[10] = subQuadColors[3][1];
 					colors[11] = subQuadColors[3][0];
 
-					index += 3;
+					*activeIndex += 3;
 				} else {
-					var colors = activeMesh.colors.CArray() + index;
+					var colors = activeMesh.colors.CArray() + *activeIndex;
 
 					const uint8[2][2] swap = .(.(0,2), .(2,0));
 					const int8[2] oppositeIndex = .(1,3);
@@ -1086,7 +1025,7 @@ namespace SpyroScope {
 						.(midcolors[1], colors[0], midcolors[3], midcolors[4]),
 					);
 
-					colors = activeMeshSub.colors.CArray() + index * 4;
+					colors = activeMeshSub.colors.CArray() + *activeIndex * 4;
 
 					for (let qi < 4) {
 						for (let qti < 2) {
@@ -1097,7 +1036,7 @@ namespace SpyroScope {
 						}
 					}
 					
-					index += 6;
+					*activeIndex += 6;
 				}
 			}
 

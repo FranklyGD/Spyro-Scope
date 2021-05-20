@@ -31,9 +31,17 @@ namespace SpyroScope {
 		public static bool UsingFade {
 			get => useFade;
 			set {
-				if (colored) {
+				if (value) {
 					for (let region in regions) {
-						region.ApplyNearColor(value);
+						region.ApplyNearColor(true);
+					}
+				} else if (colored) {
+					for (let region in regions) {
+						region.ApplyNearColor(false);
+					}
+				} else {
+					for (let region in regions) {
+						region.ClearNearColor();
 					}
 				}
 
@@ -226,6 +234,9 @@ namespace SpyroScope {
 
 			for (let regionIndex < sceneRegionCount) {
 				regions[regionIndex].Reload();
+				if (colored) {
+					regions[regionIndex].ApplyNearColor(useFade);
+				}
 			}
 			
 			for (let scrollerIndex < textureScrollerCount) {
