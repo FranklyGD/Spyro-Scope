@@ -45,7 +45,9 @@ namespace SpyroScope {
 		public static GUIElement hoveredElement;
 		public static GUIElement pressedElement;
 		public static GUIElement selectedElement;
-
+		
+		public static Texture bgTexture ~ delete _; 
+		public static Texture bgOutlineTexture ~ delete _; 
 		public static Texture normalButtonTexture ~ delete _; 
 		public static Texture pressedButtonTexture ~ delete _;
 		public static Texture normalInputTexture ~ delete _; 
@@ -60,6 +62,8 @@ namespace SpyroScope {
 			Harrows = SDL.CreateSystemCursor(.SDL_SYSTEM_CURSOR_SIZEWE);
 			Varrows = SDL.CreateSystemCursor(.SDL_SYSTEM_CURSOR_SIZENS);
 
+			bgTexture = new .("images/ui/bg.png");
+			bgOutlineTexture = new .("images/ui/bg_group.png");
 			normalButtonTexture = new .("images/ui/button_normal.png");
 			pressedButtonTexture = new .("images/ui/button_pressed.png");
 			normalInputTexture = new .("images/ui/input_normal.png"); 

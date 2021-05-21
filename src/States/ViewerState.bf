@@ -68,12 +68,11 @@ namespace SpyroScope {
 		Texture vaseIconTexture = new .("images/ui/icon_vase.png") ~ delete _;
 		Texture bottleIconTexture = new .("images/ui/icon_bottle.png") ~ delete _;
 
-		GUIElement cornerMenu;
+		Panel cornerMenu;
 		bool cornerMenuVisible;
 		float cornerMenuInterp;
 
-		DropdownList colOverlayDropdown;
-		GUIElement nearTerrainToggleGroup;
+		Panel collisionOptionGroup, nearTerrainToggleGroup;
 		
 		GUIElement sideInspector;
 		bool sideInspectorVisible;
@@ -124,10 +123,16 @@ namespace SpyroScope {
 
 			cornerMenu = new .();
 			cornerMenu.Offset = .(.Zero, .(260,200));
+			cornerMenu.tint = .(0,0,0);
+			cornerMenu.texture = GUIElement.bgTexture;
 			GUIElement.PushParent(cornerMenu);
 
 			messageFeed = new .();
 			messageFeed.Anchor.start = .(1,0);
+
+			var text = new Text();
+			text.Text = "View";
+			text.Offset = .(16,0,16,0);
 
 			var dropdown = new DropdownList();
 			dropdown.Offset = .(100,184,16,32);
@@ -143,6 +148,10 @@ namespace SpyroScope {
 			freecamToggle.toggleIconTexture = toggledTexture;
 			freecamToggle.OnActuated.Add(new () => ToggleFreeCamera(freecamToggle.value));
 
+			text = new Text();
+			text.Text = "Free Game (C)amera";
+			text.Offset = .(40,0,16 + (text.font.height + 6),0);
+
 			dropdown = new DropdownList();
 			dropdown.Offset = .(100,184,56,72);
 			dropdown.AddItem("Collision");
@@ -152,16 +161,30 @@ namespace SpyroScope {
 			dropdown.Value = 0;
 			dropdown.OnItemSelect.Add(new (option) => ChangeRender((.)option));
 
-			colOverlayDropdown = new DropdownList();
-			colOverlayDropdown.Offset = .(100,184,96,112);
-			colOverlayDropdown.AddItem("None");
-			colOverlayDropdown.AddItem("Flags");
-			colOverlayDropdown.AddItem("Deform");
-			colOverlayDropdown.AddItem("Water");
-			colOverlayDropdown.AddItem("Sound");
-			colOverlayDropdown.AddItem("Platform");
-			colOverlayDropdown.Value = 0;
-			colOverlayDropdown.OnItemSelect.Add(new (option) => Terrain.collision.SetOverlay((.)option));
+			collisionOptionGroup = new .();
+			collisionOptionGroup.Anchor = .(0,1,0,0);
+			collisionOptionGroup.Offset = .(14,-14, 14 + 4 * WindowApp.font.height, 14 + 5 * WindowApp.font.height);
+			collisionOptionGroup.texture = GUIElement.bgOutlineTexture;
+			collisionOptionGroup.tint = .(128,128,128);
+			GUIElement.PushParent(collisionOptionGroup);
+
+			text = new Text();
+			text.Text = "Overlay";
+			text.Offset = .(2,0,2,0);
+
+			dropdown = new DropdownList();
+			dropdown.Anchor = .(0.5f,1,0,0);
+			dropdown.Offset = .(0,0,2,18);
+			dropdown.AddItem("None");
+			dropdown.AddItem("Flags");
+			dropdown.AddItem("Deform");
+			dropdown.AddItem("Water");
+			dropdown.AddItem("Sound");
+			dropdown.AddItem("Platform");
+			dropdown.Value = 0;
+			dropdown.OnItemSelect.Add(new (option) => Terrain.collision.SetOverlay((.)option));
+
+			GUIElement.PopParent();
 
 			Toggle button = new .();
 			button.Offset = .(16, 32, 16 + 3 * WindowApp.font.height, 32 + 3 * WindowApp.font.height);
@@ -169,38 +192,61 @@ namespace SpyroScope {
 			button.OnActuated.Add(new () => ToggleSolid(button.value));
 			button.SetValue(true);
 
+			text = new Text();
+			text.Text = "Solid";
+			text.Offset = .(40,0,16 + 3 * (text.font.height + 6),0);
+
 			button = new .();
 			button.Offset = .(100, 116, 16 + 3 * WindowApp.font.height, 32 + 3 * WindowApp.font.height);
 			button.toggleIconTexture = toggledTexture;
 			button.OnActuated.Add(new () => ToggleWireframe(button.value));
 			button.SetValue(true);
 
+			text = new Text();
+			text.Text = "Wireframe";
+			text.Offset = .(124,0,16 + 3 * (text.font.height + 6),0);
+
 			nearTerrainToggleGroup = new .();
 			nearTerrainToggleGroup.Anchor = .(0,1,0,0);
-			nearTerrainToggleGroup.Offset = .(16,-16, 16 + 4 * WindowApp.font.height, 16 + 6 * WindowApp.font.height);
+			nearTerrainToggleGroup.Offset = .(14,-14, 14 + 4 * WindowApp.font.height, 14 + 6 * WindowApp.font.height);
+			nearTerrainToggleGroup.texture = GUIElement.bgOutlineTexture;
+			nearTerrainToggleGroup.tint = .(128,128,128);
 			nearTerrainToggleGroup.visible = false;
 			GUIElement.PushParent(nearTerrainToggleGroup);
 
 			Toggle colorsButton = new .();
-			colorsButton.Offset = .(0, 16, 0, 16);
+			colorsButton.Offset = .(2, 18, 2, 18);
 			colorsButton.toggleIconTexture = toggledTexture;
 			colorsButton.OnActuated.Add(new () => ToggleColors(colorsButton.value));
 			colorsButton.SetValue(true);
 
+			text = new Text();
+			text.Text = "Color";
+			text.Offset = .(26,0,2 + 0 * (text.font.height + 6),0);
+
 			Toggle textureButton = new .();
 			textureButton.Anchor = .(0.5f,0.5f,0,0);
-			textureButton.Offset = .(0, 16, 0, 16);
+			textureButton.Offset = .(0, 16, 2, 18);
 			textureButton.toggleIconTexture = toggledTexture;
 			textureButton.OnActuated.Add(new () => ToggleTextures(textureButton.value));
 			textureButton.SetValue(true);
 
+			text = new Text();
+			text.Text = "Texture";
+			text.Anchor = .(0.5f,0,0,0);
+			text.Offset = .(24,0,2,0);
+
 			button = new .();
-			button.Offset = .(0, 16, 1 * WindowApp.font.height, 16 + 1 * WindowApp.font.height);
+			button.Offset = .(2, 18, 2 + 1 * WindowApp.font.height, 18 + 1 * WindowApp.font.height);
 			button.toggleIconTexture = toggledTexture;
 			button.OnActuated.Add(new () => {
 				ToggleFadeColors(button.value);
 				colorsButton.Enabled = textureButton.Enabled = !button.value;
 			});
+
+			text = new Text();
+			text.Text = "Show Fade Color";
+			text.Offset = .(26,0,2 + (text.font.height + 6),0);
 
 			GUIElement.PopParent();
 
@@ -212,6 +258,10 @@ namespace SpyroScope {
 				button.OnActuated.Add(toggleList[i].event);
 
 				toggleList[i].button = button;
+
+				text = new Text();
+				text.Text = toggleList[i].label;
+				text.Offset = .(40,0,16 + (i + 6) * (text.font.height + 6),0);
 			}
 
 			toggleList[0].button.Toggle();
@@ -843,32 +893,6 @@ namespace SpyroScope {
 			}
 
 			// Begin window relative position UI
-			DrawUtilities.Rect(0,400,0,200 * cornerMenuInterp, .(0,0,0,192));
-			DrawUtilities.Rect(0,WindowApp.height,WindowApp.width - 300 * sideInspectorInterp,WindowApp.width, .(0,0,0,192));
-			
-			WindowApp.fontSmall.Print("View", .(16 + cornerMenu.drawn.left, 16), .(255,255,255));
-			WindowApp.fontSmall.Print("Free Game (C)amera", .(40 + cornerMenu.drawn.left, 16 + 1 * WindowApp.font.height), .(255,255,255));
-
-			WindowApp.fontSmall.Print("Render", .(16 + cornerMenu.drawn.left, 16 + 2 * WindowApp.font.height), .(255,255,255));
-			WindowApp.fontSmall.Print("Solid", .(40 + cornerMenu.drawn.left, 16 + 3 * WindowApp.font.height), .(255,255,255));
-			WindowApp.fontSmall.Print("Wireframe", .(124 + cornerMenu.drawn.left, 16 + 3 * WindowApp.font.height), .(255,255,255));
-
-			if (Terrain.renderMode == .Collision) {
-				WindowApp.fontSmall.Print("Overlay", .(16 + cornerMenu.drawn.left, 16 + 4 * WindowApp.font.height), .(255,255,255));
-			}
-
-			if (nearTerrainToggleGroup.visible) {
-				WindowApp.fontSmall.Print("Color", .(40 + cornerMenu.drawn.left, 16 + 4 * WindowApp.font.height), .(255,255,255));
-				WindowApp.fontSmall.Print("Texture", .(124 + cornerMenu.drawn.left, 16 + 4 * WindowApp.font.height), .(255,255,255));
-				WindowApp.fontSmall.Print("Show Fade Color", .(40 + cornerMenu.drawn.left, 16 + 5 * WindowApp.font.height), .(255,255,255));
-			}
-
-			for (let toggle in toggleList) {
-				if (toggle.button.visible) {
-					WindowApp.fontSmall.Print(toggle.label, .(toggle.button.drawn.right + 8, toggle.button.drawn.top + 1), .(255,255,255));
-				}
-			}
-
 			for (let element in guiElements) {
 				if (element.visible) {
 					element.Draw();
@@ -1502,17 +1526,17 @@ namespace SpyroScope {
 					ViewerSelection.currentRegionIndex = -1;
 					faceMenu.visible = false;
 					nearTerrainToggleGroup.visible = false;
-					colOverlayDropdown.visible = true;
+					collisionOptionGroup.visible = true;
 
 				case .Far:
 					ViewerSelection.currentTriangleIndex = -1;
 					faceMenu.visible = false;
 					nearTerrainToggleGroup.visible = false;
-					colOverlayDropdown.visible = false;
+					collisionOptionGroup.visible = false;
 
 				case .NearLQ, .NearHQ:
 					nearTerrainToggleGroup.visible = true;
-					colOverlayDropdown.visible = false;
+					collisionOptionGroup.visible = false;
 			}
 		}
 
