@@ -239,6 +239,12 @@ namespace SpyroScope {
 
 			Renderer.SetModel(.Zero, .Identity);
 			mesh.Draw();
+		}
+
+		public void DrawDeformFrames() {
+			if (mesh == null) {
+				return;
+			}
 
 			if (overlay == .Deform) {
 				Renderer.SetTint(.(255,255,0));
