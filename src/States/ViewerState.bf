@@ -557,13 +557,13 @@ namespace SpyroScope {
 				doubleSidedToggle.SetValue(face.renderInfo.doubleSided);
 			}
 
-			if (Emulator.active.loadingStatus == .Loading || Emulator.active.gameState > 1) {
+			if (Emulator.active.loadingStatus == .Loading) {
 				return;
 			}
 
 			Terrain.Update();
 
-			if (showManipulator) {
+			if (showManipulator && (Emulator.active.loadingStatus == .Idle && Emulator.active.gameState <= 1)) {
 				if (ViewerSelection.currentObjIndex > -1) {
 					let moby = Moby.allocated[ViewerSelection.currentObjIndex];
 					Translator.Update(moby.position, moby.basis);
