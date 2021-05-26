@@ -593,7 +593,7 @@ namespace SpyroScope {
 			}
 			
 			for (let object in Moby.allocated) {
-				if (object.IsActive || showInactive) {
+				if (!object.dataPointer.IsNull && (object.IsActive || showInactive)) {
 					if ((!showManipulator || ViewerSelection.currentObjIndex != Moby.allocated.Count) && drawObjectOrigins) {
 						object.DrawOriginAxis();
 					}
@@ -1144,7 +1144,7 @@ namespace SpyroScope {
 					Emulator.Address modelSetAddress = ?;
 					Emulator.modelPointers[(int)Emulator.active.rom].GetAtIndex(&modelSetAddress, object.objectTypeID);
 
-					if (modelSetAddress != 0) {
+					if (!modelSetAddress.IsNull) {
 						modelSets.Add(object.objectTypeID, new .(modelSetAddress));
 					}
 				}
