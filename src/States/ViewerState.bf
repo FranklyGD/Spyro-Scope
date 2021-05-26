@@ -523,7 +523,7 @@ namespace SpyroScope {
 					Moby object = ?;
 					objPointer.Read(&object);
 	
-					if (object.dataPointer.IsNull) {
+					if (object.IsNull) {
 						break;
 					}
 
@@ -593,7 +593,7 @@ namespace SpyroScope {
 			}
 			
 			for (let object in Moby.allocated) {
-				if (!object.dataPointer.IsNull && (object.IsActive || showInactive)) {
+				if (!object.IsNull && (object.IsActive || showInactive)) {
 					if ((!showManipulator || ViewerSelection.currentObjIndex != Moby.allocated.Count) && drawObjectOrigins) {
 						object.DrawOriginAxis();
 					}
