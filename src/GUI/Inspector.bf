@@ -11,7 +11,7 @@ namespace SpyroScope {
 		List<GUIElement> properties = new .() ~ delete _;
 		int nextPropertyPos = 1;
 
-		GUIElement area;
+		Panel area;
 		int labelWidth = 150;
 
 		public this(StringView label) : base() {
@@ -25,9 +25,11 @@ namespace SpyroScope {
 			input.Enabled = false;
 			input.preText = "0x";
 
-			area = new GUIElement();
-			area.Anchor = .(0,1,0,1);
-			area.Offset = .(WindowApp.bitmapFont.characterWidth, 0, WindowApp.bitmapFont.height, 0);
+			area = new Panel();
+			area.Anchor = .(0,1,0,0);
+			area.Offset = .(WindowApp.bitmapFont.characterWidth, 0, WindowApp.bitmapFont.height, WindowApp.bitmapFont.height);
+			area.texture = GUIElement.bgOutlineTexture;
+			area.tint = .(128,128,128);
 
 			GUIElement.PopParent();
 		}
@@ -45,11 +47,11 @@ namespace SpyroScope {
 
 			property.Anchor = .(0,1,0,0);
 			if (components.Length > 1) {
-				property.Offset = .(0, 0, 0, WindowApp.bitmapFont.height * 2);
+				property.Offset = .(0, -2, 0, WindowApp.bitmapFont.height * 2);
 				property.Offset.Shift(0, nextPropertyPos);
 				nextPropertyPos += WindowApp.bitmapFont.height * 2;
 			} else {
-				property.Offset = .(0, 0, 0, WindowApp.bitmapFont.height);
+				property.Offset = .(0, -2, 0, WindowApp.bitmapFont.height);
 				property.Offset.Shift(0, nextPropertyPos);
 				nextPropertyPos += WindowApp.bitmapFont.height;
 			}
@@ -57,6 +59,8 @@ namespace SpyroScope {
 			properties.Add(property);
 			
 			GUIElement.PopParent();
+
+			area.Offset.bottom = nextPropertyPos + WindowApp.bitmapFont.height + 1;
 
 			return property;
 		}
@@ -118,7 +122,7 @@ namespace SpyroScope {
 						inputs[i] = input;
 		
 						input.Anchor = .((float)i / components.Length, (float)(i + 1) / components.Length,0,1);
-						input.Offset = .(WindowApp.bitmapFont.characterWidth + 2,-2,0,0);
+						input.Offset = .(WindowApp.bitmapFont.characterWidth + 2,0,0,0);
 		
 						input.OnValidate = new => ValidateNumber;
 						input.OnXcrement = new => XcrementNumber;

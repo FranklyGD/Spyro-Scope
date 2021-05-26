@@ -74,7 +74,7 @@ namespace SpyroScope {
 
 		Panel collisionOptionGroup, nearTerrainToggleGroup;
 		
-		GUIElement sideInspector;
+		Panel sideInspector;
 		bool sideInspectorVisible;
 		float sideInspectorInterp;
 
@@ -278,6 +278,8 @@ namespace SpyroScope {
 			sideInspector = new .();
 			sideInspector.Anchor = .(1,1,0,1);
 			sideInspector.Offset = .(-300,0,0,0);
+			sideInspector.texture = GUIElement.bgTexture;
+			sideInspector.tint = .(0,0,0);
 			GUIElement.PushParent(sideInspector);
 
 			pinInspectorButton = new .();
