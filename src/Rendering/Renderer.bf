@@ -311,6 +311,8 @@ namespace SpyroScope {
 			Color4 c0, Color4 c1) {
 			if (vertexCount + 2 > maxGenericBufferLength) {
 				Draw();
+				startDrawQueue = lastDrawQueue = &drawQueue[0];
+				vertexCount = vertexOffset = 0;
 			}
 				
 			let normal = Vector3(0,0,1);
@@ -333,6 +335,8 @@ namespace SpyroScope {
 			(float,float) uv0, (float,float) uv1, (float,float) uv2, uint textureObject) {
 			if (vertexCount + 3 > maxGenericBufferLength) {
 				Draw();
+				startDrawQueue = lastDrawQueue = &drawQueue[0];
+				vertexCount = vertexOffset = 0;
 			}
 
 			let normal = Vector3.Cross(p1 - p0, p2 - p0);
