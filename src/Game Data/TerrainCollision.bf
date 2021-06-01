@@ -6,6 +6,13 @@ namespace SpyroScope {
 		public readonly Emulator.Address address;
 		public readonly Emulator.Address deformArrayAddress;
 
+		// Collision Grid
+		public uint16[][][] grid;
+		public int16[] cells ~ delete _;
+		// NOTE: The grid array is not perfect, as in, not every row or column is the same size.
+		// This is similar to how they are stored in game. The cells themselves also vary in size.
+		public bool visualizeGrid;
+
 		public CollisionTriangle[] triangles ~ delete _;
 		public uint32 specialTriangleCount;
 		public uint8[] flagIndices ~ delete _;
@@ -69,6 +76,14 @@ namespace SpyroScope {
 		}
 
 		public ~this() {
+			for (let x in grid) {
+				for (let y in x) {
+					delete y;
+				}
+				delete x;
+			}
+			delete grid;
+
 			if (animationGroups != null) {
 				for (let item in animationGroups) {
 					item.Dispose();
@@ -107,6 +122,62 @@ namespace SpyroScope {
 			Emulator.Address collisionTriangleArray = ?;
 			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 16 : 20), &collisionTriangleArray, 4);
 			Emulator.active.ReadFromRAM(collisionTriangleArray, &triangles[0], sizeof(CollisionTriangle) * triangleCount);
+
+			// Collision Grid
+			// Derived from Spyro: Ripto's Rage [8003f440]
+			uint16 gridSize = ?;
+			Emulator.Address collisionGridX = ?;
+			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 8 : 12), &collisionGridX, 4);
+			
+			Emulator.active.ReadFromRAM(collisionGridX, &gridSize, 2);
+			grid = new .[gridSize];
+			uint16[] gridx = scope .[gridSize];
+			Emulator.active.ReadFromRAM(collisionGridX + 2, gridx.CArray(), 2 * gridSize);
+			
+			int highestCellIndex = 0; 
+			for (let x < gridx.Count) {
+				if (gridx[x] == 0xffff) {
+					grid[x] = new .[0];
+				} else {
+					Emulator.Address collisionGridY = collisionGridX + gridx[x];
+
+					Emulator.active.ReadFromRAM(collisionGridY, &gridSize, 2);
+					grid[x] = new .[gridSize];
+					uint16[] gridy = scope .[gridSize];
+					Emulator.active.ReadFromRAM(collisionGridY + 2, gridy.CArray(), 2 * gridSize);
+
+					for (let y < gridy.Count) {
+						if (gridy[y] == 0xffff) {
+							grid[x][y] = new .[0];
+						} else {
+							Emulator.Address collisionGridZ = collisionGridX + gridy[y];
+
+							Emulator.active.ReadFromRAM(collisionGridZ, &gridSize, 2);
+							grid[x][y] = new .[gridSize];
+							Emulator.active.ReadFromRAM(collisionGridZ + 2, grid[x][y].CArray(), 2 * gridSize);
+
+							for (let z < grid[x][y].Count) {
+								if (grid[x][y][z] != 0xffff && grid[x][y][z] > highestCellIndex) {
+									highestCellIndex = grid[x][y][z];
+								}
+							}
+						}
+					}
+				}
+			}
+
+			Emulator.Address collisionCells = ?;
+			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 12 : 16), &collisionCells, 4);
+			
+			uint16 sample = ?;
+			repeat {
+				highestCellIndex++;
+				Emulator.active.ReadFromRAM(collisionCells + highestCellIndex * 2, &sample, 2);
+			} while (sample & 0x8000 == 0);
+			highestCellIndex++;
+
+			cells = new .[highestCellIndex];
+			Emulator.active.ReadFromRAM(collisionCells, cells.CArray(), 2 * highestCellIndex);
 
 			Emulator.Address collisionFlagArray = ?;
 
@@ -235,6 +306,31 @@ namespace SpyroScope {
 		public void Draw() {
 			if (mesh == null) {
 				return;
+			}
+
+			if (visualizeGrid) {
+				for (let z < Terrain.collision.grid.Count) {
+					for (let y < Terrain.collision.grid[z].Count) {
+						for (let x < Terrain.collision.grid[z][y].Count) {
+							if (Terrain.collision.grid[z][y][x] != 0xffff) {
+								Vector3 cellStart = .(x << 0xc, y << 0xc, z << 0xc);
+	
+								Renderer.DrawLine(cellStart, cellStart + .(1 << 0xc,0,0), .(255,0,0), .(255,0,0));
+								Renderer.DrawLine(cellStart, cellStart + .(0,1 << 0xc,0), .(0,255,0), .(0,255,0));
+								Renderer.DrawLine(cellStart, cellStart + .(0,0,1 << 0xc), .(0,0,255), .(0,0,255));
+	
+								for (let cellEntry in GetCell(x,y,z)) {
+									let triangleIndex = cellEntry & 0x7fff;
+									let triangle = Terrain.collision.mesh.vertices.CArray() + (int)triangleIndex * 3;
+	
+									let triangleCenter = (triangle[0] + triangle[1] + triangle[2]) / 3;
+	
+									Renderer.DrawLine(cellStart + .(1 << 0xb, 1 << 0xb, 1 << 0xb), triangleCenter, .(255,255,0), .(255,255,0));
+								}
+							}
+						}
+					}
+				}
 			}
 
 			Renderer.SetModel(.Zero, .Identity);
@@ -464,6 +560,34 @@ namespace SpyroScope {
 			(uint32, uint32) data = ?;
 			Emulator.active.ReadFromRAM(flagPointer, &data, 8);
 			return data;
+		}
+
+		public int16 GetCellStart(int x, int y, int z) {
+			if (grid.Count > 0 && z < grid.Count) {
+				var cellsz = grid[z];
+				if (cellsz.Count > 0 && y < cellsz.Count) {
+					var cellsy = cellsz[y];
+					if (cellsy.Count > 0 && x < cellsy.Count) {
+						return (.)cellsy[x];
+					}
+				}
+			}
+			return -1;
+		}
+
+		public Span<int16> GetCell(int x, int y, int z) {
+			let cellStartIndex = GetCellStart(x,y,z);
+
+			if (cellStartIndex != -1) {
+				var index = cellStartIndex;
+				repeat {
+					index++;
+				} while (Terrain.collision.cells[index] & 0x8000 == 0);
+
+				return .(Terrain.collision.cells, cellStartIndex, index - cellStartIndex);
+			}
+
+			return .();
 		}
 	}
 }

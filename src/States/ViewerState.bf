@@ -163,7 +163,7 @@ namespace SpyroScope {
 
 			collisionOptionGroup = new .();
 			collisionOptionGroup.Anchor = .(0,1,0,0);
-			collisionOptionGroup.Offset = .(14,-14, 14 + 4 * WindowApp.font.height, 14 + 5 * WindowApp.font.height);
+			collisionOptionGroup.Offset = .(14,-14, 14 + 4 * WindowApp.font.height, 14 + 6 * WindowApp.font.height);
 			collisionOptionGroup.texture = GUIElement.bgOutlineTexture;
 			collisionOptionGroup.tint = .(128,128,128);
 			GUIElement.PushParent(collisionOptionGroup);
@@ -183,10 +183,21 @@ namespace SpyroScope {
 			dropdown.AddItem("Platform");
 			dropdown.Value = 0;
 			dropdown.OnItemSelect.Add(new (option) => Terrain.collision.SetOverlay((.)option));
+			
+			Toggle button = new .();
+			button.Offset = .(2, 18, 2 + 1 * WindowApp.font.height, 18 + 1 * WindowApp.font.height);
+			button.toggleIconTexture = toggledTexture;
+			button.OnActuated.Add(new () => {
+				Terrain.collision.visualizeGrid = button.value;
+			});
+
+			text = new Text();
+			text.Text = "Show Grid";
+			text.Offset = .(26,0,2 + (text.font.height + 6),0);
 
 			GUIElement.PopParent();
-
-			Toggle button = new .();
+			
+			button = new .();
 			button.Offset = .(16, 32, 16 + 3 * WindowApp.font.height, 32 + 3 * WindowApp.font.height);
 			button.toggleIconTexture = toggledTexture;
 			button.OnActuated.Add(new () => ToggleSolid(button.value));
