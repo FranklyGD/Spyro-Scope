@@ -308,31 +308,6 @@ namespace SpyroScope {
 				return;
 			}
 
-			if (visualizeGrid) {
-				for (let z < Terrain.collision.grid.Count) {
-					for (let y < Terrain.collision.grid[z].Count) {
-						for (let x < Terrain.collision.grid[z][y].Count) {
-							if (Terrain.collision.grid[z][y][x] != 0xffff) {
-								Vector3 cellStart = .(x << 0xc, y << 0xc, z << 0xc);
-	
-								Renderer.DrawLine(cellStart, cellStart + .(1 << 0xc,0,0), .(255,0,0), .(255,0,0));
-								Renderer.DrawLine(cellStart, cellStart + .(0,1 << 0xc,0), .(0,255,0), .(0,255,0));
-								Renderer.DrawLine(cellStart, cellStart + .(0,0,1 << 0xc), .(0,0,255), .(0,0,255));
-	
-								for (let cellEntry in GetCell(x,y,z)) {
-									let triangleIndex = cellEntry & 0x7fff;
-									let triangle = Terrain.collision.mesh.vertices.CArray() + (int)triangleIndex * 3;
-	
-									let triangleCenter = (triangle[0] + triangle[1] + triangle[2]) / 3;
-	
-									Renderer.DrawLine(cellStart + .(1 << 0xb, 1 << 0xb, 1 << 0xb), triangleCenter, .(255,255,0), .(255,255,0));
-								}
-							}
-						}
-					}
-				}
-			}
-
 			Renderer.SetModel(.Zero, .Identity);
 			mesh.Draw();
 		}
@@ -347,6 +322,37 @@ namespace SpyroScope {
 				for	(let animationGroup in animationGroups) {
 					for (let mesh in animationGroup.mesh) {
 						mesh.Draw();
+					}
+				}
+			}
+		}
+
+		public void DrawGrid() {
+			if (mesh == null) {
+				return;
+			}
+
+			if (visualizeGrid) {
+				for (let z < Terrain.collision.grid.Count) {
+					for (let y < Terrain.collision.grid[z].Count) {
+						for (let x < Terrain.collision.grid[z][y].Count) {
+							if (Terrain.collision.grid[z][y][x] != 0xffff) {
+								Vector3 cellStart = .(x << 0xc, y << 0xc, z << 0xc);
+
+								Renderer.DrawLine(cellStart, cellStart + .(1 << 0xc,0,0), .(255,0,0), .(255,0,0));
+								Renderer.DrawLine(cellStart, cellStart + .(0,1 << 0xc,0), .(0,255,0), .(0,255,0));
+								Renderer.DrawLine(cellStart, cellStart + .(0,0,1 << 0xc), .(0,0,255), .(0,0,255));
+
+								for (let cellEntry in GetCell(x,y,z)) {
+									let triangleIndex = cellEntry & 0x7fff;
+									let triangle = Terrain.collision.mesh.vertices.CArray() + (int)triangleIndex * 3;
+
+									let triangleCenter = (triangle[0] + triangle[1] + triangle[2]) / 3;
+
+									Renderer.DrawLine(cellStart + .(1 << 0xb, 1 << 0xb, 1 << 0xb), triangleCenter, .(255,255,0), .(255,255,0));
+								}
+							}
+						}
 					}
 				}
 			}

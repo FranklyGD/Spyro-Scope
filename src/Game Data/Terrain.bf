@@ -379,6 +379,7 @@ namespace SpyroScope {
 				
 				Renderer.BeginWireframe();
 				collision.DrawDeformFrames();
+				collision.DrawGrid();
 			} else if (regions != null) {
 				Renderer.BeginRetroShading();
 				Renderer.halfWhiteTexture.Bind();
