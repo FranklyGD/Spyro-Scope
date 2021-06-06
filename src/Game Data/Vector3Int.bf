@@ -1,7 +1,7 @@
 using System;
 
 namespace SpyroScope {
-	struct Vector3Int {
+	struct Vector3Int : IHashable {
 		public int32 x,y,z;
 
 		public this(int32 x, int32 y, int32 z) {
@@ -46,6 +46,10 @@ namespace SpyroScope {
 			if (right == 0)
 				return left;
 			return .(left.x / right, left.y / right, left.z / right);
+		}
+
+		public int GetHashCode() {
+			return x.GetHashCode() ^ y.GetHashCode() << 1 ^ z.GetHashCode() << 2;
 		}
 	}
 }

@@ -13,9 +13,39 @@ namespace SpyroScope {
 		// This is similar to how they are stored in game. The cells themselves also vary in size.
 		public bool visualizeGrid;
 
-		public CollisionTriangle[] triangles ~ delete _;
-		public uint32 specialTriangleCount;
-		public uint8[] flagIndices ~ delete _;
+		public uint32 TriangleCount {
+			[Inline]
+			get {
+				uint32 value = ?;
+				Emulator.active.ReadFromRAM(address, &value, 4);
+				return value;
+			}
+			[Inline]
+			set {
+				var value;
+				Emulator.active.WriteToRAM(address, &value, 4);
+				triangles.Count = value;
+			}
+		}
+
+		List<CollisionTriangle> triangles ~ delete _;
+
+		public uint32 SpecialTriangleCount {
+			[Inline]
+			get {
+				uint32 value = ?;
+				Emulator.active.ReadFromRAM(address + 4, &value, 4);
+				return value;
+			}
+			[Inline]
+			set {
+				var value;
+				Emulator.active.WriteToRAM(address + 4, &value, 4);
+				flagIndices.Count = value;
+			}
+		}
+
+		public List<uint8> flagIndices ~ delete _;
 		public Emulator.Address[] collisionFlagPointerArray = new .[0x40] ~ delete _;
 
 		public Mesh mesh;
@@ -71,7 +101,7 @@ namespace SpyroScope {
 		public this(Emulator.Address address, Emulator.Address deformAddress) {
 			this.address = address;
 			this.deformArrayAddress = deformAddress;
-
+			
 			Reload();
 		}
 
@@ -114,14 +144,10 @@ namespace SpyroScope {
 		}
 
 		public void Reload() {
-			uint32 triangleCount = ?;
-			Emulator.active.ReadFromRAM(address, &triangleCount, 4);
-			Emulator.active.ReadFromRAM(address + 4, &specialTriangleCount, 4);
-
-			triangles = new .[triangleCount];
+			triangles = new .();
 			Emulator.Address collisionTriangleArray = ?;
 			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 16 : 20), &collisionTriangleArray, 4);
-			Emulator.active.ReadFromRAM(collisionTriangleArray, &triangles[0], sizeof(CollisionTriangle) * triangleCount);
+			Emulator.active.ReadFromRAM(collisionTriangleArray, triangles.GrowUnitialized(TriangleCount), sizeof(CollisionTriangle) * triangles.Count);
 
 			// Collision Grid
 			// Derived from Spyro: Ripto's Rage [8003f440]
@@ -181,9 +207,9 @@ namespace SpyroScope {
 
 			Emulator.Address collisionFlagArray = ?;
 
-			flagIndices = new .[triangleCount];
+			flagIndices = new .();
 			Emulator.active.ReadFromRAM(address + 24, &collisionFlagArray, 4);
-			Emulator.active.ReadFromRAM(collisionFlagArray, &flagIndices[0], 1 * triangleCount);
+			Emulator.active.ReadFromRAM(collisionFlagArray, flagIndices.GrowUnitialized(SpecialTriangleCount), sizeof(uint8) * flagIndices.Count);
 
 			Emulator.active.ReadFromRAM(Emulator.collisionFlagsArrayPointers[(int)Emulator.active.rom], &collisionFlagArray, 4);
 			Emulator.active.ReadFromRAM(collisionFlagArray, &collisionFlagPointerArray[0], 4 * 0x40);
@@ -213,7 +239,7 @@ namespace SpyroScope {
 					waterSurfaceTriangles.Add(triangleIndex);
 				}
 
-				if (triangleIndex < specialTriangleCount) {
+				if (triangleIndex < SpecialTriangleCount) {
 					let flagInfo = flagIndices[triangleIndex];
 
 					let flagIndex = flagInfo & 0x3f;
@@ -478,7 +504,7 @@ namespace SpyroScope {
 
 		/// Apply colors based on the flag applied on the triangles
 		void ColorCollisionFlags() {
-			for (int triangleIndex < specialTriangleCount) {
+			for (int triangleIndex < SpecialTriangleCount) {
 				Renderer.Color color = .(255,255,255);
 				let flagInfo = flagIndices[triangleIndex];
 
@@ -511,7 +537,7 @@ namespace SpyroScope {
 		}
 
 		void ColorCollisionSounds() {
-			for (int triangleIndex < specialTriangleCount) {
+			for (int triangleIndex < SpecialTriangleCount) {
 				Renderer.Color color = .(255,255,255);
 				let flagInfo = flagIndices[triangleIndex];
 
@@ -588,12 +614,183 @@ namespace SpyroScope {
 				var index = cellStartIndex;
 				repeat {
 					index++;
-				} while (Terrain.collision.cells[index] & 0x8000 == 0);
+				} while (Terrain.collision.cells[(uint16)index] & 0x8000 == 0);
 
 				return .(Terrain.collision.cells, cellStartIndex, index - cellStartIndex);
 			}
 
 			return .();
+		}
+
+		[Inline]
+		void DeleteGrid() {
+			for (let x in grid) {
+				for (let y in x) {
+					delete y;
+				}
+				delete x;
+			}
+			DeleteAndNullify!(grid);
+		}
+
+		public void ClearGrid() {
+			DeleteGrid();
+			grid = new .[0];
+
+			delete cells;
+			uint32 endCells = 0xffff;
+			Emulator.Address collisionCells = ?;
+			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 12 : 16), &collisionCells, 4);
+			Emulator.active.ReadFromRAM(collisionCells, &endCells, 2);
+			cells = new .[0];
+
+			Emulator.Address collisionGrid = ?;
+			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 8 : 12), &collisionGrid, 4);
+
+			uint16 gridSize = 0;
+			Emulator.active.WriteToRAM(collisionGrid, &gridSize, 2);
+		}
+
+		public void GenerateGrid() {
+			List<List<int>> gridSizes = scope .();
+			Dictionary<Vector3Int,List<int16>> cells = new .();
+
+			int cellsMemoryAllocCount = 0;
+
+			for (let i < triangles.Count) {
+				let packedTriangle = triangles[i];
+				let triangle = packedTriangle.Unpack(false);
+
+				// Divide by the size of the cells in the grid
+				Vector3[3] triCellPos;
+				triCellPos[0] = (Vector3)triangle[0] / (1 << 0xc);
+				triCellPos[1] = (Vector3)triangle[1] / (1 << 0xc);
+				triCellPos[2] = (Vector3)triangle[2] / (1 << 0xc);
+
+				// Find coordinates in grid per vertex
+				for (let v < triCellPos.Count) {
+					let vertex = triCellPos[v];
+
+					Vector3Int gridCoords;
+					gridCoords.x = (.)vertex.x;
+					gridCoords.y = (.)vertex.y;
+					gridCoords.z = (.)vertex.z;
+
+					// Create the cell if it doesn't exist
+					if (!cells.ContainsKey(gridCoords)) {
+						cells[gridCoords] = new .();
+
+						// Modify grid array
+						if (gridCoords.z + 1 > gridSizes.Count) {
+							gridSizes.Count = gridCoords.z + 1;
+						}
+						if (gridSizes[gridCoords.z] == null) {
+							gridSizes[gridCoords.z] = scope:: .();
+						}
+						if (gridCoords.y + 1 > gridSizes[gridCoords.z].Count) {
+							gridSizes[gridCoords.z].Count = gridCoords.y + 1;
+						}
+						if (gridCoords.x > gridSizes[gridCoords.z][gridCoords.y]) {
+							gridSizes[gridCoords.z][gridCoords.y] = gridCoords.x + 1;
+						}
+					}
+
+					if (cells[gridCoords].FindIndex(scope (x) => x == (.)i) == -1) {
+						cells[gridCoords].Add((.)i);
+						cellsMemoryAllocCount++;
+					}
+				}
+			}
+
+			cellsMemoryAllocCount++;
+
+			delete this.cells;
+			this.cells = new .[cellsMemoryAllocCount];
+			
+			Dictionary<Vector3Int,uint16> cellStarts = scope .();
+			uint16 index = 0;
+			for (let cell in cells) {
+				cellStarts[cell.key] = index;
+
+				for (let i < cell.value.Count) {
+					this.cells[index + i] = cell.value[i];
+				}
+
+				this.cells[index] |= (.)0x8000; // Cell Terminator
+				index += (.)cell.value.Count;
+			}
+			this.cells[cellsMemoryAllocCount - 1] = (.)0x8000; // Terminator
+
+			Emulator.Address collisionCells = ?;
+			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 12 : 16), &collisionCells, 4);
+			Emulator.active.WriteToRAM(collisionCells, this.cells.CArray(), this.cells.Count * 2);
+			DeleteDictionaryAndValues!(cells);
+
+			DeleteGrid();
+			grid = new .[gridSizes.Count];
+			for (let z < gridSizes.Count) {
+				grid[z] = new .[gridSizes[z] == null ? 0 : gridSizes[z].Count];
+				for (let y < grid[z].Count) {
+					grid[z][y] = new .[gridSizes[z][y]];
+					for (let x < grid[z][y].Count) {
+						if (cellStarts.GetValue(.((.)x,(.)y,(.)z)) case .Ok(let val)) {
+							grid[z][y][x] = val;
+						} else {
+							grid[z][y][x] = (.)-1;
+						}
+					}
+				}
+			}
+			
+			Emulator.Address collisionGrid = ?;
+			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 8 : 12), &collisionGrid, 4);
+
+			int terminator = -1;
+			int offset = (grid.Count + 1) * 2;
+			int count = grid.Count;
+			Emulator.active.WriteToRAM(collisionGrid, &count, 2);
+			for (let z < grid.Count) {
+				if (grid[z].Count > 0) {
+					Emulator.active.WriteToRAM(collisionGrid + 2 * (1 + z), &offset, 2);
+	
+					offset += (grid[z].Count + 1) * 2;
+				} else {
+					Emulator.active.WriteToRAM(collisionGrid + 2 * (1 + z), &terminator, 2);
+				}
+			}
+			
+			int offset2 = grid.Count + 1;
+			for (let z < grid.Count) {
+				count = grid[z].Count;
+				if (count > 0) {
+					Emulator.active.WriteToRAM(collisionGrid + 2 * offset2, &count, 2);
+					for (let y < grid[z].Count) {
+						if (grid[z][y].Count > 0) {
+							Emulator.active.WriteToRAM(collisionGrid + 2 * (1 + y + offset2), &offset, 2);
+		
+							offset += (grid[z][y].Count + 1) * 2;
+						} else {
+							Emulator.active.WriteToRAM(collisionGrid + 2 * (1 + y + offset2), &terminator, 2);
+						}
+					}
+	
+					offset2 += grid[z].Count + 1;
+				}
+			}
+
+			for (let z < grid.Count) {
+				for (let y < grid[z].Count) {
+					count = grid[z][y].Count;
+					if (count > 0) {
+						Emulator.active.WriteToRAM(collisionGrid + 2 * offset2, &count, 2);
+						for (let x < grid[z][y].Count) {
+							Emulator.active.WriteToRAM(collisionGrid + 2 * (1 + x + offset2), &grid[z][y][x], 2);
+						}
+	
+						offset2 += grid[z][y].Count + 1;
+					}
+				}
+			}
 		}
 	}
 }

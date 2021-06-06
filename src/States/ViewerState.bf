@@ -1110,6 +1110,9 @@ namespace SpyroScope {
 									Recording.Replay();
 								}
 							}
+							case .F1: {
+								Terrain.collision.GenerateGrid();
+							}
 							default : {}
 						}
 					}
@@ -1364,7 +1367,7 @@ namespace SpyroScope {
 		}
 
 		void DrawFlagsOverlay() {
-			if (ViewerSelection.currentTriangleIndex > -1 && ViewerSelection.currentTriangleIndex < Terrain.collision.specialTriangleCount) {
+			if (ViewerSelection.currentTriangleIndex > -1 && ViewerSelection.currentTriangleIndex < Terrain.collision.SpecialTriangleCount) {
 				let flagInfo = Terrain.collision.flagIndices[ViewerSelection.currentTriangleIndex];
 				let flagIndex = flagInfo & 0x3f;
 				let flagData = Terrain.collision.GetCollisionFlagData(flagIndex);
