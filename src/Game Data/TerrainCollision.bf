@@ -126,15 +126,15 @@ namespace SpyroScope {
 		}
 
 		/// Sets the position of the mesh's triangle with the index the game uses
-		public void SetNearVertex(int triangleIndex, Vector3Int[3] triangle, bool updateGame = false) {
+		public void SetTriangle(int triangleIndex, Vector3Int[3] triangle, bool updateGame = false) {
 			triangles[triangleIndex] = CollisionTriangle.Pack(triangle, false);
 
 			let unpackedTriangle = triangles[triangleIndex].Unpack(false);
-			let meshTriangle = (Vector3[3]*)&mesh.vertices[triangleIndex * 3];
-			(*meshTriangle)[0] = unpackedTriangle[0];
-			(*meshTriangle)[1] = unpackedTriangle[1];
-			(*meshTriangle)[2] = unpackedTriangle[2];
-			mesh.SetDirty();
+			let meshTriangle = (Vector3*)&mesh.vertices[triangleIndex * 3];
+			meshTriangle[0] = unpackedTriangle[0];
+			meshTriangle[1] = unpackedTriangle[1];
+			meshTriangle[2] = unpackedTriangle[2];
+			mesh.SetDirty(.Vertex);
 
 			if (updateGame) {
 				Emulator.Address collisionTriangleArray = ?;
@@ -302,15 +302,40 @@ namespace SpyroScope {
 				}
 
 				// Update all triangles that are meant to move between states
-				for (let i < animationGroup.count * 3) {
-					Vector3 fromVertex = animationGroup.mesh[keyframeData.fromState].vertices[i];
-					Vector3 toVertex = animationGroup.mesh[keyframeData.toState].vertices[i];
-					Vector3 fromNormal = animationGroup.mesh[keyframeData.fromState].normals[i];
-					Vector3 toNormal = animationGroup.mesh[keyframeData.toState].normals[i];
+				for (let triangleIndex < animationGroup.count) {
+					Vector3[3] triangle;
+					for (let triangleVertexIndex < 3) {
+						let vertexIndex = triangleIndex * 3 + triangleVertexIndex;
 
-					let vertexIndex = animationGroup.start * 3 + i;
-					mesh.vertices[vertexIndex] = fromVertex + (toVertex - fromVertex) * interpolation;
-					mesh.normals[vertexIndex] = fromNormal + (toNormal - fromNormal) * interpolation;
+						Vector3 fromVertex = animationGroup.mesh[keyframeData.fromState].vertices[vertexIndex];
+						Vector3 toVertex = animationGroup.mesh[keyframeData.toState].vertices[vertexIndex];
+
+						triangle[triangleVertexIndex] = Math.Lerp(fromVertex, toVertex, interpolation);
+					}
+					let absoluteTriangleIndex = animationGroup.start + triangleIndex;
+
+					// Determining vertex order
+					// Derived from Spyro: Ripto's Rage [80023014]
+					Vector3Int[3] triangleI;
+
+					// Find lowest vertex
+					if (triangle[1].z < triangle[0].z || triangle[2].z < triangle[0].z) {
+						if (triangle[2].z < triangle[1].z) {
+							triangleI[0] = (.)triangle[2];
+							triangleI[1] = (.)triangle[0];
+							triangleI[2] = (.)triangle[1];
+						} else {
+							triangleI[0] = (.)triangle[1];
+							triangleI[1] = (.)triangle[2];
+							triangleI[2] = (.)triangle[0];
+						}
+					} else {
+						triangleI[0] = (.)triangle[0];
+						triangleI[1] = (.)triangle[1];
+						triangleI[2] = (.)triangle[2];
+					}
+
+					SetTriangle(absoluteTriangleIndex, triangleI);
 				}
 
 				// While in this overlay, color the terrain mesh to show the interpolation amount between states
