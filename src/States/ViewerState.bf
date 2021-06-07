@@ -580,8 +580,8 @@ namespace SpyroScope {
 				if (ViewerSelection.currentObjIndex > -1) {
 					let moby = Moby.allocated[ViewerSelection.currentObjIndex];
 					Translator.Update(moby.position, moby.basis);
-				/*} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
-					Translator.Update(Terrain.collision.mesh.vertices[ViewerSelection.currentTriangleIndex * 3], .Identity);*/
+				} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
+					Translator.Update(Terrain.collision.mesh.vertices[ViewerSelection.currentTriangleIndex], .Identity);
 				} else {
 					Translator.Update(Emulator.active.SpyroPosition, Emulator.active.spyroBasis.ToMatrixCorrected());
 				}
@@ -951,12 +951,12 @@ namespace SpyroScope {
 										moby.position = (.)position;
 										Moby.GetAddress(ViewerSelection.currentObjIndex).Write(&moby);
 									});
-								/*} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
+								} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
 									Translator.OnDragged.Add(new (position) => {
-										var triangle = Terrain.collision.triangles[ViewerSelection.currentTriangleIndex].Unpack(false);
-										triangle[0] = (.)position;
-										Terrain.collision.SetNearVertex((.)ViewerSelection.currentTriangleIndex, triangle, true);
-									});*/
+										var triangle = Terrain.collision.GetTriangle(ViewerSelection.currentTriangleIndex / 3);
+										triangle[ViewerSelection.currentTriangleIndex % 3] = (.)position;
+										Terrain.collision.SetTriangle((.)ViewerSelection.currentTriangleIndex / 3, triangle, true);
+									});
 								} else {
 									Translator.OnDragBegin.Add(new => Emulator.active.KillSpyroUpdate);
 									Translator.OnDragged.Add(new (position) => {
@@ -1115,9 +1115,15 @@ namespace SpyroScope {
 
 								let position = Emulator.active.SpyroPosition + .(0,0,-500);
 								Vector3Int[3] triangle;
-								triangle[0] = position;
-								triangle[1] = position + .(0,500,0);
-								triangle[2] = position + .(500,0,0);
+								triangle[0] = position + .(-500,-500,0);
+								triangle[1] = position + .(-500,500,0);
+								triangle[2] = position + .(500,-500,0);
+
+								Terrain.collision.AddTriangle(triangle);
+								
+								triangle[0] = position + .(-500,500,0);
+								triangle[1] = position + .(500,500,0);
+								triangle[2] = position + .(500,-500,0);
 
 								Terrain.collision.AddTriangle(triangle);
 							}

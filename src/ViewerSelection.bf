@@ -26,8 +26,22 @@ namespace SpyroScope {
 			let ray = Camera.ScreenPointToRay(WindowApp.mousePosition);
 
 			if (Terrain.renderMode == .Collision && Terrain.collision != null) {
-				if (GMath.RayMeshIntersect(origin, ray, Terrain.collision.mesh, ref distance, ref currentTriangleIndex)) {
+				if (GMath.RayMeshIntersect(origin, ray, Terrain.collision.mesh, ref distance, ref hoveredTriangleIndex)) {
 					ViewerState.cursor3DPosition = origin + ray * distance;
+
+					var nearestIndex = 0;
+					var nearestDistance = float.PositiveInfinity;
+					for (let i < 3) {
+						let vertex = Terrain.collision.mesh.vertices[hoveredTriangleIndex * 3 + i];
+						let dist = (vertex - ViewerState.cursor3DPosition).LengthSq();
+						if (dist < nearestDistance) {
+							nearestIndex = i;
+							nearestDistance = dist;
+						}
+					}
+
+					hoveredTriangleIndex = hoveredTriangleIndex * 3 + nearestIndex;
+
 					return true;
 				}
 			} else if (Terrain.regions != null) {

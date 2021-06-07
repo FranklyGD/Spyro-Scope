@@ -127,7 +127,6 @@ namespace SpyroScope {
 			TriangleCount = triangleIndex + 1;
 			SetTriangle(triangleIndex, triangle, true, false);
 			GenerateMesh();
-			GenerateGrid();
 		}
 
 		
@@ -155,6 +154,8 @@ namespace SpyroScope {
 				Emulator.Address collisionTriangleArray = ?;
 				Emulator.active.ReadFromRAM(address + 20, &collisionTriangleArray, 4);
 				Emulator.active.WriteToRAM(collisionTriangleArray + triangleIndex * sizeof(CollisionTriangle), &triangles[triangleIndex], sizeof(CollisionTriangle));
+				
+				GenerateGrid();
 			}
 		}
 
