@@ -9,6 +9,7 @@ namespace SpyroScope {
 		// Collision Grid
 		public uint16[][][] grid;
 		public int16[] cells ~ delete _;
+		const int cellSize = 1 << 0xc;
 		// NOTE: The grid array is not perfect, as in, not every row or column is the same size.
 		// This is similar to how they are stored in game. The cells themselves also vary in size.
 		public bool visualizeGrid;
@@ -336,9 +337,9 @@ namespace SpyroScope {
 							if (Terrain.collision.grid[z][y][x] != 0xffff) {
 								Vector3 cellStart = .(x << 0xc, y << 0xc, z << 0xc);
 
-								Renderer.DrawLine(cellStart, cellStart + .(1 << 0xc,0,0), .(255,0,0), .(255,0,0));
-								Renderer.DrawLine(cellStart, cellStart + .(0,1 << 0xc,0), .(0,255,0), .(0,255,0));
-								Renderer.DrawLine(cellStart, cellStart + .(0,0,1 << 0xc), .(0,0,255), .(0,0,255));
+								Renderer.DrawLine(cellStart, cellStart + .(cellSize,0,0), .(255,0,0), .(255,0,0));
+								Renderer.DrawLine(cellStart, cellStart + .(0,cellSize,0), .(0,255,0), .(0,255,0));
+								Renderer.DrawLine(cellStart, cellStart + .(0,0,cellSize), .(0,0,255), .(0,0,255));
 
 								for (let cellEntry in GetCell(x,y,z)) {
 									let triangleIndex = cellEntry & 0x7fff;
@@ -715,7 +716,6 @@ namespace SpyroScope {
 				let triangle = packedTriangle.Unpack(false);
 
 				// Divide by the size of the cells in the grid
-				const int cellSize = 1 << 0xc;
 				Vector3[3] triCellPos;
 				triCellPos[0] = (Vector3)triangle[0] / cellSize;
 				triCellPos[1] = (Vector3)triangle[1] / cellSize;
