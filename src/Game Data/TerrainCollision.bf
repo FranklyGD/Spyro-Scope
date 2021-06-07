@@ -863,52 +863,48 @@ namespace SpyroScope {
 			Emulator.Address collisionGrid = ?;
 			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 8 : 12), &collisionGrid, 4);
 
-			int terminator = -1;
 			int offset = (grid.Count + 1) * 2;
-			int count = grid.Count;
-			Emulator.active.WriteToRAM(collisionGrid, &count, 2);
+
+			List<uint16> buffer = scope .();
+			buffer.Add((.)grid.Count);
 			for (let z < grid.Count) {
 				if (grid[z].Count > 0) {
-					Emulator.active.WriteToRAM(collisionGrid + 2 * (1 + z), &offset, 2);
-	
+					buffer.Add((.)offset);
+
 					offset += (grid[z].Count + 1) * 2;
 				} else {
-					Emulator.active.WriteToRAM(collisionGrid + 2 * (1 + z), &terminator, 2);
+					buffer.Add((.)-1);
 				}
 			}
-			
-			int offset2 = grid.Count + 1;
+
 			for (let z < grid.Count) {
-				count = grid[z].Count;
-				if (count > 0) {
-					Emulator.active.WriteToRAM(collisionGrid + 2 * offset2, &count, 2);
+				if (grid[z].Count > 0) {
+					buffer.Add((.)grid[z].Count);
 					for (let y < grid[z].Count) {
 						if (grid[z][y].Count > 0) {
-							Emulator.active.WriteToRAM(collisionGrid + 2 * (1 + y + offset2), &offset, 2);
-		
+							buffer.Add((.)offset);
+
 							offset += (grid[z][y].Count + 1) * 2;
 						} else {
-							Emulator.active.WriteToRAM(collisionGrid + 2 * (1 + y + offset2), &terminator, 2);
+							buffer.Add((.)-1);
 						}
 					}
-	
-					offset2 += grid[z].Count + 1;
 				}
 			}
 
 			for (let z < grid.Count) {
 				for (let y < grid[z].Count) {
-					count = grid[z][y].Count;
-					if (count > 0) {
-						Emulator.active.WriteToRAM(collisionGrid + 2 * offset2, &count, 2);
+					if (grid[z][y].Count > 0) {
+						buffer.Add((.)grid[z][y].Count);
 						for (let x < grid[z][y].Count) {
-							Emulator.active.WriteToRAM(collisionGrid + 2 * (1 + x + offset2), &grid[z][y][x], 2);
+							buffer.Add(grid[z][y][x]);
 						}
-	
-						offset2 += grid[z][y].Count + 1;
 					}
 				}
 			}
+
+			// Commit changes
+			Emulator.active.WriteToRAM(collisionGrid, buffer.Ptr, buffer.Count * 2);
 		}
 
 		public void Clear() {
