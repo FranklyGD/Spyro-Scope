@@ -1111,7 +1111,15 @@ namespace SpyroScope {
 								}
 							}
 							case .F1: {
-								Terrain.collision.GenerateGrid();
+								Terrain.collision.Clear();
+
+								let position = Emulator.active.SpyroPosition + .(0,0,-500);
+								Vector3Int[3] triangle;
+								triangle[0] = position;
+								triangle[1] = position + .(0,500,0);
+								triangle[2] = position + .(500,0,0);
+
+								Terrain.collision.AddTriangle(triangle);
 							}
 							default : {}
 						}

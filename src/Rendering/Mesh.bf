@@ -87,7 +87,7 @@ namespace SpyroScope {
 
 		void Init() {
 			IsValid =
-				vertices.Count > 3 &&
+				vertices.Count >= 3 &&
 				vertices.Count == normals.Count &&
 				vertices.Count == colors.Count &&
 				indices.Count % 3 == 0;
@@ -219,7 +219,7 @@ namespace SpyroScope {
 
 		public void Update() {
 			IsValid =
-				vertices.Count > 3 &&
+				vertices.Count >= 3 &&
 				vertices.Count == normals.Count &&
 				vertices.Count == colors.Count &&
 				indices.Count % 3 == 0;

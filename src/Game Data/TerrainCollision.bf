@@ -114,27 +114,41 @@ namespace SpyroScope {
 			}
 			delete grid;
 
-			if (animationGroups != null) {
-				for (let item in animationGroups) {
-					item.Dispose();
-				}
-			}
+			DeleteDeformGroups();
 			delete animationGroups;
 			delete mesh;
 			delete waterSurfaceTriangles;
 			delete collisionTypes;
 		}
 
+		public void AddTriangle(Vector3Int[3] triangle) {
+			let triangleIndex = TriangleCount;
+			TriangleCount = triangleIndex + 1;
+			SetTriangle(triangleIndex, triangle, true, false);
+			GenerateMesh();
+			GenerateGrid();
+		}
+
+		
+		public Vector3Int[3] GetTriangle(int triangleIndex) {
+			return triangles[triangleIndex].Unpack(false);
+		}
+
 		/// Sets the position of the mesh's triangle with the index the game uses
-		public void SetTriangle(int triangleIndex, Vector3Int[3] triangle, bool updateGame = false) {
+		public void SetTriangle(int triangleIndex, Vector3Int[3] triangle, bool updateGame = false, bool updateMesh = true) {
 			triangles[triangleIndex] = CollisionTriangle.Pack(triangle, false);
 
-			let unpackedTriangle = triangles[triangleIndex].Unpack(false);
-			let meshTriangle = (Vector3*)&mesh.vertices[triangleIndex * 3];
-			meshTriangle[0] = unpackedTriangle[0];
-			meshTriangle[1] = unpackedTriangle[1];
-			meshTriangle[2] = unpackedTriangle[2];
-			mesh.SetDirty(.Vertex);
+			if (updateMesh) {
+				let unpackedTriangle = triangles[triangleIndex].Unpack(false);
+				let meshTriangle = (Vector3*)&mesh.vertices[triangleIndex * 3];
+				meshTriangle[0] = unpackedTriangle[0];
+				meshTriangle[1] = unpackedTriangle[1];
+				meshTriangle[2] = unpackedTriangle[2];
+	
+				let meshNormal = (Vector3*)&mesh.normals[triangleIndex * 3];
+				meshNormal[0] = meshNormal[1] = meshNormal[2] = Vector3.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
+				mesh.SetDirty(.Vertex | .Normal);
+			}
 
 			if (updateGame) {
 				Emulator.Address collisionTriangleArray = ?;
@@ -214,77 +228,9 @@ namespace SpyroScope {
 			Emulator.active.ReadFromRAM(Emulator.collisionFlagsArrayPointers[(int)Emulator.active.rom], &collisionFlagArray, 4);
 			Emulator.active.ReadFromRAM(collisionFlagArray, &collisionFlagPointerArray[0], 4 * 0x40);
 
-			// Generate Mesh
-			let vertexCount = triangles.Count * 3;
-			Vector3[] vertices = new .[vertexCount];
-			Vector3[] normals = new .[vertexCount];
-			Renderer.Color4[] colors = new .[vertexCount];
-
-			collisionTypes.Clear();
-			waterSurfaceTriangles.Clear();
-
-			upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
-			lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
-
-			for (let triangleIndex < triangles.Count) {
-				let triangle = triangles[triangleIndex];
-				let unpackedTriangle = triangle.Unpack(false);
-			
-				let normal = Vector3.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
-				Renderer.Color color = .(255,255,255);
-
-				// Terrain as Water
-				// Derived from Spyro: Ripto's Rage [8003e694]
-				if (triangle.z & 0x4000 != 0) {
-					waterSurfaceTriangles.Add(triangleIndex);
-				}
-
-				if (triangleIndex < SpecialTriangleCount) {
-					let flagInfo = flagIndices[triangleIndex];
-
-					let flagIndex = flagInfo & 0x3f;
-					if (flagIndex != 0x3f) {
-						let flagData = GetCollisionFlagData(flagIndex);
-
-						if (overlay == .Flags) {
-							if (flagData.type < 11 /*Emulator.collisionTypes.Count*/) {
-								// Swap Ice with Supercharge if installment is "Spyro the Dragon" (Spyro 1)
-								let flagType = Emulator.active.installment == .SpyroTheDragon && flagData.type == 4 ? 2 : flagData.type;
-								color = Emulator.collisionTypes[flagType].color;
-							} else {
-								color = .(255, 0, 255);
-							}
-						}
-
-						if (!collisionTypes.Contains(flagData.type)) {
-							collisionTypes.Add(flagData.type);
-						} 
-					}
-				}
-
-				for (let vi < 3) {
-					let i = triangleIndex * 3 + vi;
-					vertices[i] = unpackedTriangle[vi];
-					normals[i] = normal;
-					colors[i] = color;
-
-					upperBound.x = Math.Max(upperBound.x, vertices[i].x);
-					upperBound.y = Math.Max(upperBound.y, vertices[i].y);
-					upperBound.z = Math.Max(upperBound.z, vertices[i].z);
-
-					lowerBound.x = Math.Min(lowerBound.x, vertices[i].x);
-					lowerBound.y = Math.Min(lowerBound.y, vertices[i].y);
-					lowerBound.z = Math.Min(lowerBound.z, vertices[i].z);
-				}
-			}
-
-			delete mesh;
-			mesh = new .(vertices, normals, colors);
+			GenerateMesh();
 
 			ReloadDeformGroups();
-
-			ClearColor();
-			ApplyColor();
 		}
 		
 		public void Update() {
@@ -410,13 +356,7 @@ namespace SpyroScope {
 		}
 
 		public void ReloadDeformGroups() {
-			if (animationGroups != null) {
-				for (let item in animationGroups) {
-					item.Dispose();
-				}
-				DeleteAndNullify!(animationGroups);
-			}
-
+			DeleteDeformGroups();
 
 			uint32 count = 0;
 			if (Emulator.active.loadingStatus == .Idle) {
@@ -496,6 +436,23 @@ namespace SpyroScope {
 			}
 
 			ClearColor();
+		}
+
+		void ClearDeformGroups() {
+			DeleteDeformGroups();
+			animationGroups = new .[0];
+
+			uint32 count = 0;
+			Emulator.active.WriteToRAM(Emulator.collisionDeformDataPointers[(int)Emulator.active.rom] - 4, &count, 4);
+		}
+
+		void DeleteDeformGroups() {
+			if (animationGroups != null) {
+				for (let item in animationGroups) {
+					item.Dispose();
+				}
+				DeleteAndNullify!(animationGroups);
+			}
 		}
 
 		public void SetOverlay(Overlay overlay) {
@@ -619,6 +576,77 @@ namespace SpyroScope {
 			return data;
 		}
 
+		void GenerateMesh() {
+			let vertexCount = triangles.Count * 3;
+			Vector3[] vertices = new .[vertexCount];
+			Vector3[] normals = new .[vertexCount];
+			Renderer.Color4[] colors = new .[vertexCount];
+
+			collisionTypes.Clear();
+			waterSurfaceTriangles.Clear();
+
+			upperBound = .(float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity);
+			lowerBound = .(float.PositiveInfinity,float.PositiveInfinity,float.PositiveInfinity);
+
+			for (let triangleIndex < triangles.Count) {
+				let triangle = triangles[triangleIndex];
+				let unpackedTriangle = triangle.Unpack(false);
+
+				let normal = Vector3.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
+				Renderer.Color color = .(255,255,255);
+
+				// Terrain as Water
+				// Derived from Spyro: Ripto's Rage [8003e694]
+				if (triangle.z & 0x4000 != 0) {
+					waterSurfaceTriangles.Add(triangleIndex);
+				}
+
+				if (triangleIndex < SpecialTriangleCount) {
+					let flagInfo = flagIndices[triangleIndex];
+
+					let flagIndex = flagInfo & 0x3f;
+					if (flagIndex != 0x3f) {
+						let flagData = GetCollisionFlagData(flagIndex);
+
+						if (overlay == .Flags) {
+							if (flagData.type < 11 /*Emulator.collisionTypes.Count*/) {
+								// Swap Ice with Supercharge if installment is "Spyro the Dragon" (Spyro 1)
+								let flagType = Emulator.active.installment == .SpyroTheDragon && flagData.type == 4 ? 2 : flagData.type;
+								color = Emulator.collisionTypes[flagType].color;
+							} else {
+								color = .(255, 0, 255);
+							}
+						}
+
+						if (!collisionTypes.Contains(flagData.type)) {
+							collisionTypes.Add(flagData.type);
+						} 
+					}
+				}
+
+				for (let vi < 3) {
+					let i = triangleIndex * 3 + vi;
+					vertices[i] = unpackedTriangle[vi];
+					normals[i] = normal;
+					colors[i] = color;
+
+					upperBound.x = Math.Max(upperBound.x, vertices[i].x);
+					upperBound.y = Math.Max(upperBound.y, vertices[i].y);
+					upperBound.z = Math.Max(upperBound.z, vertices[i].z);
+
+					lowerBound.x = Math.Min(lowerBound.x, vertices[i].x);
+					lowerBound.y = Math.Min(lowerBound.y, vertices[i].y);
+					lowerBound.z = Math.Min(lowerBound.z, vertices[i].z);
+				}
+			}
+
+			delete mesh;
+			mesh = new .(vertices, normals, colors);
+
+			ClearColor();
+			ApplyColor();
+		}
+
 		public int16 GetCellStart(int x, int y, int z) {
 			if (grid.Count > 0 && z < grid.Count) {
 				var cellsz = grid[z];
@@ -687,21 +715,24 @@ namespace SpyroScope {
 				let triangle = packedTriangle.Unpack(false);
 
 				// Divide by the size of the cells in the grid
+				const int cellSize = 1 << 0xc;
 				Vector3[3] triCellPos;
-				triCellPos[0] = (Vector3)triangle[0] / (1 << 0xc);
-				triCellPos[1] = (Vector3)triangle[1] / (1 << 0xc);
-				triCellPos[2] = (Vector3)triangle[2] / (1 << 0xc);
+				triCellPos[0] = (Vector3)triangle[0] / cellSize;
+				triCellPos[1] = (Vector3)triangle[1] / cellSize;
+				triCellPos[2] = (Vector3)triangle[2] / cellSize;
 
 				// Find coordinates in grid per vertex
-				for (let v < triCellPos.Count) {
+				for (let v < 3) {
 					let vertex = triCellPos[v];
+					// Create the cell if it doesn't exist
 
+					// At vertex
 					Vector3Int gridCoords;
 					gridCoords.x = (.)vertex.x;
 					gridCoords.y = (.)vertex.y;
 					gridCoords.z = (.)vertex.z;
-
-					// Create the cell if it doesn't exist
+					
+					// Add entry
 					if (!cells.ContainsKey(gridCoords)) {
 						cells[gridCoords] = new .();
 
@@ -715,7 +746,7 @@ namespace SpyroScope {
 						if (gridCoords.y + 1 > gridSizes[gridCoords.z].Count) {
 							gridSizes[gridCoords.z].Count = gridCoords.y + 1;
 						}
-						if (gridCoords.x > gridSizes[gridCoords.z][gridCoords.y]) {
+						if (gridCoords.x + 1 > gridSizes[gridCoords.z][gridCoords.y]) {
 							gridSizes[gridCoords.z][gridCoords.y] = gridCoords.x + 1;
 						}
 					}
@@ -723,6 +754,67 @@ namespace SpyroScope {
 					if (cells[gridCoords].FindIndex(scope (x) => x == (.)i) == -1) {
 						cells[gridCoords].Add((.)i);
 						cellsMemoryAllocCount++;
+					}
+
+					// Along edge
+					let v0 = vertex;
+					let v1 = triCellPos[(v + 1) % 3];
+
+					Vector3Int targetGridCoords;
+					targetGridCoords.x = (.)v1.x;
+					targetGridCoords.y = (.)v1.y;
+					targetGridCoords.z = (.)v1.z;
+
+					let edge = v1 - v0;
+					let stepProg = Vector3(1f / Math.Abs(edge.x), 1f / Math.Abs(edge.y), 1f / Math.Abs(edge.z));
+
+					Vector3 edgeProg;
+					edgeProg.x = edge.x == 0 ? float.PositiveInfinity : (edge.x < 0 ? (1 - v0.x) % 1 : v0.x % 1) / edge.x;
+					edgeProg.y = edge.y == 0 ? float.PositiveInfinity : (edge.y < 0 ? (1 - v0.y) % 1 : v0.y % 1) / edge.y;
+					edgeProg.z = edge.z == 0 ? float.PositiveInfinity : (edge.z < 0 ? (1 - v0.z) % 1 : v0.z % 1) / edge.z;
+
+					let travel = Vector3Int((.)Math.Sign(edge.x), (.)Math.Sign(edge.y), (.)Math.Sign(edge.z));
+					let travelIterations =
+						Math.Abs(targetGridCoords.x - gridCoords.x) +
+						Math.Abs(targetGridCoords.y - gridCoords.y) +
+						Math.Abs(targetGridCoords.z - gridCoords.z) - 1;
+
+					// Travel across the edge to reach the next nearest cell on the grid
+					for (let iter < travelIterations) {
+						if (edgeProg.x < edgeProg.y && edgeProg.x < edgeProg.z) {
+							gridCoords.x += travel.x;
+							edgeProg.x += stepProg.x;
+						} else if (edgeProg.y < edgeProg.z) {
+							gridCoords.y += travel.y;
+							edgeProg.y += stepProg.y;
+						} else {
+							gridCoords.z += travel.z;
+							edgeProg.z += stepProg.z;
+						}
+
+						// Add entry
+						if (!cells.ContainsKey(gridCoords)) {
+							cells[gridCoords] = new .();
+
+							// Modify grid array
+							if (gridCoords.z + 1 > gridSizes.Count) {
+								gridSizes.Count = gridCoords.z + 1;
+							}
+							if (gridSizes[gridCoords.z] == null) {
+								gridSizes[gridCoords.z] = scope:: .();
+							}
+							if (gridCoords.y + 1 > gridSizes[gridCoords.z].Count) {
+								gridSizes[gridCoords.z].Count = gridCoords.y + 1;
+							}
+							if (gridCoords.x + 1 > gridSizes[gridCoords.z][gridCoords.y]) {
+								gridSizes[gridCoords.z][gridCoords.y] = gridCoords.x + 1;
+							}
+						}
+
+						if (cells[gridCoords].FindIndex(scope (x) => x == (.)i) == -1) {
+							cells[gridCoords].Add((.)i);
+							cellsMemoryAllocCount++;
+						}
 					}
 				}
 			}
@@ -767,6 +859,7 @@ namespace SpyroScope {
 				}
 			}
 			
+			// Write back into emulator the generated grid
 			Emulator.Address collisionGrid = ?;
 			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 8 : 12), &collisionGrid, 4);
 
@@ -816,6 +909,14 @@ namespace SpyroScope {
 					}
 				}
 			}
+		}
+
+		public void Clear() {
+			TriangleCount = 0;
+			SpecialTriangleCount = 0;
+			ClearDeformGroups();
+			ClearGrid();
+			GenerateMesh();
 		}
 	}
 }
