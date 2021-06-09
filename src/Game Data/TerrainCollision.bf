@@ -131,15 +131,15 @@ namespace SpyroScope {
 
 		
 		public Vector3Int[3] GetTriangle(int triangleIndex) {
-			return triangles[triangleIndex].Unpack(false);
+			return triangles[triangleIndex].Unpack();
 		}
 
 		/// Sets the position of the mesh's triangle with the index the game uses
 		public void SetTriangle(int triangleIndex, Vector3Int[3] triangle, bool updateGame = false, bool updateMesh = true) {
-			triangles[triangleIndex] = CollisionTriangle.Pack(triangle, false);
+			triangles[triangleIndex] = CollisionTriangle.Pack(triangle);
 
 			if (updateMesh) {
-				let unpackedTriangle = triangles[triangleIndex].Unpack(false);
+				let unpackedTriangle = triangles[triangleIndex].Unpack();
 				let meshTriangle = (Vector3*)&mesh.vertices[triangleIndex * 3];
 				meshTriangle[0] = unpackedTriangle[0];
 				meshTriangle[1] = unpackedTriangle[1];
@@ -262,28 +262,7 @@ namespace SpyroScope {
 					}
 					let absoluteTriangleIndex = animationGroup.start + triangleIndex;
 
-					// Determining vertex order
-					// Derived from Spyro: Ripto's Rage [80023014]
-					Vector3Int[3] triangleI;
-
-					// Find lowest vertex
-					if (triangle[1].z < triangle[0].z || triangle[2].z < triangle[0].z) {
-						if (triangle[2].z < triangle[1].z) {
-							triangleI[0] = (.)triangle[2];
-							triangleI[1] = (.)triangle[0];
-							triangleI[2] = (.)triangle[1];
-						} else {
-							triangleI[0] = (.)triangle[1];
-							triangleI[1] = (.)triangle[2];
-							triangleI[2] = (.)triangle[0];
-						}
-					} else {
-						triangleI[0] = (.)triangle[0];
-						triangleI[1] = (.)triangle[1];
-						triangleI[2] = (.)triangle[2];
-					}
-
-					SetTriangle(absoluteTriangleIndex, triangleI);
+					SetTriangle(absoluteTriangleIndex, .((.)triangle[0], (.)triangle[1], (.)triangle[2]));
 				}
 
 				// While in this overlay, color the terrain mesh to show the interpolation amount between states
@@ -410,7 +389,7 @@ namespace SpyroScope {
 					for (let triangleIndex < animationGroup.count) {
 						CollisionTriangle packedTriangle = ?;
 						Emulator.active.ReadFromRAM(animationGroup.dataPointer + triangleDataOffset + (startTrianglesState + triangleIndex) * 12, &packedTriangle, 12);
-						let unpackedTriangle = packedTriangle.Unpack(true);
+						let unpackedTriangle = packedTriangle.UnpackAnimated();
 
 						let normal = Vector3.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
 						Renderer.Color color = .(255,255,255);
@@ -592,7 +571,7 @@ namespace SpyroScope {
 
 			for (let triangleIndex < triangles.Count) {
 				let triangle = triangles[triangleIndex];
-				let unpackedTriangle = triangle.Unpack(false);
+				let unpackedTriangle = triangle.Unpack();
 
 				let normal = Vector3.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
 				Renderer.Color color = .(255,255,255);
@@ -714,7 +693,7 @@ namespace SpyroScope {
 
 			for (let i < triangles.Count) {
 				let packedTriangle = triangles[i];
-				let triangle = packedTriangle.Unpack(false);
+				let triangle = packedTriangle.Unpack();
 
 				// Divide by the size of the cells in the grid
 				Vector3[3] triCellPos;
@@ -766,55 +745,60 @@ namespace SpyroScope {
 					targetGridCoords.y = (.)v1.y;
 					targetGridCoords.z = (.)v1.z;
 
-					let edge = v1 - v0;
-					let stepProg = Vector3(1f / Math.Abs(edge.x), 1f / Math.Abs(edge.y), 1f / Math.Abs(edge.z));
-
-					Vector3 edgeProg;
-					edgeProg.x = edge.x == 0 ? float.PositiveInfinity : (edge.x < 0 ? (1 - v0.x) % 1 : v0.x % 1) / edge.x;
-					edgeProg.y = edge.y == 0 ? float.PositiveInfinity : (edge.y < 0 ? (1 - v0.y) % 1 : v0.y % 1) / edge.y;
-					edgeProg.z = edge.z == 0 ? float.PositiveInfinity : (edge.z < 0 ? (1 - v0.z) % 1 : v0.z % 1) / edge.z;
-
-					let travel = Vector3Int((.)Math.Sign(edge.x), (.)Math.Sign(edge.y), (.)Math.Sign(edge.z));
 					let travelIterations =
 						Math.Abs(targetGridCoords.x - gridCoords.x) +
 						Math.Abs(targetGridCoords.y - gridCoords.y) +
 						Math.Abs(targetGridCoords.z - gridCoords.z) - 1;
 
-					// Travel across the edge to reach the next nearest cell on the grid
-					for (let iter < travelIterations) {
-						if (edgeProg.x < edgeProg.y && edgeProg.x < edgeProg.z) {
-							gridCoords.x += travel.x;
-							edgeProg.x += stepProg.x;
-						} else if (edgeProg.y < edgeProg.z) {
-							gridCoords.y += travel.y;
-							edgeProg.y += stepProg.y;
-						} else {
-							gridCoords.z += travel.z;
-							edgeProg.z += stepProg.z;
-						}
-
-						// Add entry
-						if (!cells.ContainsKey(gridCoords)) {
-							cells[gridCoords] = new .();
-
-							// Modify grid array
-							if (gridCoords.z + 1 > gridSizes.Count) {
-								gridSizes.Count = gridCoords.z + 1;
+					// Ray-trace across the grid
+					if (travelIterations > 0) {
+						let edge = v1 - v0;
+						let edgeAbs = Vector3(Math.Abs(edge.x), Math.Abs(edge.y), Math.Abs(edge.z));
+						let stepProg = Vector3(1f / edgeAbs.x, 1f / edgeAbs.y, 1f / edgeAbs.z);
+	
+						Vector3 edgeProg;
+						edgeProg.x = edge.x == 0 ? float.PositiveInfinity : (edge.x > 0 ? 1 - (v0.x % 1) : v0.x % 1) / edgeAbs.x;
+						edgeProg.y = edge.y == 0 ? float.PositiveInfinity : (edge.y > 0 ? 1 - (v0.y % 1) : v0.y % 1) / edgeAbs.y;
+						edgeProg.z = edge.z == 0 ? float.PositiveInfinity : (edge.z > 0 ? 1 - (v0.z % 1) : v0.z % 1) / edgeAbs.z;
+	
+						let travel = Vector3Int((.)Math.Sign(edge.x), (.)Math.Sign(edge.y), (.)Math.Sign(edge.z));
+	
+						// Travel across the edge to reach the next nearest cell on the grid
+						for (let iter < travelIterations) {
+							if (edgeProg.x < edgeProg.y && edgeProg.x < edgeProg.z) {
+								gridCoords.x += travel.x;
+								edgeProg.x += stepProg.x;
+							} else if (edgeProg.y < edgeProg.z) {
+								gridCoords.y += travel.y;
+								edgeProg.y += stepProg.y;
+							} else {
+								gridCoords.z += travel.z;
+								edgeProg.z += stepProg.z;
 							}
-							if (gridSizes[gridCoords.z] == null) {
-								gridSizes[gridCoords.z] = scope:: .();
+	
+							// Add entry
+							if (!cells.ContainsKey(gridCoords)) {
+								cells[gridCoords] = new .();
+	
+								// Modify grid array
+								if (gridCoords.z + 1 > gridSizes.Count) {
+									gridSizes.Count = gridCoords.z + 1;
+								}
+								if (gridSizes[gridCoords.z] == null) {
+									gridSizes[gridCoords.z] = scope:: .();
+								}
+								if (gridCoords.y + 1 > gridSizes[gridCoords.z].Count) {
+									gridSizes[gridCoords.z].Count = gridCoords.y + 1;
+								}
+								if (gridCoords.x + 1 > gridSizes[gridCoords.z][gridCoords.y]) {
+									gridSizes[gridCoords.z][gridCoords.y] = gridCoords.x + 1;
+								}
 							}
-							if (gridCoords.y + 1 > gridSizes[gridCoords.z].Count) {
-								gridSizes[gridCoords.z].Count = gridCoords.y + 1;
+	
+							if (cells[gridCoords].FindIndex(scope (x) => x == (.)i) == -1) {
+								cells[gridCoords].Add((.)i);
+								cellsMemoryAllocCount++;
 							}
-							if (gridCoords.x + 1 > gridSizes[gridCoords.z][gridCoords.y]) {
-								gridSizes[gridCoords.z][gridCoords.y] = gridCoords.x + 1;
-							}
-						}
-
-						if (cells[gridCoords].FindIndex(scope (x) => x == (.)i) == -1) {
-							cells[gridCoords].Add((.)i);
-							cellsMemoryAllocCount++;
 						}
 					}
 				}
