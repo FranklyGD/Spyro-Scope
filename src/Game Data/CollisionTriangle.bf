@@ -2,6 +2,9 @@ namespace SpyroScope {
 	struct CollisionTriangle {
 		public int32 x, y, z;
 
+		// Max range from the base vertex is 1 << 0xc in all directions orthogonal
+		// except downwards (-Z), imagine a box but only the top half is available
+
 		// Derived from Spyro: Ripto's Rage [8001c214]
 		public Vector3Int[3] Unpack() {
 			Vector3Int[3] triangle;
