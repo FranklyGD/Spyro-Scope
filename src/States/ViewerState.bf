@@ -152,6 +152,10 @@ namespace SpyroScope {
 			text.Text = "Free Game (C)amera";
 			text.Offset = .(40,0,16 + (text.font.height + 6),0);
 
+			text = new Text();
+			text.Text = "Render";
+			text.Offset = .(16,0,14 + (3 * text.font.height),0);
+
 			dropdown = new DropdownList();
 			dropdown.Offset = .(100,184,56,72);
 			dropdown.AddItem("Collision");
