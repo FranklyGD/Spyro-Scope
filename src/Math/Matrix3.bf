@@ -3,7 +3,8 @@ using System;
 namespace SpyroScope {
 	struct Matrix3 {
 		public Vector3 x,y,z;
-
+		
+		[Inline]
 		public this(Vector3 x, Vector3 y, Vector3 z) {
 			this.x = x;
 			this.y = y;
@@ -11,6 +12,7 @@ namespace SpyroScope {
 		}
 
 		public static Self Identity {
+			[Inline]
 			get {
 			    return .(
 					.(1,0,0),
@@ -34,7 +36,8 @@ namespace SpyroScope {
 				.(sx * sz - cx * cz * sy, cz * sx + cx * sy * sz, cx * cy)
 			);
 		}
-
+		
+		[Inline]
 		public static Self Scale(float x, float y, float z) {
 			return .(
 				.(x,0,0),
@@ -42,7 +45,8 @@ namespace SpyroScope {
 				.(0,0,z)
 			);
 		}
-
+		
+		[Inline]
 		public static Self Scale(float scale) {
 			return .(
 				.(scale,0,0),
@@ -50,7 +54,8 @@ namespace SpyroScope {
 				.(0,0,scale)
 			);
 		}
-
+		
+		[Inline]
 		public static Self Scale(Vector3 scale) {
 			return .(
 				.(scale.x,0,0),
@@ -58,7 +63,8 @@ namespace SpyroScope {
 				.(0,0,scale.z)
 			);
 		}
-
+		
+		[Inline]
 		public Self Transpose() {
 			Self transpose = ?;
 
@@ -82,11 +88,13 @@ namespace SpyroScope {
 			let up = Vector3.Cross(z, right);
 			return .(right.Normalized(), up.Normalized(), z.Normalized());
 		}
-
+		
+		[Inline]
 		public static Self operator *(Self left, float right) {
 			return .(left.x * right, left.y * right, left.z * right);
 		}
-
+		
+		[Inline]
 		public static Vector3 operator *(Self left, Vector3 right) {
 			return left.x * right.x + left.y * right.y + left.z * right.z;
 		}
@@ -112,26 +120,28 @@ namespace SpyroScope {
 
 		// NOTE: Currently used for converting to camera matrix,
 		// may not be accurate or appropriate place for this
+		[Inline]
 		public MatrixInt ToMatrixIntCorrected() {
 			MatrixInt matrix = ?;
 
-			matrix.x.x = ToInt!(y.y);
-			matrix.x.y = ToInt!(y.z);
-			matrix.x.z = ToInt!(y.x);
+			matrix.x.x = ToInt(y.y);
+			matrix.x.y = ToInt(y.z);
+			matrix.x.z = ToInt(y.x);
 
-			matrix.y.x = ToInt!(z.y);
-			matrix.y.y = ToInt!(z.z);
-			matrix.y.z = ToInt!(z.x);
+			matrix.y.x = ToInt(z.y);
+			matrix.y.y = ToInt(z.z);
+			matrix.y.z = ToInt(z.x);
 
-			matrix.z.x = ToInt!(x.y);
-			matrix.z.y = ToInt!(x.z);
-			matrix.z.z = ToInt!(x.x);
+			matrix.z.x = ToInt(x.y);
+			matrix.z.y = ToInt(x.z);
+			matrix.z.z = ToInt(x.x);
 
 			return matrix;
 		}
-
-		mixin ToInt(float value) {
-			(int16)(value * 0x1000)
+		
+		[Inline]
+		int16 ToInt(float value) {
+			return (.)(value * 0x1000);
 		}
 	}
 }

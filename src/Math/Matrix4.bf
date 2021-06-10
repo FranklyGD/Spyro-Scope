@@ -3,7 +3,8 @@ using System;
 namespace SpyroScope {
 	struct Matrix4 {
 		public Vector4 x,y,z,w;
-
+		
+		[Inline]
 		public this(Vector4 x, Vector4 y, Vector4 z, Vector4 w) {
 			this.x = x;
 			this.y = y;
@@ -12,6 +13,7 @@ namespace SpyroScope {
 		}
 
 		public static Self Identity {
+			[Inline]
 			get {
 			    return .(
 					.(1,0,0,0),
@@ -21,7 +23,8 @@ namespace SpyroScope {
 				);
 			}
 		}
-
+		
+		[Inline]
 		public static implicit operator Self(Matrix3 m) {
 			return .(
 				.(m.x,0),
@@ -30,7 +33,8 @@ namespace SpyroScope {
 				.(0,0,0,1)
 			);
 		}
-
+		
+		[Inline]
 		public static Self Translation(Vector3 translation) {
 			return .(
 				.(1,0,0,0),
@@ -39,7 +43,8 @@ namespace SpyroScope {
 				.(translation.x,translation.y,translation.z,1)
 			);
 		}
-
+		
+		[Inline]
 		public static Self Perspective(float FoV, float aspect, float near, float far) {
 			let tanFoV2 = Math.Tan(FoV / 2);
 			let space = far - near;
@@ -50,7 +55,8 @@ namespace SpyroScope {
 				.(0,0,-(far * near) / space,0)
 			);
 		}
-
+		
+		[Inline]
 		public static Self PerspectiveAlt(float FoV, float aspect, float near, float far) {
 			let tanFoV2 = Math.Tan(FoV / 2);
 			let space = far - near;
@@ -61,7 +67,8 @@ namespace SpyroScope {
 				.(0,0,-(far * near) / space,0)
 			);
 		}
-
+		
+		[Inline]
 		public static Self Orthographic(float width, float height, float near, float far) {
 			let space = far - near;
 			return .(
@@ -71,7 +78,8 @@ namespace SpyroScope {
 				.(0,0,-(far + near) / space,1)
 			);
 		}
-
+		
+		[Inline]
 		public static Self Screen(float width, float height) {
 			return .(
 				.(2f / width,0,0,0),
@@ -99,7 +107,8 @@ namespace SpyroScope {
 			}
 			return m;
 		}
-
+		
+		[Inline]
 		public static Vector4 operator *(Self left, Vector4 right) {
 			return left.x * right.x + left.y * right.y + left.z * right.z + left.w * right.w;
 		}
