@@ -7,11 +7,11 @@ namespace SpyroScope {
 		public readonly Emulator.Address deformArrayAddress;
 
 		// Collision Grid
-		public uint16[][][] grid;
-		public int16[] cells ~ delete _;
+		Vector3Int dimensions;
+		public int16[,,] grid;
+		public uint16[] cells ~ delete _;
 		const int cellSize = 1 << 0xc;
-		// NOTE: The grid array is not perfect, as in, not every row or column is the same size.
-		// This is similar to how they are stored in game. The cells themselves also vary in size.
+
 		public bool visualizeGrid;
 
 		public uint32 TriangleCount {
@@ -107,12 +107,6 @@ namespace SpyroScope {
 		}
 
 		public ~this() {
-			for (let x in grid) {
-				for (let y in x) {
-					delete y;
-				}
-				delete x;
-			}
 			delete grid;
 
 			DeleteDeformGroups();
@@ -167,40 +161,77 @@ namespace SpyroScope {
 
 			// Collision Grid
 			// Derived from Spyro: Ripto's Rage [8003f440]
-			uint16 gridSize = ?;
-			Emulator.Address collisionGridX = ?;
-			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 8 : 12), &collisionGridX, 4);
+			Vector3Int dim;
+			List<int16> buffer = scope .();
+			var sizez = buffer.GrowUnitialized(1);
 			
-			Emulator.active.ReadFromRAM(collisionGridX, &gridSize, 2);
-			grid = new .[gridSize];
-			uint16[] gridx = scope .[gridSize];
-			Emulator.active.ReadFromRAM(collisionGridX + 2, gridx.CArray(), 2 * gridSize);
+			Emulator.Address collisionGridZ = ?;
+			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 8 : 12), &collisionGridZ, 4);
+
+			Emulator.active.ReadFromRAM(collisionGridZ, sizez, 2);
+			dim.z = dimensions.z = *sizez;
+			Emulator.active.ReadFromRAM(collisionGridZ + 2, buffer.GrowUnitialized(dim.z), 2 * dim.z);
 			
-			int highestCellIndex = 0; 
-			for (let x < gridx.Count) {
-				if (gridx[x] == 0xffff) {
-					grid[x] = new .[0];
-				} else {
-					Emulator.Address collisionGridY = collisionGridX + gridx[x];
+			for (let z < dim.z) {
+				if (buffer[1 + z] > -1) {
+					let sizey = buffer.GrowUnitialized(1);
+					Emulator.Address collisionGridY = collisionGridZ + buffer[1 + z];
 
-					Emulator.active.ReadFromRAM(collisionGridY, &gridSize, 2);
-					grid[x] = new .[gridSize];
-					uint16[] gridy = scope .[gridSize];
-					Emulator.active.ReadFromRAM(collisionGridY + 2, gridy.CArray(), 2 * gridSize);
+					Emulator.active.ReadFromRAM(collisionGridY, sizey, 2);
+					dim.y = *sizey;
+					Emulator.active.ReadFromRAM(collisionGridY + 2, buffer.GrowUnitialized(dim.y), 2 * dim.y);
+					
+					if (dim.y > dimensions.y) {
+						dimensions.y = dim.y;
+					}
+				}
+			}
 
-					for (let y < gridy.Count) {
-						if (gridy[y] == 0xffff) {
-							grid[x][y] = new .[0];
-						} else {
-							Emulator.Address collisionGridZ = collisionGridX + gridy[y];
+			for (let z < dim.z) {
+				if (buffer[1 + z] > -1) {
+					dim.y = buffer[buffer[1 + z] / 2];
 
-							Emulator.active.ReadFromRAM(collisionGridZ, &gridSize, 2);
-							grid[x][y] = new .[gridSize];
-							Emulator.active.ReadFromRAM(collisionGridZ + 2, grid[x][y].CArray(), 2 * gridSize);
+					for (let y < dim.y) {
+						if (buffer[buffer[1 + z] / 2 + 1 + y] > -1) {
+							let sizex = buffer.GrowUnitialized(1);
+							Emulator.Address collisionGridX = collisionGridZ + buffer[buffer[1 + z] / 2 + 1 + y];
 
-							for (let z < grid[x][y].Count) {
-								if (grid[x][y][z] != 0xffff && grid[x][y][z] > highestCellIndex) {
-									highestCellIndex = grid[x][y][z];
+							Emulator.active.ReadFromRAM(collisionGridX, sizex, 2);
+							dim.x = *sizex;
+							Emulator.active.ReadFromRAM(collisionGridX + 2, buffer.GrowUnitialized(dim.x), 2 * dim.x);
+
+							if (dim.x > dimensions.x) {
+								dimensions.x = dim.x;
+							}
+						}
+					}
+				}
+			}
+
+			dimensions.x++; dimensions.y++; dimensions.z++;
+
+			grid = new .[dimensions.x, dimensions.y, dimensions.z];
+			for (var cell in ref grid) {
+				cell = -1;
+			}
+			int highestCellIndex = 0;
+
+			sizez = buffer.Ptr;
+			for (let z < *sizez) {
+				if (sizez[1 + z] > -1) {
+					let sizey = &buffer[sizez[1 + z] / 2];
+
+					for (let y < *sizey) {
+						if (sizey[1 + y] > -1) {
+							let sizex = &buffer[sizey[1 + y] / 2];
+
+							for (let x < *sizex) {
+								let cellIndex = sizex[1 + x];
+								if (cellIndex > -1) {
+									grid[x,y,z] = cellIndex;
+									if (cellIndex > highestCellIndex) {
+										highestCellIndex = cellIndex;
+									}
 								}
 							}
 						}
@@ -311,10 +342,10 @@ namespace SpyroScope {
 			}
 
 			if (visualizeGrid) {
-				for (let z < Terrain.collision.grid.Count) {
-					for (let y < Terrain.collision.grid[z].Count) {
-						for (let x < Terrain.collision.grid[z][y].Count) {
-							if (Terrain.collision.grid[z][y][x] != 0xffff) {
+				for (let x < dimensions.x) {
+					for (let y < dimensions.y) {
+						for (let z < dimensions.z) {
+							if (grid[x,y,z] != -1) {
 								Vector3 cellStart = .(x << 0xc, y << 0xc, z << 0xc);
 
 								Renderer.DrawLine(cellStart, cellStart + .(cellSize,0,0), .(255,0,0), .(255,0,0));
@@ -628,27 +659,14 @@ namespace SpyroScope {
 			ApplyColor();
 		}
 
-		public int16 GetCellStart(int x, int y, int z) {
-			if (grid.Count > 0 && z < grid.Count) {
-				var cellsz = grid[z];
-				if (cellsz.Count > 0 && y < cellsz.Count) {
-					var cellsy = cellsz[y];
-					if (cellsy.Count > 0 && x < cellsy.Count) {
-						return (.)cellsy[x];
-					}
-				}
-			}
-			return -1;
-		}
+		public Span<uint16> GetCell(int x, int y, int z) {
+			let cellStartIndex = (uint16)grid[x,y,z];
 
-		public Span<int16> GetCell(int x, int y, int z) {
-			let cellStartIndex = GetCellStart(x,y,z);
-
-			if (cellStartIndex != -1) {
+			if ((int16)cellStartIndex != -1) {
 				var index = cellStartIndex;
 				repeat {
 					index++;
-				} while (Terrain.collision.cells[(uint16)index] & 0x8000 == 0);
+				} while (Terrain.collision.cells[index] & 0x8000 == 0);
 
 				return .(Terrain.collision.cells, cellStartIndex, index - cellStartIndex);
 			}
@@ -656,27 +674,18 @@ namespace SpyroScope {
 			return .();
 		}
 
-		[Inline]
-		void DeleteGrid() {
-			for (let x in grid) {
-				for (let y in x) {
-					delete y;
-				}
-				delete x;
-			}
-			DeleteAndNullify!(grid);
-		}
-
 		public void ClearGrid() {
-			DeleteGrid();
-			grid = new .[0];
+			dimensions = .(0,0,0);
+			delete grid;
+			grid = new .[0,0,0];
 
 			delete cells;
+			cells = new .[0];
+
 			uint32 endCells = 0xffff;
 			Emulator.Address collisionCells = ?;
 			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 12 : 16), &collisionCells, 4);
 			Emulator.active.ReadFromRAM(collisionCells, &endCells, 2);
-			cells = new .[0];
 
 			Emulator.Address collisionGrid = ?;
 			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 8 : 12), &collisionGrid, 4);
@@ -686,9 +695,26 @@ namespace SpyroScope {
 		}
 
 		public void GenerateGrid() {
+			Vector3Int maxPosition = ?;
+			for (let i < triangles.Count) {
+				let packedTriangle = triangles[i];
+				let triangle = packedTriangle.Unpack();
+				for (let vertex in triangle) {
+					if (vertex.x > maxPosition.x) {
+						maxPosition.x = vertex.x;
+					}
+					if (vertex.y > maxPosition.y) {
+						maxPosition.y = vertex.y;
+					}
+					if (vertex.z > maxPosition.z) {
+						maxPosition.z = vertex.z;
+					}
+				}
+			}
+			
 			List<List<int>> gridSizes = scope .();
-			Dictionary<Vector3Int,List<int16>> cells = new .();
-
+			dimensions = .((maxPosition.x / cellSize) + 1, (maxPosition.y / cellSize) + 1, (maxPosition.z / cellSize) + 1);
+			List<uint16>[,,] cells = scope .[dimensions.x, dimensions.y, dimensions.z];
 			int cellsMemoryAllocCount = 0;
 
 			for (let i < triangles.Count) {
@@ -713,26 +739,27 @@ namespace SpyroScope {
 					gridCoords.z = (.)vertex.z;
 					
 					// Add entry
-					if (!cells.ContainsKey(gridCoords)) {
-						cells[gridCoords] = new .();
+					var cell = &cells[gridCoords.x, gridCoords.y, gridCoords.z];
+					if (*cell == null) {
+						*cell = scope:: .(8);
 
 						// Modify grid array
 						if (gridCoords.z + 1 > gridSizes.Count) {
-							gridSizes.Count = gridCoords.z + 1;
+						    gridSizes.Count = gridCoords.z + 1;
 						}
 						if (gridSizes[gridCoords.z] == null) {
-							gridSizes[gridCoords.z] = scope:: .();
+						    gridSizes[gridCoords.z] = scope:: .();
 						}
 						if (gridCoords.y + 1 > gridSizes[gridCoords.z].Count) {
-							gridSizes[gridCoords.z].Count = gridCoords.y + 1;
+						    gridSizes[gridCoords.z].Count = gridCoords.y + 1;
 						}
 						if (gridCoords.x + 1 > gridSizes[gridCoords.z][gridCoords.y]) {
-							gridSizes[gridCoords.z][gridCoords.y] = gridCoords.x + 1;
+						    gridSizes[gridCoords.z][gridCoords.y] = gridCoords.x + 1;
 						}
 					}
 
-					if (cells[gridCoords].FindIndex(scope (x) => x == (.)i) == -1) {
-						cells[gridCoords].Add((.)i);
+					if (!(*cell).Contains((.)i)) {
+						(*cell).Add((.)i);
 						cellsMemoryAllocCount++;
 					}
 
@@ -757,9 +784,9 @@ namespace SpyroScope {
 						let stepProg = Vector3(1f / edgeAbs.x, 1f / edgeAbs.y, 1f / edgeAbs.z);
 	
 						Vector3 edgeProg;
-						edgeProg.x = edge.x == 0 ? float.PositiveInfinity : (edge.x > 0 ? 1 - (v0.x % 1) : v0.x % 1) / edgeAbs.x;
-						edgeProg.y = edge.y == 0 ? float.PositiveInfinity : (edge.y > 0 ? 1 - (v0.y % 1) : v0.y % 1) / edgeAbs.y;
-						edgeProg.z = edge.z == 0 ? float.PositiveInfinity : (edge.z > 0 ? 1 - (v0.z % 1) : v0.z % 1) / edgeAbs.z;
+						edgeProg.x = edge.x == 0 ? float.PositiveInfinity : (edge.x > 0 ? 1 - (v0.x - (int)v0.x) : v0.x - (int)v0.x) / edgeAbs.x;
+						edgeProg.y = edge.y == 0 ? float.PositiveInfinity : (edge.y > 0 ? 1 - (v0.y - (int)v0.y) : v0.y - (int)v0.y) / edgeAbs.y;
+						edgeProg.z = edge.z == 0 ? float.PositiveInfinity : (edge.z > 0 ? 1 - (v0.z - (int)v0.z) : v0.z - (int)v0.z) / edgeAbs.z;
 	
 						let travel = Vector3Int((.)Math.Sign(edge.x), (.)Math.Sign(edge.y), (.)Math.Sign(edge.z));
 	
@@ -777,26 +804,27 @@ namespace SpyroScope {
 							}
 	
 							// Add entry
-							if (!cells.ContainsKey(gridCoords)) {
-								cells[gridCoords] = new .();
-	
+							cell = &cells[gridCoords.x, gridCoords.y, gridCoords.z];
+							if (*cell == null) {
+								*cell = scope:: .();
+
 								// Modify grid array
 								if (gridCoords.z + 1 > gridSizes.Count) {
-									gridSizes.Count = gridCoords.z + 1;
+								    gridSizes.Count = gridCoords.z + 1;
 								}
 								if (gridSizes[gridCoords.z] == null) {
-									gridSizes[gridCoords.z] = scope:: .();
+								    gridSizes[gridCoords.z] = scope:: .();
 								}
 								if (gridCoords.y + 1 > gridSizes[gridCoords.z].Count) {
-									gridSizes[gridCoords.z].Count = gridCoords.y + 1;
+								    gridSizes[gridCoords.z].Count = gridCoords.y + 1;
 								}
 								if (gridCoords.x + 1 > gridSizes[gridCoords.z][gridCoords.y]) {
-									gridSizes[gridCoords.z][gridCoords.y] = gridCoords.x + 1;
+								    gridSizes[gridCoords.z][gridCoords.y] = gridCoords.x + 1;
 								}
 							}
-	
-							if (cells[gridCoords].FindIndex(scope (x) => x == (.)i) == -1) {
-								cells[gridCoords].Add((.)i);
+
+							if (!(*cell).Contains((.)i)) {
+								(*cell).Add((.)i);
 								cellsMemoryAllocCount++;
 							}
 						}
@@ -804,85 +832,77 @@ namespace SpyroScope {
 				}
 			}
 
-			cellsMemoryAllocCount++;
+			cellsMemoryAllocCount++; // Add space for terminator
 
 			delete this.cells;
 			this.cells = new .[cellsMemoryAllocCount];
-			
-			Dictionary<Vector3Int,uint16> cellStarts = scope .();
+			delete grid;
+			grid = new .[dimensions.x, dimensions.y, dimensions.z];
+
 			uint16 index = 0;
-			for (let cell in cells) {
-				cellStarts[cell.key] = index;
-
-				for (let i < cell.value.Count) {
-					this.cells[index + i] = cell.value[i];
+			for (let cellIndex < cells.Count) {
+				let cell = cells[cellIndex];
+				if (cell == null) {
+					grid[cellIndex] = -1;
+				} else {
+					grid[cellIndex] = (.)index;
+	
+					for (let i < cell.Count) {
+						this.cells[index + i] = cell[i];
+					}
+	
+					this.cells[index] |= (.)0x8000; // Cell Terminator
+					index += (.)cell.Count;
 				}
-
-				this.cells[index] |= (.)0x8000; // Cell Terminator
-				index += (.)cell.value.Count;
 			}
 			this.cells[cellsMemoryAllocCount - 1] = (.)0x8000; // Terminator
 
 			Emulator.Address collisionCells = ?;
 			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 12 : 16), &collisionCells, 4);
 			Emulator.active.WriteToRAM(collisionCells, this.cells.CArray(), this.cells.Count * 2);
-			DeleteDictionaryAndValues!(cells);
-
-			DeleteGrid();
-			grid = new .[gridSizes.Count];
-			for (let z < gridSizes.Count) {
-				grid[z] = new .[gridSizes[z] == null ? 0 : gridSizes[z].Count];
-				for (let y < grid[z].Count) {
-					grid[z][y] = new .[gridSizes[z][y]];
-					for (let x < grid[z][y].Count) {
-						if (cellStarts.GetValue(.((.)x,(.)y,(.)z)) case .Ok(let val)) {
-							grid[z][y][x] = val;
-						} else {
-							grid[z][y][x] = (.)-1;
-						}
-					}
-				}
-			}
 			
 			// Write back into emulator the generated grid
 			Emulator.Address collisionGrid = ?;
 			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 8 : 12), &collisionGrid, 4);
 
-			int offset = (grid.Count + 1) * 2;
+			List<int16> buffer = scope .();
 
-			List<uint16> buffer = scope .();
-			buffer.Add((.)grid.Count);
-			for (let z < grid.Count) {
-				if (grid[z].Count > 0) {
-					buffer.Add((.)offset);
+			int offset = gridSizes.Count + 1;
 
-					offset += (grid[z].Count + 1) * 2;
+			buffer.Add((.)gridSizes.Count);
+			for (let z < gridSizes.Count) {
+				if (gridSizes[z] != null) {
+					buffer.Add((.)offset * 2);
+
+					offset += gridSizes[z].Count + 1;
 				} else {
-					buffer.Add((.)-1);
+					buffer.Add(-1);
 				}
 			}
 
-			for (let z < grid.Count) {
-				if (grid[z].Count > 0) {
-					buffer.Add((.)grid[z].Count);
-					for (let y < grid[z].Count) {
-						if (grid[z][y].Count > 0) {
-							buffer.Add((.)offset);
+			for (let z < gridSizes.Count) {
+				if (gridSizes[z] != null) {
+					buffer.Add((.)gridSizes[z].Count);
+					for (let y < gridSizes[z].Count) {
+						if (gridSizes[z][y] > 0) {
+							buffer.Add((.)offset * 2);
 
-							offset += (grid[z][y].Count + 1) * 2;
+							offset += gridSizes[z][y] + 1;
 						} else {
-							buffer.Add((.)-1);
+							buffer.Add(-1);
 						}
 					}
 				}
 			}
 
-			for (let z < grid.Count) {
-				for (let y < grid[z].Count) {
-					if (grid[z][y].Count > 0) {
-						buffer.Add((.)grid[z][y].Count);
-						for (let x < grid[z][y].Count) {
-							buffer.Add(grid[z][y][x]);
+			for (let z < gridSizes.Count) {
+				if (gridSizes[z] != null) {
+					for (let y < gridSizes[z].Count) {
+						if (gridSizes[z][y] > 0) {
+							buffer.Add((.)gridSizes[z][y]);
+							for (let x < gridSizes[z][y]) {
+								buffer.Add(grid[x,y,z]);
+							}
 						}
 					}
 				}
