@@ -1,6 +1,7 @@
 using OpenGL;
 using System;
 using System.Collections;
+using System.IO;
 
 namespace SpyroScope {
 	static class Terrain {
@@ -534,6 +535,38 @@ namespace SpyroScope {
 				textureSwapper.UpdateUVs(false);
 				textureSwapper.UpdateUVs(true);
 			}
+		}
+
+		public static void Export(String file) {
+			FileStream stream = new .();
+			stream.Create(file);
+
+			// Collision
+			let collisionTriangles = collision.[Friend]triangles;
+			stream.Write((int32)collisionTriangles.Count);
+			for (let triangle in collisionTriangles) {
+				stream.Write(triangle);
+			}
+
+			// Visual
+			stream.Write((uint32)regions.Count);
+			for (let region in regions) {
+				stream.Write(region.metadata);
+				// Far
+				uint32[] packedVertices = scope .[region.metadata.farVertexCount];
+				Emulator.active.ReadFromRAM(region.[Friend]address + 0x1c, packedVertices.CArray(), (int)region.metadata.farVertexCount * 4);
+				stream.Write(Span<uint32>(packedVertices));
+				
+				Renderer.Color4[] colors = scope .[region.metadata.farColorCount];
+				Emulator.active.ReadFromRAM(region.[Friend]address + 0x1c + (int)region.metadata.farVertexCount * 4, colors.CArray(), (int)region.metadata.farColorCount * 4);
+				stream.Write(Span<Renderer.Color4>(colors));
+
+				TerrainRegion.FarFace[] face = scope .[region.metadata.farFaceCount];
+				Emulator.active.ReadFromRAM(region.[Friend]address + 0x1c + ((int)region.metadata.farVertexCount + (int)region.metadata.farColorCount) * 4, face.CArray(), (int)region.metadata.farFaceCount * sizeof(TerrainRegion.FarFace));
+				stream.Write(Span<TerrainRegion.FarFace>(face));
+			}
+
+			delete stream;
 		}
 	}
 }

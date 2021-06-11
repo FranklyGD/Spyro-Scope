@@ -1,6 +1,7 @@
 using SDL2;
 using System;
 using System.Collections;
+using System.IO;
 
 namespace SpyroScope {
 	class ViewerState : WindowState {
@@ -1114,6 +1115,9 @@ namespace SpyroScope {
 									Recording.Replay();
 								}
 							}
+							case .Key9: {
+								ExportTerrain();
+							}
 							case .F1: {
 								Terrain.collision.Clear();
 
@@ -1599,6 +1603,26 @@ namespace SpyroScope {
 		void Reload() {
 			Terrain.Reload();
 			Terrain.ReloadAnimations();
+		}
+
+		void ExportTerrain() {
+			let dialog = new SaveFileDialog();
+			dialog.FileName = "terrain";
+			dialog.SetFilter("Spyro Terrain (*.sterrain)|*.sterrain|All files (*.*)|*.*");
+			dialog.OverwritePrompt = true;
+			dialog.CheckFileExists = true;
+			dialog.AddExtension = true;
+			dialog.DefaultExt = "sterrain";
+
+			switch (dialog.ShowDialog()) {
+				case .Ok(let val):
+					if (val == .OK) {
+						Terrain.Export(dialog.FileNames[0]);
+					}
+				case .Err:
+			}
+
+			delete dialog;
 		}
 	}
 }
