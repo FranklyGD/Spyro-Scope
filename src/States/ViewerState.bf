@@ -1608,11 +1608,11 @@ namespace SpyroScope {
 		void ExportTerrain() {
 			let dialog = new SaveFileDialog();
 			dialog.FileName = "terrain";
-			dialog.SetFilter("Spyro Terrain (*.sterrain)|*.sterrain|All files (*.*)|*.*");
+			dialog.SetFilter(scope String() .. AppendF("Spyro Terrain (*.{0})|*.{0}|All files (*.*)|*.*", Emulator.active.installment == .SpyroTheDragon ? "s1terrain" : "sterrain"));
 			dialog.OverwritePrompt = true;
 			dialog.CheckFileExists = true;
 			dialog.AddExtension = true;
-			dialog.DefaultExt = "sterrain";
+			dialog.DefaultExt = Emulator.active.installment == .SpyroTheDragon ? "s1terrain" : "sterrain";
 
 			switch (dialog.ShowDialog()) {
 				case .Ok(let val):
