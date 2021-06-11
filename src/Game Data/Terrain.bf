@@ -552,18 +552,37 @@ namespace SpyroScope {
 			stream.Write((uint32)regions.Count);
 			for (let region in regions) {
 				stream.Write(region.metadata);
+				Emulator.Address address = region.[Friend]address + 0x1c;
 				// Far
 				uint32[] packedVertices = scope .[region.metadata.farVertexCount];
-				Emulator.active.ReadFromRAM(region.[Friend]address + 0x1c, packedVertices.CArray(), (int)region.metadata.farVertexCount * 4);
+				Emulator.active.ReadFromRAM(address, packedVertices.CArray(), (int)region.metadata.farVertexCount * 4);
 				stream.Write(Span<uint32>(packedVertices));
 				
 				Renderer.Color4[] colors = scope .[region.metadata.farColorCount];
-				Emulator.active.ReadFromRAM(region.[Friend]address + 0x1c + (int)region.metadata.farVertexCount * 4, colors.CArray(), (int)region.metadata.farColorCount * 4);
+				address += (int)region.metadata.farVertexCount * 4;
+				Emulator.active.ReadFromRAM(address, colors.CArray(), (int)region.metadata.farColorCount * 4);
 				stream.Write(Span<Renderer.Color4>(colors));
 
-				TerrainRegion.FarFace[] face = scope .[region.metadata.farFaceCount];
-				Emulator.active.ReadFromRAM(region.[Friend]address + 0x1c + ((int)region.metadata.farVertexCount + (int)region.metadata.farColorCount) * 4, face.CArray(), (int)region.metadata.farFaceCount * sizeof(TerrainRegion.FarFace));
-				stream.Write(Span<TerrainRegion.FarFace>(face));
+				TerrainRegion.FarFace[] fface = scope .[region.metadata.farFaceCount];
+				address += (int)region.metadata.farColorCount * 4;
+				Emulator.active.ReadFromRAM(address, fface.CArray(), (int)region.metadata.farFaceCount * sizeof(TerrainRegion.FarFace));
+				stream.Write(Span<TerrainRegion.FarFace>(fface));
+
+				// Near
+				packedVertices = scope .[region.metadata.nearVertexCount];
+				address += (int)region.metadata.farFaceCount * sizeof(TerrainRegion.FarFace);
+				Emulator.active.ReadFromRAM(address, packedVertices.CArray(), (int)region.metadata.nearVertexCount * 4);
+				stream.Write(Span<uint32>(packedVertices));
+
+				colors = scope .[(int)region.metadata.nearColorCount * 2];
+				address += (int)region.metadata.nearVertexCount * 4;
+				Emulator.active.ReadFromRAM(address, colors.CArray(), (int)region.metadata.nearColorCount * 4 * 2);
+				stream.Write(Span<Renderer.Color4>(colors));
+
+				TerrainRegion.NearFace[] nfaces = scope .[region.metadata.nearFaceCount];
+				address += (int)region.metadata.nearColorCount * 4 * 2;
+				Emulator.active.ReadFromRAM(address, nfaces.CArray(), (int)region.metadata.nearFaceCount * sizeof(TerrainRegion.NearFace));
+				stream.Write(Span<TerrainRegion.NearFace>(nfaces));
 			}
 
 			delete stream;
