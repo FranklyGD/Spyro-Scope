@@ -38,6 +38,8 @@ namespace SpyroScope {
 		Vector3 lockOffset;
 
 		// Options
+		bool drawObjectModels = true;
+		bool drawObjectExperimentalModels = false;
 		bool drawObjectOrigins = true;
 		public static bool showInactive = false;
 		bool displayIcons = false;
@@ -86,13 +88,15 @@ namespace SpyroScope {
 
 		Toggle freecamToggle;
 
-		(Toggle button, String label, delegate void() event)[6] toggleList = .(
-			(null, "Object (O)rigin Axis", new () => ToggleOrigins(toggleList[0].button.value)),
-			(null, "(I)nactive Objects", new () => ToggleInactive(toggleList[1].button.value)),
-			(null, "(H)eight Limits", new () => ToggleLimits(toggleList[2].button.value)),
-			(null, "Display Icons", new () => {displayIcons = toggleList[3].button.value;}),
-			(null, "All Visual Moby Data", new () => {displayAllData = toggleList[4].button.value;}),
-			(null, "Enable Manipulator", new () => {showManipulator = toggleList[5].button.value;}),
+		(Toggle button, String label, delegate void() event)[8] toggleList = .(
+			(null, "Object Origin Axis", new () => ToggleOrigins(toggleList[0].button.value)),
+			(null, "Object Models", new () => { ToggleModels(toggleList[1].button.value); toggleList[2].button.Enabled = toggleList[1].button.value; }),
+			(null, "Object Models (Exp.)", new () => ToggleModelsExperimental(toggleList[2].button.value)),
+			(null, "Inactive Objects", new () => ToggleInactive(toggleList[3].button.value)),
+			(null, "Height Limits", new () => ToggleLimits(toggleList[4].button.value)),
+			(null, "Display Icons", new () => {displayIcons = toggleList[5].button.value;}),
+			(null, "All Visual Moby Data", new () => {displayAllData = toggleList[6].button.value;}),
+			(null, "Enable Manipulator", new () => {showManipulator = toggleList[7].button.value;}),
 		);
 
 		Toggle pinInspectorButton;
@@ -123,7 +127,7 @@ namespace SpyroScope {
 			stepButton.OnActuated.Add(new => Step);
 
 			cornerMenu = new .();
-			cornerMenu.Offset = .(.Zero, .(260,200));
+			cornerMenu.Offset = .(.Zero, .(200,330));
 			cornerMenu.tint = .(0,0,0);
 			cornerMenu.texture = GUIElement.bgTexture;
 			GUIElement.PushParent(cornerMenu);
@@ -281,6 +285,7 @@ namespace SpyroScope {
 			}
 
 			toggleList[0].button.Toggle();
+			toggleList[1].button.Toggle();
 
 			teleportButton = new .();
 
@@ -552,7 +557,7 @@ namespace SpyroScope {
 			}
 
 			cornerMenuInterp = Math.MoveTo(cornerMenuInterp, cornerMenuVisible ? 1 : 0, 0.1f);
-			cornerMenu.Offset = .(.(-200 * (1 - cornerMenuInterp), 0), .(200,400));
+			cornerMenu.Offset = .(.(-200 * (1 - cornerMenuInterp), 0), .(200,330));
 
 			sideInspectorInterp = Math.MoveTo(sideInspectorInterp, sideInspectorVisible ? 1 : 0, 0.1f);
 			sideInspector.Offset = .(.(-300 * sideInspectorInterp,0), .(300,0));
@@ -616,7 +621,9 @@ namespace SpyroScope {
 						object.DrawOriginAxis();
 					}
 
-					DrawMoby(object);
+					if (drawObjectModels) {
+						DrawMoby(object);
+					}
 				}
 			}
 
@@ -1087,12 +1094,7 @@ namespace SpyroScope {
 							case .C : {
 								freecamToggle.Toggle();
 							}
-							case .H : {
-								toggleList[2].button.Toggle();
-							}
 							case .I : {
-								toggleList[1].button.Toggle();
-
 								/*// Does not currently work as intended
 								if (Emulator.InputMode) {
 									Emulator.RestoreInputRelay();
@@ -1119,6 +1121,7 @@ namespace SpyroScope {
 								ExportTerrain();
 							}
 							case .F1: {
+								Selection.Clear();
 								Terrain.collision.Clear();
 
 								let position = Emulator.active.SpyroPosition + .(0,0,-500);
@@ -1169,6 +1172,14 @@ namespace SpyroScope {
 
 			if (object.HasModel) {
 				if (modelSets.ContainsKey(object.objectTypeID)) {
+					if (!drawObjectExperimentalModels) {
+						Emulator.Address modelSetAddress = ?;
+						Emulator.modelPointers[(int)Emulator.active.rom].GetAtIndex(&modelSetAddress, object.objectTypeID);
+						if ((uint32)modelSetAddress & 0x80000000 > 0) {
+							return;
+						}
+					}
+
 					let basis = Matrix3.Euler(
 						-(float)object.eulerRotation.x / 0x80 * Math.PI_f,
 						(float)object.eulerRotation.y / 0x80 * Math.PI_f,
@@ -1501,6 +1512,16 @@ namespace SpyroScope {
 		void ToggleOrigins(bool toggle) {
 			drawObjectOrigins = toggle;
 			messageFeed.PushMessage("Toggled Object Origins");
+		}
+
+		void ToggleModels(bool toggle) {
+			drawObjectModels = toggle;
+			messageFeed.PushMessage("Toggled Object Models");
+		}
+
+		void ToggleModelsExperimental(bool toggle) {
+			drawObjectExperimentalModels = toggle;
+			messageFeed.PushMessage("Toggled Object Models Experimental");
 		}
 
 		void ToggleInactive(bool toggle) {
