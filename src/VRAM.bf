@@ -201,11 +201,15 @@ namespace SpyroScope {
 				}
 			}
 
-			SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&textureBuffer[0], (.)(width), (.)height, 16, 2 * (.)(width), 0x001f, 0x03e0, 0x7c00, 0x8000);
-			delete textureBuffer;
+			if (file.EndsWith(".tga")) {
+				SpyroScope.Image.SaveTGA(textureBuffer.CArray(), (.)width, (.)height, file);
+			} else { // Default to bitmap
+				SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&textureBuffer[0], (.)(width), (.)height, 16, 2 * (.)(width), 0x001f, 0x03e0, 0x7c00, 0x8000);
+				SDL.SDL_SaveBMP(img, file);
+				SDL.FreeSurface(img);
+			}
 
-			SDL.SDL_SaveBMP(img, file);
-			SDL.FreeSurface(img);
+			delete textureBuffer;
 		}
 
 		public static void Export(String file, int x, int y, int width, int height, int bitmode, int tpage) {

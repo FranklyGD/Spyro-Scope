@@ -454,7 +454,7 @@ namespace SpyroScope {
 		void ExportVRAM() {
 			let dialog = new SaveFileDialog();
 			dialog.FileName = "vram_decoded";
-			dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|All files (*.*)|*.*");
+			dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|Truevision TGA (*.tga)|*.tga|All files (*.*)|*.*");
 			dialog.OverwritePrompt = true;
 			dialog.CheckFileExists = true;
 			dialog.AddExtension = true;
