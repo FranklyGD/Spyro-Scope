@@ -1214,23 +1214,40 @@ namespace SpyroScope {
 				case 0xca:
 				case 0xcb:
 				default:
-					switch (object.heldGemValue) {
-						case 1: case 2: case 5: case 10: case 25: // Allow any of these values to pass
-						default: return; // If the data does not contain a valid gem value, skip drawing an icon
-					}
-		
-					Texture containerIcon = object.objectTypeID == 1 ? null : gemHolderIconTexture;
+					Texture containerIcon = null;
 					Renderer.Color iconTint = .(128,128,128);
-					switch (object.objectTypeID) {
-						case 0xc8:
-							iconTint = .(222,128,90);
-							containerIcon = basketIconTexture;
-						case 0xc9:
-							iconTint = .(90,128,222);
-							containerIcon = vaseIconTexture;
-						case 0xd1:
-							iconTint = .(64,222,0);
-							containerIcon = bottleIconTexture;
+
+					if (Emulator.active.installment == .SpyroTheDragon) {
+						if (object.[Friend]o == 0xff && (object.objectTypeID < 0x53 || object.objectTypeID > 0x57) || object.[Friend]o != 0xff && (object.[Friend]o < 0x53 || object.[Friend]o > 0x57)) {
+							return;
+						}
+					} else {
+						switch (object.heldGemValue) {
+							case 1: case 2: case 5: case 10: case 25: // Allow any of these values to pass
+							default: return; // If the data does not contain a valid gem value, skip drawing an icon
+						}
+					}
+
+					if (Emulator.active.installment == .SpyroTheDragon) {
+						if (object.[Friend]o != 0xff) {
+							containerIcon = gemHolderIconTexture;
+						}
+					} else {
+						if (object.objectTypeID != 1) {
+							containerIcon = gemHolderIconTexture;
+						}
+
+						switch (object.objectTypeID) {
+							case 0xc8:
+								iconTint = .(222,128,90);
+								containerIcon = basketIconTexture;
+							case 0xc9:
+								iconTint = .(90,128,222);
+								containerIcon = vaseIconTexture;
+							case 0xd1:
+								iconTint = .(64,222,0);
+								containerIcon = bottleIconTexture;
+						}
 					}
 		
 					if (containerIcon != null) {
@@ -1248,12 +1265,30 @@ namespace SpyroScope {
 					}
 		
 					Renderer.Color color = .(255,255,255);
-					switch (object.heldGemValue) {
-						case 1: color = .(255,0,0);
-						case 2: color = .(0,255,0);
-						case 5: color = .(90,64,255);
-						case 10: color = .(255,180,0);
-						case 25: color = .(255,90,255);
+				
+					if (Emulator.active.installment == .SpyroTheDragon) {
+						var id = 0;
+						if (object.[Friend]o == 0xff) {
+							id = object.objectTypeID;
+						} else {
+							id = object.[Friend]o;
+						}
+
+						switch (id) {
+							case 0x53: color = .(255,0,0);
+							case 0x54: color = .(0,255,0);
+							case 0x55: color = .(0,0,255);
+							case 0x56: color = .(255,180,0);
+							case 0x57: color = .(255,90,255);
+						}
+					} else {
+						switch (object.heldGemValue) {
+							case 1: color = .(255,0,0);
+							case 2: color = .(0,255,0);
+							case 5: color = .(90,64,255);
+							case 10: color = .(255,180,0);
+							case 25: color = .(255,90,255);
+						}
 					}
 		
 					DrawUtilities.Rect(screenPosition.y - halfHeight, screenPosition.y + halfHeight, screenPosition.x - halfWidth, screenPosition.x + halfWidth, 0,1,0,1, gemIconTexture, color);
