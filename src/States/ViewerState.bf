@@ -298,7 +298,7 @@ namespace SpyroScope {
 
 			recordButton.Offset = .(16, 180, 16 + (toggleList.Count + 7) * WindowApp.font.height, 32 + (toggleList.Count + 7) * WindowApp.font.height);
 			recordButton.text = "(R)ecord";
-			recordButton.OnActuated.Add(new => Recording.Record);
+			recordButton.OnActuated.Add(new => RecordReplay);
 
 			GUIElement.PopParent();
 			
@@ -1114,7 +1114,7 @@ namespace SpyroScope {
 								windowApp.GoToState<VRAMViewerState>();
 							}
 							case .R : {
-								Recording.Record();
+								RecordReplay();
 							}
 							case .F : {
 								if (Recording.Playing) {
@@ -1625,6 +1625,19 @@ namespace SpyroScope {
 		void ToggleLimits(bool toggle) {
 			drawLimits = toggle;
 			messageFeed.PushMessage("Toggled Height Limits");
+		}
+
+		void RecordReplay() {
+			if (!Recording.Active) {
+				Recording.Record();
+				timeline.visible = true;
+				recordButton.text = "Stop Record";
+				messageFeed.PushMessage("Begin Recording");
+			} else {
+				Recording.StopRecord();
+				recordButton.text = "Record";
+				messageFeed.PushMessage("Stopped Recording");
+			}
 		}
 
 		void Teleport() {
