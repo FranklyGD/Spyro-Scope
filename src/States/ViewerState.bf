@@ -58,7 +58,7 @@ namespace SpyroScope {
 		List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
 		MessageFeed messageFeed;
-		Button togglePauseButton, stepButton, teleportButton;
+		Button togglePauseButton, stepButton, teleportButton, recordButton;
 
 		Texture playTexture = new .("images/ui/play.png") ~ delete _; 
 		Texture pauseTexture = new .("images/ui/pause.png") ~ delete _; 
@@ -127,7 +127,7 @@ namespace SpyroScope {
 			stepButton.OnActuated.Add(new => Step);
 
 			cornerMenu = new .();
-			cornerMenu.Offset = .(.Zero, .(200,330));
+			cornerMenu.Offset = .(.Zero, .(200,340));
 			cornerMenu.tint = .(0,0,0);
 			cornerMenu.texture = GUIElement.bgTexture;
 			GUIElement.PushParent(cornerMenu);
@@ -293,6 +293,12 @@ namespace SpyroScope {
 			teleportButton.text = "(T)eleport";
 			teleportButton.OnActuated.Add(new => Teleport);
 			teleportButton.Enabled = false;
+			
+			recordButton = new .();
+
+			recordButton.Offset = .(16, 180, 16 + (toggleList.Count + 7) * WindowApp.font.height, 32 + (toggleList.Count + 7) * WindowApp.font.height);
+			recordButton.text = "(R)ecord";
+			recordButton.OnActuated.Add(new => Recording.Record);
 
 			GUIElement.PopParent();
 			
@@ -557,7 +563,7 @@ namespace SpyroScope {
 			}
 
 			cornerMenuInterp = Math.MoveTo(cornerMenuInterp, cornerMenuVisible ? 1 : 0, 0.1f);
-			cornerMenu.Offset = .(.(-200 * (1 - cornerMenuInterp), 0), .(200,330));
+			cornerMenu.Offset = .(.(-200 * (1 - cornerMenuInterp), 0), .(200,340));
 
 			sideInspectorInterp = Math.MoveTo(sideInspectorInterp, sideInspectorVisible ? 1 : 0, 0.1f);
 			sideInspector.Offset = .(.(-300 * sideInspectorInterp,0), .(300,0));
@@ -1087,7 +1093,7 @@ namespace SpyroScope {
 								Emulator.healthAddresses[(int)Emulator.active.rom].Write(&health);
 							}
 							case .T : {
-								if (Emulator.active.CameraMode) {
+								if (teleportButton.Enabled) {
 									Teleport();
 								}
 							}
@@ -1108,7 +1114,7 @@ namespace SpyroScope {
 								windowApp.GoToState<VRAMViewerState>();
 							}
 							case .R : {
-								Reload();
+								Recording.Record();
 							}
 							case .F : {
 								if (Recording.Playing) {
@@ -1137,6 +1143,9 @@ namespace SpyroScope {
 								triangle[2] = position + .(500,-500,0);
 
 								Terrain.collision.AddTriangle(triangle);
+							}
+							case .F12 : {
+								Reload();
 							}
 							default : {}
 						}
@@ -1573,6 +1582,8 @@ namespace SpyroScope {
 				lockOffset = Camera.position - Emulator.active.SpyroPosition;
 			}
 
+			teleportButton.Enabled = mode == .Free || mode == .Game && Emulator.active.CameraMode;
+
 			viewMode = mode;
 		}
 
@@ -1607,7 +1618,7 @@ namespace SpyroScope {
 			} else {
 				Emulator.active.RestoreCameraUpdate();
 				messageFeed.PushMessage("Game Camera");
-				teleportButton.Enabled = false;
+				teleportButton.Enabled = viewMode != .Game;
 			}
 		}
 
