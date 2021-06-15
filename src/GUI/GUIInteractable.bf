@@ -60,7 +60,7 @@ namespace SpyroScope {
 		}
 
 		protected override void Selected() {
-			if (enabled) {
+			if (enabled && !Pressed) {
 				state = .Hovered;
 			}
 		}

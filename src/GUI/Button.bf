@@ -24,14 +24,16 @@ namespace SpyroScope {
 				case .Disabled: color = disabledColor; texture = normalTexture;
 			}
 
-			DrawUtilities.SlicedRect(drawn.bottom, drawn.top, drawn.left, drawn.right, 0,1,0,1, 0.3f,0.7f,0.3f,0.7f, texture, color);
+			if (texture != null) {
+				DrawUtilities.SlicedRect(drawn.bottom, drawn.top, drawn.left, drawn.right, 0,1,0,1, 0.3f,0.7f,0.3f,0.7f, texture, color);
+			}
 
 			if (iconTexture != null) {
 				let hcenter = (drawn.left + drawn.right) / 2;
 				let vcenter = (drawn.top + drawn.bottom) / 2;
 				let halfWidth = iconTexture.width / 2;
 				let halfHeight = iconTexture.height / 2;
-				DrawUtilities.Rect(vcenter - halfHeight, vcenter + halfWidth, hcenter - halfHeight, hcenter + halfHeight, 0,1,0,1, iconTexture, color);
+				DrawUtilities.Rect(vcenter - halfHeight, vcenter + halfWidth, hcenter - halfHeight, hcenter + halfHeight, 0,1,0,1, iconTexture, .(255,255,255));
 			}
 
 			if (text != null && !text.IsEmpty) {

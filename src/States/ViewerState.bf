@@ -65,6 +65,11 @@ namespace SpyroScope {
 		Texture stepTexture = new .("images/ui/step.png") ~ delete _;
 		Texture toggledTexture = new .("images/ui/toggle_enabled.png") ~ delete _;
 
+		Texture cameraIconTexture = new .("images/ui/icon_camera.png") ~ delete _; 
+		Texture sceneIconTexture = new .("images/ui/icon_scene.png") ~ delete _;
+		Texture objectIconTexture = new .("images/ui/icon_object.png") ~ delete _;
+		Texture otherIconTexture = new .("images/ui/icon_other.png") ~ delete _;
+
 		Texture gemIconTexture = new .("images/ui/icon_gem.png") ~ delete _;
 		Texture gemHolderIconTexture = new .("images/ui/icon_gem_holder.png") ~ delete _;
 		Texture basketIconTexture = new .("images/ui/icon_basket.png") ~ delete _;
@@ -74,6 +79,8 @@ namespace SpyroScope {
 		Panel cornerMenu;
 		bool cornerMenuVisible;
 		float cornerMenuInterp;
+
+		GUIElement cameraOptionGroup, sceneOptionGroup, objectOptionGroup, otherOptionGroup;
 
 		Panel collisionOptionGroup, nearTerrainToggleGroup;
 		
@@ -88,18 +95,16 @@ namespace SpyroScope {
 
 		Toggle freecamToggle;
 
-		(Toggle button, String label, delegate void() event)[8] toggleList = .(
+		(Toggle button, String label, delegate void() event)[6] toggleList = .(
 			(null, "Object Origin Axis", new () => ToggleOrigins(toggleList[0].button.value)),
 			(null, "Object Models", new () => { ToggleModels(toggleList[1].button.value); toggleList[2].button.Enabled = toggleList[1].button.value; }),
 			(null, "Object Models (Exp.)", new () => ToggleModelsExperimental(toggleList[2].button.value)),
 			(null, "Inactive Objects", new () => ToggleInactive(toggleList[3].button.value)),
-			(null, "Height Limits", new () => ToggleLimits(toggleList[4].button.value)),
-			(null, "Display Icons", new () => {displayIcons = toggleList[5].button.value;}),
-			(null, "All Visual Moby Data", new () => {displayAllData = toggleList[6].button.value;}),
-			(null, "Enable Manipulator", new () => {showManipulator = toggleList[7].button.value;}),
+			(null, "Display Icons", new () => {displayIcons = toggleList[4].button.value;}),
+			(null, "All Visual Moby Data", new () => {displayAllData = toggleList[5].button.value;})
 		);
 
-		Toggle pinInspectorButton;
+		Toggle pinInspectorButton, pinMenuButton;
 
 		Timeline timeline;
 
@@ -127,20 +132,95 @@ namespace SpyroScope {
 			stepButton.OnActuated.Add(new => Step);
 
 			cornerMenu = new .();
-			cornerMenu.Offset = .(.Zero, .(200,340));
+			cornerMenu.Offset = .(.Zero, .(200,180));
 			cornerMenu.tint = .(0,0,0);
 			cornerMenu.texture = GUIElement.bgTexture;
 			GUIElement.PushParent(cornerMenu);
 
+			pinMenuButton = new .();
+
+			pinMenuButton.Anchor = .(1, 1, 0, 0);
+			pinMenuButton.Offset = .(-16, 0, 0, 16);
+			pinMenuButton.Offset.Shift(-2,2);
+			pinMenuButton.toggleIconTexture = toggledTexture;
+
+			// Tabs
+			var tab = new Button();
+			tab.Offset = .(0, 32, 0, 32) .. Shift(8,8);
+			tab.normalTexture = tab.pressedTexture = GUIElement.bgOutlineTexture;
+			tab.normalColor = .(32,32,32);
+			tab.hoveredColor = .(128,128,128);
+			tab.pressedColor = .(255,255,255);
+			tab.iconTexture = cameraIconTexture;
+			tab.OnActuated.Add(new () => {
+				cameraOptionGroup.visible = true;
+				sceneOptionGroup.visible = false;
+				objectOptionGroup.visible = false;
+				otherOptionGroup.visible = false;
+			});
+
+			tab = new Button();
+			tab.Offset = .(0, 32, 0, 32) .. Shift(8 + 36,8);
+			tab.normalTexture = tab.pressedTexture = GUIElement.bgOutlineTexture;
+			tab.normalColor = .(32,32,32);
+			tab.hoveredColor = .(128,128,128);
+			tab.pressedColor = .(255,255,255);
+			tab.iconTexture = sceneIconTexture;
+			tab.OnActuated.Add(new () => {
+				cameraOptionGroup.visible = false;
+				sceneOptionGroup.visible = true;
+				objectOptionGroup.visible = false;
+				otherOptionGroup.visible = false;
+			});
+			
+			tab = new Button();
+			tab.Offset = .(0, 32, 0, 32) .. Shift(8 + 36*2,8);
+			tab.normalTexture = tab.pressedTexture = GUIElement.bgOutlineTexture;
+			tab.normalColor = .(32,32,32);
+			tab.hoveredColor = .(128,128,128);
+			tab.pressedColor = .(255,255,255);
+			tab.iconTexture = objectIconTexture;
+			tab.OnActuated.Add(new () => {
+				cameraOptionGroup.visible = false;
+				sceneOptionGroup.visible = false;
+				objectOptionGroup.visible = true;
+				otherOptionGroup.visible = false;
+			});
+			
+			tab = new Button();
+			tab.Offset = .(0, 32, 0, 32) .. Shift(8 + 36*3,8);
+			tab.normalTexture = tab.pressedTexture = GUIElement.bgOutlineTexture;
+			tab.normalColor = .(32,32,32);
+			tab.hoveredColor = .(128,128,128);
+			tab.pressedColor = .(255,255,255);
+			tab.iconTexture = otherIconTexture;
+			tab.OnActuated.Add(new () => {
+				cameraOptionGroup.visible = false;
+				sceneOptionGroup.visible = false;
+				objectOptionGroup.visible = false;
+				otherOptionGroup.visible = true;
+			});
+			
 			messageFeed = new .();
 			messageFeed.Anchor.start = .(1,0);
 
+			let content = new GUIElement();
+			content.Anchor = .(0, 1, 0, 1);
+			content.Offset = .(16, -16, 48, -16);
+			GUIElement.PushParent(content);
+
+			// Camera
+			cameraOptionGroup = new GUIElement();
+			cameraOptionGroup.Anchor = .(0, 1, 0, 1);
+			GUIElement.PushParent(cameraOptionGroup);
+
 			var text = new Text();
 			text.Text = "View";
-			text.Offset = .(16,0,16,0);
+			text.Offset = .(.(0,1),.Zero);
 
 			var dropdown = new DropdownList();
-			dropdown.Offset = .(100,184,16,32);
+			dropdown.Anchor = .(0, 1, 0, 0);
+			dropdown.Offset = .(84, 0, 0, 16);
 			dropdown.AddItem("Game");
 			dropdown.AddItem("Free");
 			dropdown.AddItem("Lock");
@@ -149,20 +229,29 @@ namespace SpyroScope {
 			dropdown.OnItemSelect.Add(new (option) => ChangeView((.)option));
 
 			freecamToggle = new .();
-			freecamToggle.Offset = .(16, 32, 16 + 1 * WindowApp.font.height, 32 + 1 * WindowApp.font.height);
+			freecamToggle.Offset = .(0, 16, 1 * WindowApp.font.height, 16 + 1 * WindowApp.font.height);
 			freecamToggle.toggleIconTexture = toggledTexture;
 			freecamToggle.OnActuated.Add(new () => ToggleFreeCamera(freecamToggle.value));
 
 			text = new Text();
 			text.Text = "Free Game (C)amera";
-			text.Offset = .(40,0,16 + (text.font.height + 6),0);
+			text.Offset = .(24, 0, 1 + WindowApp.font.height, 0);
+
+			GUIElement.PopParent();
+
+			// Scene
+			sceneOptionGroup = new GUIElement();
+			sceneOptionGroup.Anchor = .(0, 1, 0, 1);
+			GUIElement.PushParent(sceneOptionGroup);
+			sceneOptionGroup.visible = false;
 
 			text = new Text();
 			text.Text = "Render";
-			text.Offset = .(16,0,14 + (3 * text.font.height),0);
+			text.Offset = .(0, 0, 1, 0);
 
 			dropdown = new DropdownList();
-			dropdown.Offset = .(100,184,56,72);
+			dropdown.Anchor = .(0, 1, 0, 0);
+			dropdown.Offset = .(84, 0, 0, 16);
 			dropdown.AddItem("Collision");
 			dropdown.AddItem("Far");
 			dropdown.AddItem("Near LQ");
@@ -170,9 +259,31 @@ namespace SpyroScope {
 			dropdown.Value = 0;
 			dropdown.OnItemSelect.Add(new (option) => ChangeRender((.)option));
 
+			Toggle button = new .();
+			button.Offset = .(0, 16, 1 * WindowApp.font.height, 16 + 1 * WindowApp.font.height);
+			button.toggleIconTexture = toggledTexture;
+			button.OnActuated.Add(new () => ToggleSolid(button.value));
+			button.SetValue(true);
+
+			text = new Text();
+			text.Text = "Solid";
+			text.Offset = .(24, 0, 1 * WindowApp.font.height, 0);
+
+			button = new .();
+			button.Anchor = .(0.5f, 0.5f, 0, 0);
+			button.Offset = .(0, 16, 1 * WindowApp.font.height, 16 + 1 * WindowApp.font.height);
+			button.toggleIconTexture = toggledTexture;
+			button.OnActuated.Add(new () => ToggleWireframe(button.value));
+			button.SetValue(true);
+
+			text = new Text();
+			text.Text = "Wireframe";
+			text.Anchor = .(0.5f, 0.5f, 0, 0);
+			text.Offset = .(24, 0, 1 * WindowApp.font.height, 0);
+
 			collisionOptionGroup = new .();
 			collisionOptionGroup.Anchor = .(0,1,0,0);
-			collisionOptionGroup.Offset = .(14,-14, 14 + 4 * WindowApp.font.height, 14 + 6 * WindowApp.font.height);
+			collisionOptionGroup.Offset = .(-2, 2, -2 + 2 * WindowApp.font.height, -2 + 4 * WindowApp.font.height);
 			collisionOptionGroup.texture = GUIElement.bgOutlineTexture;
 			collisionOptionGroup.tint = .(128,128,128);
 			GUIElement.PushParent(collisionOptionGroup);
@@ -183,7 +294,7 @@ namespace SpyroScope {
 
 			dropdown = new DropdownList();
 			dropdown.Anchor = .(0.5f,1,0,0);
-			dropdown.Offset = .(0,0,2,18);
+			dropdown.Offset = .(0,-2,2,18);
 			dropdown.AddItem("None");
 			dropdown.AddItem("Flags");
 			dropdown.AddItem("Deform");
@@ -193,7 +304,7 @@ namespace SpyroScope {
 			dropdown.Value = 0;
 			dropdown.OnItemSelect.Add(new (option) => Terrain.collision.SetOverlay((.)option));
 			
-			Toggle button = new .();
+			button = new .();
 			button.Offset = .(2, 18, 2 + 1 * WindowApp.font.height, 18 + 1 * WindowApp.font.height);
 			button.toggleIconTexture = toggledTexture;
 			button.OnActuated.Add(new () => {
@@ -202,33 +313,13 @@ namespace SpyroScope {
 
 			text = new Text();
 			text.Text = "Show Grid";
-			text.Offset = .(26,0,2 + (text.font.height + 6),0);
+			text.Offset = .(26, 0, 2 + 1 * WindowApp.font.height, 0);
 
 			GUIElement.PopParent();
-			
-			button = new .();
-			button.Offset = .(16, 32, 16 + 3 * WindowApp.font.height, 32 + 3 * WindowApp.font.height);
-			button.toggleIconTexture = toggledTexture;
-			button.OnActuated.Add(new () => ToggleSolid(button.value));
-			button.SetValue(true);
-
-			text = new Text();
-			text.Text = "Solid";
-			text.Offset = .(40,0,16 + 3 * (text.font.height + 6),0);
-
-			button = new .();
-			button.Offset = .(100, 116, 16 + 3 * WindowApp.font.height, 32 + 3 * WindowApp.font.height);
-			button.toggleIconTexture = toggledTexture;
-			button.OnActuated.Add(new () => ToggleWireframe(button.value));
-			button.SetValue(true);
-
-			text = new Text();
-			text.Text = "Wireframe";
-			text.Offset = .(124,0,16 + 3 * (text.font.height + 6),0);
 
 			nearTerrainToggleGroup = new .();
 			nearTerrainToggleGroup.Anchor = .(0,1,0,0);
-			nearTerrainToggleGroup.Offset = .(14,-14, 14 + 4 * WindowApp.font.height, 14 + 6 * WindowApp.font.height);
+			nearTerrainToggleGroup.Offset = .(-2, 2, -2 + 2 * WindowApp.font.height, -2 + 4 * WindowApp.font.height);
 			nearTerrainToggleGroup.texture = GUIElement.bgOutlineTexture;
 			nearTerrainToggleGroup.tint = .(128,128,128);
 			nearTerrainToggleGroup.visible = false;
@@ -267,13 +358,30 @@ namespace SpyroScope {
 			text = new Text();
 			text.Text = "Show Fade Color";
 			text.Offset = .(26,0,2 + (text.font.height + 6),0);
+			
+			GUIElement.PopParent();
+
+			button = new .();
+			button.Offset = .(0, 16, 4 * WindowApp.font.height, 16 + 4 * WindowApp.font.height);
+			button.toggleIconTexture = toggledTexture;
+			button.OnActuated.Add(new () => ToggleLimits(button.value));
+
+			text = new Text();
+			text.Text = "Show Height Limits";
+			text.Offset = .(24, 0, 1 + 4 * WindowApp.font.height, 0);
 
 			GUIElement.PopParent();
+
+			// Object
+			objectOptionGroup = new .();
+			objectOptionGroup.Anchor = .(0, 1, 0, 1);
+			GUIElement.PushParent(objectOptionGroup);
+			objectOptionGroup.visible = false;
 
 			for (let i < toggleList.Count) {
 				button = new .();
 
-				button.Offset = .(16, 32, 16 + (i + 6) * WindowApp.font.height, 32 + (i + 6) * WindowApp.font.height);
+				button.Offset = .(0, 16, i * WindowApp.font.height, 16 + i * WindowApp.font.height);
 				button.toggleIconTexture = toggledTexture;
 				button.OnActuated.Add(toggleList[i].event);
 
@@ -281,25 +389,47 @@ namespace SpyroScope {
 
 				text = new Text();
 				text.Text = toggleList[i].label;
-				text.Offset = .(40,0,16 + (i + 6) * (text.font.height + 6),0);
+				text.Offset = .(24, 0, 1 + i * WindowApp.font.height, 0);
 			}
+
+			GUIElement.PopParent();
 
 			toggleList[0].button.Toggle();
 			toggleList[1].button.Toggle();
 
-			teleportButton = new .();
+			// Other
+			otherOptionGroup = new .();
+			otherOptionGroup.Anchor = .(0, 1, 0, 1);
+			GUIElement.PushParent(otherOptionGroup);
+			otherOptionGroup.visible = false;
 
-			teleportButton.Offset = .(16, 180, 16 + (toggleList.Count + 6) * WindowApp.font.height, 32 + (toggleList.Count + 6) * WindowApp.font.height);
+			button = new .();
+
+			button.Offset = .(0, 16, 0, 16);
+			button.toggleIconTexture = toggledTexture;
+			button.OnActuated.Add(new () => {showManipulator = button.value; });
+
+			text = new Text();
+			text.Text = "Enable Manipulator";
+			text.Offset = .(24, 0, 1, 0);
+
+			teleportButton = new .();
+			
+			teleportButton.Anchor = .(0,1,0,0);
+			teleportButton.Offset = .(0, 0, 1 * WindowApp.font.height, 16 + 1 * WindowApp.font.height);
 			teleportButton.text = "(T)eleport";
 			teleportButton.OnActuated.Add(new => Teleport);
 			teleportButton.Enabled = false;
 			
 			recordButton = new .();
 
-			recordButton.Offset = .(16, 180, 16 + (toggleList.Count + 7) * WindowApp.font.height, 32 + (toggleList.Count + 7) * WindowApp.font.height);
+			recordButton.Anchor = .(0,1,0,0);
+			recordButton.Offset = .(0, 0, 2 * WindowApp.font.height, 16 + 2 * WindowApp.font.height);
 			recordButton.text = "(R)ecord";
 			recordButton.OnActuated.Add(new => RecordReplay);
-
+			
+			GUIElement.PopParent();
+			GUIElement.PopParent();
 			GUIElement.PopParent();
 			
 			sideInspector = new .();
@@ -481,8 +611,6 @@ namespace SpyroScope {
 			});
 
 			GUIElement.PopParent();
-
-			
 		}
 
 		public ~this() {
@@ -502,9 +630,9 @@ namespace SpyroScope {
 			togglePauseButton.iconTexture = Emulator.active.Paused ? playTexture : pauseTexture;
 			stepButton.Enabled = Emulator.active.Paused;
 
-			toggleList[3].button.value = teleportButton.Enabled = Emulator.active.CameraMode;
+			freecamToggle.value = teleportButton.Enabled = Emulator.active.CameraMode;
 			if (Emulator.active.CameraMode) {
-				toggleList[3].button.iconTexture = toggleList[3].button.toggleIconTexture;
+				freecamToggle.iconTexture = freecamToggle.toggleIconTexture;
 			}
 		}
 
@@ -563,7 +691,7 @@ namespace SpyroScope {
 			}
 
 			cornerMenuInterp = Math.MoveTo(cornerMenuInterp, cornerMenuVisible ? 1 : 0, 0.1f);
-			cornerMenu.Offset = .(.(-200 * (1 - cornerMenuInterp), 0), .(200,340));
+			cornerMenu.Offset = .(.(-200 * (1 - cornerMenuInterp), 0), .(200,180));
 
 			sideInspectorInterp = Math.MoveTo(sideInspectorInterp, sideInspectorVisible ? 1 : 0, 0.1f);
 			sideInspector.Offset = .(.(-300 * sideInspectorInterp,0), .(300,0));
@@ -1040,7 +1168,7 @@ namespace SpyroScope {
 						}
 					} else {
 						if (Emulator.active.loadingStatus == .Idle || Emulator.active.loadingStatus == .CutsceneIdle) {
-							cornerMenuVisible = !Translator.dragged && (cornerMenuVisible && WindowApp.mousePosition.x < 200 || WindowApp.mousePosition.x < 10) && WindowApp.mousePosition.y < 260;
+							cornerMenuVisible = !Translator.dragged && pinMenuButton.value || ((cornerMenuVisible && WindowApp.mousePosition.x < 200 || WindowApp.mousePosition.x < 10) && WindowApp.mousePosition.y < 180);
 							sideInspectorVisible = !Translator.dragged && ViewerSelection.currentObjIndex > -1 && (pinInspectorButton.value || (sideInspectorVisible && WindowApp.mousePosition.x > WindowApp.width - 300 || WindowApp.mousePosition.x > WindowApp.width - 10));
 						} else {
 							cornerMenuVisible = sideInspectorVisible = false;
