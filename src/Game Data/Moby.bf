@@ -22,7 +22,7 @@ namespace SpyroScope {
 		public bool animating; // 65
 		uint16 j; // 66
 		public Vector3Byte eulerRotation; // 68
-		public uint8 updateState; // 72
+		public int8 updateState; // 72
 		public uint8 variantID; // 73
 		uint8[3] k; // 74
 		public bool draw; // 77
@@ -37,7 +37,9 @@ namespace SpyroScope {
 		// Derived from Spyro: Ripto's Rage [8001d068]
 		public bool HasModel { get => objectTypeID < 0x300; }
 		// Derived from Spyro: Year of the Dragon [80030410]
-		public bool IsActive { get => updateState < 0x80; }
+		public bool IsActive { get => updateState > -1; }
+		// Only on Spyro the Dragon
+		public bool IsTerminator { get => updateState == -1; }
 
 		public bool IsNull { get => dataPointer.IsNull; }
 

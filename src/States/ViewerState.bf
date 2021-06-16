@@ -680,7 +680,7 @@ namespace SpyroScope {
 					Moby object = ?;
 					objPointer.Read(&object);
 	
-					if (object.IsNull) {
+					if (object.IsNull || object.IsTerminator) {
 						break;
 					}
 
@@ -1357,7 +1357,7 @@ namespace SpyroScope {
 					}
 
 					if (Emulator.active.installment == .SpyroTheDragon) {
-						if (object.[Friend]o != 0xff) {
+						if ((object.objectTypeID < 0x53 || object.objectTypeID > 0x57) && object.[Friend]o != 0xff) {
 							containerIcon = gemHolderIconTexture;
 						}
 					} else {
@@ -1396,7 +1396,7 @@ namespace SpyroScope {
 				
 					if (Emulator.active.installment == .SpyroTheDragon) {
 						var id = 0;
-						if (object.[Friend]o == 0xff) {
+						if (object.objectTypeID >= 0x53 && object.objectTypeID <= 0x57) {
 							id = object.objectTypeID;
 						} else {
 							id = object.[Friend]o;
