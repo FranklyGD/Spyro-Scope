@@ -112,6 +112,9 @@ namespace SpyroScope {
 		Input textureIndexInput, rotationInput, depthOffsetInput;
 		Toggle flipNormalToggle, doubleSidedToggle;
 
+		// Other
+		Vector3Int[3] grabbedTriangle;
+
 		public this() {
 			ViewerSelection.Init();
 			GUIElement.SetActiveGUI(guiElements);
@@ -1098,10 +1101,31 @@ namespace SpyroScope {
 										Moby.GetAddress(ViewerSelection.currentObjIndex).Write(&moby);
 									});
 								} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
+									Translator.OnDragBegin.Add(new () => grabbedTriangle = Terrain.collision.GetTriangle(ViewerSelection.currentTriangleIndex / 3));
 									Translator.OnDragged.Add(new (position) => {
-										var triangle = Terrain.collision.GetTriangle(ViewerSelection.currentTriangleIndex / 3);
-										triangle[ViewerSelection.currentTriangleIndex % 3] = (.)position;
-										Terrain.collision.SetTriangle((.)ViewerSelection.currentTriangleIndex / 3, triangle, true);
+										// Use reference triangle to modify the packed collision triangle
+										grabbedTriangle[ViewerSelection.currentTriangleIndex % 3] = (.)position;
+										Terrain.collision.SetTriangle((.)ViewerSelection.currentTriangleIndex / 3, grabbedTriangle, true);
+									});
+									Translator.OnDragEnd.Add(new () => {
+										// Get nearest vertex on newly arranged triangle
+										let triangleIndex = ViewerSelection.currentTriangleIndex / 3;
+										let vertexIndex = ViewerSelection.currentTriangleIndex % 3;
+										let oldVertex = grabbedTriangle[vertexIndex];
+										Vector3Int[3] newTriangle = Terrain.collision.GetTriangle(ViewerSelection.currentTriangleIndex / 3);
+										
+										int newVertexIndex = ?;
+										var closestDistance = int.MaxValue;
+										for (let i < 3) {
+											let vertex = newTriangle[i];
+											let distance = (vertex - oldVertex).LengthSq();
+											if (distance < closestDistance) {
+												closestDistance = distance;
+												newVertexIndex = i;
+											}
+										}
+
+										ViewerSelection.currentTriangleIndex = triangleIndex * 3 + newVertexIndex;
 									});
 								} else {
 									Translator.OnDragBegin.Add(new => Emulator.active.KillSpyroUpdate);
