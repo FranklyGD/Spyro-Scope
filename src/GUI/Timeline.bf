@@ -9,6 +9,11 @@ namespace SpyroScope {
 		Texture playTexture = new .("images/ui/play.png") ~ delete _; 
 		Texture pauseTexture = new .("images/ui/pause.png") ~ delete _;
 
+		Texture squareButtonTexture = new .("images/ui/icon_button_square.png") ~ delete _; 
+		Texture triangleButtonTexture = new .("images/ui/icon_button_triangle.png") ~ delete _;
+		Texture crossButtonTexture = new .("images/ui/icon_button_cross.png") ~ delete _; 
+		Texture circleButtonTexture = new .("images/ui/icon_button_circle.png") ~ delete _;
+
 		int subDragged;
 
 		public this() {
@@ -89,6 +94,15 @@ namespace SpyroScope {
 			let hcenter = (drawn.left + drawn.right) / 2;
 
 			for (var i = start; i < end; i++) {
+				let previousFrameIndex = i-1;
+				Recording.SpyroFrame prevFrame = ?;
+				if (previousFrameIndex > -1) {
+					prevFrame = Recording.GetFrame(previousFrameIndex);
+				} else {
+					prevFrame.state = 0;
+					prevFrame.input = 0;
+				}
+
 				let frame = Recording.GetFrame(i);
 
 				var color = Renderer.Color(0,0,0);
@@ -98,9 +112,37 @@ namespace SpyroScope {
 					color = .((.)(255 * (1 - speedScale)), (.)(255 * speedScale), 0);
 				}
 
-				DrawUtilities.Rect(drawn.bottom - (i == Recording.CurrentFrame ? 16 : 8), drawn.bottom - 4, hcenter - 1.5f + offset * 3, hcenter + 1.5f + offset * 3, color);
-				//WindowApp.fontSmall.Print(scope String() .. AppendF("{}", frame.state), .((int)hcenter + offset * 3, drawn.bottom - 16 - WindowApp.fontSmall.height * (2 + (i % 12))), .(255,255,255));
+				let leftFrame = hcenter - 1.5f + offset * 3;
+				let rightFrame = hcenter + 1.5f + offset * 3;
 
+				DrawUtilities.Rect(drawn.bottom - (i == Recording.CurrentFrame ? 16 : 8), drawn.bottom - 4, leftFrame, rightFrame, color);
+
+				if (frame.input & 0x10 > 0) {
+					if (prevFrame.input & 0x10 == 0) {
+						DrawUtilities.Rect(drawn.bottom - 32, drawn.bottom - 8, leftFrame, leftFrame + 24, 0,1,0,1, triangleButtonTexture, .(255,255,255));
+					}
+					Renderer.DrawLine(.(leftFrame, drawn.bottom - 13,0), .(rightFrame, drawn.bottom - 13,0), .(73,218,124), .(73,218,124));
+				}
+				if (frame.input & 0x20 > 0) {
+					if (prevFrame.input & 0x20 == 0) {
+						DrawUtilities.Rect(drawn.bottom - 32, drawn.bottom - 8, leftFrame, leftFrame + 24, 0,1,0,1, circleButtonTexture, .(255,255,255));
+					}
+					Renderer.DrawLine(.(leftFrame, drawn.bottom - 12,0), .(rightFrame, drawn.bottom - 12,0), .(226,55,55), .(226,55,55));
+				}
+				if (frame.input & 0x40 > 0) {
+					if (prevFrame.input & 0x40 == 0) {
+						DrawUtilities.Rect(drawn.bottom - 32, drawn.bottom - 8, leftFrame, leftFrame + 24, 0,1,0,1, crossButtonTexture, .(255,255,255));
+					}
+					Renderer.DrawLine(.(leftFrame, drawn.bottom - 11,0), .(rightFrame, drawn.bottom - 11,0), .(126,171,226), .(126,171,226));
+				}
+				if (frame.input & 0x80 > 0) {
+					if (prevFrame.input & 0x80 == 0) {
+						DrawUtilities.Rect(drawn.bottom - 32, drawn.bottom - 8, leftFrame, leftFrame + 24, 0,1,0,1, squareButtonTexture, .(255,255,255));
+					}
+					Renderer.DrawLine(.(leftFrame, drawn.bottom - 10,0), .(rightFrame, drawn.bottom - 10,0), .(208,142,210), .(208,142,210));
+				}
+
+				// Every second (30 frames)
 				if (i % 30 == 0) {
 					Renderer.DrawLine(.((int)hcenter + offset * 3,drawn.bottom,0), .((int)hcenter + offset * 3,drawn.bottom - 16,0), .(255,255,255), .(255,255,255));
 					WindowApp.fontSmall.Print(scope String() .. AppendF("{}s", i/30), .((int)hcenter + offset * 3, drawn.bottom - 16 - WindowApp.fontSmall.height), .(255,255,255));

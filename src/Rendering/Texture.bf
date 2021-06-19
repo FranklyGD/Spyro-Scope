@@ -16,10 +16,11 @@ namespace SpyroScope {
 
 				GL.glGenTextures(1, &textureObjectID);
 				GL.glBindTexture(GL.GL_TEXTURE_2D, textureObjectID);
+				
+				uint fromFormat = surface.format.Amask == 0 ? GL.GL_SRGB : GL.GL_SRGB_ALPHA;
+				uint toFormat = surface.format.Amask == 0 ? GL.GL_RGB : GL.GL_RGBA;
 
-				uint format = surface.format.Amask == 0 ? GL.GL_RGB : GL.GL_RGBA;
-
-				GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, (.)format, surface.w, surface.h, 0, format, GL.GL_UNSIGNED_BYTE, surface.pixels);
+				GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, (int)fromFormat, surface.w, surface.h, 0, toFormat, GL.GL_UNSIGNED_BYTE, surface.pixels);
 				GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
 				GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
 				SDL.FreeSurface(surface);

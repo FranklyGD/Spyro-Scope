@@ -179,7 +179,8 @@ namespace SpyroScope {
 
 		public const Address<uint32>[11] healthAddresses = .(0, (.)0x80078bbc/*StD*/, 0, 0, (.)0x8006A248/*RR*/, 0, 0, (.)0x800705a8, (.)0x80070688/*YotD-1.1*/, 0, 0);
 
-		public const Address<uint32>[11] gameInputAddress = .(0, 0/*StD*/, 0, 0, (.)0x8001291c/*RR*/, 0, 0, 0, (.)0x8003a7a0/*YotD-1.1*/, 0, 0);
+		public const Address<uint32>[11] gameInputAddress = .(0, (.)0x800773c0/*StD*/, 0, 0, (.)0x800683a0/*RR*/, 0, 0, 0, (.)0x8006e618/*YotD-1.1*/, 0, 0);
+		public const Address<uint32>[11] gameInputSetAddress = .(0, 0/*StD*/, 0, 0, (.)0x8001291c/*RR*/, 0, 0, 0, (.)0x8003a7a0/*YotD-1.1*/, 0, 0);
 		public const uint32[11] gameInputValue = .(0, 0/*StD*/, 0, 0, 0xac2283a0/*RR*/, 0, 0, 0, 0xae220030/*YotD-1.1*/, 0, 0);
 
 		public const Address<uint32>[11] spyroStateChangeAddress = .(0, (.)0x8003fd5c/*StD*/, 0, 0, (.)0x80035d04/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
@@ -187,6 +188,15 @@ namespace SpyroScope {
 
 		// Game Values
 		public int32 gameState, loadState;
+
+		uint32 input;
+		public uint32 Input {
+			get => input;
+			set {
+				input = value;
+				gameInputAddress[(int)rom].Write(&input, this);
+			}
+		}
 
 		Vector3Int cameraPosition;
 		public Vector3Int CameraPosition {
@@ -353,7 +363,7 @@ namespace SpyroScope {
 
 		public bool InputMode { get {
 			uint32 value = ?;
-			ReadFromRAM(gameInputAddress[(int)rom], &value, 4);
+			ReadFromRAM(gameInputSetAddress[(int)rom], &value, 4);
 			return value != gameInputValue[(int)rom];
 		} }
 
@@ -718,6 +728,8 @@ namespace SpyroScope {
 			gameStateAddresses[(int)rom].Read(&gameState, this);
 			loadStateAddresses[(int)rom].Read(&loadState, this);
 
+			gameInputAddress[(int)rom].Read(&input, this);
+
 			spyroPositionAddresses[(int)rom].Read(&spyroPosition, this);
 			spyroEulerRotationAddresses[(int)rom].Read(&spyroEulerRotation, this);
 			spyroMatrixAddresses[(int)rom].Read(&spyroBasis, this);
@@ -809,7 +821,7 @@ namespace SpyroScope {
 		// Input
 		public void KillInputRelay() {
 			uint32 v = 0;
-			gameInputAddress[(int)rom].Write(&v, this);
+			gameInputSetAddress[(int)rom].Write(&v, this);
 
 			// Beyond the point of this function being called
 			// input should be written into RAM from the program
@@ -820,7 +832,7 @@ namespace SpyroScope {
 
 		public void RestoreInputRelay() {
 			uint32 v = gameInputValue[(int)rom];
-			gameInputAddress[(int)rom].Write(&v, this);
+			gameInputSetAddress[(int)rom].Write(&v, this);
 		}
 
 		// Logic

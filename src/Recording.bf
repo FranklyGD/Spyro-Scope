@@ -14,6 +14,7 @@ namespace SpyroScope {
 			public Vector3Int eulerRotation;
 			public uint32 state;
 			public Vector3Int targetVelocity;
+			public uint32 input;
 		}
 
 		static List<SpyroFrame> record = new .() ~ delete _;
@@ -46,6 +47,7 @@ namespace SpyroScope {
 			newFrame.eulerRotation = Emulator.active.SpyroEulerRotation;
 			newFrame.state = Emulator.active.SpyroState;
 			newFrame.targetVelocity = Emulator.active.SpyroIntendedVelocity;
+			newFrame.input = Emulator.active.Input;
 
 			CurrentFrame = record.Count;
 			record.Add(newFrame);
