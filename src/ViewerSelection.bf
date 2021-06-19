@@ -102,6 +102,10 @@ namespace SpyroScope {
 			for (int objectIndex = 0; objectIndex < Moby.allocated.Count; objectIndex++) {
 				let object = Moby.allocated[objectIndex];
 
+				if (object.IsTerminator) {
+					break;
+				}
+
 				if (object.IsActive || ViewerState.showInactive) {
 					let screenPosition = Camera.SceneToScreen(object.position);
 	

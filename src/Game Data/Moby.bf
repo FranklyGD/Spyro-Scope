@@ -35,13 +35,13 @@ namespace SpyroScope {
 		public Renderer.Color4 color;
 
 		// Derived from Spyro: Ripto's Rage [8001d068]
-		public bool HasModel { get => objectTypeID < 0x300; }
+		public bool HasModel { [Inline] get => objectTypeID < 0x300; }
 		// Derived from Spyro: Year of the Dragon [80030410]
-		public bool IsActive { get => updateState > -1; }
-		// Only on Spyro the Dragon
-		public bool IsTerminator { get => updateState == -1; }
+		public bool IsActive { [Inline] get => updateState > -1; }
+		
+		public bool IsNull { [Inline] get => dataPointer.IsNull; }
 
-		public bool IsNull { get => dataPointer.IsNull; }
+		public bool IsTerminator { [Inline] get => IsNull || updateState == -1; }
 
 		public static List<Moby> allocated = new .() ~ delete _;
 

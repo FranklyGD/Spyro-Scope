@@ -683,7 +683,7 @@ namespace SpyroScope {
 					Moby object = ?;
 					objPointer.Read(&object);
 	
-					if (object.IsNull || object.IsTerminator) {
+					if (object.IsTerminator) {
 						break;
 					}
 
@@ -753,7 +753,11 @@ namespace SpyroScope {
 			}
 			
 			for (let object in Moby.allocated) {
-				if (!object.IsNull && (object.IsActive || showInactive)) {
+				if (object.IsTerminator) {
+					break;
+				}
+
+				if (object.IsActive || showInactive) {
 					if ((!showManipulator || ViewerSelection.currentObjIndex != Moby.allocated.Count) && drawObjectOrigins) {
 						object.DrawOriginAxis();
 					}
@@ -766,6 +770,10 @@ namespace SpyroScope {
 
 			if (displayAllData) {
 				for (let object in Moby.allocated) {
+					if (object.IsTerminator) {
+						break;
+					}
+
 					object.DrawData();
 				}
 			} else {
@@ -874,7 +882,11 @@ namespace SpyroScope {
 
 		public override void DrawGUI() {
 			if (displayIcons) {
-				for	(let object in Moby.allocated) {
+				for (let object in Moby.allocated) {
+					if (object.IsTerminator) {
+						break;
+					}
+
 					if (object.IsActive || showInactive) {
 						var offsettedPosition = object.position;
 						if (object.objectTypeID != 1) {
