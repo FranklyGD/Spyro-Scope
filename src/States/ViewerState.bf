@@ -617,7 +617,7 @@ namespace SpyroScope {
 		}
 
 		public ~this() {
-			Terrain.Clear();
+			Terrain.Dispose();
 
 			for (let modelSet in modelSets.Values) {
 				delete modelSet;
@@ -1542,7 +1542,7 @@ namespace SpyroScope {
 		}
 
 		void OnSceneChanged() {
-			Terrain.Clear();
+			Terrain.Dispose();
 			Terrain.Load();
 
 			lastUpdatedSceneChange = .Now;

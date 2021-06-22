@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 
 namespace SpyroScope {
@@ -9,21 +10,91 @@ namespace SpyroScope {
 		public struct RegionMetadata {
 			public uint16 centerY, centerX, a, centerZ;
 			public uint16 offsetY, offsetX, b, offsetZ;
-			public uint8 farVertexCount, farColorCount, farFaceCount, c;
-			public uint8 nearVertexCount, nearColorCount, nearFaceCount, warpStart;
+
+			public struct RegionLOD {
+				public uint8 vertexCount, colorCount, faceCount, start;
+			}
+
+			public RegionLOD farLOD;
+			public RegionLOD nearLOD;
 
 			public bool verticallyScaledDown { get => a & 0b1000000000000 > 0; }
 		}
+
 		public RegionMetadata metadata;
 
+		public Vector3Int Center {
+			[Inline]
+			get {
+				return .(
+					(int32)metadata.centerX << 4,
+					(int32)metadata.centerY << 4,
+					(int32)metadata.centerZ << 4
+				);
+			}
+			[Inline]
+			set {
+				metadata.centerX = (uint16)(value.x >> 4);
+				metadata.centerY = (uint16)(value.y >> 4);
+				metadata.centerZ = (uint16)(value.z >> 4);
+
+				Emulator.active.WriteToRAM(address, &metadata, sizeof(RegionMetadata));
+			}
+		}
+
+		public Vector3Int Offset {
+			[Inline]
+			get {
+				return .(
+					(int32)metadata.offsetX << 4,
+					(int32)metadata.offsetY << 4,
+					(int32)metadata.offsetZ << 4
+				);
+			}
+			[Inline]
+			set {
+				metadata.offsetX = (uint16)(value.x >> 4);
+				metadata.offsetY = (uint16)(value.y >> 4);
+				metadata.offsetZ = (uint16)(value.z >> 4);
+
+				Emulator.active.WriteToRAM(address, &metadata, sizeof(RegionMetadata));
+			}
+		}
+
 		/// Vertical scale of the near part of the mesh
-		public int verticalScale { get {
+		public int VerticalScale { get {
 			if (Emulator.active.installment == .SpyroTheDragon) {
 				return 8;
 			} else {
 				return metadata.verticallyScaledDown ? 2 : 16;
 			}
 		} }
+
+		public Vector3 Scale { [Inline] get => .(16, 16, VerticalScale); }
+
+		public RegionMetadata.RegionLOD FarLOD {
+			[Inline]
+			get {
+				return metadata.farLOD;
+			}
+			[Inline]
+			set {
+				metadata.farLOD = value;
+				Emulator.active.WriteToRAM(address, &metadata, sizeof(RegionMetadata));
+			}
+		}
+
+		public RegionMetadata.RegionLOD NearLOD {
+			[Inline]
+			get {
+				return metadata.nearLOD;
+			}
+			[Inline]
+			set {
+				metadata.nearLOD = value;
+				Emulator.active.WriteToRAM(address, &metadata, sizeof(RegionMetadata));
+			}
+		}
 
 		public FarFace[] farFaces ~ delete _;
 
@@ -146,28 +217,26 @@ namespace SpyroScope {
 			}
 			nearVertices[index] = position;
 			if (updateGame) {
-				let regionPointer = address + 0x1c +
-					((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2 +
-					metadata.nearVertexCount + (int)metadata.nearColorCount * 2) * 4;
-				Emulator.active.WriteToRAM(regionPointer, &nearVertices[index], (int)index * 4);
+				let dataStart = address + 0x1c + ((int)NearLOD.start + NearLOD.vertexCount + (int)NearLOD.colorCount * 2) * 4;
+				Emulator.active.WriteToRAM(dataStart, &nearVertices[index], (int)index * 4);
 			}
 		}
 
 		public void Reload() {
 			// Low Poly Count / Far Mesh
-			GenerateFarMesh(address + 0x1c, metadata.farVertexCount, metadata.farColorCount, metadata.farFaceCount);
+			GenerateFarMesh();
 			// High Poly Count / Near Mesh
-			GenerateNearMesh(address + 0x1c + ((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2) * 4, metadata.nearVertexCount, metadata.nearColorCount, metadata.nearFaceCount);
+			GenerateNearMesh();
 		}
 
 		public void GetUsedTextures() {
-			Emulator.Address regionPointer = address + 0x1c + ((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2) * 4;
+			let dataStart = address + 0x1c + ((int)NearLOD.start * 4);
 			if (nearFaces == null) {
-				nearFaces = new .[metadata.nearFaceCount];
-				Emulator.active.ReadFromRAM(regionPointer + ((int)metadata.nearVertexCount + (int)metadata.nearColorCount * 2) * 4, nearFaces.CArray(), (int)metadata.nearFaceCount * sizeof(NearFace));
+				nearFaces = new .[NearLOD.faceCount];
+				Emulator.active.ReadFromRAM(dataStart + ((int)NearLOD.vertexCount + (int)NearLOD.colorCount * 2) * 4, nearFaces.CArray(), nearFaces.Count * sizeof(NearFace));
 			}
 
-			for (let i < metadata.nearFaceCount) {
+			for (let i < nearFaces.Count) {
 				let textureIndex = nearFaces[i].renderInfo.textureIndex;
 
 				if (!Terrain.usedTextureIndices.Contains(textureIndex)) {
@@ -176,28 +245,37 @@ namespace SpyroScope {
 			}
 		}
 
-		void GenerateFarMesh(Emulator.Address regionPointer, int vertexSize, int colorSize, int faceSize) {
+		void GenerateFarMesh() {
+			var dataStart = address + 0x1c;
+
 			List<Vector3> vertexList = scope .();
 			List<Renderer.Color> colorList = scope .();
-
-			uint32[] packedVertices = scope .[vertexSize];
-			Emulator.active.ReadFromRAM(regionPointer, packedVertices.CArray(), vertexSize * 4);
-			nearVertices = scope .[vertexSize];
-			for (let i < vertexSize) {
-				nearVertices[i] = UnpackVertex(packedVertices[i]);
-			}
 
 			// Used for swapping around values
 			Vector3[4] triangleVertices = ?;
 			Renderer.Color[4] triangleColors = ?;
-			
+
 			uint8[4] triangleIndices, colorIndices;
 
-			farFaces = new .[faceSize * 2];
-			Emulator.active.ReadFromRAM(regionPointer + (vertexSize + colorSize) * 4, farFaces.CArray(), faceSize * sizeof(FarFace));
+			// Vertices
+			uint32[] packedVertices = scope .[FarLOD.vertexCount];
+			Emulator.active.ReadFromRAM(dataStart, packedVertices.CArray(), packedVertices.Count * 4);
+			nearVertices = scope .[packedVertices.Count];
+			for (let i < packedVertices.Count) {
+				nearVertices[i] = UnpackVertex(packedVertices[i]);
+			}
 
-			Renderer.Color4[] vertexColors = scope .[colorSize];
-			Emulator.active.ReadFromRAM(regionPointer + vertexSize * 4, vertexColors.CArray(), colorSize * 4);
+			dataStart += packedVertices.Count * 4;
+
+			// Colors
+			Renderer.Color4[] vertexColors = scope .[FarLOD.colorCount];
+			Emulator.active.ReadFromRAM(dataStart, vertexColors.CArray(), vertexColors.Count * 4);
+			
+			dataStart += vertexColors.Count * 4;
+
+			// Faces
+			farFaces = new .[FarLOD.faceCount];
+			Emulator.active.ReadFromRAM(dataStart, farFaces.CArray(), farFaces.Count * sizeof(FarFace));
 
 			// Derived from Spyro the Dragon
 			// Vertex Indexing [80026378]
@@ -206,7 +284,7 @@ namespace SpyroScope {
 			// Derived from Spyro: Ripto's Rage
 			// Vertex Indexing [80028e10]
 			// Color Indexing [80028f28]
-			for (let i < faceSize) {
+			for (let i < farFaces.Count) {
 				let face = farFaces[i];
 				triangleIndices = face.UnpackVertexIndices();
 
@@ -282,7 +360,9 @@ namespace SpyroScope {
 			farMesh = new .(v, u, n, c);
 		}
 
-		void GenerateNearMesh(Emulator.Address regionPointer, int vertexSize, int colorSize, int faceSize) {
+		void GenerateNearMesh() {
+			var dataStart = address + 0x1c + ((int)NearLOD.start * 4);
+
 			List<uint32> activeIndexList = ?;
 			List<Vector3> activeVertexList = ?;
 			List<float[2]> activeUvList = ?;
@@ -293,13 +373,6 @@ namespace SpyroScope {
 
 			List<uint8> activeNearMesh2GameIndices = ?;
 			List<int> activeNearFaceIndices = ?;
-
-			uint32[] packedVertices = scope .[vertexSize];
-			Emulator.active.ReadFromRAM(regionPointer, packedVertices.CArray(), vertexSize * 4);
-			nearVertices = scope .[vertexSize];
-			for (let i < vertexSize) {
-				nearVertices[i] = UnpackVertex(packedVertices[i]);
-			}
 
 			// Used for swapping around values
 			float[4][2] triangleUV = ?;
@@ -320,18 +393,32 @@ namespace SpyroScope {
 			List<Vector3> vertexTransparentSubList = scope .();
 			List<float[2]> uvTransparentSubList = scope .();
 
-			if (nearFaces == null) {
-				nearFaces = new .[faceSize];
-				Emulator.active.ReadFromRAM(regionPointer + (vertexSize + colorSize * 2) * 4, nearFaces.CArray(), faceSize * sizeof(NearFace));
+			// Vertices
+			uint32[] packedVertices = scope .[NearLOD.vertexCount];
+			Emulator.active.ReadFromRAM(dataStart, packedVertices.CArray(), packedVertices.Count * 4);
+			nearVertices = scope .[packedVertices.Count];
+			for (let i < packedVertices.Count) {
+				nearVertices[i] = UnpackVertex(packedVertices[i]);
 			}
 
-			nearColors = new .[colorSize * 2]; // First half is vertex color tint texture, second half is the fade to solid color
-			Emulator.active.ReadFromRAM(regionPointer + vertexSize * 4, nearColors.CArray(), colorSize * 2 * 4);
+			dataStart += packedVertices.Count * 4;
+
+			// Colors
+			nearColors = new .[(int)NearLOD.colorCount * 2]; // First half is vertex color tint texture, second half is the fade to solid color
+			Emulator.active.ReadFromRAM(dataStart, nearColors.CArray(), nearColors.Count * 4);
+
+			dataStart += nearColors.Count * 4;
+
+			// Faces
+			if (nearFaces == null) {
+				nearFaces = new .[NearLOD.faceCount];
+				Emulator.active.ReadFromRAM(dataStart, nearFaces.CArray(), nearFaces.Count * sizeof(NearFace));
+			}
 
 			// Derived from Spyro: Ripto's Rage
 			// Vertex Indexing [80024a00]
 			// Color Indexing [80024c84]
-			for (let i < faceSize) {
+			for (let i < nearFaces.Count) {
 				var regionFace = nearFaces[i];
 				var trianglesIndices = regionFace.trianglesIndices;
 				let textureIndex = regionFace.renderInfo.textureIndex;
@@ -816,10 +903,8 @@ namespace SpyroScope {
 		}
 
 		public void SetNearFace(NearFace* face, int faceIndex) {
-			Emulator.Address<NearFace> faceAddress = (.)address + 0x1c +
-				((int)metadata.farVertexCount + (int)metadata.farColorCount + (int)metadata.farFaceCount * 2 + // Pass over all far data
-				(int)metadata.nearVertexCount + (int)metadata.nearColorCount * 2 + // Pass over previous near data
-				faceIndex * 4) * 4;// Index the face
+			Emulator.Address<NearFace> faceAddress = (.)address + 0x1c + ((int)NearLOD.start + (int)NearLOD.vertexCount + (int)NearLOD.colorCount * 2 + // Pass over previous near data
+				faceIndex * 4) * 4; // Index the face
 			Emulator.active.WriteToRAM(faceAddress, face, sizeof(NearFace));
 			nearFaces[faceIndex] = *face;
 
@@ -881,32 +966,27 @@ namespace SpyroScope {
 		}
 
 		public void DrawFar() {
-			Matrix3 scale = .Scale(16, 16, Emulator.active.installment == .SpyroTheDragon ? 8 : 16);
-			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
+			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(Scale));
 			farMesh.Draw();
 		}
 		
 		public void DrawNear() {
-			Matrix3 scale = .Scale(16, 16, verticalScale);
-			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
+			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(Scale));
 			nearMesh.Draw();
 		}
 
 		public void DrawNearTransparent() {
-			Matrix3 scale = .Scale(16, 16, verticalScale);
-			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
+			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(Scale));
 			nearMeshTransparent.Draw();
 		}
 
 		public void DrawNearSubdivided() {
-			Matrix3 scale = .Scale(16, 16, verticalScale);
-			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
+			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(Scale));
 			nearMeshSubdivided.Draw();
 		}
 
 		public void DrawNearTransparentSubdivided() {
-			Matrix3 scale = .Scale(16, 16, verticalScale);
-			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), scale);
+			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(Scale));
 			nearMeshTransparentSubdivided.Draw();
 		}
 

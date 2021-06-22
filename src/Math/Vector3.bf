@@ -70,6 +70,11 @@ namespace SpyroScope {
 		public static Self operator /<T>(Self left, T right) where float : operator float/T {
 			return .(left.x / right, left.y / right, left.z / right);
 		}
+
+		[Inline]
+		public static Self operator /<T>(T left, Self right) where float : operator T/float {
+			return .(left / right.x, left / right.y, left / right.z);
+		}
 		
 		[Inline]
 		public static Self operator *(Self left, Self right) {

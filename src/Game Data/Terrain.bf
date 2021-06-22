@@ -6,9 +6,53 @@ using System.IO;
 namespace SpyroScope {
 	static class Terrain {
 		public static TerrainCollision collision;
+
+		public static uint32 RegionCount {
+			[Inline]
+			get {
+				uint32 value = ?;
+				Emulator.active.ReadFromRAM(Emulator.sceneRegionPointers[(int)Emulator.active.rom] + 4, &value, 4);
+				return value;
+			}
+			[Inline]
+			set {
+				var value ;
+				Emulator.active.WriteToRAM(Emulator.sceneRegionPointers[(int)Emulator.active.rom] + 4, &value, 4);
+			}
+		}
+
 		public static TerrainRegion[] regions;
 
+		public static uint32 FarAnimatedCount {
+			[Inline]
+			get {
+				uint32 value = ?;
+				Emulator.active.ReadFromRAM(Emulator.farRegionDeformPointers[(int)Emulator.active.rom] - 4, &value, 4);
+				return value;
+			}
+			[Inline]
+			set {
+				var value;
+				Emulator.active.WriteToRAM(Emulator.farRegionDeformPointers[(int)Emulator.active.rom] - 4, &value, 4);
+			}
+		}
+
 		public static RegionAnimation[] farAnimations;
+
+		public static uint32 NearAnimatedCount {
+			[Inline]
+			get {
+				uint32 value = ?;
+				Emulator.active.ReadFromRAM(Emulator.nearRegionDeformPointers[(int)Emulator.active.rom] - 4, &value, 4);
+				return value;
+			}
+			[Inline]
+			set {
+				var value;
+				Emulator.active.WriteToRAM(Emulator.nearRegionDeformPointers[(int)Emulator.active.rom] - 4, &value, 4);
+			}
+		}
+
 		public static RegionAnimation[] nearAnimations;
 
 		public static List<int> usedTextureIndices = new .() ~ delete _;
@@ -78,7 +122,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public static void Clear() {
+		public static void Dispose() {
 			DeleteAndNullify!(collision);
 
 			DeleteContainerAndItems!(regions);
@@ -135,10 +179,8 @@ namespace SpyroScope {
 
 			// Locate scene region data and amount that are present in RAM
 			Emulator.Address<Emulator.Address> sceneDataRegionArrayAddress = ?;
-			let sceneDataRegionArrayPointer = Emulator.sceneRegionPointers[(int)Emulator.active.rom];
-			sceneDataRegionArrayPointer.Read(&sceneDataRegionArrayAddress);
-			uint32 sceneRegionCount = ?;
-			Emulator.active.ReadFromRAM(sceneDataRegionArrayPointer + 4, &sceneRegionCount, 4);
+			Emulator.sceneRegionPointers[(int)Emulator.active.rom].Read(&sceneDataRegionArrayAddress);
+			let sceneRegionCount = RegionCount;
 
 			// Remove any existing parsed data
 			DeleteContainerAndItems!(regions);
@@ -469,9 +511,7 @@ namespace SpyroScope {
 				delete farAnimations;
 			}
 
-			uint32 count = ?;
-			Emulator.active.ReadFromRAM(Emulator.farRegionDeformPointers[(int)Emulator.active.rom] - 4, &count, 4);
-
+			uint32 count = FarAnimatedCount;
 			farAnimations = new .[count];
 
 			Emulator.Address sceneDeformArray = ?;
@@ -484,9 +524,9 @@ namespace SpyroScope {
 				*animation = .(animationPointers[animationIndex]);
 
 				let region = regions[animation.regionIndex];
-				var triOrQuad = scope bool[region.metadata.farFaceCount];
+				var triOrQuad = scope bool[region.FarLOD.faceCount];
 
-				for (let i < region.metadata.farFaceCount) {
+				for (let i < triOrQuad.Count) {
 					triOrQuad[i] = region.farFaces[i].isTriangle;
 				}
 
@@ -500,8 +540,7 @@ namespace SpyroScope {
 				delete nearAnimations;
 			}
 
-			Emulator.active.ReadFromRAM(Emulator.nearRegionDeformPointers[(int)Emulator.active.rom] - 4, &count, 4);
-
+			count = NearAnimatedCount;
 			nearAnimations = new .[count];
 
 			Emulator.nearRegionDeformPointers[(int)Emulator.active.rom].Read(&sceneDeformArray);
@@ -513,9 +552,9 @@ namespace SpyroScope {
 				*animation = .(animationPointers[animationIndex]);
 
 				let region = regions[animation.regionIndex];
-				var triOrQuad = scope bool[region.metadata.nearFaceCount];
+				var triOrQuad = scope bool[region.NearLOD.faceCount];
 
-				for (let i < region.metadata.nearFaceCount) {
+				for (let i < triOrQuad.Count) {
 					triOrQuad[i] = region.GetNearFace(i).isTriangle;
 				}
 
@@ -555,35 +594,36 @@ namespace SpyroScope {
 			for (let region in regions) {
 				stream.Write(region.metadata);
 				Emulator.Address address = region.[Friend]address + 0x1c;
-				// Far
-				uint32[] packedVertices = scope .[region.metadata.farVertexCount];
-				Emulator.active.ReadFromRAM(address, packedVertices.CArray(), (int)region.metadata.farVertexCount * 4);
-				stream.Write(Span<uint32>(packedVertices));
-				
-				Renderer.Color4[] colors = scope .[region.metadata.farColorCount];
-				address += (int)region.metadata.farVertexCount * 4;
-				Emulator.active.ReadFromRAM(address, colors.CArray(), (int)region.metadata.farColorCount * 4);
-				stream.Write(Span<Renderer.Color4>(colors));
 
-				TerrainRegion.FarFace[] fface = scope .[region.metadata.farFaceCount];
-				address += (int)region.metadata.farColorCount * 4;
-				Emulator.active.ReadFromRAM(address, fface.CArray(), (int)region.metadata.farFaceCount * sizeof(TerrainRegion.FarFace));
+				// Far
+				uint32[] packedVertices = scope .[region.FarLOD.vertexCount];
+				Emulator.active.ReadFromRAM(address, packedVertices.CArray(), packedVertices.Count * 4);
+				stream.Write(Span<uint32>(packedVertices));
+				address += packedVertices.Count * 4;
+				
+				Renderer.Color4[] colors = scope .[region.FarLOD.colorCount];
+				Emulator.active.ReadFromRAM(address, colors.CArray(), colors.Count * 4);
+				stream.Write(Span<Renderer.Color4>(colors));
+				address += colors.Count * 4;
+
+				TerrainRegion.FarFace[] fface = scope .[region.FarLOD.faceCount];
+				Emulator.active.ReadFromRAM(address, fface.CArray(), fface.Count * sizeof(TerrainRegion.FarFace));
 				stream.Write(Span<TerrainRegion.FarFace>(fface));
+				address += fface.Count * sizeof(TerrainRegion.FarFace);
 
 				// Near
-				packedVertices = scope .[region.metadata.nearVertexCount];
-				address += (int)region.metadata.farFaceCount * sizeof(TerrainRegion.FarFace);
-				Emulator.active.ReadFromRAM(address, packedVertices.CArray(), (int)region.metadata.nearVertexCount * 4);
+				packedVertices = scope .[region.NearLOD.vertexCount];
+				Emulator.active.ReadFromRAM(address, packedVertices.CArray(), packedVertices.Count * 4);
 				stream.Write(Span<uint32>(packedVertices));
+				address += packedVertices.Count * 4;
 
-				colors = scope .[(int)region.metadata.nearColorCount * 2];
-				address += (int)region.metadata.nearVertexCount * 4;
-				Emulator.active.ReadFromRAM(address, colors.CArray(), (int)region.metadata.nearColorCount * 4 * 2);
+				colors = scope .[(int)region.NearLOD.colorCount * 2];
+				Emulator.active.ReadFromRAM(address, colors.CArray(), colors.Count * 4);
 				stream.Write(Span<Renderer.Color4>(colors));
+				address += colors.Count * 4;
 
-				TerrainRegion.NearFace[] nfaces = scope .[region.metadata.nearFaceCount];
-				address += (int)region.metadata.nearColorCount * 4 * 2;
-				Emulator.active.ReadFromRAM(address, nfaces.CArray(), (int)region.metadata.nearFaceCount * sizeof(TerrainRegion.NearFace));
+				TerrainRegion.NearFace[] nfaces = scope .[region.NearLOD.faceCount];
+				Emulator.active.ReadFromRAM(address, nfaces.CArray(), nfaces.Count * sizeof(TerrainRegion.NearFace));
 				stream.Write(Span<TerrainRegion.NearFace>(nfaces));
 			}
 
