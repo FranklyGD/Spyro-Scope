@@ -488,7 +488,7 @@ namespace SpyroScope {
 				}
 
 				String string = scope .(buffer, 0, 1024);
-				Debug.WriteLine(scope String() .. AppendF("OpenGL: {}", string));
+				Debug.WriteLine("OpenGL: {}", string);
 			}
 
 			if (error) {
