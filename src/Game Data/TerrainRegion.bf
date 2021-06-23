@@ -18,7 +18,21 @@ namespace SpyroScope {
 			public RegionLOD farLOD;
 			public RegionLOD nearLOD;
 
-			public bool verticallyScaledDown { get => a & 0b1000000000000 > 0; }
+			public enum RenderFlags {
+				/// Scale the region down to 1/8 original size
+				VerticalScale = 1 << 12,
+				/// Do not render far terrain at all
+				DisableFar = 1 << 13,
+				/// Do not render near terrain at all
+				DisableNear = 1 << 14,
+				/// Remove render distance condition for far terrain
+				DrawFarAlways = 1 << 15,
+			}
+
+			[Inline]
+			public bool GetFlags(RenderFlags flags) {
+				return a & (.)flags > 0;
+			}
 		}
 
 		public RegionMetadata metadata;
@@ -66,7 +80,7 @@ namespace SpyroScope {
 			if (Emulator.active.installment == .SpyroTheDragon) {
 				return 8;
 			} else {
-				return metadata.verticallyScaledDown ? 2 : 16;
+				return metadata.GetFlags(.VerticalScale) ? 2 : 16;
 			}
 		} }
 

@@ -995,7 +995,7 @@ namespace SpyroScope {
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", ViewerSelection.currentRegionIndex), .(0, WindowApp.height - (.)WindowApp.bitmapFont.height * 11), .(255,255,255));
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("Center: {}", visualMesh.Center), .(0, WindowApp.height - WindowApp.bitmapFont.height * 10), .(255,255,255));
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("Offset: {}", visualMesh.Offset), .(0, WindowApp.height - WindowApp.bitmapFont.height * 9), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Scaled Vertically: {}", visualMesh.metadata.verticallyScaledDown), .(0, WindowApp.height - WindowApp.bitmapFont.height * 8), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Scaled Vertically: {}", visualMesh.metadata.GetFlags(.VerticalScale)), .(0, WindowApp.height - WindowApp.bitmapFont.height * 8), .(255,255,255));
 
 				int faceIndex = ?;
 				if (ViewerSelection.currentRegionTransparent) {
