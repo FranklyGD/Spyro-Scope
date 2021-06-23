@@ -789,7 +789,7 @@ namespace SpyroScope {
 
 			if (ViewerSelection.currentRegionIndex > 0) {
 				let region = Terrain.regions[ViewerSelection.currentRegionIndex];
-				DrawUtilities.Axis(.((int)region.metadata.centerX * 16, (int)region.metadata.centerY * 16, (int)region.metadata.centerZ * 16), .Scale(1000));
+				DrawUtilities.Axis(region.Center, .Scale(1000));
 			}
 
 			if (ViewerSelection.hoveredObjIndex >= Moby.allocated.Count || ViewerSelection.currentObjIndex >= Moby.allocated.Count) {
@@ -991,12 +991,11 @@ namespace SpyroScope {
 				}
 			} else if (faceMenu.visible) {
 				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
-				let metadata = visualMesh.metadata;
 				
 				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", ViewerSelection.currentRegionIndex), .(0, WindowApp.height - (.)WindowApp.bitmapFont.height * 11), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Center: <{},{},{}>", (int)metadata.centerX * 16, (int)metadata.centerY * 16, (int)metadata.centerZ * 16), .(0, WindowApp.height - WindowApp.bitmapFont.height * 10), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Offset: <{},{},{}>", (int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .(0, WindowApp.height - WindowApp.bitmapFont.height * 9), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Scaled Vertically: {}", metadata.verticallyScaledDown), .(0, WindowApp.height - WindowApp.bitmapFont.height * 8), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Center: {}", visualMesh.Center), .(0, WindowApp.height - WindowApp.bitmapFont.height * 10), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Offset: {}", visualMesh.Offset), .(0, WindowApp.height - WindowApp.bitmapFont.height * 9), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Scaled Vertically: {}", visualMesh.metadata.verticallyScaledDown), .(0, WindowApp.height - WindowApp.bitmapFont.height * 8), .(255,255,255));
 
 				int faceIndex = ?;
 				if (ViewerSelection.currentRegionTransparent) {

@@ -49,8 +49,7 @@ namespace SpyroScope {
 					let visualMesh = Terrain.regions[i];
 					let transform = 1 / visualMesh.Scale;
 
-					let metadata = visualMesh.metadata;
-					let transformedOrigin = (origin - .((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16)) * transform;
+					let transformedOrigin = (origin - visualMesh.Offset) * transform;
 					let transformedRay = ray * transform;
 
 					if (Terrain.renderMode == .NearLQ || Terrain.renderMode == .NearHQ) {

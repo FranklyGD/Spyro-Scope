@@ -966,27 +966,27 @@ namespace SpyroScope {
 		}
 
 		public void DrawFar() {
-			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(Scale));
+			Renderer.SetModel(Offset, .Scale(Scale));
 			farMesh.Draw();
 		}
 		
 		public void DrawNear() {
-			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(Scale));
+			Renderer.SetModel(Offset, .Scale(Scale));
 			nearMesh.Draw();
 		}
 
 		public void DrawNearTransparent() {
-			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(Scale));
+			Renderer.SetModel(Offset, .Scale(Scale));
 			nearMeshTransparent.Draw();
 		}
 
 		public void DrawNearSubdivided() {
-			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(Scale));
+			Renderer.SetModel(Offset, .Scale(Scale));
 			nearMeshSubdivided.Draw();
 		}
 
 		public void DrawNearTransparentSubdivided() {
-			Renderer.SetModel(.((int)metadata.offsetX * 16, (int)metadata.offsetY * 16, (int)metadata.offsetZ * 16), .Scale(Scale));
+			Renderer.SetModel(Offset, .Scale(Scale));
 			nearMeshTransparentSubdivided.Draw();
 		}
 
