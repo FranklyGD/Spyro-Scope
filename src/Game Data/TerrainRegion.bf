@@ -8,8 +8,8 @@ namespace SpyroScope {
 		// Region Metadata
 		// Derived from Spyro: Ripto's Rage [80028b84]
 		public struct RegionMetadata {
-			public uint16 centerY, centerX, a, centerZ;
-			public uint16 offsetY, offsetX, b, offsetZ;
+			public uint16 centerY, centerX, flagsRadius, centerZ;
+			public uint16 offsetY, offsetX, subdivisionFix, offsetZ;
 
 			public struct RegionLOD {
 				public uint8 vertexCount, colorCount, faceCount, start;
@@ -31,7 +31,7 @@ namespace SpyroScope {
 
 			[Inline]
 			public bool GetFlags(RenderFlags flags) {
-				return a & (.)flags > 0;
+				return flagsRadius & (.)flags > 0;
 			}
 		}
 
@@ -61,7 +61,7 @@ namespace SpyroScope {
 		public uint16 Radius {
 			[Inline]
 			get {
-				return (metadata.a & 0x0fff) << 4;
+				return (metadata.flagsRadius & 0x0fff) << 4;
 			}
 		}
 
