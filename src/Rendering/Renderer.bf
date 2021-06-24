@@ -392,11 +392,13 @@ namespace SpyroScope {
 		public static void BeginWireframe() {
 			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE);
 			GL.glUniform1f(uniformZdepthOffsetIndex, -0.2f); // Push the lines a little forward
+			GL.glLineWidth(2);
 		}
 
 		public static void BeginSolid() {
 			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL);
 			GL.glUniform1f(uniformZdepthOffsetIndex, 0); // Reset depth offset
+			GL.glLineWidth(1);
 		}
 
 		public static void BeginRetroShading() {
