@@ -33,7 +33,7 @@ void main() {
     // Output
     color.rgb *= instanceTint * (1 + retroShading);
 
-    float diffuse = mix((dot(normal, vec3(0,0,1)) + 1.03) / 2.03, 1, retroShading);
+    float diffuse = mix((dot(normal, vec3(0,0,1)) + 1.2) / 2.2, 1, retroShading);
     float specDiffuse = (specular + 0.25) / 1.25;
 
     color.rgb *= mix(diffuse, specDiffuse, specularAmount);
