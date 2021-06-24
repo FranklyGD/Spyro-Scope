@@ -37,6 +37,7 @@ namespace SpyroScope {
 
 		public RegionMetadata metadata;
 
+		/// The bounding box center of this region in the world
 		public Vector3Int Center {
 			[Inline]
 			get {
@@ -56,6 +57,15 @@ namespace SpyroScope {
 			}
 		}
 
+		/// The space this region occupies represented as a sphere with this radius
+		public uint16 Radius {
+			[Inline]
+			get {
+				return (metadata.a & 0x0fff) << 4;
+			}
+		}
+
+		/// The offset that is applied to the rendering mesh
 		public Vector3Int Offset {
 			[Inline]
 			get {

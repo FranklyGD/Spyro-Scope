@@ -790,6 +790,7 @@ namespace SpyroScope {
 			if (ViewerSelection.currentRegionIndex > 0) {
 				let region = Terrain.regions[ViewerSelection.currentRegionIndex];
 				DrawUtilities.Axis(region.Center, .Scale(1000));
+				DrawUtilities.WireframeSphere(region.Center, .Identity, region.Radius, .(0,0,0));
 			}
 
 			if (ViewerSelection.hoveredObjIndex >= Moby.allocated.Count || ViewerSelection.currentObjIndex >= Moby.allocated.Count) {
@@ -992,10 +993,14 @@ namespace SpyroScope {
 			} else if (faceMenu.visible) {
 				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 				
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", ViewerSelection.currentRegionIndex), .(0, WindowApp.height - (.)WindowApp.bitmapFont.height * 11), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Center: {}", visualMesh.Center), .(0, WindowApp.height - WindowApp.bitmapFont.height * 10), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Offset: {}", visualMesh.Offset), .(0, WindowApp.height - WindowApp.bitmapFont.height * 9), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Scaled Vertically: {}", visualMesh.metadata.GetFlags(.VerticalScale)), .(0, WindowApp.height - WindowApp.bitmapFont.height * 8), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", ViewerSelection.currentRegionIndex), .(0, WindowApp.height - (.)WindowApp.bitmapFont.height * 15), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Center: {}", visualMesh.Center), .(0, WindowApp.height - WindowApp.bitmapFont.height * 14), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Radius: {}", visualMesh.Radius), .(0, WindowApp.height - WindowApp.bitmapFont.height * 13), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Offset: {}", visualMesh.Offset), .(0, WindowApp.height - WindowApp.bitmapFont.height * 12), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Scaled Vertically: {}", visualMesh.metadata.GetFlags(.VerticalScale)), .(0, WindowApp.height - WindowApp.bitmapFont.height * 11), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("No Far: {}", visualMesh.metadata.GetFlags(.DisableFar)), .(0, WindowApp.height - WindowApp.bitmapFont.height * 10), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("No Near: {}", visualMesh.metadata.GetFlags(.DisableNear)), .(0, WindowApp.height - WindowApp.bitmapFont.height * 9), .(255,255,255));
+				WindowApp.bitmapFont.Print(scope String() .. AppendF("Show Near Always: {}", visualMesh.metadata.GetFlags(.DrawFarAlways)), .(0, WindowApp.height - WindowApp.bitmapFont.height * 8), .(255,255,255));
 
 				int faceIndex = ?;
 				if (ViewerSelection.currentRegionTransparent) {
