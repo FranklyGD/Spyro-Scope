@@ -45,6 +45,7 @@ namespace SpyroScope {
 		bool displayIcons = false;
 		bool displayAllData = false;
 		bool showManipulator = false;
+		bool useObjectSpace = false;
 
 		// Scene
 		bool drawLimits;
@@ -415,11 +416,21 @@ namespace SpyroScope {
 			text = new Text();
 			text.Text = "Enable Manipulator";
 			text.Offset = .(24, 0, 1, 0);
+			
+			button = new .();
+
+			button.Offset = .(0, 16, 1 * WindowApp.font.height, 16 + 1 * WindowApp.font.height);
+			button.toggleIconTexture = toggledTexture;
+			button.OnActuated.Add(new () => {useObjectSpace = button.value;});
+
+			text = new Text();
+			text.Text = "Object Space";
+			text.Offset = .(24, 0, 1 + 1 * WindowApp.font.height, 0);
 
 			teleportButton = new .();
 			
 			teleportButton.Anchor = .(0,1,0,0);
-			teleportButton.Offset = .(0, 0, 1 * WindowApp.font.height, 16 + 1 * WindowApp.font.height);
+			teleportButton.Offset = .(0, 0, 2 * WindowApp.font.height, 16 + 2 * WindowApp.font.height);
 			teleportButton.text = "(T)eleport";
 			teleportButton.OnActuated.Add(new => Teleport);
 			teleportButton.Enabled = false;
@@ -427,7 +438,7 @@ namespace SpyroScope {
 			recordButton = new .();
 
 			recordButton.Anchor = .(0,1,0,0);
-			recordButton.Offset = .(0, 0, 2 * WindowApp.font.height, 16 + 2 * WindowApp.font.height);
+			recordButton.Offset = .(0, 0, 3 * WindowApp.font.height, 16 + 3 * WindowApp.font.height);
 			recordButton.text = "(R)ecord";
 			recordButton.OnActuated.Add(new => RecordReplay);
 			
@@ -724,14 +735,7 @@ namespace SpyroScope {
 			Terrain.Update();
 
 			if (showManipulator && (Emulator.active.loadingStatus == .Idle && Emulator.active.gameState <= 1)) {
-				if (ViewerSelection.currentObjIndex > -1) {
-					let moby = Moby.allocated[ViewerSelection.currentObjIndex];
-					Translator.Update(moby.position, moby.basis);
-				} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
-					Translator.Update(Terrain.collision.mesh.vertices[ViewerSelection.currentTriangleIndex], .Identity);
-				} else {
-					Translator.Update(Emulator.active.SpyroPosition, Emulator.active.spyroBasis.ToMatrixCorrected());
-				}
+				UpdateManipulator();
 			}
 		}
 
@@ -752,40 +756,7 @@ namespace SpyroScope {
 				DrawGameCameraFrustrum();
 			}
 			
-			for (let object in Moby.allocated) {
-				if (object.IsTerminator) {
-					break;
-				}
-
-				if (object.IsActive || showInactive) {
-					if ((!showManipulator || ViewerSelection.currentObjIndex != Moby.allocated.Count) && drawObjectOrigins) {
-						object.DrawOriginAxis();
-					}
-
-					if (drawObjectModels) {
-						DrawMoby(object);
-					}
-				}
-			}
-
-			if (displayAllData) {
-				for (let object in Moby.allocated) {
-					if (object.IsTerminator) {
-						break;
-					}
-
-					object.DrawData();
-				}
-			} else {
-				if (ViewerSelection.currentObjIndex != -1) {
-					if (ViewerSelection.currentObjIndex < Moby.allocated.Count) {
-						let object = Moby.allocated[ViewerSelection.currentObjIndex];
-						object.DrawData();
-					} else {
-						ViewerSelection.currentObjIndex = -1;
-					}
-				}
-			}
+			DrawObjects();
 
 			if (ViewerSelection.currentRegionIndex > 0) {
 				let region = Terrain.regions[ViewerSelection.currentRegionIndex];
@@ -800,9 +771,6 @@ namespace SpyroScope {
 
 			DrawSpyroInformation();
 
-			// Draw all queued instances
-			PrimitiveShape.DrawInstances();
-
 			for (let modelSet in modelSets.Values) {
 				modelSet.DrawInstances();
 			}
@@ -813,57 +781,15 @@ namespace SpyroScope {
 			Renderer.DrawLine(.Zero, .(0,0,10000), .(255,255,255), .(0,0,255));
 
 			if (drawLimits) {
-				uint32 currentWorldId = ?;
-				Emulator.currentWorldIdAddress[(int)Emulator.active.rom].Read(&currentWorldId);
-
-				uint32 deathHeight;
-				if (Emulator.active.installment == .YearOfTheDragon) {
-					uint32 currentSubWorldId = ?;
-					Emulator.currentSubWorldIdAddress[(int)Emulator.active.rom - 7].Read(&currentSubWorldId);
-
-					deathHeight = Emulator.active.deathPlaneHeights[currentWorldId * 4 + currentSubWorldId];
-				} else {
-					deathHeight = Emulator.active.deathPlaneHeights[currentWorldId];
-				}
-
-				if (Camera.position.z > deathHeight) {
-					DrawUtilities.Grid(.(0,0,deathHeight), .Identity, .(255,64,32));
-				}
-				
-				let flightHeight = Emulator.active.maxFreeflightHeights[currentWorldId];
-				if (Camera.position.z < flightHeight) {
-					DrawUtilities.Grid(.(0,0,flightHeight), .Identity, .(32,64,255));
-				}
+				DrawLimits();
 			}
 
-			// Draw recording path
-			for	(let i < Recording.FrameCount - 1) {
-				let frame = Recording.GetFrame(i);
-				let nextFrame = Recording.GetFrame(i + 1);
+			DrawRecording();
+			
+			// Draw all queued instances
+			PrimitiveShape.DrawInstances();
 
-				Renderer.DrawLine(frame.position, nextFrame.position, .(255,0,0), .(255,255,0));
-
-				// Every second
-				if (i % 30 == 0) {
-					let direction = ((Vector3)nextFrame.position - frame.position).Normalized();
-					let pdir = Vector3.Cross(direction, Camera.basis.z).Normalized();
-
-					let size = Vector3.Dot(Camera.position - frame.position, Camera.basis.z) / 50;
-					Renderer.DrawLine(frame.position, frame.position + (pdir - direction) * size, .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(frame.position, frame.position - (pdir + direction) * size, .(255,255,255), .(255,255,255));
-				}
-
-				// Every state change
-				if (frame.state != nextFrame.state) {
-					let direction = ((Vector3)nextFrame.position - frame.position).Normalized();
-					let pdir = Vector3.Cross(direction, Camera.basis.z).Normalized();
-
-					let size = Vector3.Dot(Camera.position - frame.position, Camera.basis.z) / 100;
-					Renderer.DrawLine(nextFrame.position, nextFrame.position + pdir * size, .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(nextFrame.position, nextFrame.position - pdir * size, .(255,255,255), .(255,255,255));
-				}
-			}
-
+			// Draw other primitives queued
 			Renderer.SetModel(.Zero, .Identity);
 			Renderer.SetTint(.(255,255,255));
 			Renderer.Draw();
@@ -1528,6 +1454,29 @@ namespace SpyroScope {
 				}
 			}
 		}
+
+		void UpdateManipulator() {
+			Vector3 position = .Zero;
+			Matrix3 basis = .Identity;
+
+			if (ViewerSelection.currentObjIndex > -1) {
+				let moby = Moby.allocated[ViewerSelection.currentObjIndex];
+
+				position = moby.position;
+				if (useObjectSpace) {
+					basis = moby.basis;
+				}
+			} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
+				position = Terrain.collision.mesh.vertices[ViewerSelection.currentTriangleIndex];
+			} else {
+				position = Emulator.active.SpyroPosition;
+				if (useObjectSpace) {
+					basis = Emulator.active.spyroBasis.ToMatrixCorrected();
+				}
+			}
+
+			Translator.Update(position, basis);
+		}
 		
 		void OnSceneChanging() {
 			Selection.Reset();
@@ -1588,6 +1537,43 @@ namespace SpyroScope {
 			Renderer.DrawLine(farBottomLeft, farBottomRight, .(16,16,16), .(16,16,16));
 			Renderer.DrawLine(farTopLeft, farBottomLeft, .(16,16,16), .(16,16,16));
 			Renderer.DrawLine(farTopRight, farBottomRight, .(16,16,16), .(16,16,16));
+		}
+
+		void DrawObjects() {
+			for (let object in Moby.allocated) {
+				if (object.IsTerminator) {
+					break;
+				}
+
+				if (object.IsActive || showInactive) {
+					if ((!showManipulator || ViewerSelection.currentObjIndex != Moby.allocated.Count) && drawObjectOrigins) {
+						object.DrawOriginAxis();
+					}
+
+					if (drawObjectModels) {
+						DrawMoby(object);
+					}
+				}
+			}
+
+			if (displayAllData) {
+				for (let object in Moby.allocated) {
+					if (object.IsTerminator) {
+						break;
+					}
+
+					object.DrawData();
+				}
+			} else {
+				if (ViewerSelection.currentObjIndex != -1) {
+					if (ViewerSelection.currentObjIndex < Moby.allocated.Count) {
+						let object = Moby.allocated[ViewerSelection.currentObjIndex];
+						object.DrawData();
+					} else {
+						ViewerSelection.currentObjIndex = -1;
+					}
+				}
+			}
 		}
 
 		void DrawSpyroInformation() {
@@ -1653,6 +1639,60 @@ namespace SpyroScope {
 				DrawUtilities.Rect(WindowApp.height - (bottomPadding + 16), WindowApp.height - bottomPadding, leftPadding, leftPadding + 16, color);
 
 				WindowApp.bitmapFont.Print(label, .(leftPadding + 24, WindowApp.height - (bottomPadding + 15)), .(255,255,255));
+			}
+		}
+
+		void DrawLimits() {
+			uint32 currentWorldId = ?;
+			Emulator.currentWorldIdAddress[(int)Emulator.active.rom].Read(&currentWorldId);
+
+			uint32 deathHeight;
+			if (Emulator.active.installment == .YearOfTheDragon) {
+				uint32 currentSubWorldId = ?;
+				Emulator.currentSubWorldIdAddress[(int)Emulator.active.rom - 7].Read(&currentSubWorldId);
+
+				deathHeight = Emulator.active.deathPlaneHeights[currentWorldId * 4 + currentSubWorldId];
+			} else {
+				deathHeight = Emulator.active.deathPlaneHeights[currentWorldId];
+			}
+
+			if (Camera.position.z > deathHeight) {
+				DrawUtilities.Grid(.(0,0,deathHeight), .Identity, .(255,64,32));
+			}
+
+			let flightHeight = Emulator.active.maxFreeflightHeights[currentWorldId];
+			if (Camera.position.z < flightHeight) {
+				DrawUtilities.Grid(.(0,0,flightHeight), .Identity, .(32,64,255));
+			}
+		}
+
+		void DrawRecording() {
+			// Draw recording path
+			for	(let i < Recording.FrameCount - 1) {
+				let frame = Recording.GetFrame(i);
+				let nextFrame = Recording.GetFrame(i + 1);
+
+				Renderer.DrawLine(frame.position, nextFrame.position, .(255,0,0), .(255,255,0));
+
+				// Every second
+				if (i % 30 == 0) {
+					let direction = ((Vector3)nextFrame.position - frame.position).Normalized();
+					let pdir = Vector3.Cross(direction, Camera.basis.z).Normalized();
+
+					let size = Vector3.Dot(Camera.position - frame.position, Camera.basis.z) / 50;
+					Renderer.DrawLine(frame.position, frame.position + (pdir - direction) * size, .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(frame.position, frame.position - (pdir + direction) * size, .(255,255,255), .(255,255,255));
+				}
+
+				// Every state change
+				if (frame.state != nextFrame.state) {
+					let direction = ((Vector3)nextFrame.position - frame.position).Normalized();
+					let pdir = Vector3.Cross(direction, Camera.basis.z).Normalized();
+
+					let size = Vector3.Dot(Camera.position - frame.position, Camera.basis.z) / 100;
+					Renderer.DrawLine(nextFrame.position, nextFrame.position + pdir * size, .(255,255,255), .(255,255,255));
+					Renderer.DrawLine(nextFrame.position, nextFrame.position - pdir * size, .(255,255,255), .(255,255,255));
+				}
 			}
 		}
 
