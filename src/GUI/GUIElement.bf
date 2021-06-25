@@ -52,6 +52,7 @@ namespace SpyroScope {
 		public static Texture pressedButtonTexture ~ delete _;
 		public static Texture normalInputTexture ~ delete _; 
 		public static Texture activeInputTexture ~ delete _;
+		public static Texture toggledTexture ~ delete _;
 
 		public bool Hovered { get => hoveredElement == this; }
 		public bool Pressed { get => pressedElement == this; }
@@ -68,6 +69,7 @@ namespace SpyroScope {
 			pressedButtonTexture = new .("images/ui/button_pressed.png");
 			normalInputTexture = new .("images/ui/input_normal.png"); 
 			activeInputTexture = new .("images/ui/input_active.png");
+			toggledTexture = new .("images/ui/toggle_enabled.png");
 		}
 
 		public static void SetActiveGUI(List<GUIElement> GUI) {

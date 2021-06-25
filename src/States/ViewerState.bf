@@ -44,8 +44,6 @@ namespace SpyroScope {
 		public static bool showInactive = false;
 		bool displayIcons = false;
 		bool displayAllData = false;
-		bool showManipulator = false;
-		bool useObjectSpace = false;
 
 		// Scene
 		bool drawLimits;
@@ -59,17 +57,13 @@ namespace SpyroScope {
 		List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
 
 		MessageFeed messageFeed;
-		Button togglePauseButton, stepButton, teleportButton, recordButton;
+		Button togglePauseButton, stepButton;
 
 		Texture playTexture = new .("images/ui/play.png") ~ delete _; 
 		Texture pauseTexture = new .("images/ui/pause.png") ~ delete _; 
 		Texture stepTexture = new .("images/ui/step.png") ~ delete _;
-		Texture toggledTexture = new .("images/ui/toggle_enabled.png") ~ delete _;
 
-		Texture cameraIconTexture = new .("images/ui/icon_camera.png") ~ delete _; 
-		Texture sceneIconTexture = new .("images/ui/icon_scene.png") ~ delete _;
-		Texture objectIconTexture = new .("images/ui/icon_object.png") ~ delete _;
-		Texture otherIconTexture = new .("images/ui/icon_other.png") ~ delete _;
+		Texture toggledTexture = new .("images/ui/toggle_enabled.png") ~ delete _;
 
 		Texture gemIconTexture = new .("images/ui/icon_gem.png") ~ delete _;
 		Texture gemHolderIconTexture = new .("images/ui/icon_gem_holder.png") ~ delete _;
@@ -77,14 +71,10 @@ namespace SpyroScope {
 		Texture vaseIconTexture = new .("images/ui/icon_vase.png") ~ delete _;
 		Texture bottleIconTexture = new .("images/ui/icon_bottle.png") ~ delete _;
 
-		Panel cornerMenu;
+		ViewerMenu viewerMenu;
 		bool cornerMenuVisible;
 		float cornerMenuInterp;
 
-		GUIElement cameraOptionGroup, sceneOptionGroup, objectOptionGroup, otherOptionGroup;
-
-		Panel collisionOptionGroup, nearTerrainToggleGroup;
-		
 		Panel sideInspector;
 		bool sideInspectorVisible;
 		float sideInspectorInterp;
@@ -94,18 +84,7 @@ namespace SpyroScope {
 		Inspector.Property<uint8> keyframeProperty;
 		Inspector.Property<uint8> nextKeyframeProperty;
 
-		Toggle freecamToggle;
-
-		(Toggle button, String label, delegate void() event)[6] toggleList = .(
-			(null, "Object Origin Axis", new () => ToggleOrigins(toggleList[0].button.value)),
-			(null, "Object Models", new () => { ToggleModels(toggleList[1].button.value); toggleList[2].button.Enabled = toggleList[1].button.value; }),
-			(null, "Object Models (Exp.)", new () => ToggleModelsExperimental(toggleList[2].button.value)),
-			(null, "Inactive Objects", new () => ToggleInactive(toggleList[3].button.value)),
-			(null, "Display Icons", new () => {displayIcons = toggleList[4].button.value;}),
-			(null, "All Visual Moby Data", new () => {displayAllData = toggleList[5].button.value;})
-		);
-
-		Toggle pinInspectorButton, pinMenuButton;
+		Toggle pinInspectorButton;
 
 		Timeline timeline;
 
@@ -134,318 +113,13 @@ namespace SpyroScope {
 			stepButton.Offset.Shift(16, 32);
 			stepButton.iconTexture = stepTexture;
 			stepButton.OnActuated.Add(new => Step);
-
-			cornerMenu = new .();
-			cornerMenu.Offset = .(.Zero, .(200,180));
-			cornerMenu.tint = .(0,0,0);
-			cornerMenu.texture = GUIElement.bgTexture;
-			GUIElement.PushParent(cornerMenu);
-
-			pinMenuButton = new .();
-
-			pinMenuButton.Anchor = .(1, 1, 0, 0);
-			pinMenuButton.Offset = .(-16, 0, 0, 16);
-			pinMenuButton.Offset.Shift(-2,2);
-			pinMenuButton.toggleIconTexture = toggledTexture;
-
-			// Tabs
-			var tab = new Button();
-			tab.Offset = .(0, 32, 0, 32) .. Shift(8,8);
-			tab.normalTexture = tab.pressedTexture = GUIElement.bgOutlineTexture;
-			tab.normalColor = .(32,32,32);
-			tab.hoveredColor = .(128,128,128);
-			tab.pressedColor = .(255,255,255);
-			tab.iconTexture = cameraIconTexture;
-			tab.OnActuated.Add(new () => {
-				cameraOptionGroup.visible = true;
-				sceneOptionGroup.visible = false;
-				objectOptionGroup.visible = false;
-				otherOptionGroup.visible = false;
-			});
-
-			tab = new Button();
-			tab.Offset = .(0, 32, 0, 32) .. Shift(8 + 36,8);
-			tab.normalTexture = tab.pressedTexture = GUIElement.bgOutlineTexture;
-			tab.normalColor = .(32,32,32);
-			tab.hoveredColor = .(128,128,128);
-			tab.pressedColor = .(255,255,255);
-			tab.iconTexture = sceneIconTexture;
-			tab.OnActuated.Add(new () => {
-				cameraOptionGroup.visible = false;
-				sceneOptionGroup.visible = true;
-				objectOptionGroup.visible = false;
-				otherOptionGroup.visible = false;
-			});
 			
-			tab = new Button();
-			tab.Offset = .(0, 32, 0, 32) .. Shift(8 + 36*2,8);
-			tab.normalTexture = tab.pressedTexture = GUIElement.bgOutlineTexture;
-			tab.normalColor = .(32,32,32);
-			tab.hoveredColor = .(128,128,128);
-			tab.pressedColor = .(255,255,255);
-			tab.iconTexture = objectIconTexture;
-			tab.OnActuated.Add(new () => {
-				cameraOptionGroup.visible = false;
-				sceneOptionGroup.visible = false;
-				objectOptionGroup.visible = true;
-				otherOptionGroup.visible = false;
-			});
-			
-			tab = new Button();
-			tab.Offset = .(0, 32, 0, 32) .. Shift(8 + 36*3,8);
-			tab.normalTexture = tab.pressedTexture = GUIElement.bgOutlineTexture;
-			tab.normalColor = .(32,32,32);
-			tab.hoveredColor = .(128,128,128);
-			tab.pressedColor = .(255,255,255);
-			tab.iconTexture = otherIconTexture;
-			tab.OnActuated.Add(new () => {
-				cameraOptionGroup.visible = false;
-				sceneOptionGroup.visible = false;
-				objectOptionGroup.visible = false;
-				otherOptionGroup.visible = true;
-			});
-			
+			viewerMenu = new .(this);
+
 			messageFeed = new .();
 			messageFeed.Anchor.start = .(1,0);
+			messageFeed.Parent(viewerMenu);
 
-			let content = new GUIElement();
-			content.Anchor = .(0, 1, 0, 1);
-			content.Offset = .(16, -16, 48, -16);
-			GUIElement.PushParent(content);
-
-			// Camera
-			cameraOptionGroup = new GUIElement();
-			cameraOptionGroup.Anchor = .(0, 1, 0, 1);
-			GUIElement.PushParent(cameraOptionGroup);
-
-			var text = new Text();
-			text.Text = "View";
-			text.Offset = .(.(0,1),.Zero);
-
-			var dropdown = new DropdownList();
-			dropdown.Anchor = .(0, 1, 0, 0);
-			dropdown.Offset = .(84, 0, 0, 16);
-			dropdown.AddItem("Game");
-			dropdown.AddItem("Free");
-			dropdown.AddItem("Lock");
-			dropdown.AddItem("Map");
-			dropdown.Value = 0;
-			dropdown.OnItemSelect.Add(new (option) => ChangeView((.)option));
-
-			freecamToggle = new .();
-			freecamToggle.Offset = .(0, 16, 1 * WindowApp.font.height, 16 + 1 * WindowApp.font.height);
-			freecamToggle.toggleIconTexture = toggledTexture;
-			freecamToggle.OnActuated.Add(new () => ToggleFreeCamera(freecamToggle.value));
-
-			text = new Text();
-			text.Text = "Free Game (C)amera";
-			text.Offset = .(24, 0, 1 + WindowApp.font.height, 0);
-
-			GUIElement.PopParent();
-
-			// Scene
-			sceneOptionGroup = new GUIElement();
-			sceneOptionGroup.Anchor = .(0, 1, 0, 1);
-			GUIElement.PushParent(sceneOptionGroup);
-			sceneOptionGroup.visible = false;
-
-			text = new Text();
-			text.Text = "Render";
-			text.Offset = .(0, 0, 1, 0);
-
-			dropdown = new DropdownList();
-			dropdown.Anchor = .(0, 1, 0, 0);
-			dropdown.Offset = .(84, 0, 0, 16);
-			dropdown.AddItem("Collision");
-			dropdown.AddItem("Far");
-			dropdown.AddItem("Near LQ");
-			dropdown.AddItem("Near HQ");
-			dropdown.Value = 0;
-			dropdown.OnItemSelect.Add(new (option) => ChangeRender((.)option));
-
-			Toggle button = new .();
-			button.Offset = .(0, 16, 1 * WindowApp.font.height, 16 + 1 * WindowApp.font.height);
-			button.toggleIconTexture = toggledTexture;
-			button.OnActuated.Add(new () => ToggleSolid(button.value));
-			button.SetValue(true);
-
-			text = new Text();
-			text.Text = "Solid";
-			text.Offset = .(24, 0, 1 * WindowApp.font.height, 0);
-
-			button = new .();
-			button.Anchor = .(0.5f, 0.5f, 0, 0);
-			button.Offset = .(0, 16, 1 * WindowApp.font.height, 16 + 1 * WindowApp.font.height);
-			button.toggleIconTexture = toggledTexture;
-			button.OnActuated.Add(new () => ToggleWireframe(button.value));
-			button.SetValue(true);
-
-			text = new Text();
-			text.Text = "Wireframe";
-			text.Anchor = .(0.5f, 0.5f, 0, 0);
-			text.Offset = .(24, 0, 1 * WindowApp.font.height, 0);
-
-			collisionOptionGroup = new .();
-			collisionOptionGroup.Anchor = .(0,1,0,0);
-			collisionOptionGroup.Offset = .(-2, 2, -2 + 2 * WindowApp.font.height, -2 + 4 * WindowApp.font.height);
-			collisionOptionGroup.texture = GUIElement.bgOutlineTexture;
-			collisionOptionGroup.tint = .(128,128,128);
-			GUIElement.PushParent(collisionOptionGroup);
-
-			text = new Text();
-			text.Text = "Overlay";
-			text.Offset = .(2,0,2,0);
-
-			dropdown = new DropdownList();
-			dropdown.Anchor = .(0.5f,1,0,0);
-			dropdown.Offset = .(0,-2,2,18);
-			dropdown.AddItem("None");
-			dropdown.AddItem("Flags");
-			dropdown.AddItem("Deform");
-			dropdown.AddItem("Water");
-			dropdown.AddItem("Sound");
-			dropdown.AddItem("Platform");
-			dropdown.Value = 0;
-			dropdown.OnItemSelect.Add(new (option) => Terrain.collision.SetOverlay((.)option));
-			
-			button = new .();
-			button.Offset = .(2, 18, 2 + 1 * WindowApp.font.height, 18 + 1 * WindowApp.font.height);
-			button.toggleIconTexture = toggledTexture;
-			button.OnActuated.Add(new () => {
-				Terrain.collision.visualizeGrid = button.value;
-			});
-
-			text = new Text();
-			text.Text = "Show Grid";
-			text.Offset = .(26, 0, 2 + 1 * WindowApp.font.height, 0);
-
-			GUIElement.PopParent();
-
-			nearTerrainToggleGroup = new .();
-			nearTerrainToggleGroup.Anchor = .(0,1,0,0);
-			nearTerrainToggleGroup.Offset = .(-2, 2, -2 + 2 * WindowApp.font.height, -2 + 4 * WindowApp.font.height);
-			nearTerrainToggleGroup.texture = GUIElement.bgOutlineTexture;
-			nearTerrainToggleGroup.tint = .(128,128,128);
-			nearTerrainToggleGroup.visible = false;
-			GUIElement.PushParent(nearTerrainToggleGroup);
-
-			Toggle colorsButton = new .();
-			colorsButton.Offset = .(2, 18, 2, 18);
-			colorsButton.toggleIconTexture = toggledTexture;
-			colorsButton.OnActuated.Add(new () => ToggleColors(colorsButton.value));
-			colorsButton.SetValue(true);
-
-			text = new Text();
-			text.Text = "Color";
-			text.Offset = .(26,0,2 + 0 * (text.font.height + 6),0);
-
-			Toggle textureButton = new .();
-			textureButton.Anchor = .(0.5f,0.5f,0,0);
-			textureButton.Offset = .(0, 16, 2, 18);
-			textureButton.toggleIconTexture = toggledTexture;
-			textureButton.OnActuated.Add(new () => ToggleTextures(textureButton.value));
-			textureButton.SetValue(true);
-
-			text = new Text();
-			text.Text = "Texture";
-			text.Anchor = .(0.5f,0,0,0);
-			text.Offset = .(24,0,2,0);
-
-			button = new .();
-			button.Offset = .(2, 18, 2 + 1 * WindowApp.font.height, 18 + 1 * WindowApp.font.height);
-			button.toggleIconTexture = toggledTexture;
-			button.OnActuated.Add(new () => {
-				ToggleFadeColors(button.value);
-				colorsButton.Enabled = textureButton.Enabled = !button.value;
-			});
-
-			text = new Text();
-			text.Text = "Show Fade Color";
-			text.Offset = .(26,0,2 + (text.font.height + 6),0);
-			
-			GUIElement.PopParent();
-
-			button = new .();
-			button.Offset = .(0, 16, 4 * WindowApp.font.height, 16 + 4 * WindowApp.font.height);
-			button.toggleIconTexture = toggledTexture;
-			button.OnActuated.Add(new () => ToggleLimits(button.value));
-
-			text = new Text();
-			text.Text = "Show Height Limits";
-			text.Offset = .(24, 0, 1 + 4 * WindowApp.font.height, 0);
-
-			GUIElement.PopParent();
-
-			// Object
-			objectOptionGroup = new .();
-			objectOptionGroup.Anchor = .(0, 1, 0, 1);
-			GUIElement.PushParent(objectOptionGroup);
-			objectOptionGroup.visible = false;
-
-			for (let i < toggleList.Count) {
-				button = new .();
-
-				button.Offset = .(0, 16, i * WindowApp.font.height, 16 + i * WindowApp.font.height);
-				button.toggleIconTexture = toggledTexture;
-				button.OnActuated.Add(toggleList[i].event);
-
-				toggleList[i].button = button;
-
-				text = new Text();
-				text.Text = toggleList[i].label;
-				text.Offset = .(24, 0, 1 + i * WindowApp.font.height, 0);
-			}
-
-			GUIElement.PopParent();
-
-			toggleList[0].button.Toggle();
-			toggleList[1].button.Toggle();
-
-			// Other
-			otherOptionGroup = new .();
-			otherOptionGroup.Anchor = .(0, 1, 0, 1);
-			GUIElement.PushParent(otherOptionGroup);
-			otherOptionGroup.visible = false;
-
-			button = new .();
-
-			button.Offset = .(0, 16, 0, 16);
-			button.toggleIconTexture = toggledTexture;
-			button.OnActuated.Add(new () => {showManipulator = button.value; });
-
-			text = new Text();
-			text.Text = "Enable Manipulator";
-			text.Offset = .(24, 0, 1, 0);
-			
-			button = new .();
-
-			button.Offset = .(0, 16, 1 * WindowApp.font.height, 16 + 1 * WindowApp.font.height);
-			button.toggleIconTexture = toggledTexture;
-			button.OnActuated.Add(new () => {useObjectSpace = button.value;});
-
-			text = new Text();
-			text.Text = "Object Space";
-			text.Offset = .(24, 0, 1 + 1 * WindowApp.font.height, 0);
-
-			teleportButton = new .();
-			
-			teleportButton.Anchor = .(0,1,0,0);
-			teleportButton.Offset = .(0, 0, 2 * WindowApp.font.height, 16 + 2 * WindowApp.font.height);
-			teleportButton.text = "(T)eleport";
-			teleportButton.OnActuated.Add(new => Teleport);
-			teleportButton.Enabled = false;
-			
-			recordButton = new .();
-
-			recordButton.Anchor = .(0,1,0,0);
-			recordButton.Offset = .(0, 0, 3 * WindowApp.font.height, 16 + 3 * WindowApp.font.height);
-			recordButton.text = "(R)ecord";
-			recordButton.OnActuated.Add(new => RecordReplay);
-			
-			GUIElement.PopParent();
-			GUIElement.PopParent();
-			GUIElement.PopParent();
-			
 			sideInspector = new .();
 			sideInspector.Anchor = .(1,1,0,1);
 			sideInspector.Offset = .(-300,0,0,0);
@@ -457,7 +131,6 @@ namespace SpyroScope {
 
 			pinInspectorButton.Offset = .(0, 16, 0, 16);
 			pinInspectorButton.Offset.Shift(2,2);
-			pinInspectorButton.toggleIconTexture = toggledTexture;
 			
 			mainInspector = new .("Object");
 			mainInspector.Anchor = .(0,1,0,1);
@@ -590,8 +263,7 @@ namespace SpyroScope {
 			flipNormalToggle.Anchor = .(0, 0, 1, 1);
 			flipNormalToggle.Offset = .(0,16,0,16);
 			flipNormalToggle.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -3 + 2);
-			flipNormalToggle.toggleIconTexture = toggledTexture;
-			flipNormalToggle.OnActuated.Add(new () => {
+			flipNormalToggle.OnToggled.Add(new (value) => {
 				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 				int faceIndex = ?;
 				if (ViewerSelection.currentRegionTransparent) {
@@ -600,7 +272,7 @@ namespace SpyroScope {
 					faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
 				}
 				let face = visualMesh.GetNearFace(faceIndex);
-				face.flipped = flipNormalToggle.value;
+				face.flipped = value;
 				visualMesh.SetNearFace(face, faceIndex);
 			});
 
@@ -608,8 +280,7 @@ namespace SpyroScope {
 			doubleSidedToggle.Anchor = .(0, 0, 1, 1);
 			doubleSidedToggle.Offset = .(0,16,0,16);
 			doubleSidedToggle.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -1 + 2);
-			doubleSidedToggle.toggleIconTexture = toggledTexture;
-			doubleSidedToggle.OnActuated.Add(new () => {
+			doubleSidedToggle.OnToggled.Add(new (value) => {
 				if (faceMenu.visible) {
 					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
 					int faceIndex = ?;
@@ -619,7 +290,7 @@ namespace SpyroScope {
 						faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
 					}
 					let face = visualMesh.GetNearFace(faceIndex);
-					face.renderInfo.doubleSided = doubleSidedToggle.value;
+					face.renderInfo.doubleSided = value;
 					visualMesh.SetNearFace(face, faceIndex);
 				}
 			});
@@ -644,10 +315,7 @@ namespace SpyroScope {
 			togglePauseButton.iconTexture = Emulator.active.Paused ? playTexture : pauseTexture;
 			stepButton.Enabled = Emulator.active.Paused;
 
-			freecamToggle.value = teleportButton.Enabled = Emulator.active.CameraMode;
-			if (Emulator.active.CameraMode) {
-				freecamToggle.iconTexture = freecamToggle.toggleIconTexture;
-			}
+			viewerMenu.freecamToggle.value = viewerMenu.teleportButton.Enabled = Emulator.active.CameraMode;
 		}
 
 		public override void Exit() {
@@ -704,9 +372,6 @@ namespace SpyroScope {
 				}
 			}
 
-			cornerMenuInterp = Math.MoveTo(cornerMenuInterp, cornerMenuVisible ? 1 : 0, 0.1f);
-			cornerMenu.Offset = .(.(-200 * (1 - cornerMenuInterp), 0), .(200,180));
-
 			sideInspectorInterp = Math.MoveTo(sideInspectorInterp, sideInspectorVisible ? 1 : 0, 0.1f);
 			sideInspector.Offset = .(.(-300 * sideInspectorInterp,0), .(300,0));
 
@@ -724,8 +389,8 @@ namespace SpyroScope {
 				textureIndexInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.textureIndex));
 				rotationInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.rotation));
 				depthOffsetInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.depthOffset));
-				flipNormalToggle.SetValue(face.flipped);
-				doubleSidedToggle.SetValue(face.renderInfo.doubleSided);
+				flipNormalToggle.value = face.flipped;
+				doubleSidedToggle.value = face.renderInfo.doubleSided;
 			}
 
 			if (Emulator.active.loadingStatus == .Loading) {
@@ -734,7 +399,7 @@ namespace SpyroScope {
 
 			Terrain.Update();
 
-			if (showManipulator && (Emulator.active.loadingStatus == .Idle && Emulator.active.gameState <= 1)) {
+			if (viewerMenu.manipulatorToggle.value && (Emulator.active.loadingStatus == .Idle && Emulator.active.gameState <= 1)) {
 				UpdateManipulator();
 			}
 		}
@@ -796,7 +461,7 @@ namespace SpyroScope {
 
 			Renderer.ClearDepth();
 
-			if (showManipulator) {
+			if (viewerMenu.manipulatorToggle.value) {
 			    Translator.Draw();
 			}
 
@@ -1025,11 +690,11 @@ namespace SpyroScope {
 						SDL.SetRelativeMouseMode(viewMode != .Map);
 						cameraHijacked = true;
 						if (viewMode == .Game && !Emulator.active.CameraMode) {
-							freecamToggle.Toggle();
+							viewerMenu.freecamToggle.Toggle();
 						}
 					}
 					if (event.button.button == 1) {
-						if (showManipulator) {
+						if (viewerMenu.manipulatorToggle.value) {
 							Translator.MousePress(WindowApp.mousePosition);
 							if (Translator.hovered) {
 								Translator.OnDragBegin.Dispose();
@@ -1079,7 +744,7 @@ namespace SpyroScope {
 							}
 						}
 
-						if (!(showManipulator && Translator.hovered)) {
+						if (!(viewerMenu.manipulatorToggle.value && Translator.hovered)) {
 							Selection.Select();
 							
 							if (ViewerSelection.currentObjIndex > -1) {
@@ -1134,13 +799,12 @@ namespace SpyroScope {
 						}
 					} else {
 						if (Emulator.active.loadingStatus == .Idle || Emulator.active.loadingStatus == .CutsceneIdle) {
-							cornerMenuVisible = !Translator.dragged && pinMenuButton.value || ((cornerMenuVisible && WindowApp.mousePosition.x < 200 || WindowApp.mousePosition.x < 10) && WindowApp.mousePosition.y < 180);
 							sideInspectorVisible = !Translator.dragged && ViewerSelection.currentObjIndex > -1 && (pinInspectorButton.value || (sideInspectorVisible && WindowApp.mousePosition.x > WindowApp.width - 300 || WindowApp.mousePosition.x > WindowApp.width - 10));
 						} else {
 							cornerMenuVisible = sideInspectorVisible = false;
 						}
 
-						if (showManipulator && Translator.MouseMove(WindowApp.mousePosition)) {
+						if (viewerMenu.manipulatorToggle.value && Translator.MouseMove(WindowApp.mousePosition)) {
 							Selection.Clear();
 						} else if (Emulator.active.loadingStatus == .Idle && Emulator.active.gameState <= 1 || Emulator.active.loadingStatus == .CutsceneIdle) {
 							Selection.Test();
@@ -1187,12 +851,12 @@ namespace SpyroScope {
 								Emulator.healthAddresses[(int)Emulator.active.rom].Write(&health);
 							}
 							case .T : {
-								if (teleportButton.Enabled) {
+								if (viewerMenu.teleportButton.Enabled) {
 									Teleport();
 								}
 							}
 							case .C : {
-								freecamToggle.Toggle();
+								viewerMenu.freecamToggle.Toggle();
 							}
 							case .I : {
 								/*// Does not currently work as intended
@@ -1463,14 +1127,14 @@ namespace SpyroScope {
 				let moby = Moby.allocated[ViewerSelection.currentObjIndex];
 
 				position = moby.position;
-				if (useObjectSpace) {
+				if (viewerMenu.objectSpaceToggle.value) {
 					basis = moby.basis;
 				}
 			} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
 				position = Terrain.collision.mesh.vertices[ViewerSelection.currentTriangleIndex];
 			} else {
 				position = Emulator.active.SpyroPosition;
-				if (useObjectSpace) {
+				if (viewerMenu.objectSpaceToggle.value) {
 					basis = Emulator.active.spyroBasis.ToMatrixCorrected();
 				}
 			}
@@ -1546,7 +1210,7 @@ namespace SpyroScope {
 				}
 
 				if (object.IsActive || showInactive) {
-					if ((!showManipulator || ViewerSelection.currentObjIndex != Moby.allocated.Count) && drawObjectOrigins) {
+					if ((!viewerMenu.manipulatorToggle.value || ViewerSelection.currentObjIndex != Moby.allocated.Count) && drawObjectOrigins) {
 						object.DrawOriginAxis();
 					}
 
@@ -1736,52 +1400,62 @@ namespace SpyroScope {
 			Emulator.active.Step();
 		}
 
-		void ToggleWireframe(bool toggle) {
+		public void ToggleWireframe(bool toggle) {
 			Terrain.wireframe = toggle;
 			messageFeed.PushMessage("Toggled Render Wireframe");
 		}
 
-		void ToggleSolid(bool toggle) {
+		public void ToggleSolid(bool toggle) {
 			Terrain.solid = toggle;
 			messageFeed.PushMessage("Toggled Render Solid");
 		}
 
-		void ToggleTextures(bool toggle) {
+		public void ToggleTextures(bool toggle) {
 			Terrain.textured = toggle;
 			messageFeed.PushMessage("Toggled Terrain Textures");
 		}
 
-		void ToggleColors(bool toggle) {
+		public void ToggleColors(bool toggle) {
 			Terrain.Colored = toggle;
 			messageFeed.PushMessage("Toggled Terrain Vertex Colors");
 		}
 
-		void ToggleFadeColors(bool toggle) {
+		public void ToggleFadeColors(bool toggle) {
 			Terrain.UsingFade = toggle;
 			messageFeed.PushMessage("Toggled Terrain Fade Colors");
 		}
 
-		void ToggleOrigins(bool toggle) {
+		public void ToggleOrigins(bool toggle) {
 			drawObjectOrigins = toggle;
 			messageFeed.PushMessage("Toggled Object Origins");
 		}
 
-		void ToggleModels(bool toggle) {
+		public void ToggleModels(bool toggle) {
 			drawObjectModels = toggle;
 			messageFeed.PushMessage("Toggled Object Models");
 		}
 
-		void ToggleModelsExperimental(bool toggle) {
+		public void ToggleModelsExperimental(bool toggle) {
 			drawObjectExperimentalModels = toggle;
 			messageFeed.PushMessage("Toggled Object Models Experimental");
 		}
 
-		void ToggleInactive(bool toggle) {
+		public void ToggleInactive(bool toggle) {
 			showInactive = toggle;
 			messageFeed.PushMessage("Toggled Inactive Visibility");
 		}
+		
+		public void ToggleIcons(bool toggle) {
+			displayIcons = toggle;
+			messageFeed.PushMessage("Toggled Object Icons");
+		}
+		
+		public void ToggleMobyData(bool toggle) {
+			displayAllData = toggle;
+			messageFeed.PushMessage("Toggled Moby Data");
+		}
 
-		void ChangeView(ViewMode mode) {
+		public void ChangeView(ViewMode mode) {
 			if (viewMode == .Map && mode != .Map) {
 				Camera.orthographic = false;
 				Camera.near = 100;
@@ -1825,12 +1499,12 @@ namespace SpyroScope {
 				lockOffset = Camera.position - Emulator.active.SpyroPosition;
 			}
 
-			teleportButton.Enabled = mode == .Free || mode == .Game && Emulator.active.CameraMode;
+			viewerMenu.teleportButton.Enabled = mode == .Free || mode == .Game && Emulator.active.CameraMode;
 
 			viewMode = mode;
 		}
 
-		void ChangeRender(Terrain.RenderMode renderMode) {
+		public void ChangeRender(Terrain.RenderMode renderMode) {
 			Terrain.renderMode = renderMode;
 
 			switch (renderMode) {
@@ -1838,52 +1512,46 @@ namespace SpyroScope {
 					ViewerSelection.currentTriangleIndex = -1;
 					ViewerSelection.currentRegionIndex = -1;
 					faceMenu.visible = false;
-					nearTerrainToggleGroup.visible = false;
-					collisionOptionGroup.visible = true;
 
 				case .Far:
 					ViewerSelection.currentTriangleIndex = -1;
 					faceMenu.visible = false;
-					nearTerrainToggleGroup.visible = false;
-					collisionOptionGroup.visible = false;
 
-				case .NearLQ, .NearHQ:
-					nearTerrainToggleGroup.visible = true;
-					collisionOptionGroup.visible = false;
+				default:
 			}
 		}
 
-		void ToggleFreeCamera(bool toggle) {
+		public void ToggleFreeCamera(bool toggle) {
 			if (toggle) {
 				Emulator.active.KillCameraUpdate();
 				messageFeed.PushMessage("Free Camera");
-				teleportButton.Enabled = true;
+				viewerMenu.teleportButton.Enabled = true;
 			} else {
 				Emulator.active.RestoreCameraUpdate();
 				messageFeed.PushMessage("Game Camera");
-				teleportButton.Enabled = viewMode != .Game;
+				viewerMenu.teleportButton.Enabled = viewMode != .Game;
 			}
 		}
 
-		void ToggleLimits(bool toggle) {
+		public void ToggleLimits(bool toggle) {
 			drawLimits = toggle;
 			messageFeed.PushMessage("Toggled Height Limits");
 		}
 
-		void RecordReplay() {
+		public void RecordReplay() {
 			if (!Recording.Active) {
 				Recording.Record();
 				timeline.visible = true;
-				recordButton.text = "Stop Record";
+				viewerMenu.recordButton.text = "Stop Record";
 				messageFeed.PushMessage("Begin Recording");
 			} else {
 				Recording.StopRecord();
-				recordButton.text = "Record";
+				viewerMenu.recordButton.text = "Record";
 				messageFeed.PushMessage("Stopped Recording");
 			}
 		}
 
-		void Teleport() {
+		public void Teleport() {
 			Emulator.active.SpyroPosition = (.)Camera.position;
 			messageFeed.PushMessage("Teleported Spyro to Game Camera");
 		}
