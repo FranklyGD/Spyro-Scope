@@ -6,11 +6,19 @@ namespace SpyroScope {
 
 			area.Offset.Shift(0, 128 + 1);
 
-			AddProperty("Texture #", 0xc, 0, 7);
-			AddProperty("Rotation", 0xd, 4, 2);
-			AddProperty("Depth Offset", 0xd, 0, 2);
-			AddProperty("Flip Face", 0xd, 2);
-			AddProperty("Double Sided", 0xd, 3);
+			if (Emulator.active.installment == .SpyroTheDragon) {
+				AddProperty("Texture #", 0x8, 0, 7);
+				AddProperty("Rotation", 0x9, 0, 2);
+				AddProperty("Depth Offset", 0xc, 3, 3);
+				AddProperty("Flip Face", 0xc, 1);
+				AddProperty("Double Sided", 0xc, 2);
+			} else {
+				AddProperty("Texture #", 0xc, 0, 7);
+				AddProperty("Rotation", 0xd, 4, 2);
+				AddProperty("Depth Offset", 0xd, 0, 2);
+				AddProperty("Flip Face", 0xd, 2);
+				AddProperty("Double Sided", 0xd, 3);
+			}
 		}
 
 		public override void OnDataModified(Emulator.Address address, void* reference) {

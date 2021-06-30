@@ -40,7 +40,7 @@ namespace SpyroScope {
 			WindowApp.bitmapFont.Print(label, .(drawn.left, drawn.top + 3), .(255,255,255));
 		}
 
-		public Property<T> AddProperty<T>(StringView label, int offset, StringView components) where T : struct {
+		public Property<T> AddProperty<T>(StringView label, int offset, StringView components) where T : struct, INumeric {
 			GUIElement.PushParent(area);
 
 			let property = new Property<T>(this, label, offset, components);
@@ -85,7 +85,7 @@ namespace SpyroScope {
 			return property;
 		}
 
-		public Property<T> AddProperty<T>(StringView label, int offset) where T : struct {
+		public Property<T> AddProperty<T>(StringView label, int offset) where T : struct, INumeric {
 			return AddProperty<T>(label, offset, .());
 		}
 
@@ -128,7 +128,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public class Property<T> : Property where T : struct {
+		public class Property<T> : Property where T : struct, INumeric {
 			StringView components;
 			readonly Renderer.Color[3] componentColors = .(.(255,192,192), .(192,255,192), .(192,192,255));
 			Input[] inputs ~ delete _;
