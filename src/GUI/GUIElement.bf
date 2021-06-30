@@ -181,7 +181,9 @@ namespace SpyroScope {
 		}
 
 		public this() {
-			Parent(parentStack.Count > 0 ? parentStack[parentStack.Count - 1] : null);
+			let parent = parentStack.Count > 0 ? parentStack[parentStack.Count - 1] : null;
+			Link(parent);
+			this.parent = parent;
 		}
 
 		public ~this() {
@@ -199,7 +201,12 @@ namespace SpyroScope {
 				selectedElement = null;
 			}
 
-			DeleteContainerAndItems!(children);
+			let tempChildren = scope List<GUIElement>(children.GetEnumerator());
+			for (let child in tempChildren) {
+				delete child;
+			}
+			delete children;
+			Unlink();
 		}
 
 		public virtual void Draw() {
@@ -307,19 +314,26 @@ namespace SpyroScope {
 		}
 
 		public void Parent(GUIElement parent) {
-			if (this.parent != null) {
-				this.parent.children.Remove(this);
-			} else {
-				activeGUI.Remove(this);
-			}
+			Unlink();
+			this.parent = parent;
+			Link(parent);
+		}
 
-			if (parent != null) {
-				parent.children.Add(this);
+		void Link(GUIElement element) {
+			if (element != null) {
+				element.children.Add(this);
 			} else {
 				activeGUI.Add(this);
 			}
-			
-			this.parent = parent;
+			Resize();
+		}
+
+		void Unlink() {
+			if (parent != null) {
+				parent.children.Remove(this);
+			} else {
+				activeGUI.Remove(this);
+			}
 		}
 
 		public void MoveToTop() {

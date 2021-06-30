@@ -79,17 +79,12 @@ namespace SpyroScope {
 		bool sideInspectorVisible;
 		float sideInspectorInterp;
 
-		Inspector mainInspector;
-		Inspector.Property<uint8> nextModelProperty;
-		Inspector.Property<uint8> keyframeProperty;
-		Inspector.Property<uint8> nextKeyframeProperty;
+		Inspector inspector;
 
 		Toggle pinInspectorButton;
 
 		Timeline timeline;
 
-		GUIElement faceMenu;
-		Input textureIndexInput, rotationInput, depthOffsetInput;
 		Toggle flipNormalToggle, doubleSidedToggle;
 
 		// Other
@@ -125,177 +120,16 @@ namespace SpyroScope {
 			sideInspector.Offset = .(-300,0,0,0);
 			sideInspector.texture = GUIElement.bgTexture;
 			sideInspector.tint = .(0,0,0);
-			GUIElement.PushParent(sideInspector);
 
 			pinInspectorButton = new .();
-
 			pinInspectorButton.Offset = .(0, 16, 0, 16);
 			pinInspectorButton.Offset.Shift(2,2);
-			
-			mainInspector = new .("Object");
-			mainInspector.Anchor = .(0,1,0,1);
-			mainInspector.Offset = .(4,-4,24,-4);
-
-			mainInspector.AddProperty<int8>("State", 0x48).ReadOnly = true;
-
-			mainInspector.AddProperty<int32>("Position", 0xc, "XYZ");
-			mainInspector.AddProperty<int8>("Rotation", 0x44, "XYZ");
-			
-			mainInspector.AddProperty<uint8>("Type #ID", 0x36).ReadOnly = true;
-			mainInspector.AddProperty<Emulator.Address>("Data", 0x0).ReadOnly = true;
-			mainInspector.AddProperty<int8>("Held Value", 0x50);
-
-			mainInspector.AddProperty<uint8>("Model/Anim", 0x3c);
-			nextModelProperty = mainInspector.AddProperty<uint8>("Nxt Mdl/Anim", 0x3d);
-			keyframeProperty = mainInspector.AddProperty<uint8>("Keyframe", 0x3e);
-			nextKeyframeProperty = mainInspector.AddProperty<uint8>("Nxt Keyframe", 0x3f);
-
-			mainInspector.AddProperty<uint8>("Color", 0x54, "RGBA");
-			mainInspector.AddProperty<uint8>("LOD Distance", 0x4e).postTextInput = " x 1000";
-
-			GUIElement.PopParent();
+			pinInspectorButton.Parent(sideInspector);
 
 			timeline = new .();
 			timeline.Anchor = .(0, 1, 1, 1);
 			timeline.Offset = .(0, 0, -64, 0);
 			timeline.visible = false;
-
-			faceMenu = new .();
-			faceMenu.Anchor = .(0, 0, 1, 1);
-			faceMenu.Offset = .(0,490,-128,0);
-			faceMenu.visible = false;
-			GUIElement.PushParent(faceMenu);
-
-			textureIndexInput = new .();
-			textureIndexInput.Anchor = .(0, 0, 1, 1);
-			textureIndexInput.Offset = .(0,64,0,WindowApp.bitmapFont.height - 2);
-			textureIndexInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -5 + 1);
-			textureIndexInput.OnXcrement = new => Inspector.Property<int>.XcrementNumber;
-
-			textureIndexInput.OnValidate = new (text) => {
-				if (int.Parse(text) case .Ok(let val)) {
-					let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
-					if (val * quadCount < Terrain.textures.Count) {
-						text .. Clear().AppendF("{}", BitEdit.Get!(val, 0x7f));
-
-						return true;
-					}
-				}
-				return false;
-			};
-
-			textureIndexInput.OnSubmit.Add(new (text) => {
-				if (int.Parse(text) case .Ok(var val)) {
-					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
-					int faceIndex = ?;
-					if (ViewerSelection.currentRegionTransparent) {
-						faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
-					} else {
-						faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
-					}
-					let face = visualMesh.GetNearFace(faceIndex);
-					face.renderInfo.textureIndex = (.)val;
-					visualMesh.SetNearFace(face, faceIndex);
-				}
-			});
-
-			rotationInput = new .();
-			rotationInput.Anchor = .(0, 0, 1, 1);
-			rotationInput.Offset = .(0,64,0,WindowApp.bitmapFont.height - 2);
-			rotationInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -4 + 1);
-			rotationInput.OnXcrement = new => Inspector.Property<int>.XcrementNumber;
-			rotationInput.OnValidate = new (text) => {
-				if (int.Parse(text) case .Ok(let val)) {
-					let maskedVal = BitEdit.Get!(val, 0b0011);
-					text .. Clear().AppendF("{}", maskedVal);
-					
-					return true;
-				}
-				return false;
-			};
-
-			rotationInput.OnSubmit.Add(new (text) => {
-				if (int.Parse(text) case .Ok(var val)) {
-					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
-					int faceIndex = ?;
-					if (ViewerSelection.currentRegionTransparent) {
-						faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
-					} else {
-						faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
-					}
-					let face = visualMesh.GetNearFace(faceIndex);
-					face.renderInfo.rotation = (.)val;
-					visualMesh.SetNearFace(face, faceIndex);
-				}
-			});
-
-			depthOffsetInput = new .();
-			depthOffsetInput.Anchor = .(0, 0, 1, 1);
-			depthOffsetInput.Offset = .(0,64,0,WindowApp.bitmapFont.height - 2);
-			depthOffsetInput.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -2 + 1);
-			depthOffsetInput.OnXcrement = new => Inspector.Property<int>.XcrementNumber;
-			depthOffsetInput.OnValidate = new (text) => {
-				if (int.Parse(text) case .Ok(let val)) {
-					let maskedVal = BitEdit.Get!(val, 0b0011);
-					text .. Clear().AppendF("{}", maskedVal);
-					
-					return true;
-				}
-				return false;
-			};
-
-			depthOffsetInput.OnSubmit.Add(new (text) => {
-				if (int.Parse(text) case .Ok(let val)) {
-					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
-					int faceIndex = ?;
-					if (ViewerSelection.currentRegionTransparent) {
-						faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
-					} else {
-						faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
-					}
-					let face = visualMesh.GetNearFace(faceIndex);
-					face.renderInfo.depthOffset = (.)val;
-					visualMesh.SetNearFace(face, faceIndex);
-				}
-			});
-
-			flipNormalToggle = new .();
-			flipNormalToggle.Anchor = .(0, 0, 1, 1);
-			flipNormalToggle.Offset = .(0,16,0,16);
-			flipNormalToggle.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -3 + 2);
-			flipNormalToggle.OnToggled.Add(new (value) => {
-				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
-				int faceIndex = ?;
-				if (ViewerSelection.currentRegionTransparent) {
-					faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
-				} else {
-					faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
-				}
-				let face = visualMesh.GetNearFace(faceIndex);
-				face.flipped = value;
-				visualMesh.SetNearFace(face, faceIndex);
-			});
-
-			doubleSidedToggle = new .();
-			doubleSidedToggle.Anchor = .(0, 0, 1, 1);
-			doubleSidedToggle.Offset = .(0,16,0,16);
-			doubleSidedToggle.Offset.Shift(256 + 128 + 32, WindowApp.bitmapFont.height * -1 + 2);
-			doubleSidedToggle.OnToggled.Add(new (value) => {
-				if (faceMenu.visible) {
-					let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
-					int faceIndex = ?;
-					if (ViewerSelection.currentRegionTransparent) {
-						faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
-					} else {
-						faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
-					}
-					let face = visualMesh.GetNearFace(faceIndex);
-					face.renderInfo.doubleSided = value;
-					visualMesh.SetNearFace(face, faceIndex);
-				}
-			});
-
-			GUIElement.PopParent();
 		}
 
 		public ~this() {
@@ -311,6 +145,7 @@ namespace SpyroScope {
 
 		public override void Enter() {
 			GUIElement.SetActiveGUI(guiElements);
+			Selection.OnSelect.Add(new => OnSelect);
 
 			togglePauseButton.iconTexture = Emulator.active.Paused ? playTexture : pauseTexture;
 			stepButton.Enabled = Emulator.active.Paused;
@@ -320,6 +155,7 @@ namespace SpyroScope {
 
 		public override void Exit() {
 			GUIElement.SetActiveGUI(null);
+			Selection.OnSelect.Remove(scope => OnSelect);
 		}
 
 		public override void Update() {
@@ -374,24 +210,6 @@ namespace SpyroScope {
 
 			sideInspectorInterp = Math.MoveTo(sideInspectorInterp, sideInspectorVisible ? 1 : 0, 0.1f);
 			sideInspector.Offset = .(.(-300 * sideInspectorInterp,0), .(300,0));
-
-			if (faceMenu.visible) {
-				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
-				int faceIndex = ?;
-				if (ViewerSelection.currentRegionTransparent) {
-					faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
-				} else {
-					faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
-				}
-
-				let face = visualMesh.GetNearFace(faceIndex);
-				
-				textureIndexInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.textureIndex));
-				rotationInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.rotation));
-				depthOffsetInput.SetValidText(scope String() .. AppendF("{}", face.renderInfo.depthOffset));
-				flipNormalToggle.value = face.flipped;
-				doubleSidedToggle.value = face.renderInfo.doubleSided;
-			}
 
 			if (Emulator.active.loadingStatus == .Loading) {
 				return;
@@ -581,58 +399,6 @@ namespace SpyroScope {
 						}
 					}
 				}
-			} else if (faceMenu.visible) {
-				let visualMesh = Terrain.regions[ViewerSelection.currentRegionIndex];
-				
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Region: {}", ViewerSelection.currentRegionIndex), .(0, WindowApp.height - (.)WindowApp.bitmapFont.height * 15), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Center: {}", visualMesh.Center), .(0, WindowApp.height - WindowApp.bitmapFont.height * 14), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Radius: {}", visualMesh.Radius), .(0, WindowApp.height - WindowApp.bitmapFont.height * 13), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Offset: {}", visualMesh.Offset), .(0, WindowApp.height - WindowApp.bitmapFont.height * 12), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Scaled Vertically: {}", visualMesh.metadata.GetFlags(.VerticalScale)), .(0, WindowApp.height - WindowApp.bitmapFont.height * 11), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("No Far: {}", visualMesh.metadata.GetFlags(.DisableFar)), .(0, WindowApp.height - WindowApp.bitmapFont.height * 10), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("No Near: {}", visualMesh.metadata.GetFlags(.DisableNear)), .(0, WindowApp.height - WindowApp.bitmapFont.height * 9), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Show Near Always: {}", visualMesh.metadata.GetFlags(.DrawFarAlways)), .(0, WindowApp.height - WindowApp.bitmapFont.height * 8), .(255,255,255));
-
-				int faceIndex = ?;
-				if (ViewerSelection.currentRegionTransparent) {
-					faceIndex = visualMesh.nearFaceTransparentIndices[ViewerSelection.currentTriangleIndex];
-				} else {
-					faceIndex = visualMesh.nearFaceIndices[ViewerSelection.currentTriangleIndex];
-				}
-
-				let face = visualMesh.GetNearFace(faceIndex);
-				
-				let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
-				TextureQuad* textureInfo = &Terrain.textures[face.renderInfo.textureIndex * quadCount];
-				if (Emulator.active.installment != .SpyroTheDragon) {
-					textureInfo++;
-				}
-			
-				
-				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 256, 490, .(0,0,0,128));
-
-				var partialUV = textureInfo[0].GetVramPartialUV();
-				DrawUtilities.Rect(WindowApp.height - 128, WindowApp.height, 0,128, partialUV.leftY, partialUV.leftY + (1f / 16), partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
-
-				const int[4][2] offsets = .(
-					(128, 64),
-					(128 + 64, 64),
-					(128, 0),
-					(128 + 64, 0)
-				);
-				for (let qi < 4) {
-					let offset = offsets[qi];
-
-					partialUV = textureInfo[1 + qi].GetVramPartialUV();
-					DrawUtilities.Rect(WindowApp.height - (offset[1] + 64), WindowApp.height - offset[1], offset[0], offset[0] + 64, partialUV.leftY, partialUV.leftY + (1f / 16), partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
-				}
-				
-				WindowApp.bitmapFont.Print(scope String() .. AppendF("Face Index: {}", faceIndex), .(260, WindowApp.height - WindowApp.bitmapFont.height * 6), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Tex Index"), .(260, WindowApp.height - WindowApp.bitmapFont.height * 5), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Rotation"), .(260, WindowApp.height - WindowApp.bitmapFont.height * 4), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Flip Normal"), .(260, WindowApp.height - WindowApp.bitmapFont.height * 3), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Depth Offset"), .(260, WindowApp.height - WindowApp.bitmapFont.height * 2), .(255,255,255));
-				WindowApp.bitmapFont.Print(scope String() .. Append("Double Sided"), .(260, WindowApp.height - WindowApp.bitmapFont.height), .(255,255,255));
 			}
 
 			if (!Translator.hovered) {
@@ -746,25 +512,7 @@ namespace SpyroScope {
 
 						if (!(viewerMenu.manipulatorToggle.value && Translator.hovered)) {
 							Selection.Select();
-							
-							if (ViewerSelection.currentObjIndex > -1) {
-								let address = Moby.GetAddress(ViewerSelection.currentObjIndex);
-								let reference = &Moby.allocated[ViewerSelection.currentObjIndex];
-								mainInspector.SetData(address, reference);
-
-								Emulator.Address modelSetAddress = ?;
-								Emulator.modelPointers[(int)Emulator.active.rom].GetAtIndex(&modelSetAddress, reference.objectTypeID);
-
-								let possiblyAnimated = reference.HasModel && (int32)modelSetAddress < 0;
-								nextModelProperty.ReadOnly = !possiblyAnimated;
-								keyframeProperty.ReadOnly = !possiblyAnimated;
-								nextKeyframeProperty.ReadOnly = !possiblyAnimated;
-							} else {
-								mainInspector.SetData(.Null, null);
-							}
 						}
-
-						faceMenu.visible = (Terrain.renderMode == .NearLQ || Terrain.renderMode == .NearHQ) && ViewerSelection.currentRegionIndex > -1 && ViewerSelection.currentTriangleIndex > -1;
 					}
 				}
 				case .MouseMotion : {
@@ -798,8 +546,8 @@ namespace SpyroScope {
 							}
 						}
 					} else {
-						if (Emulator.active.loadingStatus == .Idle || Emulator.active.loadingStatus == .CutsceneIdle) {
-							sideInspectorVisible = !Translator.dragged && ViewerSelection.currentObjIndex > -1 && (pinInspectorButton.value || (sideInspectorVisible && WindowApp.mousePosition.x > WindowApp.width - 300 || WindowApp.mousePosition.x > WindowApp.width - 10));
+						if (inspector != null && Emulator.active.loadingStatus == .Idle || Emulator.active.loadingStatus == .CutsceneIdle) {
+							sideInspectorVisible = !Translator.dragged && inspector.[Friend]dataReference != null && (pinInspectorButton.value || (sideInspectorVisible && WindowApp.mousePosition.x > WindowApp.width - 300 || WindowApp.mousePosition.x > WindowApp.width - 10));
 						} else {
 							cornerMenuVisible = sideInspectorVisible = false;
 						}
@@ -1154,7 +902,6 @@ namespace SpyroScope {
 
 			lastUpdatedSceneChanging = .Now;
 
-			faceMenu.visible = false;
 			sideInspectorVisible = false;
 		}
 
@@ -1163,6 +910,50 @@ namespace SpyroScope {
 			Terrain.Load();
 
 			lastUpdatedSceneChange = .Now;
+		}
+
+		void OnSelect() {
+			Emulator.Address address = .Null;
+			void* reference = null;
+
+			if (ViewerSelection.currentObjIndex > -1) {
+				if (!(inspector is MobyInspector)) {
+					delete inspector;
+					inspector = new MobyInspector();
+					inspector.Parent(sideInspector);
+				}
+
+				address = Moby.GetAddress(ViewerSelection.currentObjIndex);
+				reference = &Moby.allocated[ViewerSelection.currentObjIndex];
+			} else if (ViewerSelection.currentRegionIndex > -1) {
+				if (!(inspector is NearFaceInspector)) {
+					delete inspector;
+					inspector = new NearFaceInspector();
+					inspector.Parent(sideInspector);
+				}
+				
+				let regionIndex = ViewerSelection.currentRegionIndex;
+				if (regionIndex > -1) {
+					let region = Terrain.regions[regionIndex];
+					let currentTriangleIndex = ViewerSelection.currentTriangleIndex;
+
+					int faceIndex = ?;
+
+					if (ViewerSelection.currentRegionTransparent) {
+					    faceIndex = region.nearFaceTransparentIndices[currentTriangleIndex];
+					} else {
+					    faceIndex = region.nearFaceIndices[currentTriangleIndex];
+					}
+
+					let nearLOD = region.NearLOD;
+
+					address = (.)region.[Friend]address + 0x1c + ((int)nearLOD.start + (int)nearLOD.vertexCount + (int)nearLOD.colorCount * 2 + // Pass over previous near data
+						faceIndex * 4) * 4; // Index the face
+					reference = region.GetNearFace(faceIndex);
+				}
+			}
+
+			inspector?.SetData(address, reference);
 		}
 
 		void DrawGameCameraFrustrum() {
@@ -1505,20 +1296,15 @@ namespace SpyroScope {
 		}
 
 		public void ChangeRender(Terrain.RenderMode renderMode) {
-			Terrain.renderMode = renderMode;
-
 			switch (renderMode) {
-				case .Collision:
-					ViewerSelection.currentTriangleIndex = -1;
-					ViewerSelection.currentRegionIndex = -1;
-					faceMenu.visible = false;
-
-				case .Far:
-					ViewerSelection.currentTriangleIndex = -1;
-					faceMenu.visible = false;
-
-				default:
+				case .Collision, .Far: Selection.Clear();
+				default: switch (Terrain.renderMode) {
+					case .Collision, .Far: Selection.Clear();
+					default:
+				}
 			}
+			
+			Terrain.renderMode = renderMode;
 		}
 
 		public void ToggleFreeCamera(bool toggle) {

@@ -33,7 +33,7 @@ namespace SpyroScope {
 
 		public static bool RayMeshIntersect(Vector3 rayOrigin, Vector3 rayDirection, Mesh mesh, ref float closestTime, ref int triangleIndex) {
 			var hit = false;
-			let indices = mesh.[Friend]indices;
+			let indices = mesh.indices;
 			for (int i = 0; i < indices.Count; i += 3) {
 				let time = RayTriangleIntersect(rayOrigin, rayDirection, mesh.vertices[indices[i]], mesh.vertices[indices[i + 1]], mesh.vertices[indices[i + 2]], .Front);
 				if (time > 0 && time < closestTime) {

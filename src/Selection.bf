@@ -26,6 +26,8 @@ namespace SpyroScope {
 		static SelectionTest passedTest = null;
 		static SelectionTest passedSelect = null; 
 
+		public static Event<delegate void()> OnSelect ~ _.Dispose();
+
 		public static void Test() {
 			if (passedTest != null) {
 				passedTest.Clear();
@@ -50,6 +52,7 @@ namespace SpyroScope {
 
 			passedSelect = passedTest;
 			Test();
+			OnSelect();
 		}
 
 		public static void Clear() {
@@ -58,6 +61,7 @@ namespace SpyroScope {
 			}
 
 			passedTest = null;
+			Select();
 		}
 
 		public static void Reset() {

@@ -984,6 +984,9 @@ namespace SpyroScope {
 				}
 			}
 
+			meshSet[0].SetDirty(.Element);
+			meshSet[1].SetDirty(.Element);
+
 			// Force update the region's mesh
 			meshSet[0].Update();
 			meshSet[1].Update();

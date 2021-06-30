@@ -11,7 +11,7 @@ namespace SpyroScope {
 		List<GUIElement> properties = new .() ~ delete _;
 		int nextPropertyPos = 1;
 
-		Panel area;
+		protected Panel area;
 		int labelWidth = 150;
 
 		public this(StringView label) : base() {
@@ -65,6 +65,26 @@ namespace SpyroScope {
 			return property;
 		}
 
+		public PropertyBits AddProperty(StringView label, int offset, int startBit, int bitLength = 1) {
+			GUIElement.PushParent(area);
+
+			let property = new PropertyBits(this, label, offset, startBit, bitLength);
+
+			property.Anchor = .(0,1,0,0);
+
+			property.Offset = .(0, -2, 0, WindowApp.bitmapFont.height);
+			property.Offset.Shift(0, nextPropertyPos);
+			nextPropertyPos += WindowApp.bitmapFont.height;
+
+			properties.Add(property);
+			
+			GUIElement.PopParent();
+
+			area.Offset.bottom = area.Offset.top + nextPropertyPos + 1;
+
+			return property;
+		}
+
 		public Property<T> AddProperty<T>(StringView label, int offset) where T : struct {
 			return AddProperty<T>(label, offset, .());
 		}
@@ -74,18 +94,46 @@ namespace SpyroScope {
 			dataReference = reference;
 
 			input.SetValidText(scope String() .. AppendF("{}", address));
+			if (reference != null) {
+				OnDataSet(address, reference);
+			}
 		}
 
-		public class Property<T> : GUIElement where T : struct {
-			public readonly Inspector inspector;
+		/// Executed when the inspector is set to look at new address for data
+		public virtual void OnDataSet(Emulator.Address address, void* reference) {}
+		/// Executed when a property in the inspector modified data in the emulator
+		public virtual void OnDataModified(Emulator.Address address, void* reference) {}
 
-			StringView label;
+		public class Property : GUIElement {
+			public readonly Inspector inspector;
+			protected StringView label;
+			protected int dataOffset;
+
+			public virtual bool ReadOnly { get => false; set {} }
+
+			protected this(Inspector inspector, StringView label, int offset) {
+				this.inspector = inspector;
+				this.label = label;
+				dataOffset = offset;
+			}
+
+			protected static bool ValidateNumber(String text) {
+				return Float.Parse(text) case .Ok;
+			}
+
+			protected static void XcrementNumber(String text, int delta) {
+				if (Float.Parse(text) case .Ok(let val)) {
+					text .. Clear().AppendF("{}", (int)val + delta);
+				}
+			}
+		}
+
+		public class Property<T> : Property where T : struct {
 			StringView components;
 			readonly Renderer.Color[3] componentColors = .(.(255,192,192), .(192,255,192), .(192,192,255));
 			Input[] inputs ~ delete _;
-			int dataOffset;
 
-			public bool ReadOnly {
+			public override bool ReadOnly {
 				get => !inputs[0].Enabled;
 				set { for (let input in inputs) input.Enabled = !value; }
 			}
@@ -100,11 +148,8 @@ namespace SpyroScope {
 				set { for (let input in inputs) input.postText = value; }
 			}
 
-			public this(Inspector inspector, StringView label, int offset, StringView components) : base() {
-				this.inspector = inspector;
-				this.label = label;
+			public this(Inspector inspector, StringView label, int offset, StringView components) : base(inspector, label, offset) {
 				this.components = components;
-				dataOffset = offset;
 
 				GUIElement.PushParent(this);
 
@@ -186,23 +231,98 @@ namespace SpyroScope {
 				}
 			}
 
-			static bool ValidateNumber(String text) {
-				return Float.Parse(text) case .Ok;
-			}
-
-			public static void XcrementNumber(String text, int delta) {
-				if (Float.Parse(text) case .Ok(let val)) {
-					text .. Clear().AppendF("{}", (int)val + delta);
-				}
-			}
-
 			void ModifyData(T* val, int index = 0) {
 				// Write to emulator
 				Emulator.active.WriteToRAM(inspector.dataAddress + dataOffset + index * sizeof(T), val, sizeof(T));
 
 				// Write to cached data
-				int8* data = (.)inspector.dataReference;
-				*(T*)(data + dataOffset + index * sizeof(T)) = *val;
+				int8* dataReference = (.)inspector.dataReference;
+				*(T*)(dataReference + dataOffset + index * sizeof(T)) = *val;
+
+				inspector.OnDataModified(inspector.dataAddress, inspector.dataReference);
+			}
+		}
+
+		public class PropertyBits : Property {
+			GUIElement input;
+			int start, length;
+
+			public this(Inspector inspector, StringView label, int offset, int startBit, int bitLength) : base(inspector, label, offset) {
+				start = startBit;
+				length = bitLength;
+
+				GUIElement.PushParent(this);
+
+				if (bitLength == 1) {
+					Toggle toggle = new .();
+					input = toggle;
+					
+					toggle.Anchor = .(0,0,0.5f,0.5f);
+					toggle.Offset = .(inspector.labelWidth,inspector.labelWidth + 16,-8,8);
+
+					toggle.OnToggled.Add(new (tvalue) => {
+						ModifyData((.)tvalue);
+					});
+				} else {
+					Input tinput = new .();
+					input = tinput;
+
+					tinput.Anchor = .(0,1,0,1);
+					tinput.Offset = .(inspector.labelWidth,0,1,-1);
+
+					tinput.OnValidate = new => ValidateNumber;
+					tinput.OnXcrement = new => XcrementNumber;
+					tinput.OnSubmit.Add(new (text) => {
+						if (Float.Parse(text) case .Ok(var val)) {
+							var castedVal = (int)val;
+							
+							ModifyData((.)castedVal);
+						}
+					});
+				}
+
+				GUIElement.PopParent();
+			}
+
+			protected override void Update() {
+				if (inspector.dataAddress.IsNull) {
+					return;
+				}
+
+				uint32 value = ?;
+				if (length == 1) {
+					Emulator.active.ReadFromRAM(inspector.dataAddress + dataOffset, &value, 1);
+					((Toggle)input).value = BitEdit.Get!(value, 1 << start) > 0;
+				} else {
+					Emulator.active.ReadFromRAM(inspector.dataAddress + dataOffset, &value, 4);
+					int mask = -1;
+					mask = mask ^ (mask << length);
+					((Input)input).SetValidText(scope String() .. AppendF("{}", BitEdit.Get!(value >> start, mask)));
+				}
+			}
+
+			public override void Draw() {
+				base.Draw();
+
+				WindowApp.bitmapFont.Print(label, .(drawn.left, drawn.top + 3), .(255,255,255));
+			}
+
+			void ModifyData(int val) {
+				// Get from cached data
+				let dataReference = (int*)((int8*)inspector.dataReference + dataOffset);
+				int value = *dataReference;
+
+				// Change only the relevant bits
+				int32 mask = (-1 ^ (-1 << length)) << start;
+				BitEdit.Set!(value, val << start, mask);
+
+				// Write to emulator
+				Emulator.active.WriteToRAM(inspector.dataAddress + dataOffset, &value, 4);
+
+				// Write to cached data
+				*dataReference = value;
+
+				inspector.OnDataModified(inspector.dataAddress, inspector.dataReference);
 			}
 		}
 	}

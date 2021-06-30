@@ -18,13 +18,13 @@ namespace SpyroScope {
 		Panel collisionOptionGroup, nearTerrainToggleGroup;
 
 		public this(ViewerState viewerState) : base() {
-			(Toggle button, String label, delegate void(bool) event)[6] toggleList = .(
-				(null, "Object Origin Axis", new => viewerState.ToggleOrigins),
-				(null, "Object Models", new => viewerState.ToggleModels),
-				(null, "Object Models (Exp.)", new => viewerState.ToggleModelsExperimental),
-				(null, "Inactive Objects", new => viewerState.ToggleInactive),
-				(null, "Display Icons", new => viewerState.ToggleIcons),
-				(null, "All Visual Moby Data", new => viewerState.ToggleMobyData)
+			(String label, bool defaultValue, delegate void(bool) event)[6] toggleList = .(
+				("Object Origin Axis", true, new => viewerState.ToggleOrigins),
+				("Object Models", true, new => viewerState.ToggleModels),
+				("Object Models (Exp.)", false, new => viewerState.ToggleModelsExperimental),
+				("Inactive Objects", false, new => viewerState.ToggleInactive),
+				("Display Icons", false, new => viewerState.ToggleIcons),
+				("All Visual Moby Data", false, new => viewerState.ToggleMobyData)
 			);
 
 			Offset = .(.Zero, .(200,180));
@@ -267,8 +267,7 @@ namespace SpyroScope {
 
 				button.Offset = .(0, 16, i * WindowApp.font.height, 16 + i * WindowApp.font.height);
 				button.OnToggled.Add(toggleList[i].event);
-
-				toggleList[i].button = button;
+				button.value = toggleList[i].defaultValue;
 
 				text = new Text();
 				text.Text = toggleList[i].label;
@@ -276,9 +275,6 @@ namespace SpyroScope {
 			}
 
 			GUIElement.PopParent();
-
-			toggleList[0].button.value = true;
-			toggleList[1].button.value = true;
 
 			// Other
 			otherOptionGroup = new .();
