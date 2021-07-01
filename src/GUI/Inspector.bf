@@ -9,7 +9,7 @@ namespace SpyroScope {
 		void* dataReference;
 
 		List<GUIElement> properties = new .() ~ delete _;
-		int nextPropertyPos = 1;
+		int nextPropertyPos = 2;
 
 		protected Panel area;
 		int labelWidth = 150;
@@ -27,7 +27,7 @@ namespace SpyroScope {
 
 			area = new Panel();
 			area.Anchor = .(0,1,0,0);
-			area.Offset = .(WindowApp.bitmapFont.characterWidth, 0, WindowApp.bitmapFont.height, WindowApp.bitmapFont.height);
+			area.Offset = .(WindowApp.bitmapFont.characterWidth, 0, WindowApp.bitmapFont.height + 1, WindowApp.bitmapFont.height + 2);
 			area.texture = GUIElement.bgOutlineTexture;
 			area.tint = .(128,128,128);
 
@@ -37,32 +37,73 @@ namespace SpyroScope {
 		public override void Draw() {
 			base.Draw();
 
-			WindowApp.bitmapFont.Print(label, .(drawn.left, drawn.top + 3), .(255,255,255));
+			WindowApp.bitmapFont.Print(label, .(drawn.left, drawn.top + 4), .(255,255,255));
 		}
 
-		public Property<T> AddProperty<T>(StringView label, int offset, StringView components) where T : struct, INumeric {
+		public int AddProperty<T>(StringView label, int offset, StringView components) where T : struct, INumeric {
+			int propertyIndex = properties.Count;
+
 			GUIElement.PushParent(area);
 
-			let property = new Property<T>(this, label, offset, components);
-
-			property.Anchor = .(0,1,0,0);
 			if (components.Length > 1) {
-				property.Offset = .(0, -2, 0, WindowApp.bitmapFont.height * 2);
-				property.Offset.Shift(0, nextPropertyPos);
-				nextPropertyPos += WindowApp.bitmapFont.height * 2;
-			} else {
-				property.Offset = .(0, -2, 0, WindowApp.bitmapFont.height);
-				property.Offset.Shift(0, nextPropertyPos);
-				nextPropertyPos += WindowApp.bitmapFont.height;
-			}
+				let propertyLabel = new Property(this, label, offset);
+				properties.Add(propertyLabel);
+				
+				propertyLabel.Anchor = .(0,1,0,0);
 
-			properties.Add(property);
+				propertyLabel.Offset = .(2, -2, 0, WindowApp.bitmapFont.height);
+				propertyLabel.Offset.Shift(0, nextPropertyPos);
+				nextPropertyPos += WindowApp.bitmapFont.height;
+				
+				let componentArea = new Panel();
+				GUIElement.PushParent(componentArea);
+				
+				componentArea.Anchor = .(0,1,0,0);
+				
+				componentArea.Offset = .(WindowApp.bitmapFont.characterWidth + 1, -2, -2, WindowApp.bitmapFont.height + 2);
+				componentArea.Offset.Shift(0, nextPropertyPos);
+
+				componentArea.texture = GUIElement.bgOutlineTexture;
+				componentArea.tint = .(128,128,128);
+
+				for (let i < components.Length) {
+					let property = new Property<T>(this, .(components, i, 1), WindowApp.bitmapFont.characterWidth, offset + sizeof(T) * i);
+
+					property.Anchor = .((float)i / components.Length, (float)(i + 1) / components.Length,0,1);
+
+					property.Offset = .(2, -2, 2, -2);
+
+					if (i < 3) {
+						const Renderer.Color[3] componentColors = .(.(255,192,192), .(192,255,192), .(192,192,255));
+						property.Color = componentColors[i];
+					}
+
+					properties.Add(property);
+				}
+				GUIElement.PopParent();
+				
+				nextPropertyPos += WindowApp.bitmapFont.height + 2;
+			} else {
+				let property = new Property<T>(this, label, labelWidth, offset);
+
+				property.Anchor = .(0,1,0,0);
+
+				property.Offset = .(2, -2, 0, WindowApp.bitmapFont.height);
+				property.Offset.Shift(0, nextPropertyPos);
+				nextPropertyPos += WindowApp.bitmapFont.height + 1;
+
+				if (typeof(T) == typeof(Emulator.Address)) {
+					property.InputPretext = "0x";
+				}
+				
+				properties.Add(property);
+			}
 			
 			GUIElement.PopParent();
 
-			area.Offset.bottom = nextPropertyPos + WindowApp.bitmapFont.height + 1;
+			area.Offset.bottom = nextPropertyPos + WindowApp.bitmapFont.height + 3;
 
-			return property;
+			return propertyIndex;
 		}
 
 		public PropertyBits AddProperty(StringView label, int offset, int startBit, int bitLength = 1) {
@@ -86,7 +127,7 @@ namespace SpyroScope {
 		}
 
 		public Property<T> AddProperty<T>(StringView label, int offset) where T : struct, INumeric {
-			return AddProperty<T>(label, offset, .());
+			return (.)properties[AddProperty<T>(label, offset, .())];
 		}
 
 		public void SetData(Emulator.Address address, void* reference) {
@@ -111,100 +152,108 @@ namespace SpyroScope {
 
 			public virtual bool ReadOnly { get => false; set {} }
 
-			protected this(Inspector inspector, StringView label, int offset) {
+			public this(Inspector inspector, StringView label, int offset) {
 				this.inspector = inspector;
 				this.label = label;
 				dataOffset = offset;
 			}
 
-			protected static bool ValidateNumber(String text) {
-				return Float.Parse(text) case .Ok;
+			public override void Draw() {
+				base.Draw();
+
+				WindowApp.bitmapFont.Print(label, .(drawn.left, drawn.top + 2), .(255,255,255));
+			}
+		}
+
+		public class NumericProperty : Property {
+			int start, mask;
+
+			public int Value {
+				get {
+					// Get from cached data
+					let dataReference = (int*)((int8*)inspector.dataReference + dataOffset);
+					int referenceValue = *dataReference;
+
+					return referenceValue >> start & mask;
+				}
+
+				set {
+					// Get from cached data
+					let dataReference = (int*)((int8*)inspector.dataReference + dataOffset);
+					int referenceValue = *dataReference;
+
+					// Change only the relevant bits
+					int mask = this.mask << start;
+					BitEdit.Set!(referenceValue, value << start, mask);
+
+					// Write to emulator
+					Emulator.active.WriteToRAM(inspector.dataAddress + dataOffset, &referenceValue, 4);
+
+					// Write to cached data
+					*dataReference = referenceValue;
+					inspector.OnDataModified(inspector.dataAddress, inspector.dataReference);
+				}
 			}
 
-			protected static void XcrementNumber(String text, int delta) {
+			public this(Inspector inspector, StringView label, int offset, int startingBit, int bitCount) : base(inspector, label, offset) {
+				start = startingBit;
+				mask = -1 ^ (-1 << bitCount);
+			}
+
+			protected bool ValidateNumber(String text) {
 				if (Float.Parse(text) case .Ok(let val)) {
-					text .. Clear().AppendF("{}", (int)val + delta);
+			        text .. Clear().AppendF("{}", BitEdit.Get!((int)val, mask));
+					return true;
+				}
+				return false;
+			}
+
+			protected void XcrementNumber(String text, int delta) {
+				if (Float.Parse(text) case .Ok(let val)) {
+					text .. Clear().AppendF("{}", BitEdit.Get!((int)val + delta, mask));
 				}
 			}
 		}
 
-		public class Property<T> : Property where T : struct, INumeric {
-			StringView components;
-			readonly Renderer.Color[3] componentColors = .(.(255,192,192), .(192,255,192), .(192,192,255));
-			Input[] inputs ~ delete _;
+		public class Property<T> : NumericProperty where T : struct, INumeric {
+			Input input;
 
 			public override bool ReadOnly {
-				get => !inputs[0].Enabled;
-				set { for (let input in inputs) input.Enabled = !value; }
+				get => !input.Enabled;
+				set => input.Enabled = !value;
 			}
 
-			public StringView preTextInput {
-				get => inputs[0].preText;
-				set { for (let input in inputs) input.preText = value; }
+			public Renderer.Color4 Color {
+				get => input.normalColor;
+				set => input.normalColor = value;
+			}
+
+			public StringView InputPretext {
+				get => input.preText;
+				set => input.preText = value;
 			}
 
 			public StringView postTextInput {
-				get => inputs[0].postText;
-				set { for (let input in inputs) input.postText = value; }
+				get => input.postText;
+				set => input.postText = value;
 			}
 
-			public this(Inspector inspector, StringView label, int offset, StringView components) : base(inspector, label, offset) {
-				this.components = components;
-
+			public this(Inspector inspector, StringView label, int labelWidth, int offset) : base(inspector, label, offset, 0, sizeof(T) * 8) {
 				GUIElement.PushParent(this);
 
-				if (components.Length > 1) {
-					let area = new GUIElement();
+				input = new Input();
 
-					GUIElement.PushParent(area);
+				input.Anchor = .(0,1,0,1);
+				input.Offset = .(labelWidth,0,0,0);
 
-					area.Anchor = .(0,1,0.5f,1);
-					area.Offset = .(WindowApp.bitmapFont.characterWidth,0,0,0);
-
-					inputs = new Input[components.Length];
-					for (let i < components.Length) {
-						let input = new Input();
-						inputs[i] = input;
-		
-						input.Anchor = .((float)i / components.Length, (float)(i + 1) / components.Length,0,1);
-						input.Offset = .(WindowApp.bitmapFont.characterWidth + 2,0,0,0);
-		
-						input.OnValidate = new => ValidateNumber;
-						input.OnXcrement = new => XcrementNumber;
-						input.OnSubmit.Add(new (text) => {
-							if (Float.Parse(text) case .Ok(var val)) {
-								var castedVal = (int)val;
-								ModifyData((.)&castedVal, i);
-							}
-						});
-
-						if (i < 3) {
-							input.normalColor = componentColors[i];
-						}
-					}
-					
-					GUIElement.PopParent();
-				} else {
-					inputs = new Input[1];
-					let input = new Input();
-					inputs[0] = input;
-	
-					input.Anchor = .(0,1,0,1);
-					input.Offset = .(inspector.labelWidth,0,1,-1);
-	
-					input.OnValidate = new => ValidateNumber;
-					input.OnXcrement = new => XcrementNumber;
-					input.OnSubmit.Add(new (text) => {
-						if (Float.Parse(text) case .Ok(var val)) {
-							var castedVal = (int)val;
-							ModifyData((.)&castedVal);
-						}
-					});
-
-					if (typeof(T) == typeof(Emulator.Address)) {
-						input.preText = "0x";
-					}
-				}
+				input.OnValidate = new => ValidateNumber;
+				input.OnXcrement = new => XcrementNumber;
+				input.OnSubmit.Add(new (text) => {
+				    if (Float.Parse(text) case .Ok(var val)) {
+						int castedVal = (.)val;
+				        ModifyData((.)&castedVal);
+				    }
+				});
 
 				GUIElement.PopParent();
 			}
@@ -214,40 +263,33 @@ namespace SpyroScope {
 					return;
 				}
 
-				for (let i < inputs.Count) {
-					T value = ?;
-					Emulator.active.ReadFromRAM(inspector.dataAddress + dataOffset + i * sizeof(T), &value, sizeof(T));
-					inputs[i].SetValidText(scope String() .. AppendF("{}", value));
-				}
+				T value = ?;
+				Emulator.active.ReadFromRAM(inspector.dataAddress + dataOffset, &value, sizeof(T));
+				input.SetValidText(scope String() .. AppendF("{}", value));
 			}
 
-			public override void Draw() {
-				base.Draw();
-
-				WindowApp.bitmapFont.Print(label, .(drawn.left, drawn.top + 3), .(255,255,255));
-				
-				for (let i < components.Length) {
-					WindowApp.bitmapFont.Print(.(components, i, 1), .(Math.Round(Math.Lerp(drawn.left+WindowApp.bitmapFont.characterWidth, drawn.right, (float)i / components.Length)), WindowApp.bitmapFont.height + drawn.top + 3), .(255,255,255));
-				}
-			}
-
-			void ModifyData(T* val, int index = 0) {
+			void ModifyData(T* val) {
 				// Write to emulator
-				Emulator.active.WriteToRAM(inspector.dataAddress + dataOffset + index * sizeof(T), val, sizeof(T));
+				Emulator.active.WriteToRAM(inspector.dataAddress + dataOffset, val, sizeof(T));
 
 				// Write to cached data
-				int8* dataReference = (.)inspector.dataReference;
-				*(T*)(dataReference + dataOffset + index * sizeof(T)) = *val;
+				T* dataReference = (.)((int8*)inspector.dataReference + dataOffset);
+				*dataReference = *val;
 
 				inspector.OnDataModified(inspector.dataAddress, inspector.dataReference);
 			}
 		}
 
-		public class PropertyBits : Property {
-			GUIElement input;
+		public class PropertyBits : NumericProperty {
+			GUIInteractable input;
 			int start, length;
 
-			public this(Inspector inspector, StringView label, int offset, int startBit, int bitLength) : base(inspector, label, offset) {
+			public override bool ReadOnly {
+				get => input.Enabled;
+				set => input.Enabled = value;
+			}
+
+			public this(Inspector inspector, StringView label, int offset, int startBit, int bitLength) : base(inspector, label, offset, startBit, bitLength) {
 				start = startBit;
 				length = bitLength;
 
@@ -261,7 +303,7 @@ namespace SpyroScope {
 					toggle.Offset = .(inspector.labelWidth,inspector.labelWidth + 16,-8,8);
 
 					toggle.OnToggled.Add(new (tvalue) => {
-						ModifyData((.)tvalue);
+						Value = (int)tvalue;
 					});
 				} else {
 					Input tinput = new .();
@@ -274,9 +316,7 @@ namespace SpyroScope {
 					tinput.OnXcrement = new => XcrementNumber;
 					tinput.OnSubmit.Add(new (text) => {
 						if (Float.Parse(text) case .Ok(var val)) {
-							var castedVal = (int)val;
-							
-							ModifyData((.)castedVal);
+							Value = (int)val;
 						}
 					});
 				}
@@ -299,30 +339,6 @@ namespace SpyroScope {
 					mask = mask ^ (mask << length);
 					((Input)input).SetValidText(scope String() .. AppendF("{}", BitEdit.Get!(value >> start, mask)));
 				}
-			}
-
-			public override void Draw() {
-				base.Draw();
-
-				WindowApp.bitmapFont.Print(label, .(drawn.left, drawn.top + 3), .(255,255,255));
-			}
-
-			void ModifyData(int val) {
-				// Get from cached data
-				let dataReference = (int*)((int8*)inspector.dataReference + dataOffset);
-				int value = *dataReference;
-
-				// Change only the relevant bits
-				int32 mask = (-1 ^ (-1 << length)) << start;
-				BitEdit.Set!(value, val << start, mask);
-
-				// Write to emulator
-				Emulator.active.WriteToRAM(inspector.dataAddress + dataOffset, &value, 4);
-
-				// Write to cached data
-				*dataReference = value;
-
-				inspector.OnDataModified(inspector.dataAddress, inspector.dataReference);
 			}
 		}
 	}
