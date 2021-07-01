@@ -155,7 +155,7 @@ namespace SpyroScope {
 
 		public override void Exit() {
 			GUIElement.SetActiveGUI(null);
-			Selection.OnSelect.Remove(scope => OnSelect);
+			Selection.OnSelect.Remove(scope => OnSelect, true);
 		}
 
 		public override void Update() {
@@ -918,7 +918,9 @@ namespace SpyroScope {
 
 			if (ViewerSelection.currentObjIndex > -1) {
 				if (!(inspector is MobyInspector)) {
-					delete inspector;
+					if (inspector != null) {
+						GUIElement.Remove(inspector);
+					}
 					inspector = new MobyInspector();
 					inspector.Parent(sideInspector);
 				}
@@ -927,7 +929,9 @@ namespace SpyroScope {
 				reference = &Moby.allocated[ViewerSelection.currentObjIndex];
 			} else if (ViewerSelection.currentRegionIndex > -1) {
 				if (!(inspector is NearFaceInspector)) {
-					delete inspector;
+					if (inspector != null) {
+						GUIElement.Remove(inspector);
+					}
 					inspector = new NearFaceInspector();
 					inspector.Parent(sideInspector);
 				}

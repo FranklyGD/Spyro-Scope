@@ -38,6 +38,7 @@ namespace SpyroScope {
 
 		public GUIElement parent;
 		public List<GUIElement> children = new .();
+		public List<GUIElement> GUI;
 
 		static List<GUIElement> parentStack = new .() ~ delete _;
 		static List<GUIElement> activeGUI;
@@ -181,6 +182,7 @@ namespace SpyroScope {
 		}
 
 		public this() {
+			GUI = activeGUI;
 			let parent = parentStack.Count > 0 ? parentStack[parentStack.Count - 1] : null;
 			Link(parent);
 			this.parent = parent;
@@ -201,12 +203,12 @@ namespace SpyroScope {
 				selectedElement = null;
 			}
 
-			let tempChildren = scope List<GUIElement>(children.GetEnumerator());
-			for (let child in tempChildren) {
-				delete child;
-			}
-			delete children;
-			Unlink();
+			DeleteContainerAndItems!(children);
+		}
+
+		public static void Remove(GUIElement element) {
+			element.Unlink();
+			delete element;
 		}
 
 		public virtual void Draw() {
@@ -323,7 +325,7 @@ namespace SpyroScope {
 			if (element != null) {
 				element.children.Add(this);
 			} else {
-				activeGUI.Add(this);
+				GUI.Add(this);
 			}
 			Resize();
 		}
@@ -332,12 +334,12 @@ namespace SpyroScope {
 			if (parent != null) {
 				parent.children.Remove(this);
 			} else {
-				activeGUI.Remove(this);
+				GUI.Remove(this);
 			}
 		}
 
 		public void MoveToTop() {
-			List<GUIElement> list = parent != null ? parent.children : activeGUI;
+			List<GUIElement> list = parent != null ? parent.children : GUI;
 			list.Remove(this);
 			list.Add(this);
 		}
