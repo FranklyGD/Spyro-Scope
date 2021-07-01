@@ -61,7 +61,6 @@ namespace SpyroScope {
 			}
 
 			passedTest = null;
-			Select();
 		}
 
 		public static void Reset() {
