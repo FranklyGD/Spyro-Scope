@@ -60,6 +60,10 @@ namespace SpyroScope {
 	
 								ClearAndDeleteItems!(processes);
 								ClearAndDeleteItems!(guiElements);
+
+								stopwatch.Restart();
+
+								CheckEmulator();
 							});
 						}
 
@@ -68,11 +72,7 @@ namespace SpyroScope {
 				}
 
 				if (Emulator.active != null) {
-					Emulator.active.CheckProcessStatus();
-					if (Emulator.active.Supported) {
-						Emulator.active.FetchMainAddresses();
-						Emulator.active.FindGame();
-					}
+					CheckEmulator();
 				}
 				
 				stopwatch.Restart();
@@ -82,46 +82,52 @@ namespace SpyroScope {
 		public override void DrawGUI() {
 			let middleWindow = WindowApp.width / 2;
 
-			Message : {
-				Emulator activeEmulator = Emulator.active;
-				String message = .Empty;
-				if (activeEmulator == null) {
-					message = "Waiting for Emulator";
+			Emulator activeEmulator = Emulator.active;
+			String message = .Empty;
+			if (activeEmulator == null) {
+				message = "Waiting for Emulator";
+			} else {
+				if (!activeEmulator.Supported) {
+					message = scope:: String() .. AppendF("Unknown Module Size: (0x{:x})", activeEmulator.MainModuleSize);
+				} else if (activeEmulator.rom == .None) {
+					message = "Waiting for Game";
 				} else {
-					if (!activeEmulator.Supported) {
-						message = scope:Message String() .. AppendF("Unknown Module Size: (0x{:x})", activeEmulator.MainModuleSize);
-					} else if (activeEmulator.rom == .None) {
-						message = "Waiting for Game";
-					} else {
-						message = Emulator.gameNames[(int)activeEmulator.rom];
-					}
-	
-					let baseline = WindowApp.height / 2 - WindowApp.font.height * 1.5f;
-					let emulatorName = scope String() .. AppendF("{} ({})", activeEmulator.Name, activeEmulator.Version);
-					let halfWidth = Math.Round(WindowApp.font.CalculateWidth(emulatorName) / 2);
-					WindowApp.font.Print(emulatorName, .(middleWindow - halfWidth, baseline), activeEmulator.Supported ? .(255,255,255) : .(255,255,0));
+					message = Emulator.gameNames[(int)activeEmulator.rom];
 				}
-	
-				var baseline = (WindowApp.height - WindowApp.font.height) / 2;
-				let halfWidth = Math.Round(WindowApp.font.CalculateWidth(message) / 2);
-				WindowApp.font.Print(message, .(middleWindow - halfWidth, baseline), .(255,255,255));
-	
-				baseline += WindowApp.font.penLine;
-				if (activeEmulator == null || activeEmulator.rom == .None) {
-					let t = (float)stopwatch.ElapsedMilliseconds / 1000 * 3.14f;
-					DrawUtilities.Rect(baseline + 2, baseline + 4, middleWindow - halfWidth * Math.Sin(t), middleWindow + halfWidth * Math.Sin(t),
-						.(255,255,255));
-				} else {
-					let t = 1f - (float)stopwatch.ElapsedMilliseconds / 3000;
-					DrawUtilities.Rect(baseline + 2, baseline + 4, middleWindow - halfWidth * t, middleWindow + halfWidth * t,
-						.(255,255,255));
-				}
+
+				let baseline = WindowApp.height / 2 - WindowApp.font.height * 1.5f;
+				let emulatorName = scope String() .. AppendF("{} ({})", activeEmulator.Name, activeEmulator.Version);
+				let halfWidth = Math.Round(WindowApp.font.CalculateWidth(emulatorName) / 2);
+				WindowApp.font.Print(emulatorName, .(middleWindow - halfWidth, baseline), activeEmulator.Supported ? .(255,255,255) : .(255,255,0));
+			}
+
+			var baseline = (WindowApp.height - WindowApp.font.height) / 2;
+			let halfWidth = Math.Round(WindowApp.font.CalculateWidth(message) / 2);
+			WindowApp.font.Print(message, .(middleWindow - halfWidth, baseline), .(255,255,255));
+
+			baseline += WindowApp.font.penLine;
+			if (activeEmulator == null || activeEmulator.rom == .None) {
+				let t = (float)stopwatch.ElapsedMilliseconds / 1000 * 3.14f;
+				DrawUtilities.Rect(baseline + 2, baseline + 4, middleWindow - halfWidth * Math.Sin(t), middleWindow + halfWidth * Math.Sin(t),
+					.(255,255,255));
+			} else {
+				let t = 1f - (float)stopwatch.ElapsedMilliseconds / 3000;
+				DrawUtilities.Rect(baseline + 2, baseline + 4, middleWindow - halfWidth * t, middleWindow + halfWidth * t,
+					.(255,255,255));
 			}
 
 			for (let element in guiElements) {
 				if (element.visible) {
 					element.Draw();
 				}
+			}
+		}
+
+		void CheckEmulator() {
+			Emulator.active.CheckProcessStatus();
+			if (Emulator.active.Supported) {
+				Emulator.active.FetchMainAddresses();
+				Emulator.active.FindGame();
 			}
 		}
 	}
