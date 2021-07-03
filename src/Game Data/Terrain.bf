@@ -55,7 +55,7 @@ namespace SpyroScope {
 
 		public static RegionAnimation[] nearAnimations;
 
-		public static List<int> usedTextureIndices = new .() ~ delete _;
+		public static Dictionary<uint8, Dictionary<uint32, List<int>>> usedTextureIndices = new .() ~ DeleteDictionaryAndValues!(_);
 		public static TextureQuad[] textures;
 		public static TextureScroller[] textureScrollers;
 		public static TextureSwapper[] textureSwappers;
@@ -175,6 +175,12 @@ namespace SpyroScope {
 				collision = new .(address, deformAddress);
 			}
 
+			for (let usedTextureIndex in usedTextureIndices) {
+				for (let region in usedTextureIndex.value) {
+					delete region.value;
+				}
+				delete usedTextureIndex.value;
+			}
 			usedTextureIndices.Clear();
 
 			// Locate scene region data and amount that are present in RAM
@@ -192,7 +198,26 @@ namespace SpyroScope {
 			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegionAddresses[0], sceneRegionCount);
 			for (let regionIndex < sceneRegionCount) {
 				let region = new TerrainRegion(sceneDataRegionAddresses[regionIndex]);
-				region.GetUsedTextures();
+
+				Dictionary<uint8, List<uint8>> usedRegionTextureIndices = new .();
+				region.GetUsedTextures(usedRegionTextureIndices);
+				// Add texture indices
+				for (let usedTextureIndex in usedRegionTextureIndices) {
+					// Add new entry if it does not exist
+					if (!usedTextureIndices.ContainsKey(usedTextureIndex.key)) {
+						usedTextureIndices.Add((usedTextureIndex.key, new .()));
+					}
+
+					// Add this region (always new)
+					usedTextureIndices[usedTextureIndex.key].Add(regionIndex, new .());
+
+					// Add all face indices used in this region
+					for (let faces in usedTextureIndex.value) {
+						usedTextureIndices[usedTextureIndex.key][regionIndex].Add(faces);
+					}
+				}
+				DeleteDictionaryAndValues!(usedRegionTextureIndices);
+
 				regions[regionIndex] = region;
 			}
 			delete sceneDataRegionAddresses;
@@ -258,7 +283,7 @@ namespace SpyroScope {
 
 			// Get max amount of possible textures
 			var highestUsedIndex = -1;
-			for (let textureIndex in usedTextureIndices) {
+			for (let textureIndex in usedTextureIndices.Keys) {
 				if (textureIndex > highestUsedIndex) {
 					highestUsedIndex = textureIndex;
 				}
@@ -288,6 +313,31 @@ namespace SpyroScope {
 
 			for (let swapperIndex < textureSwapperCount) {
 				textureSwappers[swapperIndex].Reload();
+			}
+
+			for (let usedTextureIndex in usedTextureIndices) {
+				for (let regionFaces in usedTextureIndex.value) {
+					let region = regions[regionFaces.key];
+					List<int> opaqueTriangles = scope .();
+					List<int> transparentTriangles = scope .();
+
+					region.GetTriangleFromTexture(usedTextureIndex.key, opaqueTriangles, transparentTriangles);
+
+					TextureQuad* quad = &Terrain.textures[usedTextureIndex.key * quadCount];
+					if (Emulator.active.installment != .SpyroTheDragon) {
+						quad++;
+					}
+
+					float[4 * 5][2] uvs = ?;
+					for (let qi < 5) {
+						let quadUVs = quad.GetVramUVs();
+						*(Vector2[4]*)&uvs[qi * 4] = quadUVs;
+						quad++;
+					}
+
+					region.UpdateUVs(opaqueTriangles, uvs, false);
+					region.UpdateUVs(transparentTriangles, uvs, true);
+				}
 			}
 
 			// Delete animations as the new loaded mesh may be incompatible
@@ -332,40 +382,41 @@ namespace SpyroScope {
 			let quadDecodeCount = Emulator.active.installment == .SpyroTheDragon ? 5 : 6;
 
 			// Temporarily remove affected textures
+			List<(uint8, Dictionary<uint32, List<int>>)> tempAnimated = scope .();
+
 			if (textureScrollers != null) {
 				for (let textureScroller in textureScrollers) {
-					Terrain.usedTextureIndices.Remove(textureScroller.textureIndex);
+					tempAnimated.Add(Terrain.usedTextureIndices.GetAndRemove(textureScroller.textureIndex).Value);
 				}
 			}
 			
 			if (textureSwappers != null) {
 				for (let textureSwapper in textureSwappers) {
-					Terrain.usedTextureIndices.Remove(textureSwapper.textureIndex);
+					tempAnimated.Add(Terrain.usedTextureIndices.GetAndRemove(textureSwapper.textureIndex).Value);
 				}
 			}
 
 			// The loop is done in reverse to counteract strange used texture info indices
 			// in "Spyro the Dragon", by overwriting the incorrect decoded parts with correct ones
-			usedTextureIndices.Sort(scope (x,y) => y <=> x);
-
-			for (let textureIndex in usedTextureIndices) {
+			for (let textureIndex in usedTextureIndices.Keys) {
 				for (let i < quadDecodeCount) {
 					Terrain.textures[textureIndex * quadCount + i].Decode();
 				}
 			}
 
-			// Restore and decode the remaining textures
-			
+			// Restore and decode the remaining textures with special functions
+			for (let animated in tempAnimated) {
+				Terrain.usedTextureIndices.Add(animated);
+			}
+
 			if (textureScrollers != null) {
 				for (let textureScroller in textureScrollers) {
-					Terrain.usedTextureIndices.Add(textureScroller.textureIndex);
 					textureScroller.Decode();
 				}
 			}
 				
 			if (textureSwappers != null) {
 				for (let textureSwapper in textureSwappers) {
-					Terrain.usedTextureIndices.Add(textureSwapper.textureIndex);
 					textureSwapper.Decode();
 				}
 			}

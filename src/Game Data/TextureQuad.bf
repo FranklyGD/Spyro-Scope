@@ -30,6 +30,30 @@ namespace SpyroScope {
 			);
 		}
 
+		public Vector2[4] GetVramUVs() {
+			let partialUV = GetVramPartialUV();
+			
+			Vector2[4] initialQuadUVs = .(
+				.(partialUV.left, partialUV.rightY),
+				.(partialUV.right, partialUV.rightY),
+				.(partialUV.right, partialUV.leftY),
+				.(partialUV.left, partialUV.leftY)
+			);
+
+			Vector2[4] quadUVs = ?;
+
+			let quadRotation = GetQuadRotation();
+			for (let i < 4) {
+				quadUVs[i] = initialQuadUVs[(i - quadRotation) & 3];
+			}
+
+			if (GetFlip()) {
+				Swap!(quadUVs[0], quadUVs[2]);
+			}
+
+			return quadUVs;
+		}
+
 		public int GetTPageIndex() {
 			return texturePage & 0x1f;
 		}

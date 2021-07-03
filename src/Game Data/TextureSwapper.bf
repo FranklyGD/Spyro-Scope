@@ -7,7 +7,7 @@ namespace SpyroScope {
 		public uint8 textureIndex;
 		List<uint8> textureFrameIndices = new .();
 		
-		public Dictionary<uint8, List<int>> affectedTriangles = new .();
+		public Dictionary<uint8, List<int>> affectedOpaqueTriangles = new .();
 		public Dictionary<uint8, List<int>> affectedTransparentTriangles = new .();
 
 		public struct KeyframeData {
@@ -31,10 +31,10 @@ namespace SpyroScope {
 		public void Dispose() {
 			delete textureFrameIndices;
 
-			for (var pair in affectedTriangles) {
+			for (var pair in affectedOpaqueTriangles) {
 				delete pair.value;
 			}
-			delete affectedTriangles;
+			delete affectedOpaqueTriangles;
 
 			for (var pair in affectedTransparentTriangles) {
 				delete pair.value;
@@ -43,7 +43,7 @@ namespace SpyroScope {
 		}
 
 		public void Reload() mut {
-			affectedTriangles.Clear();
+			affectedOpaqueTriangles.Clear();
 			affectedTransparentTriangles.Clear();
 
 			if (address.IsNull)
@@ -51,28 +51,16 @@ namespace SpyroScope {
 			
 			Emulator.active.ReadFromRAM(address + 4, &textureIndex, 1);
 
-			for (let regionIndex < Terrain.regions.Count) {
+			for (let regionIndex < (uint8)Terrain.regions.Count) {
 				let terrainRegion = Terrain.regions[regionIndex];
 
-				for (var triangleIndex = 0; triangleIndex < terrainRegion.nearFaceIndices.Count; triangleIndex++) {
-					let nearFace = terrainRegion.GetNearFace(terrainRegion.nearFaceIndices[triangleIndex]);
-					if (nearFace.renderInfo.textureIndex == textureIndex) {
-						if (!affectedTriangles.ContainsKey((.)regionIndex)) {
-							affectedTriangles[(.)regionIndex] = new .();
-						}
-						affectedTriangles[(.)regionIndex].Add(triangleIndex);
-					}
-				}
+				List<int> affectedOpaqueTriangles = new .();
+				List<int> affectedTransparentTriangles = new .();
 
-				for (var triangleIndex = 0; triangleIndex < terrainRegion.nearFaceTransparentIndices.Count; triangleIndex++) {
-					let nearFace = terrainRegion.GetNearFace(terrainRegion.nearFaceTransparentIndices[triangleIndex]);
-					if (nearFace.renderInfo.textureIndex == textureIndex) {
-						if (!affectedTransparentTriangles.ContainsKey((.)regionIndex)) {
-							affectedTransparentTriangles[(.)regionIndex] = new .();
-						}
-						affectedTransparentTriangles[(.)regionIndex].Add(triangleIndex);
-					}
-				}
+				terrainRegion.GetTriangleFromTexture(textureIndex, affectedOpaqueTriangles, affectedTransparentTriangles);
+
+				this.affectedOpaqueTriangles[regionIndex] = affectedOpaqueTriangles;
+				this.affectedTransparentTriangles[regionIndex] = affectedTransparentTriangles;
 			}
 		}
 
@@ -85,8 +73,8 @@ namespace SpyroScope {
 			}
 
 			for (let textureIndex in textureFrameIndices) {
-				if (!Terrain.usedTextureIndices.Contains(textureIndex)) {
-					Terrain.usedTextureIndices.Add(textureIndex);
+				if (!Terrain.usedTextureIndices.ContainsKey(textureIndex)) {
+					Terrain.usedTextureIndices.Add(textureIndex, new .());
 				}
 			}
 		}
@@ -138,7 +126,7 @@ namespace SpyroScope {
 				quad++;
 			}
 
-			let affectedTriangles = transparent ? affectedTransparentTriangles : affectedTriangles;
+			let affectedTriangles = transparent ? affectedTransparentTriangles : affectedOpaqueTriangles;
 			for (let affectedRegionTriPair in affectedTriangles) {
 				let terrainRegion = Terrain.regions[affectedRegionTriPair.key];
 				terrainRegion.UpdateUVs(affectedRegionTriPair.value, triangleUV, transparent);

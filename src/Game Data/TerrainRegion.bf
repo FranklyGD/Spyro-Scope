@@ -253,7 +253,7 @@ namespace SpyroScope {
 			GenerateNearMesh();
 		}
 
-		public void GetUsedTextures() {
+		public void GetUsedTextures(Dictionary<uint8, List<uint8>> usedTextureIndices) {
 			let dataStart = address + 0x1c + ((int)NearLOD.start * 4);
 			if (nearFaces == null) {
 				nearFaces = new .[NearLOD.faceCount];
@@ -263,8 +263,26 @@ namespace SpyroScope {
 			for (let i < nearFaces.Count) {
 				let textureIndex = nearFaces[i].renderInfo.textureIndex;
 
-				if (!Terrain.usedTextureIndices.Contains(textureIndex)) {
-					Terrain.usedTextureIndices.Add(textureIndex);
+				if (!usedTextureIndices.ContainsKey(textureIndex)) {
+					usedTextureIndices.Add((textureIndex, new .()));
+				}
+
+				usedTextureIndices[textureIndex].Add((.)i);
+			}
+		}
+		
+		public void GetTriangleFromTexture(uint8 textureIndex, List<int> opaqueTriangles, List<int> transparentTriangles) {
+			for (let triangleIndex < nearFaceIndices.Count) {
+				let nearFace = GetNearFace(nearFaceIndices[triangleIndex]);
+				if (nearFace.renderInfo.textureIndex == textureIndex) {
+					opaqueTriangles.Add(triangleIndex);
+				}
+			}
+
+			for (let triangleIndex < nearFaceTransparentIndices.Count) {
+				let nearFace = GetNearFace(nearFaceTransparentIndices[triangleIndex]);
+				if (nearFace.renderInfo.textureIndex == textureIndex) {
+					transparentTriangles.Add(triangleIndex);
 				}
 			}
 		}
@@ -389,33 +407,24 @@ namespace SpyroScope {
 
 			List<uint32> activeIndexList = ?;
 			List<Vector3> activeVertexList = ?;
-			List<float[2]> activeUvList = ?;
 			
 			List<uint32> activeIndexSubList = ?;
 			List<Vector3> activeVertexSubList = ?;
-			List<float[2]> activeUvSubList = ?;
 
 			List<uint8> activeNearMesh2GameIndices = ?;
 			List<int> activeNearFaceIndices = ?;
 
-			// Used for swapping around values
-			float[4][2] triangleUV = ?;
-			
 			List<uint32> indexList = scope .();
 			List<Vector3> vertexList = scope .();
-			List<float[2]> uvList = scope .();
 			
 			List<uint32> indexTransparentList = scope .();
 			List<Vector3> vertexTransparentList = scope .();
-			List<float[2]> uvTransparentList = scope .();
 
 			List<uint32> indexSubList = scope .();
 			List<Vector3> vertexSubList = scope .();
-			List<float[2]> uvSubList = scope .();
 
 			List<uint32> indexTransparentSubList = scope .();
 			List<Vector3> vertexTransparentSubList = scope .();
-			List<float[2]> uvTransparentSubList = scope .();
 
 			// Vertices
 			uint32[] packedVertices = scope .[NearLOD.vertexCount];
@@ -447,31 +456,21 @@ namespace SpyroScope {
 				var trianglesIndices = regionFace.trianglesIndices;
 				let textureIndex = regionFace.renderInfo.textureIndex;
 				let flipSide = regionFace.flipped;
-				var textureRotation = regionFace.renderInfo.rotation;
 				
 				uint8[2] indexSwap = flipSide ? .(2,1) : .(1,2);
 
 				let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
-				TextureQuad* quad = ?;
-				TextureQuad* quadSet = &Terrain.textures[textureIndex * quadCount];
-				quad = quadSet = Emulator.active.installment == .SpyroTheDragon ? quadSet : quadSet + 1;
-				var partialUV = quad.GetVramPartialUV();
+				TextureQuad* textureQuad = &Terrain.textures[textureIndex * quadCount];
+				textureQuad = Emulator.active.installment == .SpyroTheDragon ? textureQuad : textureQuad + 1;
 
-				triangleUV[0] = .(partialUV.left, partialUV.rightY);
-				triangleUV[1] = .(partialUV.right, partialUV.rightY);
-				triangleUV[2] = .(partialUV.right, partialUV.leftY);
-				triangleUV[3] = .(partialUV.left, partialUV.leftY);
-
-				if (quad.GetTransparency() || regionFace.renderInfo.transparent) {
+				if (textureQuad.GetTransparency() || regionFace.renderInfo.transparent) {
 					// Low LOD
 					activeIndexList = indexTransparentList;
 					activeVertexList = vertexTransparentList;
-					activeUvList = uvTransparentList;
 
 					// High LOD
 					activeIndexSubList = indexTransparentSubList;
 					activeVertexSubList = vertexTransparentSubList;
-					activeUvSubList = uvTransparentSubList;
 
 					// Conversion Table
 					activeNearMesh2GameIndices = nearMesh2GameTransparentIndices;
@@ -480,12 +479,10 @@ namespace SpyroScope {
 					// Low LOD
 					activeIndexList = indexList;
 					activeVertexList = vertexList;
-					activeUvList = uvList;
 					
 					// High LOD
 					activeIndexSubList = indexSubList;
 					activeVertexSubList = vertexSubList;
-					activeUvSubList = uvSubList;
 					
 					// Conversion Table
 					activeNearMesh2GameIndices = nearMesh2GameIndices;
@@ -498,16 +495,8 @@ namespace SpyroScope {
 					
 					var indices = activeIndexList.GrowUnitialized(3);
 					var vertices = activeVertexList.GrowUnitialized(3);
-					var uvs = activeUvList.GrowUnitialized(3);
 
 					var M2Gindices = activeNearMesh2GameIndices.GrowUnitialized(3);
-
-					float[3][2] rotatedTriangleUV = .(
-						triangleUV[(0 - textureRotation) & 3],
-						triangleUV[(2 - textureRotation) & 3],
-						triangleUV[(3 - textureRotation) & 3]
-					);
-
 
 					indices[0] = baseIndex;
 					indices[1] = baseIndex + indexSwap[0];
@@ -520,10 +509,6 @@ namespace SpyroScope {
 					vertices[0] = nearVertices[M2Gindices[0]];
 					vertices[1] = nearVertices[M2Gindices[1]];
 					vertices[2] = nearVertices[M2Gindices[2]];
-					
-					uvs[0] = rotatedTriangleUV[2];
-					uvs[1] = rotatedTriangleUV[1];
-					uvs[2] = rotatedTriangleUV[0];
 
 					// High quality textures
 					Vector3[5] midpoints = ?;
@@ -538,20 +523,11 @@ namespace SpyroScope {
 						(midpoints[2], midpoints[1], midpoints[0])
 					);
 
-					const uint8[4][3] rotationOrder = .(
-						(0,1,2),
-						(1,3,0),
-						(3,2,1),
-						(2,0,3)
-					);
-					let subQuadIndexRotation = rotationOrder[textureRotation];
-
 					// Corner triangles
 					baseIndex = (uint32)activeIndexSubList.Count;
 					
 					indices = activeIndexSubList.GrowUnitialized(12);
 					vertices = activeVertexSubList.GrowUnitialized(12);
-					uvs = activeUvSubList.GrowUnitialized(12);
 
 					for (let ti < 3) {
 						let offset = ti * 3;
@@ -563,30 +539,6 @@ namespace SpyroScope {
 						vertices[0 + offset] = subQuadVertices[ti][2];
 						vertices[1 + offset] = subQuadVertices[ti][1];
 						vertices[2 + offset] = subQuadVertices[ti][0];
-
-						quad = quadSet + 1 + subQuadIndexRotation[ti];
-						partialUV = quad.GetVramPartialUV();
-						let quadRotation = quad.GetQuadRotation();
-						let quadFlip = quad.GetFlip();
-
-						triangleUV[0] = .(partialUV.left, partialUV.rightY);
-						triangleUV[1] = .(partialUV.right, partialUV.rightY);
-						triangleUV[2] = .(partialUV.right, partialUV.leftY);
-						triangleUV[3] = .(partialUV.left, partialUV.leftY);
-
-						rotatedTriangleUV = .(
-							triangleUV[(0 - (textureRotation + quadRotation)) & 3],
-							triangleUV[(2 - (textureRotation + quadRotation)) & 3],
-							triangleUV[(3 - (textureRotation + quadRotation)) & 3]
-						);
-						
-						if (quadFlip) {
-							Swap!(rotatedTriangleUV[0], rotatedTriangleUV[1]);
-						}
-						
-						uvs[0 + offset] = rotatedTriangleUV[2];
-						uvs[1 + offset] = rotatedTriangleUV[1];
-						uvs[2 + offset] = rotatedTriangleUV[0];
 					}
 
 					// Center triangle
@@ -598,30 +550,6 @@ namespace SpyroScope {
 					vertices[10] = subQuadVertices[3][1];
 					vertices[11] = subQuadVertices[3][0];
 
-					quad = quadSet + 1 + subQuadIndexRotation[0];
-					partialUV = quad.GetVramPartialUV();
-					let quadRotation = quad.GetQuadRotation();
-					let quadFlip = quad.GetFlip();
-					
-					triangleUV[0] = .(partialUV.left, partialUV.rightY);
-					triangleUV[1] = .(partialUV.right, partialUV.rightY);
-					triangleUV[2] = .(partialUV.right, partialUV.leftY);
-					triangleUV[3] = .(partialUV.left, partialUV.leftY);
-
-					rotatedTriangleUV = .(
-						triangleUV[(0 - (textureRotation + quadRotation)) & 3],
-						triangleUV[(2 - (textureRotation + quadRotation)) & 3],
-						triangleUV[(1 - (textureRotation + quadRotation)) & 3]
-					);
-
-					if (quadFlip) {
-						Swap!(rotatedTriangleUV[0], rotatedTriangleUV[1]);
-					}
-
-					uvs[9] = rotatedTriangleUV[1];
-					uvs[10] = rotatedTriangleUV[2];
-					uvs[11] = rotatedTriangleUV[0];
-
 					activeNearFaceIndices.Add(i);
 				} else {
 					// Low quality textures
@@ -629,7 +557,6 @@ namespace SpyroScope {
 
 					var indices = activeIndexList.GrowUnitialized(6);
 					var vertices = activeVertexList.GrowUnitialized(6);
-					var uvs = activeUvList.GrowUnitialized(6);
 					
 					var M2Gindices = activeNearMesh2GameIndices.GrowUnitialized(6);
 
@@ -649,10 +576,6 @@ namespace SpyroScope {
 						vertices[0 + offset] = nearVertices[M2Gindices[0 + offset]];
 						vertices[1 + offset] = nearVertices[M2Gindices[1 + offset]];
 						vertices[2 + offset] = nearVertices[M2Gindices[2 + offset]];
-
-						uvs[0 + offset] = triangleUV[oppositeIndex[qti]];
-						uvs[1 + offset] = triangleUV[swap[qti][0]];
-						uvs[2 + offset] = triangleUV[swap[qti][1]];
 					}
 
 					// High quality textures
@@ -674,29 +597,9 @@ namespace SpyroScope {
 
 					indices = activeIndexSubList.GrowUnitialized(24);
 					vertices = activeVertexSubList.GrowUnitialized(24);
-					uvs = activeUvSubList.GrowUnitialized(24);
 
 					for (let qi < 4) {
-						quad++;
-						partialUV = quad.GetVramPartialUV();
-						let quadRotation = quad.GetQuadRotation();
-						let quadFlip = quad.GetFlip();
-
-						triangleUV[0] = .(partialUV.left, partialUV.rightY);
-						triangleUV[1] = .(partialUV.right, partialUV.rightY);
-						triangleUV[2] = .(partialUV.right, partialUV.leftY);
-						triangleUV[3] = .(partialUV.left, partialUV.leftY);
-
-						float[4][2] rotatedTriangleUV = .(
-							triangleUV[(0 - quadRotation) & 3],
-							triangleUV[(1 - quadRotation) & 3],
-							triangleUV[(2 - quadRotation) & 3],
-							triangleUV[(3 - quadRotation) & 3]
-						);
-
-						if (quadFlip) {
-							Swap!(rotatedTriangleUV[0], rotatedTriangleUV[2]);
-						}
+						textureQuad++;
 
 						for (let qti < 2) {
 							let offset = qi * 6 + qti * 3;
@@ -708,10 +611,6 @@ namespace SpyroScope {
 							vertices[0 + offset] = subQuadVertices[qi][oppositeIndex[qti]];
 							vertices[1 + offset] = subQuadVertices[qi][swap[qti][0]];
 							vertices[2 + offset] = subQuadVertices[qi][swap[qti][1]];
-
-							uvs[0 + offset] = rotatedTriangleUV[oppositeIndex[qti]];
-							uvs[1 + offset] = rotatedTriangleUV[swap[qti][0]];
-							uvs[2 + offset] = rotatedTriangleUV[swap[qti][1]];
 						}
 					}
 
@@ -734,7 +633,6 @@ namespace SpyroScope {
 			for (let i < vertexList.Count) {
 				v[i] = vertexList[i];
 				n[i] = .(0,0,1);
-				u[i] = uvList[i];
 			}
 
 			nearMesh = new .(v, u, n, c, indx);
@@ -753,7 +651,6 @@ namespace SpyroScope {
 			for (let i < vertexSubList.Count) {
 				v[i] = vertexSubList[i];
 				n[i] = .(0,0,1);
-				u[i] = uvSubList[i];
 			}
 			
 			nearMeshSubdivided = new .(v, u, n, c, indx);
@@ -772,7 +669,6 @@ namespace SpyroScope {
 			for (let i < vertexTransparentList.Count) {
 				v[i] = vertexTransparentList[i];
 				n[i] = .(0,0,1);
-				u[i] = uvTransparentList[i];
 			}
 
 			nearMeshTransparent = new .(v, u, n, c, indx);
@@ -791,12 +687,11 @@ namespace SpyroScope {
 			for (let i < vertexTransparentSubList.Count) {
 				v[i] = vertexTransparentSubList[i];
 				n[i] = .(0,0,1);
-				u[i] = uvTransparentSubList[i];
 			}
 
 			nearMeshTransparentSubdivided = new .(v, u, n, c, indx);
 		}
-	
+
 		// Derived from Spyro: Ripto's Rage
 		// Far [80028c2c]
 		// Near [80024664]
@@ -938,30 +833,12 @@ namespace SpyroScope {
 				quad++;
 			}
 			
-			float[4][2] initialQuadUVs = ?;
 			float[4 * 5][2] uvs = ?;
-			float[2]* quadUVs = &uvs[0];
 			for (let qi < 5) {
-				let partialUV = quad.GetVramPartialUV();
-
-				initialQuadUVs[0] = .(partialUV.left, partialUV.rightY);
-				initialQuadUVs[1] = .(partialUV.right, partialUV.rightY);
-				initialQuadUVs[2] = .(partialUV.right, partialUV.leftY);
-				initialQuadUVs[3] = .(partialUV.left, partialUV.leftY);
-
-				let quadRotation = quad.GetQuadRotation();
-				for (let i < 4) {
-					quadUVs[i] = initialQuadUVs[(i - quadRotation) & 3];
-				}
-
-				if (quad.GetFlip()) {
-					Swap!(quadUVs[0], quadUVs[2]);
-				}
-
+				let quadUVs = quad.GetVramUVs();
+				*(Vector2[4]*)&uvs[qi * 4] = quadUVs;
 				quad++;
-				quadUVs += 4;
 			}
-			quad--;
 
 			let transparent = Emulator.active.installment == .SpyroTheDragon ? quad.GetTransparency() : face.renderInfo.transparent;
 

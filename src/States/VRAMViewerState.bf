@@ -105,11 +105,11 @@ namespace SpyroScope {
 				DrawUtilities.Rect(vramOrigin.y, bottom, vramOrigin.x, right, 0, 1, expand ? 0.5f : 0, 1, VRAM.decoded, .(255,255,255));
 			}
 
-			for (let textureIndex in Terrain.usedTextureIndices) {
+			for (let usedTextureIndex in Terrain.usedTextureIndices) {
 				let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
 
 				for (let quadIndex < quadCount) {
-					let i = textureIndex * quadCount + quadIndex;
+					let i = usedTextureIndex.key * quadCount + quadIndex;
 					let quad = Terrain.textures[i];
 					let partialUVs = quad.GetVramPartialUV();
 
