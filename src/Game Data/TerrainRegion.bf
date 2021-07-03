@@ -390,7 +390,7 @@ namespace SpyroScope {
 			Vector3[] v = new .[vertexList.Count];
 			Vector3[] n = new .[vertexList.Count];
 			Renderer.Color4[] c = new .[vertexList.Count];
-			float[][2] u = new .[vertexList.Count];
+			Vector2[] u = new .[vertexList.Count];
 
 			for (let i < vertexList.Count) {
 				v[i] = vertexList[i];
@@ -628,7 +628,7 @@ namespace SpyroScope {
 			Vector3[] v = new .[vertexList.Count];
 			Vector3[] n = new .[vertexList.Count];
 			Renderer.Color4[] c = new .[vertexList.Count];
-			float[][2] u = new .[vertexList.Count];
+			Vector2[] u = new .[vertexList.Count];
 
 			for (let i < vertexList.Count) {
 				v[i] = vertexList[i];
@@ -708,7 +708,7 @@ namespace SpyroScope {
 		// This should almost be a complete copy of the mesh generation of UVs
 		// but because of how this is separated for optimization reasons its partially different
 		// TODO: Get all possible UV Quad/Face options working
-		public void UpdateUVs(List<int> affectedTriangles, float[4 * 5][2] triangleUV, bool transparent) {
+		public void UpdateUVs(List<int> affectedTriangles, Vector2[5][4] triangleUV, bool transparent) {
 			for (let triangleIndex in affectedTriangles) {
 				let faceIndices = transparent ? nearFaceTransparentIndices : nearFaceIndices;
 				let regionMesh = transparent ? nearMeshTransparent : nearMesh;
@@ -724,10 +724,10 @@ namespace SpyroScope {
 					let textureRotation = regionFace.renderInfo.rotation;
 
 					if (regionFace.isTriangle) {
-						float[3][2] rotatedTriangleUV = .(
-							triangleUV[(0 - textureRotation) & 3],
-							triangleUV[(2 - textureRotation) & 3],
-							triangleUV[(3 - textureRotation) & 3]
+						Vector2[3] rotatedTriangleUV = .(
+							triangleUV[0][(0 - textureRotation) & 3],
+							triangleUV[0][(2 - textureRotation) & 3],
+							triangleUV[0][(3 - textureRotation) & 3]
 						);
 
 						regionMesh.uvs[0 + vertexIndex] = rotatedTriangleUV[2];
@@ -742,15 +742,15 @@ namespace SpyroScope {
 						);
 						let subQuadIndexRotation = rotationOrder[textureRotation];
 
-						int offset = ?;
+						int qi = ?;
 						for (let ti < 3) {
 							let offset2 = ti * 3;
-							offset = (1 + subQuadIndexRotation[ti]) * 4;
+							qi = 1 + subQuadIndexRotation[ti];
 
 							rotatedTriangleUV = .(
-								triangleUV[((0 - textureRotation) & 3) + offset],
-								triangleUV[((2 - textureRotation) & 3) + offset],
-								triangleUV[((3 - textureRotation) & 3) + offset]
+								triangleUV[qi][(0 - textureRotation) & 3],
+								triangleUV[qi][(2 - textureRotation) & 3],
+								triangleUV[qi][(3 - textureRotation) & 3]
 							);
 
 							regionMeshSubdivided.uvs[0 + offset2 + subdividedVertexIndex] = rotatedTriangleUV[2];
@@ -758,12 +758,12 @@ namespace SpyroScope {
 							regionMeshSubdivided.uvs[2 + offset2 + subdividedVertexIndex] = rotatedTriangleUV[0];
 						}
 
-						offset = (1 + subQuadIndexRotation[0]) * 4;
+						qi = 1 + subQuadIndexRotation[0];
 
 						rotatedTriangleUV = .(
-							triangleUV[((0 - textureRotation) & 3) + offset],
-							triangleUV[((2 - textureRotation) & 3) + offset],
-							triangleUV[((1 - textureRotation) & 3) + offset]
+							triangleUV[qi][(0 - textureRotation) & 3],
+							triangleUV[qi][(2 - textureRotation) & 3],
+							triangleUV[qi][(1 - textureRotation) & 3]
 						);
 
 						regionMeshSubdivided.uvs[9 + subdividedVertexIndex] = rotatedTriangleUV[1];
@@ -775,36 +775,18 @@ namespace SpyroScope {
 						for (let qti < 2) {
 							let offset = qti * 3;
 
-							regionMesh.uvs[0 + offset + vertexIndex] = triangleUV[oppositeIndex[qti]];
-							regionMesh.uvs[1 + offset + vertexIndex] = triangleUV[swap[qti][0]];
-							regionMesh.uvs[2 + offset + vertexIndex] = triangleUV[swap[qti][1]];
+							regionMesh.uvs[0 + offset + vertexIndex] = triangleUV[0][oppositeIndex[qti]];
+							regionMesh.uvs[1 + offset + vertexIndex] = triangleUV[0][swap[qti][0]];
+							regionMesh.uvs[2 + offset + vertexIndex] = triangleUV[0][swap[qti][1]];
 						}
 
-						// There hasn't seem to be a use for animated rotated subquads...
-						// Come back to this when its relevant
-						let quadRotation = 0;
-
 						for (let qi < 4) {
-							let offset2 = (1 + qi) * 4;
-
-							float[4][2] rotatedTriangleUV = .(
-								triangleUV[((0 - quadRotation) & 3) + offset2],
-								triangleUV[((1 - quadRotation) & 3) + offset2],
-								triangleUV[((2 - quadRotation) & 3) + offset2],
-								triangleUV[((3 - quadRotation) & 3) + offset2]
-							);
-
-							/*if (quadFlip) {
-								Swap!(rotatedTriangleUV[0], rotatedTriangleUV[2]);
-							}*/
-
-							
 							for (let qti < 2) {
 								let offset = qi * 6 + qti * 3;
 
-								regionMeshSubdivided.uvs[0 + offset + subdividedVertexIndex] = rotatedTriangleUV[oppositeIndex[qti]];
-								regionMeshSubdivided.uvs[1 + offset + subdividedVertexIndex] = rotatedTriangleUV[swap[qti][0]];
-								regionMeshSubdivided.uvs[2 + offset + subdividedVertexIndex] = rotatedTriangleUV[swap[qti][1]];
+								regionMeshSubdivided.uvs[0 + offset + subdividedVertexIndex] = triangleUV[qi + 1][oppositeIndex[qti]];
+								regionMeshSubdivided.uvs[1 + offset + subdividedVertexIndex] = triangleUV[qi + 1][swap[qti][0]];
+								regionMeshSubdivided.uvs[2 + offset + subdividedVertexIndex] = triangleUV[qi + 1][swap[qti][1]];
 							}
 						}
 
@@ -833,10 +815,9 @@ namespace SpyroScope {
 				quad++;
 			}
 			
-			float[4 * 5][2] uvs = ?;
+			Vector2[5][4] uvs = ?;
 			for (let qi < 5) {
-				let quadUVs = quad.GetVramUVs();
-				*(Vector2[4]*)&uvs[qi * 4] = quadUVs;
+				uvs[qi] = quad.GetVramUVs();
 				quad++;
 			}
 

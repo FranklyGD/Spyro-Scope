@@ -5,7 +5,7 @@ namespace SpyroScope {
 		public Vector3[] vertices ~ delete _;
 		public Vector3[] normals ~ delete _;
 		public Renderer.Color4[] colors ~ delete _;
-		public float[][2] uvs ~ delete _;
+		public Vector2[] uvs ~ delete _;
 
 		public uint32[] indices ~ delete _;
 
@@ -35,7 +35,7 @@ namespace SpyroScope {
 		matrixBufferObject,
 		tintBufferObject;
 
-		public this(Vector3[] vertices, float[][2] uvs, Vector3[] normals, Renderer.Color4[] colors, uint32[] indices) {
+		public this(Vector3[] vertices, Vector2[] uvs, Vector3[] normals, Renderer.Color4[] colors, uint32[] indices) {
 			this.vertices = vertices;
 			this.normals = normals;
 			this.colors = colors;
@@ -45,7 +45,7 @@ namespace SpyroScope {
 			Init();
 		}
 
-		public this(Vector3[] vertices, float[][2] uvs, Vector3[] normals, Renderer.Color4[] colors) {
+		public this(Vector3[] vertices, Vector2[] uvs, Vector3[] normals, Renderer.Color4[] colors) {
 			this.vertices = vertices;
 			this.normals = normals;
 			this.colors = colors;
@@ -128,7 +128,7 @@ namespace SpyroScope {
 
 			GL.glGenBuffers(1, &uvBufferObject);
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, uvBufferObject);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(float[2]), &uvs[0], GL.GL_STATIC_DRAW); 
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector2), &uvs[0], GL.GL_STATIC_DRAW); 
 
 			GL.glEnableVertexAttribArray(Renderer.uvAttributeIndex);	
 			GL.glVertexAttribPointer(Renderer.uvAttributeIndex,
@@ -251,8 +251,8 @@ namespace SpyroScope {
 
 			if (dirty.HasFlag(.UV)) {
 				GL.glBindBuffer(GL.GL_ARRAY_BUFFER, uvBufferObject);
-				GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(float[2]), &uvs[0], GL.GL_STATIC_DRAW); 
-				GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(float[2]), &uvs[0]);
+				GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector2), &uvs[0], GL.GL_STATIC_DRAW); 
+				GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector2), &uvs[0]);
 			}
 
 			if (dirty.HasFlag(.Element)) {

@@ -139,15 +139,14 @@ namespace SpyroScope {
 				quad++;
 			}
 
-			float[4 * 5][2] triangleUV = ?;
+			Vector2[5][4] triangleUV = ?;
 			for (let qi < 5) {
 				let partialUV = quad.GetVramPartialUV();
 
-				let offset = qi * 4;
-				triangleUV[0 + offset] = .(partialUV.left, partialUV.rightY);
-				triangleUV[1 + offset] = .(partialUV.right, partialUV.rightY);
-				triangleUV[2 + offset] = .(partialUV.right, partialUV.leftY);
-				triangleUV[3 + offset] = .(partialUV.left, partialUV.leftY);
+				triangleUV[qi][0] = .(partialUV.left, partialUV.rightY);
+				triangleUV[qi][1] = .(partialUV.right, partialUV.rightY);
+				triangleUV[qi][2] = .(partialUV.right, partialUV.leftY);
+				triangleUV[qi][3] = .(partialUV.left, partialUV.leftY);
 
 				quad++;
 			}

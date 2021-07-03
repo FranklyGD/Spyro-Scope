@@ -200,7 +200,7 @@ namespace SpyroScope {
 				Vector3[] v = new .[texturedVertices.Count];
 				Vector3[] n = new .[texturedVertices.Count];
 				Renderer.Color4[] c = new .[texturedVertices.Count];
-				float[][2] u = new .[texturedVertices.Count];
+				Vector2[] u = new .[texturedVertices.Count];
 
 				for (let i < texturedVertices.Count) {
 					v[i] = texturedVertices[i];
@@ -415,7 +415,7 @@ namespace SpyroScope {
 			Vector3[] v = new .[texturedVertices.Count];
 			Vector3[] n = new .[texturedVertices.Count];
 			Renderer.Color4[] c = new .[texturedVertices.Count];
-			float[][2] u = new .[texturedVertices.Count];
+			Vector2[] u = new .[texturedVertices.Count];
 
 			for (let i < texturedVertices.Count) {
 				v[i] = texturedVertices[i];

@@ -328,10 +328,9 @@ namespace SpyroScope {
 						quad++;
 					}
 
-					float[4 * 5][2] uvs = ?;
+					Vector2[5][4] uvs = ?;
 					for (let qi < 5) {
-						let quadUVs = quad.GetVramUVs();
-						*(Vector2[4]*)&uvs[qi * 4] = quadUVs;
+						uvs[qi] = quad.GetVramUVs();
 						quad++;
 					}
 
