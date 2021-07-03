@@ -113,22 +113,16 @@ namespace SpyroScope {
 				quad++;
 			}
 
-			Vector2[5][4] triangleUV = ?;
+			Vector2[5][4] uvs = ?;
 			for (let qi < 5) {
-				let partialUV = quad.GetVramPartialUV();
-
-				triangleUV[qi][0] = .(partialUV.left, partialUV.rightY);
-				triangleUV[qi][1] = .(partialUV.right, partialUV.rightY);
-				triangleUV[qi][2] = .(partialUV.right, partialUV.leftY);
-				triangleUV[qi][3] = .(partialUV.left, partialUV.leftY);
-
+				uvs[qi] = quad.GetVramUVs();
 				quad++;
 			}
 
 			let affectedTriangles = transparent ? affectedTransparentTriangles : affectedOpaqueTriangles;
 			for (let affectedRegionTriPair in affectedTriangles) {
 				let terrainRegion = Terrain.regions[affectedRegionTriPair.key];
-				terrainRegion.UpdateUVs(affectedRegionTriPair.value, triangleUV, transparent);
+				terrainRegion.UpdateUVs(affectedRegionTriPair.value, uvs, transparent);
 			}
 		} 
 	}
