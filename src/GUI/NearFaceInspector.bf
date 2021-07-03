@@ -1,5 +1,6 @@
 namespace SpyroScope {
 	class NearFaceInspector : Inspector {
+		Property rotationProperty;
 		public this() : base("Near Face") {
 			Anchor = .(0,1,0,1);
 			Offset = .(4,-4,24,-4);
@@ -8,17 +9,23 @@ namespace SpyroScope {
 
 			if (Emulator.active.installment == .SpyroTheDragon) {
 				AddProperty("Texture #", 0x8, 0, 7);
-				AddProperty("Rotation", 0x9, 0, 2);
+				rotationProperty = AddProperty("Rotation", 0x9, 0, 2);
 				AddProperty("Depth Offset", 0xc, 3, 3);
 				AddProperty("Flip Face", 0xc, 1);
 				AddProperty("Double Sided", 0xc, 2);
 			} else {
 				AddProperty("Texture #", 0xc, 0, 7);
-				AddProperty("Rotation", 0xd, 4, 2);
+				rotationProperty = AddProperty("Rotation", 0xd, 4, 2);
 				AddProperty("Depth Offset", 0xd, 0, 2);
 				AddProperty("Flip Face", 0xd, 2);
 				AddProperty("Double Sided", 0xd, 3);
 			}
+		}
+
+		public override void OnDataSet(Emulator.Address address, void* reference) {
+			let faceReference = (TerrainRegion.NearFace*)reference;
+
+			rotationProperty.ReadOnly = !faceReference.isTriangle;
 		}
 
 		public override void OnDataModified(Emulator.Address address, void* reference) {

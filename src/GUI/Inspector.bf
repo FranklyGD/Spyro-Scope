@@ -285,8 +285,8 @@ namespace SpyroScope {
 			int start, length;
 
 			public override bool ReadOnly {
-				get => input.Enabled;
-				set => input.Enabled = value;
+				get => !input.Enabled;
+				set => input.Enabled = !value;
 			}
 
 			public this(Inspector inspector, StringView label, int offset, int startBit, int bitLength) : base(inspector, label, offset, startBit, bitLength) {
