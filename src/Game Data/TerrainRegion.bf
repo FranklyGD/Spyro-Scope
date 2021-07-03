@@ -853,9 +853,9 @@ namespace SpyroScope {
 							offset = (1 + subQuadIndexRotation[ti]) * 4;
 
 							rotatedTriangleUV = .(
-								triangleUV[((0 - (textureRotation)) & 3) + offset],
-								triangleUV[((2 - (textureRotation)) & 3) + offset],
-								triangleUV[((3 - (textureRotation)) & 3) + offset]
+								triangleUV[((0 - textureRotation) & 3) + offset],
+								triangleUV[((2 - textureRotation) & 3) + offset],
+								triangleUV[((3 - textureRotation) & 3) + offset]
 							);
 
 							regionMeshSubdivided.uvs[0 + offset2 + subdividedVertexIndex] = rotatedTriangleUV[2];
@@ -866,9 +866,9 @@ namespace SpyroScope {
 						offset = (1 + subQuadIndexRotation[0]) * 4;
 
 						rotatedTriangleUV = .(
-							triangleUV[((0 - (textureRotation)) & 3) + offset],
-							triangleUV[((2 - (textureRotation)) & 3) + offset],
-							triangleUV[((1 - (textureRotation)) & 3) + offset]
+							triangleUV[((0 - textureRotation) & 3) + offset],
+							triangleUV[((2 - textureRotation) & 3) + offset],
+							triangleUV[((1 - textureRotation) & 3) + offset]
 						);
 
 						regionMeshSubdivided.uvs[9 + subdividedVertexIndex] = rotatedTriangleUV[1];
@@ -937,19 +937,31 @@ namespace SpyroScope {
 			if (Emulator.active.installment != .SpyroTheDragon) {
 				quad++;
 			}
-
-			float[4 * 5][2] triangleUV = ?;
+			
+			float[4][2] initialQuadUVs = ?;
+			float[4 * 5][2] uvs = ?;
+			float[2]* quadUVs = &uvs[0];
 			for (let qi < 5) {
 				let partialUV = quad.GetVramPartialUV();
 
-				let offset = qi * 4;
-				triangleUV[0 + offset] = .(partialUV.left, partialUV.rightY);
-				triangleUV[1 + offset] = .(partialUV.right, partialUV.rightY);
-				triangleUV[2 + offset] = .(partialUV.right, partialUV.leftY);
-				triangleUV[3 + offset] = .(partialUV.left, partialUV.leftY);
+				initialQuadUVs[0] = .(partialUV.left, partialUV.rightY);
+				initialQuadUVs[1] = .(partialUV.right, partialUV.rightY);
+				initialQuadUVs[2] = .(partialUV.right, partialUV.leftY);
+				initialQuadUVs[3] = .(partialUV.left, partialUV.leftY);
+
+				let quadRotation = quad.GetQuadRotation();
+				for (let i < 4) {
+					quadUVs[i] = initialQuadUVs[(i - quadRotation) & 3];
+				}
+
+				if (quad.GetFlip()) {
+					Swap!(quadUVs[0], quadUVs[2]);
+				}
 
 				quad++;
+				quadUVs += 4;
 			}
+			quad--;
 
 			let transparent = Emulator.active.installment == .SpyroTheDragon ? quad.GetTransparency() : face.renderInfo.transparent;
 
@@ -961,7 +973,7 @@ namespace SpyroScope {
 					affectedTriangles.Add(i);
 				}
 			}
-			UpdateUVs(affectedTriangles, triangleUV, transparent);
+			UpdateUVs(affectedTriangles, uvs, transparent);
 
 			// Flip normals by swapping index order
 			Mesh[2] meshSet = transparent ? .(nearMeshTransparent, nearMeshTransparentSubdivided) : .(nearMesh, nearMeshSubdivided);
