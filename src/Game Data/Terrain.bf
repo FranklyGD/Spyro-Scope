@@ -55,7 +55,7 @@ namespace SpyroScope {
 
 		public static RegionAnimation[] nearAnimations;
 
-		public static Dictionary<uint8, Dictionary<uint32, List<int>>> usedTextureIndices = new .() ~ DeleteDictionaryAndValues!(_);
+		public static Dictionary<uint8, Dictionary<uint32, List<int>>> usedTextureIndices;
 		public static TextureQuad[] textures;
 		public static TextureScroller[] textureScrollers;
 		public static TextureSwapper[] textureSwappers;
@@ -157,6 +157,16 @@ namespace SpyroScope {
 				DeleteAndNullify!(textureSwappers);
 			}
 
+			if (usedTextureIndices != null) {
+				for (let usedTextureIndex in usedTextureIndices) {
+					for (let region in usedTextureIndex.value) {
+						delete region.value;
+					}
+					delete usedTextureIndex.value;
+				}
+				delete usedTextureIndices;
+			}
+
 			DeleteAndNullify!(textures);
 		}
 
@@ -175,13 +185,7 @@ namespace SpyroScope {
 				collision = new .(address, deformAddress);
 			}
 
-			for (let usedTextureIndex in usedTextureIndices) {
-				for (let region in usedTextureIndex.value) {
-					delete region.value;
-				}
-				delete usedTextureIndex.value;
-			}
-			usedTextureIndices.Clear();
+			usedTextureIndices = new .();
 
 			// Locate scene region data and amount that are present in RAM
 			Emulator.Address<Emulator.Address> sceneDataRegionArrayAddress = ?;
