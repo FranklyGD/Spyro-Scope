@@ -709,6 +709,8 @@ namespace SpyroScope {
 				}
 
 				case .YearOfTheDragon: {
+					ReadFromRAM((.)0x80066a70, &shinyColors, sizeof(Renderer.Color4[10][4]));
+
 					// 37 worlds exist, but theres space for 40. (Probably due to short/int reasons.)
 					// Also gets multipled by 4 due to sub worlds, there being a minimum of 4 in each homeworld.
 					deathPlaneHeights = new .[40 * 4];
