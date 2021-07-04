@@ -69,22 +69,33 @@ namespace SpyroScope {
 					textureInfo++;
 				}
 	
-				var partialUV = textureInfo[0].GetVramPartialUV();
+				let partialUV = textureInfo[0].GetVramPartialUV();
 				DrawUtilities.Rect(drawn.top + WindowApp.bitmapFont.height, drawn.top + WindowApp.bitmapFont.height + 128, drawn.left + WindowApp.bitmapFont.characterWidth, drawn.left + WindowApp.bitmapFont.characterWidth + 128, partialUV.leftY, partialUV.leftY + (1f / 16), partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
 	
-				const int[4][2] offsets = .(
-					(128, 0),
-					(128 + 64, 0),
-					(128, 64),
-					(128 + 64, 64),
+				Vector2[4] offsets = .(
+					.(128, 0),
+					.(128 + 64, 0),
+					.(128, 64),
+					.(128 + 64, 64),
 				);
 				for (let qi < 4) {
 					var offset = offsets[qi];
-					offset[0] += WindowApp.bitmapFont.characterWidth * 2;
-					offset[1] += WindowApp.bitmapFont.height;
+					offset.x += WindowApp.bitmapFont.characterWidth * 2 + drawn.left;
+					offset.y += WindowApp.bitmapFont.height + drawn.top;
 	
-					partialUV = textureInfo[1 + qi].GetVramPartialUV();
-					DrawUtilities.Rect(drawn.top + offset[1], drawn.top + offset[1] + 64, drawn.left + offset[0], drawn.left + offset[0] + 64, partialUV.leftY, partialUV.leftY + (1f / 16), partialUV.left, partialUV.right, VRAM.decoded, .(255,255,255));
+					var uvs = textureInfo[1 + qi].GetVramUVs();
+					Swap!(uvs[0], uvs[3]);
+					Swap!(uvs[1], uvs[2]);
+
+					DrawUtilities.Quad(
+						.(
+							.(offset.x, offset.y, 0),
+							.(offset.x + 64, offset.y, 0),
+							.(offset.x + 64, offset.y + 64, 0),
+							.(offset.x, offset.y + 64, 0)
+						),
+						uvs, VRAM.decoded, .(255,255,255)
+					);
 				}
 			}
 		}
