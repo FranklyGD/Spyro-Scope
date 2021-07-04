@@ -56,7 +56,7 @@ namespace SpyroScope {
 		static Vector3[maxGenericBufferLength] positions;
 		static Vector3[maxGenericBufferLength] normals;
 		static Color4[maxGenericBufferLength] colors;
-		static (float,float)[maxGenericBufferLength] uvs;
+		static Vector2[maxGenericBufferLength] uvs;
 		static DrawQueue[maxGenericBufferLength] drawQueue;
 		static DrawQueue* startDrawQueue, lastDrawQueue;
 		
@@ -294,7 +294,7 @@ namespace SpyroScope {
 			return index;
 		}
 
-		public static void PushPoint(Vector3 position, Vector3 normal, Color4 color, (float,float) uv) {
+		public static void PushPoint(Vector3 position, Vector3 normal, Color4 color, Vector2 uv) {
 			if (vertexCount >= maxGenericBufferLength) {
 				return;
 			}
@@ -317,8 +317,8 @@ namespace SpyroScope {
 				
 			let normal = Vector3(0,0,1);
 
-			PushPoint(p0, normal, c0, (0,0));
-			PushPoint(p1, normal, c1, (0,0));
+			PushPoint(p0, normal, c0, .Zero);
+			PushPoint(p1, normal, c1, .Zero);
 
 			if (lastDrawQueue.type == GL.GL_LINES) {
 				lastDrawQueue.count += 2;
@@ -332,7 +332,7 @@ namespace SpyroScope {
 
 		public static void DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2,
 			Color4 c0, Color4 c1, Color4 c2,
-			(float,float) uv0, (float,float) uv1, (float,float) uv2, uint textureObject) {
+			Vector2 uv0, Vector2 uv1, Vector2 uv2, uint textureObject) {
 			if (vertexCount + 3 > maxGenericBufferLength) {
 				Draw();
 				startDrawQueue = lastDrawQueue = &drawQueue[0];
@@ -357,7 +357,7 @@ namespace SpyroScope {
 
 		public static void DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2,
 			Color4 c0, Color4 c1, Color4 c2) {
-			DrawTriangle(p0, p1, p2, c0, c1, c2, (0,0), (0,0), (0,0), whiteTexture.textureObjectID);
+			DrawTriangle(p0, p1, p2, c0, c1, c2, .Zero, .Zero, .Zero, whiteTexture.textureObjectID);
 		}
 
 		public static void SetModel(Vector3 position, Matrix3 basis) {

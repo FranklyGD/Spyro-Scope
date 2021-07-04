@@ -396,7 +396,7 @@ namespace SpyroScope {
 				v[i] = vertexList[i];
 				n[i] = .(0,0,1);
 				c[i] = colorList[i];
-				u[i] = .(0,0);
+				u[i] = .Zero;
 			}
 
 			farMesh = new .(v, u, n, c);

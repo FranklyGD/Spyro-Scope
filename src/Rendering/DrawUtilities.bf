@@ -86,14 +86,26 @@ namespace SpyroScope {
 		}
 
 		[Inline]
+		public static void Quad(Vector3[4] points, Vector2[4] uvs, Texture texture, Renderer.Color4 color) {
+			Renderer.DrawTriangle(points[0], points[1], points[2], color, color, color, uvs[0], uvs[1], uvs[2], texture.textureObjectID);
+			Renderer.DrawTriangle(points[0], points[2], points[3], color, color, color, uvs[0], uvs[2], uvs[3], texture.textureObjectID);
+		}
+
+		[Inline]
+		public static void Quad(Vector3[4] points, Renderer.Color4 color) {
+			Quad(points, .(.Zero,.Zero,.Zero,.Zero), Renderer.whiteTexture, color);
+		}
+
+		[Inline]
 		public static void Rect(float top, float bottom, float left, float right,
 			float uvtop, float uvbottom, float uvleft, float uvright,
 			Texture texture, Renderer.Color4 color) {
 
-			Renderer.DrawTriangle(.(left,bottom,0), .(left,top,0), .(right,top,0), color, color, color,
-					(uvleft, uvbottom), (uvleft, uvtop), (uvright, uvtop), texture.textureObjectID);
-			Renderer.DrawTriangle(.(left,bottom,0), .(right,top,0), .(right,bottom,0), color, color, color,
-					(uvleft, uvbottom), (uvright, uvtop), (uvright, uvbottom), texture.textureObjectID);
+			Quad(
+				.(.(left, top, 0), .(right, top, 0), .(right, bottom, 0), .(left, bottom, 0)),
+				.(.(uvleft, uvtop), .(uvright, uvtop), .(uvright, uvbottom), .(uvleft, uvbottom)),
+				texture, color
+			);
 		}
 
 		[Inline]
