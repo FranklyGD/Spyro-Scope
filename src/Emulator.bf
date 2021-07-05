@@ -142,7 +142,7 @@ namespace SpyroScope {
 		public const Address<Vector3Int>[4] spyroIntendedAirVelocityAddress = .(0, (.)0x80078b40/*StD*/, 0, 0); // Exclusive to Spyro the Dragon
 
 		public const Address<Address>[11] objectArrayPointers = .(0, (.)0x80075828/*StD*/, 0, 0, (.)0x80066f14/*RR*/, 0, 0, (.)0x8006c550, (.)0x8006c630/*YotD-1.1*/, 0, 0);
-		public const Address<Address>[11] modelPointers = .(0, 0/*StD*/, 0, 0, (.)0x80068c94/*RR*/, 0, 0, (.)0x8006ee2c, (.)0x8006ef0c/*YotD-1.1*/, 0, 0); //!!
+		public const Address<Address>[11] modelPointers = .(0, (.)0x80076378/*StD*/, 0, 0, (.)0x80068c94/*RR*/, 0, 0, (.)0x8006ee2c, (.)0x8006ef0c/*YotD-1.1*/, 0, 0);
 
 		public const Address<Vector3Int>[11] cameraPositionAddress = .(0, (.)0x80076df8/*StD*/, 0, 0, (.)0x80067eac/*RR*/, 0, 0, (.)0x8006e020, (.)0x8006e100/*YotD-1.1*/, 0, 0);
 		public const Address<int16[3]>[11] cameraEulerRotationAddress = .(0, (.)0x80076e1c/*StD*/, 0, 0, (.)0x80067ec8/*RR*/, 0, 0, (.)0x8006e03c, (.)0x8006e11c/*YotD-1.1*/, 0, 0);
@@ -689,6 +689,8 @@ namespace SpyroScope {
 			switch (installment) {
 
 				case .SpyroTheDragon: {
+					ReadFromRAM((.)0x8006e44c, &shinyColors, sizeof(Renderer.Color4[10][4]));
+
 					// 35 worlds exist, but there is space for 36. (Probably due to short/int reasons.)
 					deathPlaneHeights = new .[36];
 					maxFreeflightHeights = new .[36];
