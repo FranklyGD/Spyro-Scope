@@ -166,7 +166,7 @@ namespace SpyroScope {
 		}
 
 		public class NumericProperty : Property {
-			int start, mask;
+			protected int start, count, mask;
 
 			public int Value {
 				get {
@@ -197,6 +197,7 @@ namespace SpyroScope {
 
 			public this(Inspector inspector, StringView label, int offset, int startingBit, int bitCount) : base(inspector, label, offset) {
 				start = startingBit;
+				count = bitCount;
 				mask = -1 ^ (-1 << bitCount);
 			}
 
@@ -281,23 +282,19 @@ namespace SpyroScope {
 		}
 
 		public class PropertyBits : NumericProperty {
-			GUIInteractable input;
-			int start, length;
+			GUIInteractable interactable;
 
 			public override bool ReadOnly {
-				get => !input.Enabled;
-				set => input.Enabled = !value;
+				get => !interactable.Enabled;
+				set => interactable.Enabled = !value;
 			}
 
 			public this(Inspector inspector, StringView label, int offset, int startBit, int bitLength) : base(inspector, label, offset, startBit, bitLength) {
-				start = startBit;
-				length = bitLength;
-
 				GUIElement.PushParent(this);
 
 				if (bitLength == 1) {
 					Toggle toggle = new .();
-					input = toggle;
+					interactable = toggle;
 					
 					toggle.Anchor = .(0,0,0.5f,0.5f);
 					toggle.Offset = .(inspector.labelWidth,inspector.labelWidth + 16,-8,8);
@@ -306,15 +303,15 @@ namespace SpyroScope {
 						Value = (int)tvalue;
 					});
 				} else {
-					Input tinput = new .();
-					input = tinput;
+					Input input = new .();
+					interactable = input;
 
-					tinput.Anchor = .(0,1,0,1);
-					tinput.Offset = .(inspector.labelWidth,0,1,-1);
+					input.Anchor = .(0,1,0,1);
+					input.Offset = .(inspector.labelWidth,0,1,-1);
 
-					tinput.OnValidate = new => ValidateNumber;
-					tinput.OnXcrement = new => XcrementNumber;
-					tinput.OnSubmit.Add(new (text) => {
+					input.OnValidate = new => ValidateNumber;
+					input.OnXcrement = new => XcrementNumber;
+					input.OnSubmit.Add(new (text) => {
 						if (Float.Parse(text) case .Ok(var val)) {
 							Value = (int)val;
 						}
@@ -330,14 +327,12 @@ namespace SpyroScope {
 				}
 
 				uint32 value = ?;
-				if (length == 1) {
+				if (count == 1) {
 					Emulator.active.ReadFromRAM(inspector.dataAddress + dataOffset, &value, 1);
-					((Toggle)input).value = BitEdit.Get!(value, 1 << start) > 0;
+					((Toggle)interactable).value = BitEdit.Get!(value, 1 << start) > 0;
 				} else {
 					Emulator.active.ReadFromRAM(inspector.dataAddress + dataOffset, &value, 4);
-					int mask = -1;
-					mask = mask ^ (mask << length);
-					((Input)input).SetValidText(scope String() .. AppendF("{}", BitEdit.Get!(value >> start, mask)));
+					((Input)interactable).SetValidText(scope String() .. AppendF("{}", BitEdit.Get!(value >> start, mask)));
 				}
 			}
 		}
