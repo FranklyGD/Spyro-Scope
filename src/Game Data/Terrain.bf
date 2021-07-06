@@ -401,9 +401,10 @@ namespace SpyroScope {
 
 			// The loop is done in reverse to counteract strange used texture info indices
 			// in "Spyro the Dragon", by overwriting the incorrect decoded parts with correct ones
-			for (let textureIndex in usedTextureIndices.Keys) {
+			let textureIndices = scope List<uint8>(usedTextureIndices.Keys);
+			for (var textureIndex = textureIndices.Count - 1; textureIndex >= 0; textureIndex--) {
 				for (let i < quadDecodeCount) {
-					Terrain.textures[textureIndex * quadCount + i].Decode();
+					Terrain.textures[textureIndices[textureIndex] * quadCount + i].Decode();
 				}
 			}
 
