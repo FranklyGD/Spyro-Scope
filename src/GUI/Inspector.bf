@@ -283,10 +283,16 @@ namespace SpyroScope {
 
 		public class PropertyBits : NumericProperty {
 			GUIInteractable interactable;
+			Slider slider;
 
 			public override bool ReadOnly {
 				get => !interactable.Enabled;
-				set => interactable.Enabled = !value;
+				set {
+					interactable.Enabled = !value;
+					if (count <= 6) {
+						slider.Enabled = !value;
+					}
+				}
 			}
 
 			public this(Inspector inspector, StringView label, int offset, int startBit, int bitLength) : base(inspector, label, offset, startBit, bitLength) {
@@ -306,8 +312,27 @@ namespace SpyroScope {
 					Input input = new .();
 					interactable = input;
 
-					input.Anchor = .(0,1,0,1);
-					input.Offset = .(inspector.labelWidth,0,1,-1);
+					if (count <= 6) { // 32
+						input.Anchor = .(0,0,0,1);
+						input.Offset = .(inspector.labelWidth, inspector.labelWidth + WindowApp.bitmapFont.characterWidth * 2,1,-1);
+
+						Panel sliderArea = new .();
+						sliderArea.Anchor = .(0,1,0.5f,0.5f);
+						sliderArea.Offset = .(inspector.labelWidth + WindowApp.bitmapFont.characterWidth * 2 + 1 + 8,-1 - 8,-8,8);
+						sliderArea.texture = GUIElement.bgOutlineTexture;
+
+						slider = new .();
+						slider.Parent(sliderArea);
+						slider.Offset = .(0,0,0,0);
+						slider.direction = .Horizontal;
+						slider.portion = 0.2f;
+						slider.max = (1 << count) - 1;
+						slider.round = true;
+						slider.OnChanged.Add(new (value) => Value = (int)value);
+					} else {
+						input.Anchor = .(0,1,0,1);
+						input.Offset = .(inspector.labelWidth,0,1,-1);
+					}
 
 					input.OnValidate = new => ValidateNumber;
 					input.OnXcrement = new => XcrementNumber;
@@ -332,7 +357,11 @@ namespace SpyroScope {
 					((Toggle)interactable).value = BitEdit.Get!(value, 1 << start) > 0;
 				} else {
 					Emulator.active.ReadFromRAM(inspector.dataAddress + dataOffset, &value, 4);
-					((Input)interactable).SetValidText(scope String() .. AppendF("{}", BitEdit.Get!(value >> start, mask)));
+					value = (.)BitEdit.Get!(value >> start, mask);
+					if (count <= 6) {
+						slider.Value = value;
+					}
+					((Input)interactable).SetValidText(scope String() .. AppendF("{}", value));
 				}
 			}
 		}
