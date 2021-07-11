@@ -36,16 +36,11 @@ namespace SpyroScope {
 			pinMenuButton = new .();
 
 			pinMenuButton.Anchor = .(1, 1, 0, 0);
-			pinMenuButton.Offset = .(-16, 0, 0, 16);
-			pinMenuButton.Offset.Shift(-2,2);
+			pinMenuButton.Offset = .(-16, 0, 0, 16) .. Shift(-2,2);
 
 			// Tabs
+			Button[4] tabs;
 			var tab = new Button();
-			tab.Offset = .(0, 32, 0, 32) .. Shift(8,8);
-			tab.normalTexture = tab.pressedTexture = GUIElement.bgOutlineTexture;
-			tab.normalColor = .(32,32,32);
-			tab.hoveredColor = .(128,128,128);
-			tab.pressedColor = .(255,255,255);
 			tab.iconTexture = cameraIconTexture;
 			tab.OnActuated.Add(new () => {
 				cameraOptionGroup.visible = true;
@@ -53,13 +48,10 @@ namespace SpyroScope {
 				objectOptionGroup.visible = false;
 				otherOptionGroup.visible = false;
 			});
+			tabs[0] = tab;
+			tab.Enabled = false;
 
 			tab = new Button();
-			tab.Offset = .(0, 32, 0, 32) .. Shift(8 + 36,8);
-			tab.normalTexture = tab.pressedTexture = GUIElement.bgOutlineTexture;
-			tab.normalColor = .(32,32,32);
-			tab.hoveredColor = .(128,128,128);
-			tab.pressedColor = .(255,255,255);
 			tab.iconTexture = sceneIconTexture;
 			tab.OnActuated.Add(new () => {
 				cameraOptionGroup.visible = false;
@@ -67,13 +59,9 @@ namespace SpyroScope {
 				objectOptionGroup.visible = false;
 				otherOptionGroup.visible = false;
 			});
+			tabs[1] = tab;
 
 			tab = new Button();
-			tab.Offset = .(0, 32, 0, 32) .. Shift(8 + 36*2,8);
-			tab.normalTexture = tab.pressedTexture = GUIElement.bgOutlineTexture;
-			tab.normalColor = .(32,32,32);
-			tab.hoveredColor = .(128,128,128);
-			tab.pressedColor = .(255,255,255);
 			tab.iconTexture = objectIconTexture;
 			tab.OnActuated.Add(new () => {
 				cameraOptionGroup.visible = false;
@@ -81,13 +69,9 @@ namespace SpyroScope {
 				objectOptionGroup.visible = true;
 				otherOptionGroup.visible = false;
 			});
+			tabs[2] = tab;
 
 			tab = new Button();
-			tab.Offset = .(0, 32, 0, 32) .. Shift(8 + 36*3,8);
-			tab.normalTexture = tab.pressedTexture = GUIElement.bgOutlineTexture;
-			tab.normalColor = .(32,32,32);
-			tab.hoveredColor = .(128,128,128);
-			tab.pressedColor = .(255,255,255);
 			tab.iconTexture = otherIconTexture;
 			tab.OnActuated.Add(new () => {
 				cameraOptionGroup.visible = false;
@@ -95,6 +79,23 @@ namespace SpyroScope {
 				objectOptionGroup.visible = false;
 				otherOptionGroup.visible = true;
 			});
+			tabs[3] = tab;
+
+			for (let i < 4) {
+				tab = tabs[i];
+				tab.Offset = .(0, 32, 0, 32) .. Shift(8 + 36 * i, 8);
+				tab.normalTexture = tab.pressedTexture = GUIElement.bgOutlineTexture;
+				tab.normalColor = .(32,32,32);
+				tab.hoveredColor = .(128,128,128);
+				tab.pressedColor = .(255,255,255);
+				tab.disabledColor = .(255,255,0);
+				tab.OnActuated.Add(new () => {
+					for (let t in tabs) {
+						t.Enabled = true;
+					}
+					tab.Enabled = false;
+				});
+			}
 
 			let content = new GUIElement();
 			content.Anchor = .(0, 1, 0, 1);
