@@ -317,7 +317,11 @@ namespace SpyroScope {
 		}
 
 		protected override void Update() {
-			showing = !Translator.dragged && pinMenuButton.value || ((showing && WindowApp.mousePosition.x < 200 || WindowApp.mousePosition.x < 10) && WindowApp.mousePosition.y < 180);
+			showing =
+				selectedElement is GUIInteractable && IsParentOf(selectedElement) ||
+				!Translator.dragged && pinMenuButton.value ||
+				(showing && WindowApp.mousePosition.x < 200 || WindowApp.mousePosition.x < 10) && WindowApp.mousePosition.y < 180;
+
 			motionInterp = Math.MoveTo(motionInterp, showing ? 1 : 0, 0.1f);
 			Offset = .(.(-200 * (1 - motionInterp), 0), .(200,180));
 		}

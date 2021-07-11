@@ -547,7 +547,12 @@ namespace SpyroScope {
 						}
 					} else {
 						if (inspector != null && Emulator.active.loadingStatus == .Idle || Emulator.active.loadingStatus == .CutsceneIdle) {
-							sideInspectorVisible = !Translator.dragged && inspector.[Friend]dataReference != null && (pinInspectorButton.value || (sideInspectorVisible && WindowApp.mousePosition.x > WindowApp.width - 300 || WindowApp.mousePosition.x > WindowApp.width - 10));
+							sideInspectorVisible =
+								GUIElement.selectedElement is GUIInteractable && sideInspector.IsParentOf(GUIElement.selectedElement) ||
+								!Translator.dragged && inspector.[Friend]dataReference != null && (
+									pinInspectorButton.value ||
+									(sideInspectorVisible && WindowApp.mousePosition.x > WindowApp.width - 300 || WindowApp.mousePosition.x > WindowApp.width - 10)
+								);
 						} else {
 							cornerMenuVisible = sideInspectorVisible = false;
 						}

@@ -343,5 +343,17 @@ namespace SpyroScope {
 			list.Remove(this);
 			list.Add(this);
 		}
+
+		public bool IsParentOf(GUIElement element) {
+			var element;
+			while (element != null) {
+				element = element.parent;
+				if (element == this) {
+					return true;
+				}
+			}
+
+			return false;
+		}
 	}
 }
