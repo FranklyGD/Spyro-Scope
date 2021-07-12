@@ -7,7 +7,7 @@ TargetType = "BeefGUIApplication"
 StartupObject = "SpyroScope.Program"
 
 [Platform.Windows]
-FileVersion = "1.5.4"
+FileVersion = "1.6"
 
 [Configs.Debug.Win64]
 TargetDirectory = "$(WorkspaceDir)/dist"
