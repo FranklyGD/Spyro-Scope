@@ -82,7 +82,7 @@ namespace SpyroScope {
 		}
 
 		public override void Draw() {
-			DrawUtilities.Rect(drawn.top, drawn.bottom, drawn.left, drawn.right, .(0,0,0,128));
+			DrawUtilities.Rect(drawn.top, drawn.bottom, drawn.left, drawn.right, .(0,0,0,192));
 
 			let halfWidth = drawn.Width / 2;
 			let frameCaps = (int)(halfWidth / 3) - 3;
@@ -105,48 +105,61 @@ namespace SpyroScope {
 
 				let frame = Recording.GetFrame(i);
 
-				var color = Renderer.Color(0,0,0);
+				var speedColor = Renderer.Color(0,0,0);
 				let speed = frame.targetVelocity.Length();
 				if (speed > 0) {
 					let speedScale = speed / Recording.HighestSpeed;
-					color = .((.)(255 * (1 - speedScale)), (.)(255 * speedScale), 0);
+					speedColor = .((.)(255 * (1 - speedScale)), (.)(255 * speedScale), 0);
 				}
 
 				let leftFrame = hcenter - 1.5f + offset * 3;
 				let rightFrame = hcenter + 1.5f + offset * 3;
 
-				DrawUtilities.Rect(drawn.bottom - (i == Recording.CurrentFrame ? 16 : 8), drawn.bottom - 4, leftFrame, rightFrame, color);
+				// Draw frame with color of relative speed to max recorded speed
+				DrawUtilities.Rect(drawn.bottom - 8, drawn.bottom - 4, leftFrame, rightFrame, speedColor);
 
+				// Draw face button icon on pressed
+				// and line when it remains held
 				if (frame.input & 0x10 > 0) {
-					if (prevFrame.input & 0x10 == 0) {
-						DrawUtilities.Rect(drawn.bottom - 32, drawn.bottom - 8, leftFrame, leftFrame + 24, 0,1,0,1, triangleButtonTexture, .(255,255,255));
+					let justPressed = prevFrame.input & 0x10 == 0;
+					DrawUtilities.Rect(drawn.bottom - (justPressed ? 36 : 12), drawn.bottom - 8, leftFrame, rightFrame, .(73,218,124));
+					if (justPressed) {
+						DrawUtilities.Rect(drawn.bottom - 48, drawn.bottom - 24, leftFrame, leftFrame + 24, 0,1,0,1, triangleButtonTexture, .(255,255,255));
 					}
-					Renderer.DrawLine(.(leftFrame, drawn.bottom - 13,0), .(rightFrame, drawn.bottom - 13,0), .(73,218,124), .(73,218,124));
 				}
 				if (frame.input & 0x20 > 0) {
+					let justPressed = prevFrame.input & 0x20 == 0;
+					DrawUtilities.Rect(drawn.bottom -  (justPressed ? 36 : 16), drawn.bottom - 12, leftFrame, rightFrame, .(226,55,55));
 					if (prevFrame.input & 0x20 == 0) {
-						DrawUtilities.Rect(drawn.bottom - 32, drawn.bottom - 8, leftFrame, leftFrame + 24, 0,1,0,1, circleButtonTexture, .(255,255,255));
+						DrawUtilities.Rect(drawn.bottom - 48, drawn.bottom - 24, leftFrame, leftFrame + 24, 0,1,0,1, circleButtonTexture, .(255,255,255));
 					}
-					Renderer.DrawLine(.(leftFrame, drawn.bottom - 12,0), .(rightFrame, drawn.bottom - 12,0), .(226,55,55), .(226,55,55));
 				}
 				if (frame.input & 0x40 > 0) {
+					let justPressed = prevFrame.input & 0x40 == 0;
+					DrawUtilities.Rect(drawn.bottom -  (justPressed ? 36 : 20), drawn.bottom - 16, leftFrame, rightFrame, .(126,171,226));
 					if (prevFrame.input & 0x40 == 0) {
-						DrawUtilities.Rect(drawn.bottom - 32, drawn.bottom - 8, leftFrame, leftFrame + 24, 0,1,0,1, crossButtonTexture, .(255,255,255));
+						DrawUtilities.Rect(drawn.bottom - 48, drawn.bottom - 24, leftFrame, leftFrame + 24, 0,1,0,1, crossButtonTexture, .(255,255,255));
 					}
-					Renderer.DrawLine(.(leftFrame, drawn.bottom - 11,0), .(rightFrame, drawn.bottom - 11,0), .(126,171,226), .(126,171,226));
 				}
 				if (frame.input & 0x80 > 0) {
+					let justPressed = prevFrame.input & 0x80 == 0;
+					DrawUtilities.Rect(drawn.bottom -  (justPressed ? 36 : 24), drawn.bottom - 20, leftFrame, rightFrame, .(208,142,210));
 					if (prevFrame.input & 0x80 == 0) {
-						DrawUtilities.Rect(drawn.bottom - 32, drawn.bottom - 8, leftFrame, leftFrame + 24, 0,1,0,1, squareButtonTexture, .(255,255,255));
+						DrawUtilities.Rect(drawn.bottom - 48, drawn.bottom - 24, leftFrame, leftFrame + 24, 0,1,0,1, squareButtonTexture, .(255,255,255));
 					}
-					Renderer.DrawLine(.(leftFrame, drawn.bottom - 10,0), .(rightFrame, drawn.bottom - 10,0), .(208,142,210), .(208,142,210));
 				}
 
 				// Every second (30 frames)
 				if (i % 30 == 0) {
-					Renderer.DrawLine(.((int)hcenter + offset * 3,drawn.bottom,0), .((int)hcenter + offset * 3,drawn.bottom - 16,0), .(255,255,255), .(255,255,255));
-					WindowApp.fontSmall.Print(scope String() .. AppendF("{}s", i/30), .((int)hcenter + offset * 3, drawn.bottom - 16 - WindowApp.fontSmall.height), .(255,255,255));
+					Renderer.DrawLine(.((int)hcenter + offset * 3,drawn.bottom,0), .((int)hcenter + offset * 3,drawn.bottom - 48,0), .(255,255,255), .(255,255,255));
+					WindowApp.fontSmall.Print(scope String() .. AppendF("{}s", i/30), .((int)hcenter + offset * 3, drawn.bottom - 48 - WindowApp.fontSmall.height), .(255,255,255));
 				}
+
+				// Draw line on currently previewed frame
+				if (i == Recording.CurrentFrame) {
+					Renderer.DrawLine(.((int)hcenter + offset * 3,drawn.bottom,0), .((int)hcenter + offset * 3,drawn.bottom - 64,0), .(255,255,255), .(255,255,255));
+				}
+
 				offset++;
 			}
 

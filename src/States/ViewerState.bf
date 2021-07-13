@@ -128,7 +128,7 @@ namespace SpyroScope {
 
 			timeline = new .();
 			timeline.Anchor = .(0, 1, 1, 1);
-			timeline.Offset = .(0, 0, -64, 0);
+			timeline.Offset = .(0, 0, -100, 0);
 			timeline.visible = false;
 		}
 
