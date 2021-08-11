@@ -36,6 +36,11 @@ namespace SpyroScope {
 				.(sx * sz - cx * cz * sy, cz * sx + cx * sy * sz, cx * cy)
 			);
 		}
+
+		[Inline]
+		public static Self Euler(Vector3 euler) {
+			return Euler(euler.x, euler.y, euler.z);
+		}
 		
 		[Inline]
 		public static Self Scale(float x, float y, float z) {

@@ -53,6 +53,11 @@ namespace SpyroScope {
 			public bool IsNull { get => this == Null; }
 
 			public const Address Null = 0;
+
+			[Inline]
+			public static int32 operator -(Self left, Self right) {
+				return (.)left - (.)right;
+			}
 		}
 
 		public struct Address<T> : Address {
@@ -133,21 +138,29 @@ namespace SpyroScope {
 		public const Address<int32>[11] gameStateAddresses = .(0, (.)0x800757d8/*StD*/, 0, 0, (.)0x800681c8/*RR*/, 0, 0, (.)0x8006e344, (.)0x8006e424/*YotD-1.1*/, 0, 0);
 		public const Address<int32>[11] loadStateAddresses = .(0, (.)0x80075864/*StD*/, 0, 0, (.)0x80066eec/*RR*/, 0, 0, 0, (.)0x8006c5f8/*YotD-1.1*/, 0, 0);
 
-		public const Address<Vector3Int>[11] spyroPositionAddresses = .(0, (.)0x80078a58/*StD*/, 0, 0, (.)0x80069ff0/*RR*/, 0, 0, (.)0x80070328, (.)0x80070408/*YotD-1.1*/, 0, 0);
-		public const Address<Vector3Int>[11] spyroEulerRotationAddresses = .(0, (.)0x80078b74/*StD*/, 0, 0, (.)0x8006a054/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
-		public const Address<MatrixInt>[11] spyroMatrixAddresses = .(0, (.)0x80078a8c/*StD*/, 0, 0, (.)0x8006a020/*RR*/, 0, 0, (.)0x80070358, (.)0x80070438/*YotD-1.1*/, 0, 0);
-		public const Address<uint32>[11] spyroStateAddresses = .(0, (.)0x80078ad0/*StD*/, 0, 0, (.)0x8006a040/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0); 
-		public const Address<Vector3Int>[11] spyroIntendedVelocityAddresses = .(0, (.)0x80078b4c/*StD*/, 0, 0, (.)0x8006a084/*RR*/, 0, 0, (.)0x800703B4, (.)0x80070494/*YotD-1.1*/, 0, 0);
-		public const Address<Vector3Int>[11] spyroPhysicsVelocityAddresses = .(0, (.)0x80078b64/*StD*/, 0, 0, (.)0x8006a090/*RR*/, 0, 0, (.)0x800703c0, (.)0x800704a0/*YotD-1.1*/, 0, 0);
-		public const Address<Vector3Int>[4] spyroIntendedAirVelocityAddress = .(0, (.)0x80078b40/*StD*/, 0, 0); // Exclusive to Spyro the Dragon
+		// Spyro
+		public Address spyroAddress;
 
+		public Address<Vector3Int> spyroPositionAddress;
+		public Address<Vector3Int> spyroEulerAddress;
+		public Address<MatrixInt> spyroBasisAddress;
+
+		public Address<Vector3Int> spyroVelocityIntended, spyroVelocityPhysics;
+
+		public Address<uint32> spyroStateAddress;
+		//public const Address<Vector3Int>[4] spyroIntendedAirVelocityAddress = .(0, (.)0x80078b40/*StD*/, 0, 0); // Exclusive to Spyro the Dragon
+
+		// Objects
 		public const Address<Address>[11] objectArrayPointers = .(0, (.)0x80075828/*StD*/, 0, 0, (.)0x80066f14/*RR*/, 0, 0, (.)0x8006c550, (.)0x8006c630/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] modelPointers = .(0, (.)0x80076378/*StD*/, 0, 0, (.)0x80068c94/*RR*/, 0, 0, (.)0x8006ee2c, (.)0x8006ef0c/*YotD-1.1*/, 0, 0);
 
-		public const Address<Vector3Int>[11] cameraPositionAddress = .(0, (.)0x80076df8/*StD*/, 0, 0, (.)0x80067eac/*RR*/, 0, 0, (.)0x8006e020, (.)0x8006e100/*YotD-1.1*/, 0, 0);
-		public const Address<int16[3]>[11] cameraEulerRotationAddress = .(0, (.)0x80076e1c/*StD*/, 0, 0, (.)0x80067ec8/*RR*/, 0, 0, (.)0x8006e03c, (.)0x8006e11c/*YotD-1.1*/, 0, 0);
-		public const Address<MatrixInt>[11] cameraMatrixAddress = .(0, (.)0x80076de4/*StD*/, 0, 0, (.)0x80067e98/*RR*/, 0, 0, (.)0x8006e00c, (.)0x8006e0ec/*YotD-1.1*/, 0, 0);
+		// Camera
+		public Address cameraAddress;
+		public Address<Vector3Int> cameraPositionAddress;
+		public Address<int16[3]> cameraEulerAddress;
+		public Address<MatrixInt> cameraBasisAddress;
 
+		// World
 		public const Address<uint32>[11] currentWorldIdAddress = .(0, (.)0x80075964/*StD*/, 0, 0, (.)0x80066f54/*RR*/, 0, 0, (.)0x8006e58c, (.)0x8006c66c/*YotD-1.1*/, 0, 0);
 		public const Address<uint32>[4] currentSubWorldIdAddress = .((.)0x8006c5c8, (.)0x8006c6a8, (.)0, (.)0); // Exclusive to Spyro: Year of the Dragon.
 
@@ -156,7 +169,7 @@ namespace SpyroScope {
 		public const Address<Address>[11] collisionDeformDataPointers = .(0, (.)0x800785a4/*StD*/, 0, 0, (.)0x80068208/*RR*/, 0, 0, (.)0x8006e384, (.)0x8006e464/*YotD-1.1*/, 0, 0);
 		public const Address<uint32>[4] collisionRadius = .((.)0x8007036c, (.)0x8007044c, 0, 0); // Exclusive to Spyro: Year of the Dragon
 
-		public const Address<Renderer.Color4>[11] backgroundClearColorAddress = .(0, (.)0x80078a50/*StD*/, 0, 0, (.)0x800681c0/*RR*/, 0, 0, 0, (.)0x8006e41c/*YotD-1.1*/, 0, 0);
+		public Address<Renderer.Color4> clearColorAddress;
 		public const Address<Address>[11] sceneRegionPointers = .(0, (.)0x800785a8/*StD*/, 0, 0, (.)0x800673d4/*RR*/, 0, 0, 0, (.)0x8006d128/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] farRegionDeformPointers = .(0, (.)0x80078574/*StD*/, 0, 0, (.)0x800681e8/*RR*/, 0, 0, 0, (.)0x8006e444/*YotD-1.1*/, 0, 0);
 		public const Address<Address>[11] nearRegionDeformPointers = .(0, (.)0x80078584/*StD*/, 0, 0, (.)0x800681f8/*RR*/, 0, 0, 0, (.)0x8006e454/*YotD-1.1*/, 0, 0);
@@ -203,7 +216,7 @@ namespace SpyroScope {
 			get => cameraPosition;
 			set {
 				cameraPosition = value;
-				cameraPositionAddress[(int)rom].Write(&cameraPosition, this);
+				cameraPositionAddress.Write(&cameraPosition, this);
 			}
 		}
 
@@ -213,7 +226,7 @@ namespace SpyroScope {
 			get => spyroPosition;
 			set {
 				spyroPosition = value;
-				spyroPositionAddresses[(int)rom].Write(&spyroPosition, this);
+				spyroPositionAddress.Write(&spyroPosition, this);
 			}
 		}
 
@@ -223,7 +236,7 @@ namespace SpyroScope {
 			get => spyroEulerRotation;
 			set {
 				spyroEulerRotation = value;
-				spyroEulerRotationAddresses[(int)rom].Write(&spyroEulerRotation, this);
+				spyroEulerAddress.Write(&spyroEulerRotation, this);
 			}
 		}
 
@@ -233,7 +246,7 @@ namespace SpyroScope {
 			get => spyroState;
 			set {
 				spyroState = value;
-				spyroStateAddresses[(int)rom].Write(&spyroState, this);
+				spyroStateAddress.Write(&spyroState, this);
 			}
 		}
 
@@ -243,7 +256,7 @@ namespace SpyroScope {
 			get => spyroIntendedVelocity;
 			set {
 				spyroIntendedVelocity = value;
-				spyroIntendedVelocityAddresses[(int)rom].Write(&spyroIntendedVelocity, this);
+				spyroVelocityIntended.Write(&spyroIntendedVelocity, this);
 			}
 		}
 
@@ -253,12 +266,12 @@ namespace SpyroScope {
 			get => spyroPhysicsVelocity;
 			set {
 				spyroPhysicsVelocity = value;
-				spyroPhysicsVelocityAddresses[(int)rom].Write(&spyroPhysicsVelocity, this);
+				spyroVelocityPhysics.Write(&spyroPhysicsVelocity, this);
 			}
 		}
 
 		public int16[3] cameraEulerRotation;
-		public MatrixInt cameraBasisInv, spyroBasis;
+		public MatrixInt spyroBasis;
 		public int32 collidingTriangle = -1;
 		
 		public Renderer.Color4[10][4] shinyColors;
@@ -683,11 +696,12 @@ namespace SpyroScope {
 
 		// Spyro
 		void FetchStaticData() {
+			FindAddressLocations();
+
 			delete maxFreeflightHeights;
 			delete deathPlaneHeights;
 
 			switch (installment) {
-
 				case .SpyroTheDragon: {
 					ReadFromRAM((.)0x8006e44c, &shinyColors, sizeof(Renderer.Color4[10][4]));
 
@@ -725,8 +739,6 @@ namespace SpyroScope {
 			}
 		}
 
-		
-
 		public void FetchImportantData() {
 			// Load static address values
 			gameStateAddresses[(int)rom].Read(&gameState, this);
@@ -734,16 +746,15 @@ namespace SpyroScope {
 
 			gameInputAddress[(int)rom].Read(&input, this);
 
-			spyroPositionAddresses[(int)rom].Read(&spyroPosition, this);
-			spyroEulerRotationAddresses[(int)rom].Read(&spyroEulerRotation, this);
-			spyroMatrixAddresses[(int)rom].Read(&spyroBasis, this);
-			spyroStateAddresses[(int)rom].Read(&spyroState, this);
-			spyroIntendedVelocityAddresses[(int)rom].Read(&spyroIntendedVelocity, this);
-			spyroPhysicsVelocityAddresses[(int)rom].Read(&spyroPhysicsVelocity, this);
+			spyroPositionAddress.Read(&spyroPosition, this);
+			spyroEulerAddress.Read(&spyroEulerRotation, this);
+			spyroBasisAddress.Read(&spyroBasis, this);
+			spyroStateAddress.Read(&spyroState, this);
+			spyroVelocityIntended.Read(&spyroIntendedVelocity, this);
+			spyroVelocityPhysics.Read(&spyroPhysicsVelocity, this);
 
-			cameraPositionAddress[(int)rom].Read(&cameraPosition, this);
-			cameraMatrixAddress[(int)rom].Read(&cameraBasisInv, this);
-			cameraEulerRotationAddress[(int)rom].Read(&cameraEulerRotation, this);
+			cameraPositionAddress.Read(&cameraPosition, this);
+			cameraEulerAddress.Read(&cameraEulerRotation, this);
 
 			//ReadFromRAM((.)0x8006a28c, &collidingTriangle, 4);
 
@@ -771,6 +782,341 @@ namespace SpyroScope {
 				OnStep();
 				Step();
 			}
+		}
+
+		void FindAddressLocations() {
+			// Spyro & Camera Signature
+			// Spyro 2/3 Attempt
+			MemorySignature spyroCamSignature = scope .();
+			spyroCamSignature.AddInstruction(.sw);
+			spyroCamSignature.AddInstruction(.sw);
+			spyroCamSignature.AddInstruction(.sw);
+			spyroCamSignature.AddInstruction(.sw);
+			spyroCamSignature.AddInstruction(.sw);
+			spyroCamSignature.AddInstruction(.sw);
+			spyroCamSignature.AddInstruction(.lw);
+			spyroCamSignature.AddInstruction(.lw);
+			spyroCamSignature.AddInstruction(.lw);
+			spyroCamSignature.AddInstruction(.lw);
+			spyroCamSignature.AddInstruction(.lw);
+			spyroCamSignature.AddInstruction(.lw);
+			spyroCamSignature.AddInstruction(.sub);
+			spyroCamSignature.AddInstruction(.sub);
+			spyroCamSignature.AddInstruction(.sub);
+			spyroCamSignature.AddInstruction(.lw, 0x0);
+			spyroCamSignature.AddInstruction(.lw, 0x4);
+			spyroCamSignature.AddInstruction(.lw, 0x8);
+			spyroCamSignature.AddInstruction(.lw, 0xc);
+			spyroCamSignature.AddInstruction(.lw, 0x10);
+			spyroCamSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)0);
+			spyroCamSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)1);
+			spyroCamSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)2);
+			spyroCamSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)3);
+			spyroCamSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)4);
+			
+			int32[2] loadAddress = ?;
+			MemorySignature.Reg spyroRegister;
+			Emulator.Address loadSignatureLocation;
+			MemorySignature.Reg cameraRegister;
+
+			Emulator.Address signatureLocation = spyroCamSignature.Find(active);
+			if (signatureLocation.IsNull) {
+				// Spyro 1 Attempt
+				spyroCamSignature.Clear();
+				spyroCamSignature.AddInstruction(.lw);
+				spyroCamSignature.AddInstruction(.lw);
+				spyroCamSignature.AddInstruction(.lw);
+				spyroCamSignature.AddInstruction(.lw);
+				spyroCamSignature.AddInstruction(.lw);
+				spyroCamSignature.AddInstruction(.lw);
+				spyroCamSignature.AddInstruction(.sub);
+				spyroCamSignature.AddInstruction(.sub);
+				spyroCamSignature.AddInstruction(.sub);
+				spyroCamSignature.AddInstruction(.lw, 0x0);
+				spyroCamSignature.AddInstruction(.lw, 0x4);
+				spyroCamSignature.AddInstruction(.lw, 0x8);
+				spyroCamSignature.AddInstruction(.lw, 0xc);
+				spyroCamSignature.AddInstruction(.lw, 0x10);
+				spyroCamSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)0);
+				spyroCamSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)1);
+				spyroCamSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)2);
+				spyroCamSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)3);
+				spyroCamSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)4);
+
+				signatureLocation = spyroCamSignature.Find(active);
+				active.ReadFromRAM(signatureLocation, &loadAddress, 4);
+				spyroRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
+				active.ReadFromRAM(signatureLocation + 4*3, &loadAddress, 4);
+				cameraRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
+
+				MemorySignature cameraSignature = scope .();
+				cameraSignature.AddInstruction(.lui, .wild, cameraRegister, -1);
+				cameraSignature.AddInstruction(.addiu, cameraRegister, cameraRegister, -1);
+				MemorySignature spyroSignature = scope .();
+				spyroSignature.AddInstruction(.lui, .wild, spyroRegister, -1);
+				spyroSignature.AddInstruction(.addiu, spyroRegister, spyroRegister, -1);
+
+				loadSignatureLocation = cameraSignature.FindReverse(active, signatureLocation);
+				active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
+				cameraAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+				loadSignatureLocation = spyroSignature.FindReverse(active, signatureLocation);
+				active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
+				spyroAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			} else {
+				active.ReadFromRAM(signatureLocation + 4*6, &loadAddress, 4);
+				spyroRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
+				active.ReadFromRAM(signatureLocation + 4*9, &loadAddress, 4);
+				cameraRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
+				
+				MemorySignature cameraSignature = scope .();
+				cameraSignature.AddInstruction(.lui, .wild, cameraRegister, -1);
+				cameraSignature.AddInstruction(.addiu, cameraRegister, cameraRegister, -1);
+				MemorySignature spyroSignature = scope .();
+				spyroSignature.AddInstruction(.lui, .wild, spyroRegister, -1);
+				spyroSignature.AddInstruction(.addiu, spyroRegister, spyroRegister, -1);
+
+				loadSignatureLocation = cameraSignature.FindReverse(active, signatureLocation);
+				active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
+				cameraAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+				loadSignatureLocation = spyroSignature.FindReverse(active, signatureLocation);
+				active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
+				spyroAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			}
+
+			spyroPositionAddress = (.)spyroAddress;
+
+			MemorySignature cameraPositionSignature = scope .();
+			cameraPositionSignature.AddInstruction(.lui); // Camera Struct
+			cameraPositionSignature.AddInstruction(.addiu);
+			cameraPositionSignature.AddInstruction(.lw); // Camera Basis
+			cameraPositionSignature.AddInstruction(.lw);
+			cameraPositionSignature.AddInstruction(.lw);
+			cameraPositionSignature.AddInstruction(.lw);
+			cameraPositionSignature.AddInstruction(.lw);
+			cameraPositionSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)0);
+			cameraPositionSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)1);
+			cameraPositionSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)2);
+			cameraPositionSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)3);
+			cameraPositionSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)4);
+			cameraPositionSignature.AddInstruction(.cop2, (.)0b00110, .zero, (MemorySignature.Reg)5);
+			cameraPositionSignature.AddInstruction(.cop2, (.)0b00110, .zero, (MemorySignature.Reg)6);
+			cameraPositionSignature.AddInstruction(.cop2, (.)0b00110, .zero, (MemorySignature.Reg)7);
+			cameraPositionSignature.AddInstruction(.lw); // Camera Position
+			cameraPositionSignature.AddInstruction(.lw);
+			cameraPositionSignature.AddInstruction(.lw);
+
+			signatureLocation = cameraPositionSignature.Find(active);
+			active.ReadFromRAM(signatureLocation + 4*2, &loadAddress, 4);
+			cameraBasisAddress = (.)(cameraAddress + (loadAddress[0] & 0x0000ffff));
+			active.ReadFromRAM(signatureLocation + 4*15, &loadAddress, 4);
+			cameraPositionAddress = (.)(cameraAddress + (loadAddress[0] & 0x0000ffff));
+
+			// Camera Euler Signature
+			// Spyro 1 Attempt
+			MemorySignature cameraEulerSignature = scope .();
+			cameraEulerSignature.AddInstruction(.lui);
+			cameraEulerSignature.AddInstruction(.addiu);
+			cameraEulerSignature.AddInstruction(.lh);
+			cameraEulerSignature.AddInstruction(.lui);
+			cameraEulerSignature.AddInstruction(.lw);
+			cameraEulerSignature.AddInstruction(.addiu, .zero, .wild, 0x1000);
+			cameraEulerSignature.AddInstruction(.sh);
+			cameraEulerSignature.AddInstruction(.jal);
+
+			signatureLocation = cameraEulerSignature.Find(active);
+
+			if (!signatureLocation.IsNull) {
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				cameraEulerAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+				cameraEulerAddress -= 2;
+			} else {
+				// Spyro 2/3 Attempt
+				cameraEulerSignature.Clear();
+				cameraEulerSignature.AddInstruction(.lui);
+				cameraEulerSignature.AddInstruction(.lhu);
+				cameraEulerSignature.AddInstruction(.lui);
+				cameraEulerSignature.AddInstruction(.lhu);
+				cameraEulerSignature.AddInstruction(.lui);
+				cameraEulerSignature.AddInstruction(.lhu);
+				cameraEulerSignature.AddInstruction(.lui);
+				cameraEulerSignature.AddInstruction(.sh);
+				cameraEulerSignature.AddInstruction(.lui);
+				cameraEulerSignature.AddInstruction(.sh);
+				cameraEulerSignature.AddInstruction(.lui);
+				cameraEulerSignature.AddInstruction(.sh);
+
+				signatureLocation = cameraEulerSignature.Find(active);
+				active.ReadFromRAM(signatureLocation + 4*6, &loadAddress, 8);
+				cameraEulerAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			}
+
+			// Spyro Euler Signature
+			MemorySignature spyroEulerSignature = scope .();
+			spyroEulerSignature.AddInstruction(.lui);
+			spyroEulerSignature.AddInstruction(.lw);
+			spyroEulerSignature.AddInstruction(.sra);
+			spyroEulerSignature.AddInstruction(.sb);
+			spyroEulerSignature.AddInstruction(.lui);
+			spyroEulerSignature.AddInstruction(.lw);
+			spyroEulerSignature.AddInstruction(.sra);
+			spyroEulerSignature.AddInstruction(.sb);
+			spyroEulerSignature.AddInstruction(.sra);
+
+			signatureLocation = spyroEulerSignature.Find(active);
+			active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+			spyroEulerAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+
+			// Spyro Basis Signature
+			MemorySignature spyroBasisSignature = scope .();
+			spyroBasisSignature.AddInstruction(.lw);
+			spyroBasisSignature.AddInstruction(.lw);
+			spyroBasisSignature.AddInstruction(.lw);
+			spyroBasisSignature.AddInstruction(.lw);
+			spyroBasisSignature.AddInstruction(.lw);
+			spyroBasisSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)0);
+			spyroBasisSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)1);
+			spyroBasisSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)2);
+			spyroBasisSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)3);
+			spyroBasisSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)4);
+
+			signatureLocation = (.)0x80000000;
+			while (signatureLocation < (.)0x80200000) {
+				signatureLocation = spyroBasisSignature.Find(active, signatureLocation + 4);
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				spyroRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
+				int spyroBasisOffset = loadAddress[0] & 0x0000ffff;
+
+				MemorySignature spyroSignature2 = scope .();
+				spyroSignature2.AddInstruction(.lui, .wild, spyroRegister, -1);
+				spyroSignature2.AddInstruction(.addiu, spyroRegister, spyroRegister, -1);
+
+				loadSignatureLocation = spyroSignature2.FindReverse(active, signatureLocation);
+				active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
+				if (spyroAddress == (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1])) {
+					spyroBasisAddress = (.)spyroAddress + spyroBasisOffset;
+					break;
+				}
+			}
+
+			// Spyro Velocity Signature
+			MemorySignature spyroVelSignature = scope .();
+			spyroVelSignature.AddInstruction(.lui);
+			spyroVelSignature.AddInstruction(.addiu);
+			spyroVelSignature.AddInstruction(.lui);
+			spyroVelSignature.AddInstruction(.lw);
+			spyroVelSignature.AddInstruction(.sll, .zero, .zero);
+			spyroVelSignature.AddInstruction(.sll);
+			spyroVelSignature.AddInstruction(.subu);
+
+			signatureLocation = spyroVelSignature.Find(active);
+			if (signatureLocation.IsNull) {
+				MemorySignature spyVelPhySignature = scope .();
+				spyVelPhySignature.AddInstruction(.lui);
+				spyVelPhySignature.AddInstruction(.lw);
+				spyVelPhySignature.AddInstruction(.lui);
+				spyVelPhySignature.AddInstruction(.lw);
+				spyVelPhySignature.AddInstruction(.sw);
+				spyVelPhySignature.AddInstruction(.jal);
+
+				signatureLocation = spyVelPhySignature.Find(active);
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				spyroVelocityIntended = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+
+				MemorySignature spyVelIntSignature = scope .();
+				spyVelIntSignature.AddInstruction(.lui);
+				spyVelIntSignature.AddInstruction(.addiu);
+				spyVelIntSignature.AddInstruction(.jal);
+				spyVelIntSignature.AddInstruction(.sll);
+				spyVelIntSignature.AddInstruction(.lui);
+				spyVelIntSignature.AddInstruction(.lw);
+				spyVelIntSignature.AddInstruction(.addiu, .zero, .wild, -1);
+				spyVelIntSignature.AddInstruction(.lui);
+				spyVelIntSignature.AddInstruction(.sw);
+
+				signatureLocation = spyVelIntSignature.Find(active);
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				spyroVelocityPhysics = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			} else {
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				spyroVelocityIntended = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+				active.ReadFromRAM(signatureLocation + 4*2, &loadAddress, 8);
+				spyroVelocityPhysics = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			}
+
+			MemorySignature spyroStateSignature = scope .();
+			spyroStateSignature.AddInstruction(.lui);
+			spyroStateSignature.AddInstruction(.sb, .wild, .zero, -1);
+			spyroStateSignature.AddInstruction(.lui);
+			spyroStateSignature.AddInstruction(.sb, .wild, .zero, -1);
+			spyroStateSignature.AddInstruction(.lui);
+			spyroStateSignature.AddInstruction(.sw, .wild, .zero, -1);
+			spyroStateSignature.AddInstruction(.lui);
+			spyroStateSignature.AddInstruction(.sw);
+			spyroStateSignature.AddInstruction(.lui);
+			spyroStateSignature.AddInstruction(.sw, .wild, .zero, -1);
+			spyroStateSignature.AddInstruction(.lui);
+			spyroStateSignature.AddInstruction(.sw);
+			spyroStateSignature.AddInstruction(.lw);
+			spyroStateSignature.AddInstruction(.lw);
+			spyroStateSignature.AddInstruction(.lw);
+
+			signatureLocation = spyroStateSignature.Find(active);
+
+			if (signatureLocation.IsNull) {
+				spyroStateSignature.Clear();
+				spyroStateSignature.AddInstruction(.lui);
+				spyroStateSignature.AddInstruction(.lw);
+				spyroStateSignature.AddInstruction(.lui);
+				spyroStateSignature.AddInstruction(.sw);
+				spyroStateSignature.AddInstruction(.lui);
+				spyroStateSignature.AddInstruction(.lw);
+				spyroStateSignature.AddInstruction(.lui);
+				spyroStateSignature.AddInstruction(.sw);
+				spyroStateSignature.AddInstruction(.lui);
+				spyroStateSignature.AddInstruction(.sw);
+				
+				signatureLocation = spyroStateSignature.Find(active);
+				
+				active.ReadFromRAM(signatureLocation + 4*2, &loadAddress, 8);
+				spyroStateAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			} else {
+				active.ReadFromRAM(signatureLocation + 4*6, &loadAddress, 8);
+				spyroStateAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			}
+
+			MemorySignature mobyArraySignature = scope .();
+			mobyArraySignature.AddInstruction(.lui);
+			mobyArraySignature.AddInstruction(.addiu);
+			mobyArraySignature.AddInstruction(.addi);
+			mobyArraySignature.AddInstruction(.addi);
+
+			signatureLocation = mobyArraySignature.Find(active);
+
+			MemorySignature clearColorSignature = scope .();
+			clearColorSignature.AddInstruction(.sll, .wild, .wild, 0x4);
+			clearColorSignature.AddInstruction(.andi, .wild, .wild, 0xff0);
+			clearColorSignature.AddInstruction(.srl, .wild, .wild, 0x4);
+			clearColorSignature.AddInstruction(.andi, .wild, .wild, 0xff0);
+			clearColorSignature.AddInstruction(.srl, .wild, .wild, 0xc);
+			clearColorSignature.AddInstruction(.andi, .wild, .wild, 0xff0);
+			clearColorSignature.AddInstruction(.lw);
+			clearColorSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)21);
+			clearColorSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)22);
+			clearColorSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)23);
+
+			signatureLocation = clearColorSignature.Find(active);
+			active.ReadFromRAM(signatureLocation, &loadAddress, 4);
+			MemorySignature.Reg colorRegister = (.)((loadAddress[0] & 0x001f0000) >> 16);
+
+			MemorySignature clearColorLoadSignature = scope .();
+			clearColorLoadSignature.AddInstruction(.lui, .wild, colorRegister, -1);
+			clearColorLoadSignature.AddInstruction(.addiu, colorRegister, colorRegister, -1);
+
+			signatureLocation = clearColorLoadSignature.FindReverse(active, signatureLocation);
+			active.ReadFromRAM(signatureLocation + 4*2, &clearColorAddress, 4);
+			clearColorAddress = (.)((int32)clearColorAddress & 0x0000ffff);
+			active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+			clearColorAddress += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 		}
 
 		// Spyro Update
@@ -816,10 +1162,6 @@ namespace SpyroScope {
 		public void RestoreCameraUpdate() {
 			uint32 v = cameraUpdateJumpValue[(int)rom];
 			cameraUpdateAddresses[(int)rom].Write(&v, this);
-		}
-
-		public void SetCameraPosition(Vector3Int* position) {
-			cameraPositionAddress[(int)rom].Write(position, this);
 		}
 
 		// Input

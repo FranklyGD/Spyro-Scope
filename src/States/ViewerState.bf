@@ -225,8 +225,8 @@ namespace SpyroScope {
 		public override void DrawView() {
 			if (Terrain.renderMode == .Collision) {
 				Renderer.clearColor = .(0,0,0);
-			} else {
-				Emulator.backgroundClearColorAddress[(int)Emulator.active.rom].Read(&Renderer.clearColor);
+			} else if (!Emulator.active.clearColorAddress.IsNull) {
+				Emulator.active.clearColorAddress.Read(&Renderer.clearColor);
 				Renderer.clearColor.r = (.)(Math.Pow((float)Renderer.clearColor.r / 255, 2.2f) * 255);
 				Renderer.clearColor.g = (.)(Math.Pow((float)Renderer.clearColor.g / 255, 2.2f) * 255);
 				Renderer.clearColor.b = (.)(Math.Pow((float)Renderer.clearColor.b / 255, 2.2f) * 255);
@@ -524,18 +524,13 @@ namespace SpyroScope {
 								viewEulerRotation.x = Math.Clamp(viewEulerRotation.x, -0.5f, 0.5f);
 							}
 							case .Game: {
-								int16[3] cameraEulerRotation = ?;	
-								Emulator.cameraEulerRotationAddress[(int)Emulator.active.rom].Read(&cameraEulerRotation);
+								int16* cameraEulerRotation = &Emulator.active.cameraEulerRotation;
 		
 								cameraEulerRotation[2] -= (.)event.motion.xrel * 2;
 								cameraEulerRotation[1] += (.)event.motion.yrel * 2;
 								cameraEulerRotation[1] = Math.Clamp(cameraEulerRotation[1], -0x400, 0x400);
-		
-								// Force camera view basis in game
-								Emulator.active.cameraBasisInv = MatrixInt.Euler(0, (float)cameraEulerRotation[1] / 0x800 * Math.PI_f, (float)cameraEulerRotation[2] / 0x800 * Math.PI_f);
-		
-								Emulator.cameraMatrixAddress[(int)Emulator.active.rom].Write(&Emulator.active.cameraBasisInv);
-								Emulator.cameraEulerRotationAddress[(int)Emulator.active.rom].Write(&cameraEulerRotation);
+								
+								Emulator.active.cameraEulerAddress.Write((.)cameraEulerRotation);
 							}
 							case .Map: {
 								var translationX = -Camera.size * event.motion.xrel / WindowApp.height;
@@ -833,7 +828,7 @@ namespace SpyroScope {
 		void UpdateView() {
 			if (viewMode == .Game) {
 				Camera.position = Emulator.active.CameraPosition;
-				int16[3] cameraEulerRotation = Emulator.active.cameraEulerRotation;
+				int16* cameraEulerRotation = &Emulator.active.cameraEulerRotation;
 				viewEulerRotation.x = (float)cameraEulerRotation[1] / 0x800;
 				viewEulerRotation.y = (float)cameraEulerRotation[0] / 0x800;
 				viewEulerRotation.z = (float)cameraEulerRotation[2] / 0x800;
@@ -966,7 +961,11 @@ namespace SpyroScope {
 		}
 
 		void DrawGameCameraFrustrum() {
-			let cameraBasis = Emulator.active.cameraBasisInv.ToMatrixCorrected().Transpose();
+			Vector3 euler;
+			euler.x = (float)Emulator.active.cameraEulerRotation[0] / 0x800 * Math.PI_f;
+			euler.y = -(float)Emulator.active.cameraEulerRotation[1] / 0x800 * Math.PI_f;
+			euler.z = -(float)Emulator.active.cameraEulerRotation[2] / 0x800 * Math.PI_f;
+			let cameraBasis = Matrix3.Euler(euler);
 			let cameraBasisCorrected = Matrix3(cameraBasis.y, cameraBasis.z, -cameraBasis.x);
 
 			let cameraPosition = Emulator.active.CameraPosition;
@@ -1262,7 +1261,7 @@ namespace SpyroScope {
 				Camera.far = 500000;
 
 				Camera.position = Emulator.active.CameraPosition;
-				int16[3] cameraEulerRotation = Emulator.active.cameraEulerRotation;
+				int16* cameraEulerRotation = &Emulator.active.cameraEulerRotation;
 				viewEulerRotation.x = (float)cameraEulerRotation[1] / 0x800;
 				viewEulerRotation.y = (float)cameraEulerRotation[0] / 0x800;
 				viewEulerRotation.z = (float)cameraEulerRotation[2] / 0x800;
