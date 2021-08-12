@@ -596,7 +596,7 @@ namespace SpyroScope {
 							}
 							case .K : {
 								uint32 health = 0;
-								Emulator.healthAddresses[(int)Emulator.active.rom].Write(&health);
+								Emulator.active.healthAddress.Write(&health);
 							}
 							case .T : {
 								if (viewerMenu.teleportButton.Enabled) {

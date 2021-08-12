@@ -180,7 +180,7 @@ namespace SpyroScope {
 		public const Address<uint32>[11] deathPlaneHeightsAddresses = .(0, (.)0x8006e9a4/*StD*/, 0, 0, (.)0x80060234/*RR*/, 0, 0, (.)0x800676e8, (.)0x800677c8/*YotD-1.1*/, 0, 0);
 		public const Address<uint32>[11] maxFreeflightHeightsAddresses = .(0, 0/*StD*/, 0, 0, (.)0x800601b4/*RR*/, 0, 0, (.)0x80067648, (.)0x80067728/*YotD-1.1*/, 0, 0);
 
-		public const Address<uint32>[11] healthAddresses = .(0, (.)0x80078bbc/*StD*/, 0, 0, (.)0x8006A248/*RR*/, 0, 0, (.)0x800705a8, (.)0x80070688/*YotD-1.1*/, 0, 0);
+		public Address<uint32> healthAddress;
 
 		public const Address<uint32>[11] gameInputAddress = .(0, (.)0x800773c0/*StD*/, 0, 0, (.)0x800683a0/*RR*/, 0, 0, 0, (.)0x8006e618/*YotD-1.1*/, 0, 0);
 		//public const Address<uint32>[11] gameInputSetAddress = .(0, 0/*StD*/, 0, 0, (.)0x8001291c/*RR*/, 0, 0, 0, (.)0x8003a7a0/*YotD-1.1*/, 0, 0);
@@ -1248,6 +1248,45 @@ namespace SpyroScope {
 					active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
 					*addr += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 				}
+			}
+
+			// Health
+			// Spyro 2/3 Attempt
+			MemorySignature healthSignature = scope .();
+			healthSignature.AddInstruction(.addiu, .zero, .wild, (uint16)-1);
+			healthSignature.AddInstruction(.lui);
+			healthSignature.AddInstruction(.lw);
+			healthSignature.AddInstruction(.sll);
+			healthSignature.AddWildcard<int32>();
+			healthSignature.AddInstruction(.addiu);
+			healthSignature.AddInstruction(.lui);
+			healthSignature.AddInstruction(.sw);
+
+			signatureLocation = healthSignature.Find(active);
+			if (signatureLocation.IsNull) {
+				// Spyro 1 Attempt
+				healthSignature.Clear();
+				healthSignature.AddInstruction(.bne);
+				healthSignature.AddInstruction(.sll);
+				healthSignature.AddInstruction(.lw);
+				healthSignature.AddInstruction(.sll);
+				healthSignature.AddInstruction(.addiu, .wild, .wild, (uint16)-1);
+				healthSignature.AddInstruction(.sw);
+
+				signatureLocation = healthSignature.Find(active);
+				active.ReadFromRAM(signatureLocation + 4*2, &loadAddress, 4);
+				MemorySignature.Reg healthRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
+
+				MemorySignature loadSignature = scope .();
+				loadSignature.AddInstruction(.lui, .wild, healthRegister, -1);
+				loadSignature.AddInstruction(.addiu, healthRegister, healthRegister, -1);
+
+				loadSignatureLocation = loadSignature.FindReverse(active, signatureLocation);
+				active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
+				healthAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			} else {
+				active.ReadFromRAM(loadSignatureLocation + 4*1, &loadAddress, 8);
+				healthAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 			}
 		}
 
