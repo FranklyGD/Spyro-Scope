@@ -6,6 +6,8 @@ namespace SpyroScope {
 		public readonly Emulator.Address address;
 		public readonly Emulator.Address deformArrayAddress;
 
+		uint32 deformArrayCount;
+
 		// Collision Grid
 		Vector3Int dimensions;
 		public int16[,,] grid;
@@ -99,8 +101,9 @@ namespace SpyroScope {
 		}
 		public AnimationGroup[] animationGroups;
 
-		public this(Emulator.Address address, Emulator.Address deformAddress) {
+		public this(Emulator.Address address, Emulator.Address deformAddress, uint32 deformGroupCount) {
 			this.address = address;
+			this.deformArrayCount = deformGroupCount;
 			this.deformArrayAddress = deformAddress;
 			
 			Reload();
@@ -258,7 +261,7 @@ namespace SpyroScope {
 			Emulator.active.ReadFromRAM(address + 24, &collisionFlagArray, 4);
 			Emulator.active.ReadFromRAM(collisionFlagArray, flagIndices.GrowUnitialized(SpecialTriangleCount), sizeof(uint8) * flagIndices.Count);
 
-			Emulator.active.ReadFromRAM(Emulator.collisionFlagsArrayPointers[(int)Emulator.active.rom], &collisionFlagArray, 4);
+			Emulator.active.ReadFromRAM(Emulator.active.collisionFlagsPointer, &collisionFlagArray, 4);
 			Emulator.active.ReadFromRAM(collisionFlagArray, &collisionFlagPointerArray[0], 4 * 0x40);
 
 			GenerateMesh();
@@ -370,18 +373,13 @@ namespace SpyroScope {
 		public void ReloadDeformGroups() {
 			DeleteDeformGroups();
 
-			uint32 count = 0;
-			if (Emulator.active.loadingStatus == .Idle) {
-				Emulator.active.ReadFromRAM(Emulator.collisionDeformDataPointers[(int)Emulator.active.rom] - 4, &count, 4);
-			}
-
 			delete animationGroups;
-			animationGroups = new .[count];
+			animationGroups = new .[deformArrayCount];
 
-			let collisionModifyingGroupPointers = scope Emulator.Address[count];
-			Emulator.active.ReadFromRAM(deformArrayAddress, collisionModifyingGroupPointers.CArray(), 4 * count);
+			let collisionModifyingGroupPointers = scope Emulator.Address[deformArrayCount];
+			Emulator.active.ReadFromRAM(deformArrayAddress, collisionModifyingGroupPointers.CArray(), 4 * deformArrayCount);
 
-			for (let groupIndex < count) {
+			for (let groupIndex < deformArrayCount) {
 				let animationGroup = &animationGroups[groupIndex];
 				animationGroup.dataPointer = collisionModifyingGroupPointers[groupIndex];
 				if (animationGroup.dataPointer.IsNull) {
@@ -455,7 +453,7 @@ namespace SpyroScope {
 			animationGroups = new .[0];
 
 			uint32 count = 0;
-			Emulator.active.WriteToRAM(Emulator.collisionDeformDataPointers[(int)Emulator.active.rom] - 4, &count, 4);
+			Emulator.active.WriteToRAM(Emulator.active.collisionDataPointer, &count, 4);
 		}
 
 		void DeleteDeformGroups() {
