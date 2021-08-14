@@ -152,8 +152,7 @@ namespace SpyroScope {
 		public const Address<uint32>[4] collisionRadius = .((.)0x8007036c, (.)0x8007044c, 0, 0); // Exclusive to Spyro: Year of the Dragon
 
 		// Objects
-		public const Address<Address>[11] objectArrayPointers = .(0, (.)0x80075828/*StD*/, 0, 0, (.)0x80066f14/*RR*/, 0, 0, (.)0x8006c550, (.)0x8006c630/*YotD-1.1*/, 0, 0);
-		public const Address<Address>[11] modelPointers = .(0, (.)0x80076378/*StD*/, 0, 0, (.)0x80068c94/*RR*/, 0, 0, (.)0x8006ee2c, (.)0x8006ef0c/*YotD-1.1*/, 0, 0);
+		public Address<Address> mobyArrayPointer, mobyModelArrayPointer;
 
 		// Camera
 		public Address cameraAddress;
@@ -761,7 +760,7 @@ namespace SpyroScope {
 			}
 
 			Emulator.Address<Moby> newObjectArrayAddress = ?;
-			objectArrayPointers[(int)rom].Read(&newObjectArrayAddress, this);
+			mobyArrayPointer.Read(&newObjectArrayAddress, this);
 			if (objectArrayAddress != newObjectArrayAddress) {
 				Moby.allocated.Clear();
 			}
@@ -1079,11 +1078,53 @@ namespace SpyroScope {
 			// Mobys (Objects) Signature
 			MemorySignature mobyArraySignature = scope .();
 			mobyArraySignature.AddInstruction(.lui);
-			mobyArraySignature.AddInstruction(.addiu);
-			mobyArraySignature.AddInstruction(.addi);
-			mobyArraySignature.AddInstruction(.addi);
+			mobyArraySignature.AddInstruction(.lw);
+			mobyArraySignature.AddInstruction(.sll);
+			mobyArraySignature.AddInstruction(.subu);
+			mobyArraySignature.AddInstruction(.sll);
+			mobyArraySignature.AddInstruction(.subu);
+			mobyArraySignature.AddInstruction(.sll);
+			mobyArraySignature.AddInstruction(.addu);
+			mobyArraySignature.AddInstruction(.sll);
+			mobyArraySignature.AddInstruction(.addu);
+			mobyArraySignature.AddInstruction(.sll);
+			mobyArraySignature.AddInstruction(.subu);
+			mobyArraySignature.AddInstruction(.sll);
 
 			signatureLocation = mobyArraySignature.Find(active);
+			active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+			mobyArrayPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			
+			// Moby Models Signature
+			// Spyro 1 Attempt
+			MemorySignature mobyModelArraySignature = scope .();
+			mobyModelArraySignature.AddInstruction(.lui);
+			mobyModelArraySignature.AddInstruction(.lw);
+			mobyModelArraySignature.AddInstruction(.sll);
+			mobyModelArraySignature.AddInstruction(.addu);
+			mobyModelArraySignature.AddInstruction(.lui);
+			mobyModelArraySignature.AddInstruction(.lbu);
+			
+			signatureLocation = mobyModelArraySignature.Find(active);
+			if (signatureLocation.IsNull) {
+				// Spyro 2/3 Attempt
+				mobyModelArraySignature.Clear();
+				mobyModelArraySignature.AddInstruction(.lui);
+				mobyModelArraySignature.AddInstruction(.sw);
+				mobyModelArraySignature.AddInstruction(.lui);
+				mobyModelArraySignature.AddInstruction(.lw);
+				mobyModelArraySignature.AddInstruction(.addiu);
+				mobyModelArraySignature.AddInstruction(.lui);
+				mobyModelArraySignature.AddInstruction(.sw);
+				mobyModelArraySignature.AddInstruction(.lw);
+				
+				signatureLocation = mobyModelArraySignature.Find(active);
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				mobyModelArrayPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			} else {
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				mobyModelArrayPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			}
 
 			// Background Clear Color Signature
 			MemorySignature clearColorSignature = scope .();

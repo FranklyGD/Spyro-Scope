@@ -689,7 +689,7 @@ namespace SpyroScope {
 				if (modelSets.ContainsKey(object.objectTypeID)) {
 					if (!drawObjectExperimentalModels) {
 						Emulator.Address modelSetAddress = ?;
-						Emulator.modelPointers[(int)Emulator.active.rom].GetAtIndex(&modelSetAddress, object.objectTypeID);
+						Emulator.active.mobyModelArrayPointer.GetAtIndex(&modelSetAddress, object.objectTypeID);
 						if ((uint32)modelSetAddress & 0x80000000 > 0) {
 							return;
 						}
@@ -706,7 +706,7 @@ namespace SpyroScope {
 					modelSets[object.objectTypeID].QueueInstance(object.modelID, Emulator.active.shinyColors[object.color.r % 10][1]);
 				} else {
 					Emulator.Address modelSetAddress = ?;
-					Emulator.modelPointers[(int)Emulator.active.rom].GetAtIndex(&modelSetAddress, object.objectTypeID);
+					Emulator.active.mobyModelArrayPointer.GetAtIndex(&modelSetAddress, object.objectTypeID);
 
 					if (!modelSetAddress.IsNull) {
 						modelSets.Add(object.objectTypeID, new .(modelSetAddress));

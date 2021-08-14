@@ -113,7 +113,7 @@ namespace SpyroScope {
 
 						Moby linkedMoby = ?;
 						Emulator.Address<Moby> objPointer = ?;
-						Emulator.objectArrayPointers[(int)Emulator.active.rom].Read(&objPointer);
+						Emulator.active.mobyArrayPointer.Read(&objPointer);
 						Emulator.active.ReadFromRAM(objPointer + objectIndex * sizeof(Moby), &linkedMoby, sizeof(Moby));
 
 						Renderer.DrawLine(position, linkedMoby.position, .(255,255,255), .(255,255,255));
