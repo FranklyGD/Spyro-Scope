@@ -906,12 +906,11 @@ namespace SpyroScope {
 			cameraEulerSignature.AddInstruction(.lh);
 			cameraEulerSignature.AddInstruction(.lui);
 			cameraEulerSignature.AddInstruction(.lw);
-			cameraEulerSignature.AddInstruction(.addiu, .zero, .wild, 0x1000);
+			cameraEulerSignature.AddWildcard<int32>(); // lui/ori
 			cameraEulerSignature.AddInstruction(.sh);
 			cameraEulerSignature.AddInstruction(.jal);
 
 			signatureLocation = cameraEulerSignature.Find(active);
-
 			if (!signatureLocation.IsNull) {
 				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
 				cameraEulerAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
@@ -938,20 +937,36 @@ namespace SpyroScope {
 			}
 
 			// Spyro Euler Signature
+			// Spyro 1 Attempt
 			MemorySignature spyroEulerSignature = scope .();
 			spyroEulerSignature.AddInstruction(.lui);
 			spyroEulerSignature.AddInstruction(.lw);
-			spyroEulerSignature.AddInstruction(.sra);
-			spyroEulerSignature.AddInstruction(.sb);
-			spyroEulerSignature.AddInstruction(.lui);
-			spyroEulerSignature.AddInstruction(.lw);
-			spyroEulerSignature.AddInstruction(.sra);
-			spyroEulerSignature.AddInstruction(.sb);
-			spyroEulerSignature.AddInstruction(.sra);
+			spyroEulerSignature.AddInstruction(.addu);
+			spyroEulerSignature.AddInstruction(.andi);
+			spyroEulerSignature.AddInstruction(.sw);
+			spyroEulerSignature.AddInstruction(.sra, .wild, .wild, 4);
 
 			signatureLocation = spyroEulerSignature.Find(active);
-			active.ReadFromRAM(signatureLocation, &loadAddress, 8);
-			spyroEulerAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			if (signatureLocation.IsNull) {
+				// Spyro 2/3 Attempt
+				spyroEulerSignature.Clear();
+				spyroEulerSignature.AddInstruction(.lui);
+				spyroEulerSignature.AddInstruction(.lw);
+				spyroEulerSignature.AddInstruction(.sra);
+				spyroEulerSignature.AddInstruction(.sb);
+				spyroEulerSignature.AddInstruction(.lui);
+				spyroEulerSignature.AddInstruction(.lw);
+				spyroEulerSignature.AddInstruction(.sra);
+				spyroEulerSignature.AddInstruction(.sb);
+				spyroEulerSignature.AddInstruction(.sra);
+				
+				signatureLocation = spyroEulerSignature.Find(active);
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				spyroEulerAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			} else {
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				spyroEulerAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			}
 
 			// Spyro Basis Signature
 			MemorySignature spyroBasisSignature = scope .();
