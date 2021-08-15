@@ -1169,36 +1169,17 @@ namespace SpyroScope {
 			collisionDataPointer += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 
 			// Terrain Flags Signature
-			// Spyro 1 Attempt
 			MemorySignature terrainFlagsSignature = scope .();
+			terrainFlagsSignature.AddInstruction(.andi, 0x3f);
+			terrainFlagsSignature.AddInstruction(.addiu, .zero, .wild, 0x3f);
+			terrainFlagsSignature.AddInstruction(.beq);
+			terrainFlagsSignature.AddInstruction(.sll);
 			terrainFlagsSignature.AddInstruction(.lui);
 			terrainFlagsSignature.AddInstruction(.lw);
-			terrainFlagsSignature.AddInstruction(.sll);
-			terrainFlagsSignature.AddInstruction(.addu);
-			terrainFlagsSignature.AddInstruction(.lw);
-			terrainFlagsSignature.AddInstruction(.sll);
-			terrainFlagsSignature.AddInstruction(.lbu);
-			terrainFlagsSignature.AddInstruction(.j);
-			terrainFlagsSignature.AddInstruction(.andi);
-
+			
 			signatureLocation = terrainFlagsSignature.Find(active);
-			if (signatureLocation.IsNull) {
-				// Spyro 2/3 Attempt
-				terrainFlagsSignature.Clear();
-				terrainFlagsSignature.AddInstruction(.lui);
-				terrainFlagsSignature.AddInstruction(.lw);
-				terrainFlagsSignature.AddInstruction(.sll);
-				terrainFlagsSignature.AddInstruction(.addu);
-				terrainFlagsSignature.AddInstruction(.lw);
-				terrainFlagsSignature.AddInstruction(.sll);
-				
-				signatureLocation = terrainFlagsSignature.Find(active);
-				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
-				collisionFlagsPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
-			} else {
-				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
-				collisionFlagsPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
-			}
+			active.ReadFromRAM(signatureLocation + 4*4, &loadAddress, 8);
+			collisionFlagsPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 
 			// Terrain Animations Signature
 			MemorySignature loadMainSignature = scope .();
