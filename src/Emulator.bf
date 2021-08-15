@@ -135,8 +135,7 @@ namespace SpyroScope {
 		public const Address<char8>[10] testAddresses = .((.)0x800103e7/*StD*/, 0, 0, (.)0x80066ea8/*RR*/, 0, 0, (.)0x8006c3b0, (.)0x8006c490/*YotD-1.1*/, 0, 0);
 		public const String[11] gameNames = .(String.Empty, "Spyro the Dragon (NTSC-U)", "Spyro the Dragon (NTSC-J)", "Spyro the Dragon (PAL)", "Spyro: Ripto's Rage (NTSC-U)", "Spyro and Sparx: Tondemo Tours (NTSC-J)", "Spyro: Gateway to Glimmer (PAL)", "Spyro: Year of the Dragon (v1.0 NTSC-U)", "Spyro: Year of the Dragon (v1.1 NTSC-U)", "Spyro: Year of the Dragon (v1.0 PAL)", "Spyro: Year of the Dragon (v1.1 PAL)");
 
-		public const Address<int32>[11] gameStateAddresses = .(0, (.)0x800757d8/*StD*/, 0, 0, (.)0x800681c8/*RR*/, 0, 0, (.)0x8006e344, (.)0x8006e424/*YotD-1.1*/, 0, 0);
-		public const Address<int32>[11] loadStateAddresses = .(0, (.)0x80075864/*StD*/, 0, 0, (.)0x80066eec/*RR*/, 0, 0, 0, (.)0x8006c5f8/*YotD-1.1*/, 0, 0);
+		public Address<int32> gameStateAddress, loadStateAddress;
 
 		// Spyro
 		public Address spyroAddress;
@@ -729,8 +728,8 @@ namespace SpyroScope {
 
 		public void FetchImportantData() {
 			// Load static address values
-			gameStateAddresses[(int)rom].Read(&gameState, this);
-			loadStateAddresses[(int)rom].Read(&loadState, this);
+			gameStateAddress.Read(&gameState, this);
+			loadStateAddress.Read(&loadState, this);
 
 			gameInputAddress[(int)rom].Read(&input, this);
 
@@ -1328,6 +1327,75 @@ namespace SpyroScope {
 			} else {
 				active.ReadFromRAM(loadSignatureLocation + 4*1, &loadAddress, 8);
 				healthAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			}
+
+			// Load State Signature
+			// Spyro 2/3 Attempt
+			MemorySignature loadStateSignature = scope .();
+			loadStateSignature.AddInstruction(.sw);
+			loadStateSignature.AddInstruction(.jal);
+			loadStateSignature.AddInstruction(.sw);
+			loadStateSignature.AddWildcard<uint32>();
+			loadStateSignature.AddInstruction(.sll);
+			loadStateSignature.AddInstruction(.lui);
+			loadStateSignature.AddInstruction(.lw);
+			loadStateSignature.AddInstruction(.sll);
+
+			signatureLocation = loadStateSignature.Find(active);
+			if (signatureLocation.IsNull) {
+				// Spyro 1 Attempt
+				loadStateSignature.Clear();
+				loadStateSignature.AddInstruction(.lui);
+				loadStateSignature.AddInstruction(.sw);
+				loadStateSignature.AddInstruction(.lui);
+				loadStateSignature.AddInstruction(.sw);
+				loadStateSignature.AddInstruction(.addiu, .wild, .wild, 1);
+				loadStateSignature.AddInstruction(.lui);
+				loadStateSignature.AddInstruction(.sw);
+	
+				signatureLocation = loadStateSignature.Find(active);
+				active.ReadFromRAM(signatureLocation + 4*5, &loadAddress, 8);
+				loadStateAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			} else {
+				active.ReadFromRAM(signatureLocation + 4*5, &loadAddress, 8);
+				loadStateAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			}
+
+			// Game State Signature
+			// Spyro 1 Attempt
+			MemorySignature gameStateSignature = scope .(); ////
+			gameStateSignature.AddInstruction(.lui);
+			gameStateSignature.AddInstruction(.lw);
+			gameStateSignature.AddInstruction(.sll);
+			gameStateSignature.AddInstruction(.beq, .wild, .zero, -1);
+			gameStateSignature.AddInstruction(.addiu, .zero, .wild, 1);
+			gameStateSignature.AddInstruction(.beq);
+
+			signatureLocation = gameStateSignature.Find(active);
+			if (signatureLocation.IsNull) {
+				// Spyro 2/3 Attempt
+				gameStateSignature.Clear();
+				gameStateSignature.AddInstruction(.jal);
+				gameStateSignature.AddInstruction(.sll);
+				gameStateSignature.AddInstruction(.jal);
+				gameStateSignature.AddInstruction(.sll);
+				gameStateSignature.AddInstruction(.lui);
+				gameStateSignature.AddInstruction(.lw);
+				gameStateSignature.AddInstruction(.sll);
+				gameStateSignature.AddInstruction(.sltiu);
+				gameStateSignature.AddInstruction(.beq);
+				gameStateSignature.AddInstruction(.sll);
+				gameStateSignature.AddInstruction(.lui);
+				gameStateSignature.AddInstruction(.addu);
+				gameStateSignature.AddInstruction(.lw);
+				gameStateSignature.AddInstruction(.sll);
+				
+				signatureLocation = gameStateSignature.Find(active);
+				active.ReadFromRAM(signatureLocation + 4*4, &loadAddress, 8);
+				gameStateAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			} else {
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				gameStateAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 			}
 		}
 
