@@ -284,12 +284,8 @@ namespace SpyroScope {
 		);
 		
 		// Function Overrides
-		public const Address<uint32>[11] spyroUpdateAddresses = .(0, (.)0x80033ad8/*StD*/, 0, 0, (.)0x8001b0c4/*RR*/, 0, 0, (.)0x800552f4, (.)0x80055384/*YotD-1.1*/, 0, 0);
-		public const uint32[11] spyroUpdateJumpValue = .(0, 0x0c012880/*StD*/, 0, 0, 0x0c00a81f/*RR*/, 0, 0, 0x0c00fa0f, 0x0c00fa18/*YotD-1.1*/, 0, 0);
-		public const Address<uint32>[11] cameraUpdateAddresses = .(0, (.)0x80037cfc/*StD*/, 0, 0, (.)0x8001b110/*RR*/, 0, 0, (.)0x80055340, (.)0x800553d0/*YotD-1.1*/, 0, 0);
-		public const uint32[11] cameraUpdateJumpValue = .(0, 0x0c00d7ed/*StD*/, 0, 0, 0x0c00761f/*RR*/, 0, 0, 0x0c004813, 0x0c004818/*YotD-1.1*/, 0, 0);
-		public const Address<uint32>[11] updateAddresses = .(0, (.)0x80012230/*StD*/, 0, 0, (.)0x80011af4/*RR*/, 0, 0, (.)0x80012024, (.)0x80012038/*YotD-1.1*/, 0, 0);
-		public const uint32[11] updateJumpValue = .(0, 0x0c00ce17/*StD*/, 0, 0, 0x0c006c50/*RR*/, 0, 0, 0x0c015500, 0x0c015524/*YotD-1.1*/, 0, 0);
+		public Address<uint32> spyroUpdateCallAddress, cameraUpdateCallAddress, updateCallAddress;
+		public uint32 spyroUpdateCallValue, cameraUpdateCallValue, updateCallValue;
 
 		// Code Injections
 		public const Address<uint32> stepperAddress = (.)0x80009000;
@@ -342,10 +338,10 @@ namespace SpyroScope {
 
 		public UpdateMode UpdateMode { get {
 			uint32 value = ?;
-			ReadFromRAM(updateAddresses[(int)rom], &value, 4);
+			ReadFromRAM(updateCallAddress, &value, 4);
 			switch (value) {
 				case 0: return .None;
-				case updateJumpValue[(int)rom]: return .Normal;
+				case updateCallValue: return .Normal;
 				default: return .Manual;
 			}
 		} }
@@ -358,8 +354,8 @@ namespace SpyroScope {
 
 		public bool CameraMode { get {
 			uint32 value = ?;
-			ReadFromRAM(cameraUpdateAddresses[(int)rom], &value, 4);
-			return value != cameraUpdateJumpValue[(int)rom];
+			ReadFromRAM(cameraUpdateCallAddress, &value, 4);
+			return value != cameraUpdateCallValue;
 		} }
 
 		/*public bool InputMode { get {
@@ -1393,17 +1389,124 @@ namespace SpyroScope {
 				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
 				gameStateAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 			}
+
+			// Update Spyro Call Signature
+			// Spyro 2/3 Attempt
+			MemorySignature spyroUpdateCallSignature = scope .();
+			spyroUpdateCallSignature.AddInstruction(.andi, 0x8);
+			spyroUpdateCallSignature.AddInstruction(.beq);
+			spyroUpdateCallSignature.AddInstruction(.andi, 0x20);
+			spyroUpdateCallSignature.AddInstruction(.jal);
+			spyroUpdateCallSignature.AddInstruction(.sll);
+			spyroUpdateCallSignature.AddInstruction(.andi, 0x20);
+
+			signatureLocation = spyroUpdateCallSignature.Find(active);
+			if (signatureLocation.IsNull) {
+				// Spyro 1 Attempt
+				spyroUpdateCallSignature.Clear();
+
+				MemorySignature spyroUpdateSignature = scope .();
+				spyroUpdateSignature.AddInstruction(.lui);
+				spyroUpdateSignature.AddInstruction(.lw);
+				spyroUpdateSignature.AddInstruction(.addiu);
+				spyroUpdateSignature.AddInstruction(.sw);
+				spyroUpdateSignature.AddInstruction(.sw);
+				spyroUpdateSignature.AddInstruction(.andi);
+				spyroUpdateSignature.AddInstruction(.beq);
+				spyroUpdateSignature.AddInstruction(.sw);
+				spyroUpdateSignature.AddInstruction(.lui);
+				spyroUpdateSignature.AddInstruction(.lw);
+				spyroUpdateSignature.AddInstruction(.sll);
+
+				// Find start of update function
+				signatureLocation = spyroUpdateSignature.Find(active);
+				spyroUpdateCallValue = ((uint32)MemorySignature.Op.jal << 26) | (((.)signatureLocation >> 2) & 0x03ffffff);
+
+				spyroUpdateCallSignature.AddPart(spyroUpdateCallValue);
+
+				// Find the third occurrence
+				signatureLocation = (.)0x80000000;
+				for (let i < 3) {
+					signatureLocation = spyroUpdateCallSignature.Find(active, signatureLocation + 4);
+				}
+
+				spyroUpdateCallAddress = (.)signatureLocation;
+			} else {
+				spyroUpdateCallAddress = (.)signatureLocation + 4*3;
+				spyroUpdateCallAddress.Read(&spyroUpdateCallValue);
+			}
+
+			// Update Camera Call Signature
+			// Spyro 2/3 Attempt
+			MemorySignature cameraUpdateCallSignature = scope .();
+			cameraUpdateCallSignature.AddInstruction(.andi, 0x10);
+			cameraUpdateCallSignature.AddInstruction(.beq);
+			cameraUpdateCallSignature.AddInstruction(.andi, 0x40);
+			cameraUpdateCallSignature.AddInstruction(.jal);
+			cameraUpdateCallSignature.AddInstruction(.sll);
+			cameraUpdateCallSignature.AddInstruction(.andi, 0x40);
+			
+			signatureLocation = cameraUpdateCallSignature.Find(active);
+			if (signatureLocation.IsNull) {
+				// Spyro 1 Attempt
+				cameraUpdateCallSignature.Clear();
+				cameraUpdateCallSignature.AddInstruction(.bne);
+				cameraUpdateCallSignature.AddInstruction(.sll);
+				cameraUpdateCallSignature.AddInstruction(.jal);
+				cameraUpdateCallSignature.AddInstruction(.sll);
+				cameraUpdateCallSignature.AddInstruction(.j);
+				cameraUpdateCallSignature.AddInstruction(.sll);
+				cameraUpdateCallSignature.AddInstruction(.jal);
+				cameraUpdateCallSignature.AddInstruction(.sll);
+				cameraUpdateCallSignature.AddInstruction(.lui);
+				cameraUpdateCallSignature.AddInstruction(.lw);
+				
+				signatureLocation = cameraUpdateCallSignature.Find(active);
+				cameraUpdateCallAddress = (.)signatureLocation + 4*6;
+				cameraUpdateCallAddress.Read(&cameraUpdateCallValue);
+			} else {
+				cameraUpdateCallAddress = (.)signatureLocation + 4*2;
+				cameraUpdateCallAddress.Read(&cameraUpdateCallValue);
+			}
+
+			// Main Update Call Signature
+			// Spyro 1 Attempt
+			MemorySignature updateCallSignature = scope .();
+			updateCallSignature.AddInstruction(.sb);
+			updateCallSignature.AddInstruction(.jal);
+			updateCallSignature.AddInstruction(.sll);
+			updateCallSignature.AddInstruction(.lw);
+			updateCallSignature.AddInstruction(.sb);
+			updateCallSignature.AddInstruction(.sw);
+			
+			signatureLocation = updateCallSignature.Find(active);
+			if (signatureLocation.IsNull) {
+				// Spyro 2/3 Attempt
+				updateCallSignature.Clear();
+				updateCallSignature.AddInstruction(.jal);
+				updateCallSignature.AddInstruction(.sll);
+				updateCallSignature.AddInstruction(.jal);
+				updateCallSignature.AddInstruction(.sll);
+				updateCallSignature.AddInstruction(.j);
+				updateCallSignature.AddInstruction(.sll);
+				
+				signatureLocation = updateCallSignature.Find(active);
+				updateCallAddress = (.)signatureLocation;
+				updateCallAddress.Read(&updateCallValue);
+			} else {
+				updateCallAddress = (.)signatureLocation + 4*1;
+				updateCallAddress.Read(&updateCallValue);
+			}
 		}
 
 		// Spyro Update
 		public void KillSpyroUpdate() {
 			uint32 v = 0;
-			spyroUpdateAddresses[(int)rom].Write(&v, this);
+			spyroUpdateCallAddress.Write(&v, this);
 		}
 
 		public void RestoreSpyroUpdate() {
-			uint32 v = spyroUpdateJumpValue[(int)rom];
-			spyroUpdateAddresses[(int)rom].Write(&v, this);
+			spyroUpdateCallAddress.Write(&spyroUpdateCallValue, this);
 		}
 
 		public void KillSpyroStateChange() {
@@ -1421,23 +1524,21 @@ namespace SpyroScope {
 			// If stepper code injection exists, jump to that code instead of nop'ing it out
 			// since the code will not cause one from of the game loop to occur by default
 			uint32 v = stepperInjected ? 0x0C002400 : 0;
-			updateAddresses[(int)rom].Write(&v, this);
+			updateCallAddress.Write(&v, this);
 		}
 
 		public void RestoreUpdate() {
-			uint32 v = updateJumpValue[(int)rom];
-			updateAddresses[(int)rom].Write(&v, this);
+			updateCallAddress.Write(&updateCallValue, this);
 		}
 
 		// Camera
 		public void KillCameraUpdate() {
 			uint32 v = 0;
-			cameraUpdateAddresses[(int)rom].Write(&v, this);
+			cameraUpdateCallAddress.Write(&v, this);
 		}
 
 		public void RestoreCameraUpdate() {
-			uint32 v = cameraUpdateJumpValue[(int)rom];
-			cameraUpdateAddresses[(int)rom].Write(&v, this);
+			cameraUpdateCallAddress.Write(&cameraUpdateCallValue, this);
 		}
 
 		// Input
@@ -1461,7 +1562,7 @@ namespace SpyroScope {
 		public void InjectStepperLogic() {
 			WriteToRAM(stepperAddress, &stepperLogic[0], 4 * stepperLogic.Count);
 			uint32 v = 0x0C002400; // (stepperAddress & 0x0fffffff) >> 2;
-			updateAddresses[(int)rom].Write(&v, this);
+			updateCallAddress.Write(&v, this);
 			stepperInjected = true;
 		}
 
@@ -1470,8 +1571,7 @@ namespace SpyroScope {
 				InjectStepperLogic();
 			}
 			KillUpdate();
-			uint32 v = updateJumpValue[(int)rom];
-			WriteToRAM(stepperAddress + (8 * 4), &v, 4);
+			WriteToRAM(stepperAddress + (8 * 4), &updateCallValue, 4);
 		}
 
 		public void AddStepListener(delegate void() listener) {
