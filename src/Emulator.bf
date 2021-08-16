@@ -184,8 +184,8 @@ namespace SpyroScope {
 		//public const Address<uint32>[11] gameInputSetAddress = .(0, 0/*StD*/, 0, 0, (.)0x8001291c/*RR*/, 0, 0, 0, (.)0x8003a7a0/*YotD-1.1*/, 0, 0);
 		//public const uint32[11] gameInputValue = .(0, 0/*StD*/, 0, 0, 0xac2283a0/*RR*/, 0, 0, 0, 0xae220030/*YotD-1.1*/, 0, 0);
 
-		public const Address<uint32>[11] spyroStateChangeAddress = .(0, (.)0x8003fd5c/*StD*/, 0, 0, (.)0x80035d04/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
-		public const uint32[11] spyroStateChangeValue = .(0, 0xac358ad0/*StD*/, 0, 0, 0xac33a040/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
+		public Address<uint32> spyroStateChangeAddress;
+		public uint32 spyroStateChangeValue;
 
 		// Game Values
 		public int32 gameState, loadState;
@@ -1076,12 +1076,12 @@ namespace SpyroScope {
 				spyroStateSignature.AddInstruction(.lui);
 				spyroStateSignature.AddInstruction(.sw);
 				
-				signatureLocation = spyroStateSignature.Find(active);
-				
-				active.ReadFromRAM(signatureLocation + 4*2, &loadAddress, 8);
+				spyroStateChangeAddress = (.)spyroStateSignature.Find(active) + 4*2;
+				active.ReadFromRAM(spyroStateChangeAddress, &loadAddress, 8);
 				spyroStateAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 			} else {
-				active.ReadFromRAM(signatureLocation + 4*6, &loadAddress, 8);
+				spyroStateChangeAddress = (.)signatureLocation + 4*6;
+				active.ReadFromRAM(spyroStateChangeAddress, &loadAddress, 8);
 				spyroStateAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 			}
 
@@ -1511,12 +1511,11 @@ namespace SpyroScope {
 
 		public void KillSpyroStateChange() {
 			uint32 v = 0;
-			spyroStateChangeAddress[(int)rom].Write(&v, this);
+			spyroStateChangeAddress.Write(&v, this);
 		}
 
 		public void RestoreSpyroStateChange() {
-			uint32 v = spyroStateChangeValue[(int)rom];
-			spyroStateChangeAddress[(int)rom].Write(&v, this);
+			spyroStateChangeAddress.Write(&spyroStateChangeValue, this);
 		}
 
 		// Main Update
