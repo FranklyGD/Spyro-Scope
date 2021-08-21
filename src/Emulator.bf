@@ -180,7 +180,7 @@ namespace SpyroScope {
 
 		public Address<uint32> healthAddress;
 
-		public const Address<uint32>[11] gameInputAddress = .(0, (.)0x800773c0/*StD*/, 0, 0, (.)0x800683a0/*RR*/, 0, 0, 0, (.)0x8006e618/*YotD-1.1*/, 0, 0);
+		public Address<uint32> gameInputAddress;
 		//public const Address<uint32>[11] gameInputSetAddress = .(0, 0/*StD*/, 0, 0, (.)0x8001291c/*RR*/, 0, 0, 0, (.)0x8003a7a0/*YotD-1.1*/, 0, 0);
 		//public const uint32[11] gameInputValue = .(0, 0/*StD*/, 0, 0, 0xac2283a0/*RR*/, 0, 0, 0, 0xae220030/*YotD-1.1*/, 0, 0);
 
@@ -195,7 +195,7 @@ namespace SpyroScope {
 			get => input;
 			set {
 				input = value;
-				gameInputAddress[(int)rom].Write(&input, this);
+				gameInputAddress.Write(&input, this);
 			}
 		}
 
@@ -727,7 +727,7 @@ namespace SpyroScope {
 			gameStateAddress.Read(&gameState, this);
 			loadStateAddress.Read(&loadState, this);
 
-			gameInputAddress[(int)rom].Read(&input, this);
+			gameInputAddress.Read(&input, this);
 
 			spyroPositionAddress.Read(&spyroPosition, this);
 			spyroEulerAddress.Read(&spyroEulerRotation, this);
@@ -1496,6 +1496,34 @@ namespace SpyroScope {
 			} else {
 				updateCallAddress = (.)signatureLocation + 4*1;
 				updateCallAddress.Read(&updateCallValue);
+			}
+
+			// Game Input Signature
+			// Spyro 1 Attempt
+			MemorySignature gameInputSignature = scope .();
+			gameInputSignature.AddInstruction(.lui);
+			gameInputSignature.AddInstruction(.lw);
+			gameInputSignature.AddInstruction(.sll);
+			gameInputSignature.AddInstruction(.andi, 0x10);
+			gameInputSignature.AddInstruction(.beq);
+			gameInputSignature.AddInstruction(.lui);
+			
+			signatureLocation = gameInputSignature.Find(active);
+			if (signatureLocation.IsNull) {
+				// Spyro 2/3 Attempt
+				gameInputSignature.Clear();
+				gameInputSignature.AddInstruction(.lui);
+				gameInputSignature.AddInstruction(.lw);
+				gameInputSignature.AddInstruction(.sll);
+				gameInputSignature.AddInstruction(.andi, 0x10);
+				gameInputSignature.AddInstruction(.bne);
+				
+				signatureLocation = gameInputSignature.Find(active);
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				gameInputAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			} else {
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				gameInputAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 			}
 		}
 
