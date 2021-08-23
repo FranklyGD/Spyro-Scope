@@ -1439,12 +1439,15 @@ namespace SpyroScope {
 			// Update Camera Call Signature
 			// Spyro 2/3 Attempt
 			MemorySignature cameraUpdateCallSignature = scope .();
-			cameraUpdateCallSignature.AddInstruction(.andi, 0x10);
-			cameraUpdateCallSignature.AddInstruction(.beq);
-			cameraUpdateCallSignature.AddInstruction(.andi, 0x40);
+			cameraUpdateCallSignature.AddInstruction(.jalr);
+			cameraUpdateCallSignature.AddInstruction(.sll);
 			cameraUpdateCallSignature.AddInstruction(.jal);
 			cameraUpdateCallSignature.AddInstruction(.sll);
-			cameraUpdateCallSignature.AddInstruction(.andi, 0x40);
+			cameraUpdateCallSignature.AddInstruction(.andi, 0x10);
+			cameraUpdateCallSignature.AddInstruction(.beq);
+			cameraUpdateCallSignature.AddWildcard<int32>();
+			cameraUpdateCallSignature.AddInstruction(.jal);
+			cameraUpdateCallSignature.AddInstruction(.sll);
 			
 			signatureLocation = cameraUpdateCallSignature.Find(active);
 			if (signatureLocation.IsNull) {
@@ -1465,7 +1468,7 @@ namespace SpyroScope {
 				cameraUpdateCallAddress = (.)signatureLocation + 4*6;
 				cameraUpdateCallAddress.Read(&cameraUpdateCallValue);
 			} else {
-				cameraUpdateCallAddress = (.)signatureLocation + 4*2;
+				cameraUpdateCallAddress = (.)signatureLocation + 4*7;
 				cameraUpdateCallAddress.Read(&cameraUpdateCallValue);
 			}
 

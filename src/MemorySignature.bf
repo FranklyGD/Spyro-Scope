@@ -85,6 +85,9 @@ namespace SpyroScope {
 			srlv 	= 0b000110,
 			srav 	= 0b000111,
 			
+			jr  	= 0b001000,
+			jalr	= 0b001001,
+			
 			mfhi 	= 0b010000,
 			mthi 	= 0b010001,
 			mflo 	= 0b010010,
