@@ -63,7 +63,7 @@ namespace SpyroScope {
 			if (Emulator.active != null && Emulator.active.Supported) {
 				Emulator.active.FetchMainAddresses();
 				Emulator.active.FindGame();
-				if (Emulator.active.rom != .None) {
+				if (Emulator.active.romChecksum != 0) {
 					state = states[1];
 				}
 			}

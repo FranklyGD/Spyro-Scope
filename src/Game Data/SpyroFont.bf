@@ -6,7 +6,7 @@ namespace SpyroScope {
 		static (uint8 character, int8 offsetWidth)[128] fontCharacters;
 
 		public static void Init() {
-			Emulator.spyroFontAddress[(int)Emulator.active.rom - 4].ReadArray((.)&fontCharacters, 128);
+			//Emulator.spyroFontAddress[(int)Emulator.active.rom - 4].ReadArray((.)&fontCharacters, 128);
 		}
 
 		public static void Decode(List<int> spriteTextureIDs) {

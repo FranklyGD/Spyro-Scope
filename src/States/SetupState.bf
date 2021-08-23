@@ -23,7 +23,7 @@ namespace SpyroScope {
 		}
 
 		public override void Update() {
-			if (!(Emulator.active == null || Emulator.active.rom == .None)) {
+			if (!(Emulator.active == null || Emulator.active.romChecksum == 0)) {
 				if (stopwatch.ElapsedMilliseconds > 3000) {
 					windowApp.GoToState<ViewerState>();
 				}
@@ -89,10 +89,10 @@ namespace SpyroScope {
 			} else {
 				if (!activeEmulator.Supported) {
 					message = scope:: String() .. AppendF("Unknown Module Size: (0x{:x})", activeEmulator.MainModuleSize);
-				} else if (activeEmulator.rom == .None) {
+				} else if (activeEmulator.romChecksum == 0) {
 					message = "Waiting for Game";
 				} else {
-					message = Emulator.gameNames[(int)activeEmulator.rom];
+					//message = Emulator.gameNames[(int)activeEmulator.rom];
 				}
 
 				let baseline = WindowApp.height / 2 - WindowApp.font.height * 1.5f;
@@ -106,7 +106,7 @@ namespace SpyroScope {
 			WindowApp.font.Print(message, .(middleWindow - halfWidth, baseline), .(255,255,255));
 
 			baseline += WindowApp.font.penLine;
-			if (activeEmulator == null || activeEmulator.rom == .None) {
+			if (activeEmulator == null || activeEmulator.romChecksum == 0) {
 				let t = (float)stopwatch.ElapsedMilliseconds / 1000 * 3.14f;
 				DrawUtilities.Rect(baseline + 2, baseline + 4, middleWindow - halfWidth * Math.Sin(t), middleWindow + halfWidth * Math.Sin(t),
 					.(255,255,255));

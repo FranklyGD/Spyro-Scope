@@ -22,20 +22,16 @@ namespace SpyroScope {
 		public int RAMBaseAddress;
 		public int VRAMBaseAddress;
 
-		public enum SpyroROM {
-			None,
-			SpyroTheDragon_NTSC_U,
-			SpyroTheDragon_NTSC_J,
-			SpyroTheDragon_PAL,
-			RiptosRage_NTSC_U,
-			RiptosRage_NTSC_J,
-			RiptosRage_PAL,
-			YearOfTheDragon_1_0_NTSC_U,
-			YearOfTheDragon_1_1_NTSC_U,
-			YearOfTheDragon_1_0_PAL,
-			YearOfTheDragon_1_1_PAL
-		}
-		public SpyroROM rom;
+		/// Uses the essential address locations to generate a unique value 
+		/// that will determine what ROM is currently loaded in emulator
+		public int romChecksum;
+
+		/// A four byte value that is likely to change
+		/// when a new ROM gets loaded into the emulator
+		public uint32 romTester;
+
+		/// The address to load and use against the test value
+		public Address<uint32> romTesterAddress;
 
 		public enum SpyroInstallment {
 			None,
@@ -160,8 +156,8 @@ namespace SpyroScope {
 		public Address<MatrixInt> cameraBasisAddress;
 
 		// World
-		public const Address<uint32>[11] currentWorldIdAddress = .(0, (.)0x80075964/*StD*/, 0, 0, (.)0x80066f54/*RR*/, 0, 0, (.)0x8006e58c, (.)0x8006c66c/*YotD-1.1*/, 0, 0);
-		public const Address<uint32>[4] currentSubWorldIdAddress = .((.)0x8006c5c8, (.)0x8006c6a8, (.)0, (.)0); // Exclusive to Spyro: Year of the Dragon.
+		public const Address<uint32>[11] currentWorldIdAddress = .(0, (.)0x80075964/*StD*/, 0, 0, (.)0x80066f54/*RR*/, 0, 0, (.)0x8006e58c, (.)0x8006c66c/*YotD-1.1*/, 0, 0); ////
+		public const Address<uint32>[4] currentSubWorldIdAddress = .((.)0x8006c5c8, (.)0x8006c6a8, (.)0, (.)0); // Exclusive to Spyro: Year of the Dragon. ////
 		
 		public Address<Renderer.Color4> clearColorAddress;
 		public Address<Address> textureDataPointer, sceneRegionsPointer, collisionDataPointer, collisionFlagsPointer;
@@ -175,8 +171,8 @@ namespace SpyroScope {
 		public const Address<uint16>[7] spyroFontAddress = .((.)0x800636a4/*RR*/, 0, 0, 0, (.)0x800667c8/*YotD-1.1*/, 0, 0); // Doesn't exist in Spyro the Dragon
 		public const Address<Address<TextureQuad>>[4] spriteArrayPointer = .(0, (.)0x8006c868, 0, 0); // Exclusive to Spyro: Year of the Dragon
 
-		public const Address<uint32>[11] deathPlaneHeightsAddresses = .(0, (.)0x8006e9a4/*StD*/, 0, 0, (.)0x80060234/*RR*/, 0, 0, (.)0x800676e8, (.)0x800677c8/*YotD-1.1*/, 0, 0);
-		public const Address<uint32>[11] maxFreeflightHeightsAddresses = .(0, 0/*StD*/, 0, 0, (.)0x800601b4/*RR*/, 0, 0, (.)0x80067648, (.)0x80067728/*YotD-1.1*/, 0, 0);
+		public const Address<uint32>[11] deathPlaneHeightsAddresses = .(0, (.)0x8006e9a4/*StD*/, 0, 0, (.)0x80060234/*RR*/, 0, 0, (.)0x800676e8, (.)0x800677c8/*YotD-1.1*/, 0, 0); ////
+		public const Address<uint32>[11] maxFreeflightHeightsAddresses = .(0, 0/*StD*/, 0, 0, (.)0x800601b4/*RR*/, 0, 0, (.)0x80067648, (.)0x80067728/*YotD-1.1*/, 0, 0); ////
 
 		public Address<uint32> healthAddress;
 
@@ -446,44 +442,40 @@ namespace SpyroScope {
 		}
 
 		public void FindGame() {
-			SpyroROM newRom = .None;
-			for (int i < 10) {
-				let test = scope String();
-				let testPtr = test.PrepareBuffer(5);
-				ReadFromRAM(testAddresses[i], testPtr, 5);
+			FindAddressLocations();
 
-				if (test.CompareTo("Spyro", true) == 0) {
-					newRom = (.)(i + 1);
-					break;
-				}
+			int32 newRomChecksum = 0;
+			if (
+				!collisionDataPointer.IsNull &&
+				!sceneRegionsPointer.IsNull &&
+				!mobyArrayPointer.IsNull &&
+				!mobyModelArrayPointer.IsNull &&
+				!textureDataPointer.IsNull
+			) {
+				newRomChecksum = 
+					(.)collisionDataPointer +
+					(.)sceneRegionsPointer +
+					(.)mobyArrayPointer +
+					(.)mobyModelArrayPointer +
+					(.)textureDataPointer;
+
+				// Grab a test value to constantly check
+				ReadFromRAM(romTesterAddress, &romTester, 4);
 			}
 
-			switch (newRom) {
-				case .SpyroTheDragon_NTSC_U,
-					 .SpyroTheDragon_NTSC_J,
-					 .SpyroTheDragon_PAL:
-					installment = .SpyroTheDragon;
-
-				case .RiptosRage_NTSC_U,
-					 .RiptosRage_NTSC_J,
-					 .RiptosRage_PAL:
-					installment = .RiptosRage;
-
-				case .YearOfTheDragon_1_0_NTSC_U,
-					 .YearOfTheDragon_1_0_PAL,
-					 .YearOfTheDragon_1_1_NTSC_U,
-					 .YearOfTheDragon_1_1_PAL:
-					installment = .YearOfTheDragon;
-
-				default:
-					installment = .None;
-			}
-
-			if (newRom != .None && newRom != rom) {
+			if (newRomChecksum != 0 && newRomChecksum != romChecksum) {
 				FetchStaticData();
 			}
 
-			rom = newRom;
+			romChecksum = newRomChecksum;
+		}
+
+		public void TestGame() {
+			uint32 sample = ?;
+			ReadFromRAM(romTesterAddress, &sample, 4);
+
+			if (sample != romTester)
+			romChecksum = 0;
 		}
 		
 		[Import("psapi.lib"),CLink, CallingConvention(.Stdcall)]
@@ -588,7 +580,7 @@ namespace SpyroScope {
 		}
 
 		public void UnbindEmulatorProcess() {
-			if (Supported && rom != .None) {
+			if (Supported && romChecksum != 0) {
 				RestoreCameraUpdate();
 				//RestoreInputRelay();
 				RestoreUpdate();
@@ -679,9 +671,7 @@ namespace SpyroScope {
 
 		// Spyro
 		void FetchStaticData() {
-			FindAddressLocations();
-
-			delete maxFreeflightHeights;
+			/*delete maxFreeflightHeights;
 			delete deathPlaneHeights;
 
 			switch (installment) {
@@ -719,7 +709,7 @@ namespace SpyroScope {
 					maxFreeflightHeightsAddresses[(int)rom].ReadArray(&maxFreeflightHeights[0], 40, this);
 				}
 				default : {}
-			}
+			}*/
 		}
 
 		public void FetchImportantData() {
@@ -768,6 +758,185 @@ namespace SpyroScope {
 		}
 
 		void FindAddressLocations() {
+			Emulator.Address signatureLocation, loadSignatureLocation;
+			int32[2] loadAddress = ?;
+
+			// Terrain Collision Signature
+			MemorySignature terrainCollisionSignature = scope .();
+			terrainCollisionSignature.AddInstruction(.lui);
+			terrainCollisionSignature.AddInstruction(.addiu);
+			terrainCollisionSignature.AddInstruction(.lw);
+			terrainCollisionSignature.AddInstruction(.sll);
+			terrainCollisionSignature.AddInstruction(.sll);
+			terrainCollisionSignature.AddInstruction(.add);
+			terrainCollisionSignature.AddInstruction(.lw);
+
+			signatureLocation = terrainCollisionSignature.Find(active);
+			if (signatureLocation.IsNull) {
+				return;
+			}
+			active.ReadFromRAM(signatureLocation + 4*2, &loadAddress, 4);
+			collisionDataPointer = (.)((int32)loadAddress[0] & 0x0000ffff);
+			active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+			collisionDataPointer += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+
+			// temp test address as terrain load location
+			romTesterAddress = (.)signatureLocation;
+
+			// Mobys (Objects) Signature
+			MemorySignature mobyArraySignature = scope .();
+			mobyArraySignature.AddInstruction(.lui);
+			mobyArraySignature.AddInstruction(.lw);
+			mobyArraySignature.AddInstruction(.sll);
+			mobyArraySignature.AddInstruction(.subu);
+			mobyArraySignature.AddInstruction(.sll);
+			mobyArraySignature.AddInstruction(.subu);
+			mobyArraySignature.AddInstruction(.sll);
+			mobyArraySignature.AddInstruction(.addu);
+			mobyArraySignature.AddInstruction(.sll);
+			mobyArraySignature.AddInstruction(.addu);
+			mobyArraySignature.AddInstruction(.sll);
+			mobyArraySignature.AddInstruction(.subu);
+			mobyArraySignature.AddInstruction(.sll);
+
+			signatureLocation = mobyArraySignature.Find(active);
+			if (signatureLocation.IsNull) {
+				return;
+			}
+			active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+			mobyArrayPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+
+			// Moby Models Signature
+			// Spyro 1 Attempt
+			MemorySignature mobyModelArraySignature = scope .();
+			mobyModelArraySignature.AddInstruction(.lui);
+			mobyModelArraySignature.AddInstruction(.lw);
+			mobyModelArraySignature.AddInstruction(.sll);
+			mobyModelArraySignature.AddInstruction(.addu);
+			mobyModelArraySignature.AddInstruction(.lui);
+			mobyModelArraySignature.AddInstruction(.lbu);
+
+			signatureLocation = mobyModelArraySignature.Find(active);
+			if (signatureLocation.IsNull) {
+				// Spyro 2/3 Attempt
+				mobyModelArraySignature.Clear();
+				mobyModelArraySignature.AddInstruction(.lui);
+				mobyModelArraySignature.AddInstruction(.sw);
+				mobyModelArraySignature.AddInstruction(.lui);
+				mobyModelArraySignature.AddInstruction(.lw);
+				mobyModelArraySignature.AddInstruction(.addiu);
+				mobyModelArraySignature.AddInstruction(.lui);
+				mobyModelArraySignature.AddInstruction(.sw);
+				mobyModelArraySignature.AddInstruction(.lw);
+				
+				signatureLocation = mobyModelArraySignature.Find(active);
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				mobyModelArrayPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			} else {
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				mobyModelArrayPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			}
+
+			if (signatureLocation.IsNull) {
+				return;
+			}
+
+			// Terrain Animations Signature
+			MemorySignature loadMainSignature = scope .();
+			loadMainSignature.AddInstruction(.lui);
+			loadMainSignature.AddInstruction(.addiu);
+			loadMainSignature.AddInstruction(.lw);
+
+			MemorySignature terrainGeometryAnimationsSignature = scope .();
+			terrainGeometryAnimationsSignature.AddInstruction(.lw);
+			terrainGeometryAnimationsSignature.AddInstruction(.lw);
+			terrainGeometryAnimationsSignature.AddInstruction(.sll);
+			terrainGeometryAnimationsSignature.AddInstruction(.add);
+			terrainGeometryAnimationsSignature.AddInstruction(.beq);
+			terrainGeometryAnimationsSignature.AddInstruction(.lw);
+
+			Address*[3] terrainGeometryAnimationAddresses = .(
+				&textureSwappersPointer,
+				&textureScrollersPointer,
+				&collisionDeformPointer
+			);
+
+			signatureLocation = (.)0x80000000;
+			for (let i < 3) {
+				let addr = terrainGeometryAnimationAddresses[i];
+
+				signatureLocation = terrainGeometryAnimationsSignature.Find(active, signatureLocation + 4);
+				if (signatureLocation.IsNull) {
+					return;
+				}
+				
+				active.ReadFromRAM(signatureLocation, &loadAddress, 4);
+				*addr = (.)((int32)loadAddress[0] & 0x0000ffff);
+				MemorySignature.Reg animsRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
+
+				if (i == 0) {
+					loadSignatureLocation = loadMainSignature.Find(active, signatureLocation);
+					active.ReadFromRAM(loadSignatureLocation + 4*2, &loadAddress, 4);
+					textureDataPointer = (.)((int32)loadAddress[0] & 0x0000ffff);
+					active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
+					textureDataPointer += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+				}
+
+				MemorySignature loadSignature = scope .();
+				loadSignature.AddInstruction(.lui, .wild, animsRegister, -1);
+				loadSignature.AddInstruction(.addiu, animsRegister, animsRegister, -1);
+
+				loadSignatureLocation = loadSignature.FindReverse(active, signatureLocation);
+				active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
+				*addr += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			}
+
+			MemorySignature terrainTextureAnimationsSignature = scope .();
+			terrainTextureAnimationsSignature.AddInstruction(.lw);
+			terrainTextureAnimationsSignature.AddInstruction(.lw);
+			terrainTextureAnimationsSignature.AddInstruction(.addi);
+			terrainTextureAnimationsSignature.AddInstruction(.sll);
+			terrainTextureAnimationsSignature.AddInstruction(.add);
+			terrainTextureAnimationsSignature.AddInstruction(.beq);
+			terrainTextureAnimationsSignature.AddInstruction(.addi);
+
+			Address*[3] terrainTextureAnimationAddresses = .(
+				&farRegionsDeformPointer,
+				null,
+				&nearRegionsDeformPointer
+			);
+
+			for (let i < 3) {
+				let addr = terrainTextureAnimationAddresses[i];
+
+				signatureLocation = terrainTextureAnimationsSignature.Find(active, signatureLocation + 4);
+				if (signatureLocation.IsNull) {
+					return;
+				}
+				
+				if (addr != null) {
+					active.ReadFromRAM(signatureLocation, &loadAddress, 4);
+					*addr = (.)((int32)loadAddress[0] & 0x0000ffff);
+					MemorySignature.Reg animsRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
+
+					if (i == 0) {
+						loadSignatureLocation = loadMainSignature.Find(active, signatureLocation);
+						active.ReadFromRAM(loadSignatureLocation + 4*2, &loadAddress, 4);
+						sceneRegionsPointer = (.)((int32)loadAddress[0] & 0x0000ffff);
+						active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
+						sceneRegionsPointer += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+					}
+
+					MemorySignature loadSignature = scope .();
+					loadSignature.AddInstruction(.lui, .wild, animsRegister, -1);
+					loadSignature.AddInstruction(.addiu, animsRegister, animsRegister, -1);
+
+					loadSignatureLocation = loadSignature.FindReverse(active, signatureLocation);
+					active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
+					*addr += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+				}
+			}
+
 			// Spyro & Camera Signature
 			// Spyro 2/3 Attempt
 			MemorySignature spyroCamSignature = scope .();
@@ -797,12 +966,10 @@ namespace SpyroScope {
 			spyroCamSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)3);
 			spyroCamSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)4);
 			
-			int32[2] loadAddress = ?;
 			MemorySignature.Reg spyroRegister;
-			Emulator.Address loadSignatureLocation;
 			MemorySignature.Reg cameraRegister;
 
-			Emulator.Address signatureLocation = spyroCamSignature.Find(active);
+			signatureLocation = spyroCamSignature.Find(active);
 			if (signatureLocation.IsNull) {
 				// Spyro 1 Attempt
 				spyroCamSignature.Clear();
@@ -827,24 +994,26 @@ namespace SpyroScope {
 				spyroCamSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)4);
 
 				signatureLocation = spyroCamSignature.Find(active);
-				active.ReadFromRAM(signatureLocation, &loadAddress, 4);
-				spyroRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
-				active.ReadFromRAM(signatureLocation + 4*3, &loadAddress, 4);
-				cameraRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
-
-				MemorySignature cameraSignature = scope .();
-				cameraSignature.AddInstruction(.lui, .wild, cameraRegister, -1);
-				cameraSignature.AddInstruction(.addiu, cameraRegister, cameraRegister, -1);
-				MemorySignature spyroSignature = scope .();
-				spyroSignature.AddInstruction(.lui, .wild, spyroRegister, -1);
-				spyroSignature.AddInstruction(.addiu, spyroRegister, spyroRegister, -1);
-
-				loadSignatureLocation = cameraSignature.FindReverse(active, signatureLocation);
-				active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
-				cameraAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
-				loadSignatureLocation = spyroSignature.FindReverse(active, signatureLocation);
-				active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
-				spyroAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+				if (!signatureLocation.IsNull) {
+					active.ReadFromRAM(signatureLocation, &loadAddress, 4);
+					spyroRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
+					active.ReadFromRAM(signatureLocation + 4*3, &loadAddress, 4);
+					cameraRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
+	
+					MemorySignature cameraSignature = scope .();
+					cameraSignature.AddInstruction(.lui, .wild, cameraRegister, -1);
+					cameraSignature.AddInstruction(.addiu, cameraRegister, cameraRegister, -1);
+					MemorySignature spyroSignature = scope .();
+					spyroSignature.AddInstruction(.lui, .wild, spyroRegister, -1);
+					spyroSignature.AddInstruction(.addiu, spyroRegister, spyroRegister, -1);
+	
+					loadSignatureLocation = cameraSignature.FindReverse(active, signatureLocation);
+					active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
+					cameraAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+					loadSignatureLocation = spyroSignature.FindReverse(active, signatureLocation);
+					active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
+					spyroAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+				}
 			} else {
 				active.ReadFromRAM(signatureLocation + 4*6, &loadAddress, 4);
 				spyroRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
@@ -980,6 +1149,10 @@ namespace SpyroScope {
 			signatureLocation = (.)0x80000000;
 			while (signatureLocation < (.)0x80200000) {
 				signatureLocation = spyroBasisSignature.Find(active, signatureLocation + 4);
+				if (signatureLocation.IsNull) {
+					break;
+				}
+
 				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
 				spyroRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
 				int spyroBasisOffset = loadAddress[0] & 0x0000ffff;
@@ -1085,57 +1258,6 @@ namespace SpyroScope {
 				spyroStateAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 			}
 
-			// Mobys (Objects) Signature
-			MemorySignature mobyArraySignature = scope .();
-			mobyArraySignature.AddInstruction(.lui);
-			mobyArraySignature.AddInstruction(.lw);
-			mobyArraySignature.AddInstruction(.sll);
-			mobyArraySignature.AddInstruction(.subu);
-			mobyArraySignature.AddInstruction(.sll);
-			mobyArraySignature.AddInstruction(.subu);
-			mobyArraySignature.AddInstruction(.sll);
-			mobyArraySignature.AddInstruction(.addu);
-			mobyArraySignature.AddInstruction(.sll);
-			mobyArraySignature.AddInstruction(.addu);
-			mobyArraySignature.AddInstruction(.sll);
-			mobyArraySignature.AddInstruction(.subu);
-			mobyArraySignature.AddInstruction(.sll);
-
-			signatureLocation = mobyArraySignature.Find(active);
-			active.ReadFromRAM(signatureLocation, &loadAddress, 8);
-			mobyArrayPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
-			
-			// Moby Models Signature
-			// Spyro 1 Attempt
-			MemorySignature mobyModelArraySignature = scope .();
-			mobyModelArraySignature.AddInstruction(.lui);
-			mobyModelArraySignature.AddInstruction(.lw);
-			mobyModelArraySignature.AddInstruction(.sll);
-			mobyModelArraySignature.AddInstruction(.addu);
-			mobyModelArraySignature.AddInstruction(.lui);
-			mobyModelArraySignature.AddInstruction(.lbu);
-			
-			signatureLocation = mobyModelArraySignature.Find(active);
-			if (signatureLocation.IsNull) {
-				// Spyro 2/3 Attempt
-				mobyModelArraySignature.Clear();
-				mobyModelArraySignature.AddInstruction(.lui);
-				mobyModelArraySignature.AddInstruction(.sw);
-				mobyModelArraySignature.AddInstruction(.lui);
-				mobyModelArraySignature.AddInstruction(.lw);
-				mobyModelArraySignature.AddInstruction(.addiu);
-				mobyModelArraySignature.AddInstruction(.lui);
-				mobyModelArraySignature.AddInstruction(.sw);
-				mobyModelArraySignature.AddInstruction(.lw);
-				
-				signatureLocation = mobyModelArraySignature.Find(active);
-				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
-				mobyModelArrayPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
-			} else {
-				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
-				mobyModelArrayPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
-			}
-
 			// Background Clear Color Signature
 			MemorySignature clearColorSignature = scope .();
 			clearColorSignature.AddInstruction(.sll, .wild, .wild, 0x4);
@@ -1150,37 +1272,23 @@ namespace SpyroScope {
 			clearColorSignature.AddInstruction(.cop2, (.)0b00110, .wild, (MemorySignature.Reg)23);
 
 			signatureLocation = clearColorSignature.Find(active);
-			active.ReadFromRAM(signatureLocation, &loadAddress, 4);
-			MemorySignature.Reg colorRegister = (.)((loadAddress[0] & 0x001f0000) >> 16);
-
-			MemorySignature clearColorLoadSignature = scope .();
-			clearColorLoadSignature.AddInstruction(.lui, .wild, colorRegister, -1);
-			clearColorLoadSignature.AddInstruction(.addiu, colorRegister, colorRegister, -1);
-
-			signatureLocation = clearColorLoadSignature.FindReverse(active, signatureLocation);
-			active.ReadFromRAM(signatureLocation + 4*2, &loadAddress, 4);
-			clearColorAddress = (.)((int32)loadAddress[0] & 0x0000ffff);
-			active.ReadFromRAM(signatureLocation, &loadAddress, 8);
-			clearColorAddress += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
-
-			// Terrain Collision Signature
-			MemorySignature terrainCollisionSignature = scope .();
-			terrainCollisionSignature.AddInstruction(.lui);
-			terrainCollisionSignature.AddInstruction(.addiu);
-			terrainCollisionSignature.AddInstruction(.lw);
-			terrainCollisionSignature.AddInstruction(.sll);
-			terrainCollisionSignature.AddInstruction(.sll);
-			terrainCollisionSignature.AddInstruction(.add);
-			terrainCollisionSignature.AddInstruction(.lw);
-
-			signatureLocation = terrainCollisionSignature.Find(active);
-			active.ReadFromRAM(signatureLocation + 4*2, &loadAddress, 4);
-			collisionDataPointer = (.)((int32)loadAddress[0] & 0x0000ffff);
-			active.ReadFromRAM(signatureLocation, &loadAddress, 8);
-			collisionDataPointer += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			if (!signatureLocation.IsNull) {
+				active.ReadFromRAM(signatureLocation, &loadAddress, 4);
+				MemorySignature.Reg colorRegister = (.)((loadAddress[0] & 0x001f0000) >> 16);
+	
+				MemorySignature clearColorLoadSignature = scope .();
+				clearColorLoadSignature.AddInstruction(.lui, .wild, colorRegister, -1);
+				clearColorLoadSignature.AddInstruction(.addiu, colorRegister, colorRegister, -1);
+	
+				signatureLocation = clearColorLoadSignature.FindReverse(active, signatureLocation);
+				active.ReadFromRAM(signatureLocation + 4*2, &loadAddress, 4);
+				clearColorAddress = (.)((int32)loadAddress[0] & 0x0000ffff);
+				active.ReadFromRAM(signatureLocation, &loadAddress, 8);
+				clearColorAddress += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			}
 
 			// Terrain Flags Signature
-			MemorySignature terrainFlagsSignature = scope .();
+			MemorySignature terrainFlagsSignature = scope .(); ////
 			terrainFlagsSignature.AddInstruction(.andi, 0x3f);
 			terrainFlagsSignature.AddInstruction(.addiu, .zero, .wild, 0x3f);
 			terrainFlagsSignature.AddInstruction(.beq);
@@ -1192,99 +1300,9 @@ namespace SpyroScope {
 			active.ReadFromRAM(signatureLocation + 4*4, &loadAddress, 8);
 			collisionFlagsPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 
-			// Terrain Animations Signature
-			MemorySignature loadMainSignature = scope .();
-			loadMainSignature.AddInstruction(.lui);
-			loadMainSignature.AddInstruction(.addiu);
-			loadMainSignature.AddInstruction(.lw);
-
-			MemorySignature terrainGeometryAnimationsSignature = scope .();
-			terrainGeometryAnimationsSignature.AddInstruction(.lw);
-			terrainGeometryAnimationsSignature.AddInstruction(.lw);
-			terrainGeometryAnimationsSignature.AddInstruction(.sll);
-			terrainGeometryAnimationsSignature.AddInstruction(.add);
-			terrainGeometryAnimationsSignature.AddInstruction(.beq);
-			terrainGeometryAnimationsSignature.AddInstruction(.lw);
-
-			Address*[3] terrainGeometryAnimationAddresses = .(
-				&textureSwappersPointer,
-				&textureScrollersPointer,
-				&collisionDeformPointer
-			);
-
-			signatureLocation = (.)0x80000000;
-			for (let i < 3) {
-				let addr = terrainGeometryAnimationAddresses[i];
-
-				signatureLocation = terrainGeometryAnimationsSignature.Find(active, signatureLocation + 4);
-				
-				active.ReadFromRAM(signatureLocation, &loadAddress, 4);
-				*addr = (.)((int32)loadAddress[0] & 0x0000ffff);
-				MemorySignature.Reg animsRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
-
-				if (i == 0) {
-					loadSignatureLocation = loadMainSignature.Find(active, signatureLocation);
-					active.ReadFromRAM(loadSignatureLocation + 4*2, &loadAddress, 4);
-					textureDataPointer = (.)((int32)loadAddress[0] & 0x0000ffff);
-					active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
-					textureDataPointer += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
-				}
-
-				MemorySignature loadSignature = scope .();
-				loadSignature.AddInstruction(.lui, .wild, animsRegister, -1);
-				loadSignature.AddInstruction(.addiu, animsRegister, animsRegister, -1);
-
-				loadSignatureLocation = loadSignature.FindReverse(active, signatureLocation);
-				active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
-				*addr += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
-			}
-
-			MemorySignature terrainTextureAnimationsSignature = scope .();
-			terrainTextureAnimationsSignature.AddInstruction(.lw);
-			terrainTextureAnimationsSignature.AddInstruction(.lw);
-			terrainTextureAnimationsSignature.AddInstruction(.addi);
-			terrainTextureAnimationsSignature.AddInstruction(.sll);
-			terrainTextureAnimationsSignature.AddInstruction(.add);
-			terrainTextureAnimationsSignature.AddInstruction(.beq);
-			terrainTextureAnimationsSignature.AddInstruction(.addi);
-
-			Address*[3] terrainTextureAnimationAddresses = .(
-				&farRegionsDeformPointer,
-				null,
-				&nearRegionsDeformPointer
-			);
-
-			for (let i < 3) {
-				let addr = terrainTextureAnimationAddresses[i];
-
-				signatureLocation = terrainTextureAnimationsSignature.Find(active, signatureLocation + 4);
-				
-				if (addr != null) {
-					active.ReadFromRAM(signatureLocation, &loadAddress, 4);
-					*addr = (.)((int32)loadAddress[0] & 0x0000ffff);
-					MemorySignature.Reg animsRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
-
-					if (i == 0) {
-						loadSignatureLocation = loadMainSignature.Find(active, signatureLocation);
-						active.ReadFromRAM(loadSignatureLocation + 4*2, &loadAddress, 4);
-						sceneRegionsPointer = (.)((int32)loadAddress[0] & 0x0000ffff);
-						active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
-						sceneRegionsPointer += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
-					}
-
-					MemorySignature loadSignature = scope .();
-					loadSignature.AddInstruction(.lui, .wild, animsRegister, -1);
-					loadSignature.AddInstruction(.addiu, animsRegister, animsRegister, -1);
-
-					loadSignatureLocation = loadSignature.FindReverse(active, signatureLocation);
-					active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
-					*addr += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
-				}
-			}
-
 			// Health
 			// Spyro 2/3 Attempt
-			MemorySignature healthSignature = scope .();
+			MemorySignature healthSignature = scope .(); ////
 			healthSignature.AddInstruction(.addiu, .zero, .wild, (uint16)-1);
 			healthSignature.AddInstruction(.lui);
 			healthSignature.AddInstruction(.lw);
@@ -1306,16 +1324,18 @@ namespace SpyroScope {
 				healthSignature.AddInstruction(.sw);
 
 				signatureLocation = healthSignature.Find(active);
-				active.ReadFromRAM(signatureLocation + 4*2, &loadAddress, 4);
-				MemorySignature.Reg healthRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
-
-				MemorySignature loadSignature = scope .();
-				loadSignature.AddInstruction(.lui, .wild, healthRegister, -1);
-				loadSignature.AddInstruction(.addiu, healthRegister, healthRegister, -1);
-
-				loadSignatureLocation = loadSignature.FindReverse(active, signatureLocation);
-				active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
-				healthAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+				if (!signatureLocation.IsNull) {
+					active.ReadFromRAM(signatureLocation + 4*2, &loadAddress, 4);
+					MemorySignature.Reg healthRegister = (.)((loadAddress[0] & 0x03e00000) >> 21);
+	
+					MemorySignature loadSignature = scope .();
+					loadSignature.AddInstruction(.lui, .wild, healthRegister, -1);
+					loadSignature.AddInstruction(.addiu, healthRegister, healthRegister, -1);
+	
+					loadSignatureLocation = loadSignature.FindReverse(active, signatureLocation);
+					active.ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
+					healthAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+				}
 			} else {
 				active.ReadFromRAM(loadSignatureLocation + 4*1, &loadAddress, 8);
 				healthAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
@@ -1428,6 +1448,9 @@ namespace SpyroScope {
 				signatureLocation = (.)0x80000000;
 				for (let i < 3) {
 					signatureLocation = spyroUpdateCallSignature.Find(active, signatureLocation + 4);
+					if (signatureLocation.IsNull) {
+						break;
+					}
 				}
 
 				spyroUpdateCallAddress = (.)signatureLocation;

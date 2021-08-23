@@ -763,14 +763,14 @@ namespace SpyroScope {
 						DeleteContainerAndItems!(textureSprites);
 
 					case .YearOfTheDragon:
-						var textureSprites = TextureQuad[45]();
+						/*var textureSprites = TextureQuad[45]();
 						Emulator.Address<TextureQuad> spriteArrayPointer = ?;
 						Emulator.spriteArrayPointer[(int)Emulator.active.rom - 7].Read(&spriteArrayPointer);
 						spriteArrayPointer.ReadArray(&textureSprites[0], 45);
 	
 						for (let sprite in textureSprites) {
 							spriteTextureIDs.Add(sprite.Decode());
-						}
+						}*/
 
 					default:
 				}

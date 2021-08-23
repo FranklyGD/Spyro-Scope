@@ -21,12 +21,12 @@ namespace SpyroScope {
 		public this(uint8 id, int start, int count) {
 			this.start = start;
 
-			let i = (int)Emulator.active.rom - 4;
+			/*let i = (int)Emulator.active.rom - 4;
 			Emulator.spriteWidthArrayAddress[i].GetAtIndex(&width, id);
 			Emulator.spriteHeightArrayAddress[i].GetAtIndex(&height, id);
 			
 			frames = new .[count];
-			Emulator.spriteFrameArrayAddress[i].ReadRange(&frames[0], start, count);
+			Emulator.spriteFrameArrayAddress[i].ReadRange(&frames[0], start, count);*/
 		}
 
 		public int Decode(int frameIndex) {

@@ -160,10 +160,10 @@ namespace SpyroScope {
 
 		public override void Update() {
 			Emulator.active.CheckProcessStatus();
-			Emulator.active.FindGame();
+			Emulator.active.TestGame();
 
 			// If there is no emulator or relevant game present, return to the setup screen
-			if (Emulator.active == null || Emulator.active.rom == .None) {
+			if (Emulator.active == null || Emulator.active.romChecksum == 0) {
 				windowApp.GoToState<SetupState>();
 				return;
 			}
@@ -1051,11 +1051,11 @@ namespace SpyroScope {
 			Renderer.DrawLine(position, position + viewerSpyroBasis * Vector3(0,0,500), .(0,0,255), .(0,0,255));
 
 			uint32 radius = ?;
-			if (Emulator.active.installment == .YearOfTheDragon) {
+			/*if (Emulator.active.installment == .YearOfTheDragon) {
 			    Emulator.collisionRadius[(int)Emulator.active.rom - 7].Read(&radius);
-			} else {
+			} else {*/
 			    radius = 0x164;
-			}
+			//}
 
 			DrawUtilities.WireframeSphere(position, viewerSpyroBasis, radius, .(32,32,32));
 		}
@@ -1106,7 +1106,7 @@ namespace SpyroScope {
 		}
 
 		void DrawLimits() {
-			uint32 currentWorldId = ?;
+			/*uint32 currentWorldId = ?;
 			Emulator.currentWorldIdAddress[(int)Emulator.active.rom].Read(&currentWorldId);
 
 			uint32 deathHeight;
@@ -1126,7 +1126,7 @@ namespace SpyroScope {
 			let flightHeight = Emulator.active.maxFreeflightHeights[currentWorldId];
 			if (Camera.position.z < flightHeight) {
 				DrawUtilities.Grid(.(0,0,flightHeight), .Identity, .(32,64,255));
-			}
+			}*/
 		}
 
 		void DrawRecording() {
