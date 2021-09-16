@@ -1445,7 +1445,7 @@ namespace SpyroScope {
 				spyroUpdateSignature.AddInstruction(.sw);
 				spyroUpdateSignature.AddInstruction(.sw);
 				spyroUpdateSignature.AddInstruction(.andi);
-				spyroUpdateSignature.AddInstruction(.beq);
+				spyroUpdateSignature.AddWildcard<int32>();
 				spyroUpdateSignature.AddInstruction(.sw);
 				spyroUpdateSignature.AddInstruction(.lui);
 				spyroUpdateSignature.AddInstruction(.lw);
