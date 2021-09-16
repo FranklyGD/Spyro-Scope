@@ -144,6 +144,12 @@ namespace SpyroScope {
 		}
 
 		public override void Enter() {
+			String romName;
+			if (!ROMsConfig.roms.TryGetValue(Emulator.active.romChecksum, out romName)) {
+				romName = scope:: String() .. AppendF("Unidentified Spyro [{:x}]", Emulator.active.romChecksum);
+			}
+			windowApp.Rename(scope String() .. AppendF("Spyro Scope - {} (3D Viewer)", romName));
+
 			GUIElement.SetActiveGUI(guiElements);
 			Selection.OnSelect.Add(new => OnSelect);
 

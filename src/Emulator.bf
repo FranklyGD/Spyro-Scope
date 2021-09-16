@@ -24,7 +24,7 @@ namespace SpyroScope {
 
 		/// Uses the essential address locations to generate a unique value 
 		/// that will determine what ROM is currently loaded in emulator
-		public int romChecksum;
+		public int32 romChecksum;
 
 		/// A four byte value that is likely to change
 		/// when a new ROM gets loaded into the emulator
@@ -462,6 +462,7 @@ namespace SpyroScope {
 					(.)textureDataPointer +
 					(.)loadStateAddress +
 					(.)gameStateAddress;
+				newRomChecksum &= 0x0fffffff;
 
 				// Grab a test value to constantly check
 				ReadFromRAM(romTesterAddress, &romTester, 4);

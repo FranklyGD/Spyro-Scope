@@ -28,6 +28,8 @@ namespace SpyroScope {
 		public static FTFont fontSmall  ~ delete _;
 
 		public this() {
+			windowApp = this;
+
 			width = 750;
 			height = 600;
 
@@ -69,8 +71,6 @@ namespace SpyroScope {
 			}
 
 			state.Enter();
-
-			windowApp = this;
 		}
 
 		public ~this() {
@@ -144,6 +144,10 @@ namespace SpyroScope {
 
 		public void Close() {
 			closed = true;
+		}
+
+		public void Rename(String title) {
+			SDL.SetWindowTitle(window, title);
 		}
 
 		void Resize(int width, int height) {
