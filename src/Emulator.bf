@@ -980,13 +980,24 @@ namespace SpyroScope {
 
 			// Game State Signature
 			// Spyro 1 Attempt
-			MemorySignature gameStateSignature = scope .(); ////
+			MemorySignature gameStateSignature = scope .();
 			gameStateSignature.AddInstruction(.lui);
 			gameStateSignature.AddInstruction(.lw);
 			gameStateSignature.AddInstruction(.sll);
-			gameStateSignature.AddInstruction(.beq, .wild, .zero, -1);
-			gameStateSignature.AddInstruction(.addiu, .zero, .wild, 1);
 			gameStateSignature.AddInstruction(.beq);
+			gameStateSignature.AddWildcard<uint32>();
+			gameStateSignature.AddInstruction(.bne);
+			gameStateSignature.AddWildcard<uint32>();
+			gameStateSignature.AddInstruction(.jal);
+			gameStateSignature.AddInstruction(.sll);
+			gameStateSignature.AddInstruction(.j);
+			gameStateSignature.AddInstruction(.sll);
+			gameStateSignature.AddInstruction(.bne);
+			gameStateSignature.AddWildcard<uint32>();
+			gameStateSignature.AddInstruction(.jal);
+			gameStateSignature.AddInstruction(.sll);
+			gameStateSignature.AddInstruction(.j);
+			gameStateSignature.AddInstruction(.sll);
 
 			signatureLocation = gameStateSignature.Find(this);
 			if (signatureLocation.IsNull) {
