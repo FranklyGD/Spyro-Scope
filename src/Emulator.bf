@@ -785,7 +785,7 @@ namespace SpyroScope {
 			ReadFromRAM(signatureLocation, &loadAddress, 8);
 			collisionDataPointer += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 
-			// temp test address as terrain load location
+			// TODO: Temp test address as terrain load location, it could just work as is
 			romTesterAddress = (.)signatureLocation;
 
 			// Mobys (Objects) Signature
@@ -837,9 +837,13 @@ namespace SpyroScope {
 				signatureLocation = mobyModelArraySignature.Find(this);
 				ReadFromRAM(signatureLocation, &loadAddress, 8);
 				mobyModelArrayPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+
+				installment = .YearOfTheDragon; //TODO: Temporary representation for 2/3 - Find a distinguishing factor!
 			} else {
 				ReadFromRAM(signatureLocation, &loadAddress, 8);
 				mobyModelArrayPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+
+				installment = .SpyroTheDragon;
 			}
 
 			if (signatureLocation.IsNull) {
