@@ -92,7 +92,8 @@ namespace SpyroScope {
 				} else if (activeEmulator.romChecksum == 0) {
 					message = "Waiting for Game";
 				} else {
-					//message = Emulator.gameNames[(int)activeEmulator.rom];
+					message = scope:: String();
+					Emulator.active.GetGameName(message);
 				}
 
 				let baseline = WindowApp.height / 2 - WindowApp.font.height * 1.5f;

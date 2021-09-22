@@ -483,6 +483,15 @@ namespace SpyroScope {
 			romChecksum = 0;
 		}
 		
+		public void GetGameName(String name) {
+			String entry;
+			if (ROMsConfig.roms.TryGetValue(Emulator.active.romChecksum, out entry)) {
+				name.Append(entry);
+			} else {
+				name.AppendF("Unidentified Spyro [{:x}]", Emulator.active.romChecksum);
+			}
+		}
+
 		[Import("psapi.lib"),CLink, CallingConvention(.Stdcall)]
 		static extern Windows.IntBool EnumProcessModules(Windows.ProcessHandle process, Windows.HModule* module, uint16 size, uint32* sizeNeeded);
 		[Import("psapi.lib"),CLink, CallingConvention(.Stdcall)]
