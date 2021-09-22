@@ -792,7 +792,7 @@ namespace SpyroScope {
 			MemorySignature mobyArraySignature = scope .();
 			mobyArraySignature.AddInstruction(.lui);
 			mobyArraySignature.AddInstruction(.lw);
-			mobyArraySignature.AddInstruction(.sll);
+			mobyArraySignature.AddWildcard<int32>();
 			mobyArraySignature.AddInstruction(.subu);
 			mobyArraySignature.AddInstruction(.sll);
 			mobyArraySignature.AddInstruction(.subu);
@@ -803,6 +803,8 @@ namespace SpyroScope {
 			mobyArraySignature.AddInstruction(.sll);
 			mobyArraySignature.AddInstruction(.subu);
 			mobyArraySignature.AddInstruction(.sll);
+			mobyArraySignature.AddInstruction(.addu);
+			mobyArraySignature.AddInstruction(.subu);
 
 			signatureLocation = mobyArraySignature.Find(this);
 			if (signatureLocation.IsNull) {
