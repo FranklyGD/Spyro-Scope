@@ -394,13 +394,17 @@ namespace SpyroScope {
 
 			if (textureScrollers != null) {
 				for (let textureScroller in textureScrollers) {
-					tempAnimated.Add(Terrain.usedTextureIndices.GetAndRemove(textureScroller.textureIndex).Value);
+					if (Terrain.usedTextureIndices.GetAndRemove(textureScroller.textureIndex) case .Ok(var pair)) {
+						tempAnimated.Add(pair);
+					}
 				}
 			}
 			
 			if (textureSwappers != null) {
 				for (let textureSwapper in textureSwappers) {
-					tempAnimated.Add(Terrain.usedTextureIndices.GetAndRemove(textureSwapper.textureIndex).Value);
+					if (Terrain.usedTextureIndices.GetAndRemove(textureSwapper.textureIndex) case .Ok(var pair)) {
+						tempAnimated.Add(pair);
+					}
 				}
 			}
 
