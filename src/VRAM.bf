@@ -91,7 +91,7 @@ namespace SpyroScope {
 			// The game splits the VRAM into 16 columns of CLUT starting locations
 			// The size of each column is 16 pixels that contain all the necessary colors
 			// or more depending on the bit-mode used to sample the colors in the table
-			let clutPosition = clut << 4;
+			let clutPosition = (clut << 4) & 0x7ffff;
 
 			uint16[] pixels = new .[width * pWidth * height];
 			for (let localx < width) {

@@ -408,18 +408,20 @@ namespace SpyroScope {
 				}
 			}
 
-			// The loop is done in reverse to counteract strange used texture info indices
-			// in "Spyro the Dragon", by overwriting the incorrect decoded parts with correct ones
-			let textureIndices = scope List<uint8>(usedTextureIndices.Keys);
-			for (var textureIndex = textureIndices.Count - 1; textureIndex >= 0; textureIndex--) {
-				for (let i < quadDecodeCount) {
-					Terrain.textures[textureIndices[textureIndex] * quadCount + i].Decode();
+			if (usedTextureIndices != null) {
+				// The loop is done in reverse to counteract strange used texture info indices
+				// in "Spyro the Dragon", by overwriting the incorrect decoded parts with correct ones
+				let textureIndices = scope List<uint8>(usedTextureIndices.Keys);
+				for (var textureIndex = textureIndices.Count - 1; textureIndex >= 0; textureIndex--) {
+					for (let i < quadDecodeCount) {
+						Terrain.textures[textureIndices[textureIndex] * quadCount + i].Decode();
+					}
 				}
-			}
-
-			// Restore and decode the remaining textures with special functions
-			for (let animated in tempAnimated) {
-				Terrain.usedTextureIndices.Add(animated);
+	
+				// Restore and decode the remaining textures with special functions
+				for (let animated in tempAnimated) {
+					Terrain.usedTextureIndices.Add(animated);
+				}
 			}
 
 			if (textureScrollers != null) {
@@ -438,7 +440,11 @@ namespace SpyroScope {
 		}
 
 		public static void Update() {
-			if (renderMode == .Collision && collision != null) {
+			if (regions == null || collision == null) {
+				return;
+			}
+
+			if (renderMode == .Collision) {
 				collision.Update();
 			} else {
 				if (farAnimations != null) {
