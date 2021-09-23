@@ -31,7 +31,7 @@ namespace SpyroScope {
 		public uint32 romTester;
 
 		/// The address to load and use against the test value
-		public Address<uint32> romTesterAddress;
+		public Address<uint32>[7] romTesterAddresses;
 
 		public enum SpyroInstallment {
 			None = 0,
@@ -463,9 +463,6 @@ namespace SpyroScope {
 					(.)loadStateAddress +
 					(.)gameStateAddress;
 				newRomChecksum &= 0x0fffffff;
-
-				// Grab a test value to constantly check
-				ReadFromRAM(romTesterAddress, &romTester, 4);
 			}
 
 			if (newRomChecksum != 0 && newRomChecksum != romChecksum) {
@@ -476,11 +473,25 @@ namespace SpyroScope {
 		}
 
 		public void TestGame() {
-			uint32 sample = ?;
-			ReadFromRAM(romTesterAddress, &sample, 4);
+			int32 checksum = 0;
+			int32[2] loadAddress = ?;
+			for (let i < 4) {
+				ReadFromRAM(romTesterAddresses[i], &loadAddress, 8);
+				checksum += ((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1];
+			}
 
-			if (sample != romTester)
-			romChecksum = 0;
+			for (var i = 4; i < 7; i++) {
+				ReadFromRAM(romTesterAddresses[i] + 4*2, &loadAddress, 4);
+				checksum += (.)((int32)loadAddress[0] & 0x0000ffff);
+				ReadFromRAM(romTesterAddresses[i], &loadAddress, 8);
+				checksum += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			}
+
+			checksum &= 0x0fffffff;
+
+			if (checksum != romChecksum) {
+				romChecksum = 0;
+			}
 		}
 		
 		public void GetGameName(String name) {
@@ -794,8 +805,7 @@ namespace SpyroScope {
 			ReadFromRAM(signatureLocation, &loadAddress, 8);
 			collisionDataPointer += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 
-			// TODO: Temp test address as terrain load location, it could just work as is
-			romTesterAddress = (.)signatureLocation;
+			romTesterAddresses[4] = (.)signatureLocation;
 
 			// Mobys (Objects) Signature
 			MemorySignature mobyArraySignature = scope .();
@@ -821,6 +831,8 @@ namespace SpyroScope {
 			}
 			ReadFromRAM(signatureLocation, &loadAddress, 8);
 			mobyArrayPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			
+			romTesterAddresses[0] = (.)signatureLocation;
 
 			// Moby Models Signature
 			// Spyro 1 Attempt
@@ -860,6 +872,8 @@ namespace SpyroScope {
 			if (signatureLocation.IsNull) {
 				return;
 			}
+			
+			romTesterAddresses[1] = (.)signatureLocation;
 
 			// Terrain Animations Signature
 			MemorySignature loadMainSignature = scope .();
@@ -900,6 +914,8 @@ namespace SpyroScope {
 					textureDataPointer = (.)((int32)loadAddress[0] & 0x0000ffff);
 					ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
 					textureDataPointer += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+
+					romTesterAddresses[5] = (.)loadSignatureLocation;
 				}
 
 				MemorySignature loadSignature = scope .();
@@ -945,6 +961,8 @@ namespace SpyroScope {
 						sceneRegionsPointer = (.)((int32)loadAddress[0] & 0x0000ffff);
 						ReadFromRAM(loadSignatureLocation, &loadAddress, 8);
 						sceneRegionsPointer += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+
+						romTesterAddresses[6] = (.)loadSignatureLocation;
 					}
 
 					MemorySignature loadSignature = scope .();
@@ -993,6 +1011,8 @@ namespace SpyroScope {
 				return;
 			}
 
+			romTesterAddresses[2] = (.)signatureLocation + 4*5;
+
 			// Game State Signature
 			// Spyro 1 Attempt
 			MemorySignature gameStateSignature = scope .();
@@ -1036,9 +1056,13 @@ namespace SpyroScope {
 				signatureLocation = gameStateSignature.Find(this);
 				ReadFromRAM(signatureLocation + 4*4, &loadAddress, 8);
 				gameStateAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+
+				romTesterAddresses[3] = (.)signatureLocation + 4*4;
 			} else {
 				ReadFromRAM(signatureLocation, &loadAddress, 8);
 				gameStateAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+				
+				romTesterAddresses[3] = (.)signatureLocation;
 			}
 
 			if (signatureLocation.IsNull) {
