@@ -355,33 +355,6 @@ namespace SpyroScope {
 				}
 				DeleteAndNullify!(nearAnimations);
 			}
-
-			// Derived from Spyro: Ripto's Rage [80023994] TODO
-			/*float clock = 0;
-
-			Emulator.Address warpingRegionArrayPointer = ?;
-			Emulator.warpingRegionPointers[(int)Emulator.active.rom].Read(&warpingRegionArrayPointer);
-			uint32 waterRegionOffset = ?;
-			Emulator.active.ReadFromRAM(warpingRegionArrayPointer, &waterRegionOffset, 4);
-			warpingRegionArrayPointer += waterRegionOffset;
-			uint32 waterRegionCount = ?;
-			Emulator.active.ReadFromRAM(warpingRegionArrayPointer, &waterRegionCount, 4);
-			uint32[] warpData = new .[waterRegionCount];
-			Emulator.active.ReadFromRAM(warpingRegionArrayPointer + 4, warpData.CArray(), waterRegionCount * 4);
-			for (let i < waterRegionCount) {
-				let regionIndex = warpData[i] & 0xff;
-				let begin = warpingRegionArrayPointer + (warpData[i] >> 0x10);
-				let end = begin + (warpData[i] >> 6 & 0x3fc);
-				let count = (int)(end - begin) / 4;
-
-				uint32[] dataArray = scope .[count];
-				Emulator.active.ReadFromRAM(begin, dataArray.CArray(), count);
-				for (let ii < count) {
-					let data = dataArray[ii];
-					visualMeshes[regionIndex].vertices Math.Cos((float)(data + clock) / 128 * Math.PI_f * 2) * 20 + (data >> 0x10) |  & 0xfffffc00;
-				}
-			}
-			delete warpData;*/
 		}
 
 		public static void Decode() {
@@ -460,6 +433,48 @@ namespace SpyroScope {
 						animation.UpdateSubdivided(region);
 					}
 				}
+			}
+
+			// Derived from Spyro: Ripto's Rage [80023994]
+			uint32 clock = ?;
+			Emulator.active.ReadFromRAM((.)0x8006700c, &clock, 4);
+			clock += clock >> 1;
+
+			Emulator.Address warpingRegionArrayPointer = ?;
+			Emulator.active.ReadFromRAM((.)0x800673f0, &warpingRegionArrayPointer, 4);
+			uint32 offsets = ?;
+			Emulator.active.ReadFromRAM(warpingRegionArrayPointer, &offsets, 4);
+			warpingRegionArrayPointer += offsets;
+			uint32 size = ?;
+			Emulator.active.ReadFromRAM(warpingRegionArrayPointer, &size, 4);
+			Emulator.Address warpingRegionArrayScan = warpingRegionArrayPointer + 4;
+			Emulator.Address warpingRegionArrayEnd = warpingRegionArrayScan + size * 4;
+
+			while (warpingRegionArrayScan < warpingRegionArrayEnd) {
+				uint32 value = ?;
+				Emulator.active.ReadFromRAM(warpingRegionArrayScan, &value, 4);
+
+				Emulator.Address a4 = warpingRegionArrayPointer + (value >> 16) * 4;
+
+				bool update = ?;
+				Emulator.active.ReadFromRAM((.)0x8006b300 + (value & 0xff), &update, 1);
+				if (update) {
+					uint32 timeOffset = ?;
+
+					let region = Terrain.regions[value & 0xff];
+					for (let i < region.NearLOD.vertexCount) {
+						Emulator.active.ReadFromRAM(a4, &timeOffset, 4);
+
+						Vector3Int vertex = region.GetNearVertex(i);
+
+						vertex.z = (((int32)(Math.Cos((float)(clock + timeOffset) / 0x80 * Math.PI_f) * 0x1000) * 0x140 >> 0x10) + (int32)(timeOffset >> 16)) << 1;
+
+						region.SetNearVertex(i, vertex);
+						a4 += 4;
+					}
+				}
+
+				warpingRegionArrayScan += 4;
 			}
 
 			UpdateTextureInfo(true);

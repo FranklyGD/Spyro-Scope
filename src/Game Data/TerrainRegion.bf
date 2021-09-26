@@ -127,7 +127,7 @@ namespace SpyroScope {
 		/// Used to convert mesh triangle index to face index
 		public List<int> farFaceIndices = new .() ~ delete _;
 
-		Vector3[] nearVertices;
+		Vector3[] nearVertices ~ delete _;
 		Renderer.Color4[] nearColors ~ delete _;
 		NearFace[] nearFaces ~ delete _;
 		
@@ -136,12 +136,14 @@ namespace SpyroScope {
 		public List<uint8> nearMesh2GameIndices = new .() ~ delete _;
 		/// Used to convert mesh triangle index to face index
 		public List<int> nearFaceIndices = new .() ~ delete _;
+		public List<bool> nearFacePairs = new .() ~ delete _;
 
 		public Mesh nearMeshTransparent ~ delete _;
 		public Mesh nearMeshTransparentSubdivided ~ delete _;
 		public List<uint8> nearMesh2GameTransparentIndices = new .() ~ delete _;
 		/// Used to convert mesh triangle index to face index (transparent)
 		public List<int> nearFaceTransparentIndices = new .() ~ delete _;
+		public List<bool> nearFaceTransparentPairs = new .() ~ delete _;
 
 		public int highestUsedTextureIndex = -1;
 
@@ -231,19 +233,50 @@ namespace SpyroScope {
 			Emulator.active.ReadFromRAM(address, &metadata, sizeof(RegionMetadata));
 		}
 
+		public Vector3Int GetNearVertex(uint8 index) {
+			uint32 packedVertex = ?;
+
+			let dataStart = address + 0x1c + (int)NearLOD.start * 4;
+			Emulator.active.ReadFromRAM(dataStart + (int)index * 4, &packedVertex, 4);
+
+			Vector3Int vertex = UnpackVertex(packedVertex);
+			Vector3 v = nearVertices[index];
+
+			return vertex;
+		}
+
 		/// Sets the position of the mesh's vertex with the index the game uses
 		public void SetNearVertex(uint8 index, Vector3Int position, bool updateGame = false) {
+			nearVertices[index] = position;
+
+			if (updateGame) {
+				uint32 packedVertex = PackVertex(position);
+				let dataStart = address + 0x1c + ((int)NearLOD.start + NearLOD.vertexCount + (int)NearLOD.colorCount * 2) * 4;
+				Emulator.active.WriteToRAM(dataStart + (int)index * 4, &packedVertex, 4);
+			}
+
 			for (let meshVertexIndex < nearMesh2GameIndices.Count) {
 				let vertexIndex = nearMesh2GameIndices[meshVertexIndex];
 				if (vertexIndex == index) {
 					nearMesh.vertices[meshVertexIndex] = position;
+
+					UpdateSubdividedFace(meshVertexIndex, false);
 				}
 			}
-			nearVertices[index] = position;
-			if (updateGame) {
-				let dataStart = address + 0x1c + ((int)NearLOD.start + NearLOD.vertexCount + (int)NearLOD.colorCount * 2) * 4;
-				Emulator.active.WriteToRAM(dataStart, &nearVertices[index], (int)index * 4);
+
+			for (let meshVertexIndex < nearMesh2GameTransparentIndices.Count) {
+				let vertexIndex = nearMesh2GameTransparentIndices[meshVertexIndex];
+				if (vertexIndex == index) {
+					nearMeshTransparent.vertices[meshVertexIndex] = position;
+
+					UpdateSubdividedFace(meshVertexIndex, true);
+				}
 			}
+
+			nearMesh.SetDirty(.Vertex);
+			nearMeshSubdivided.SetDirty(.Vertex);
+			nearMeshTransparent.SetDirty(.Vertex);
+			nearMeshTransparentSubdivided.SetDirty(.Vertex);
 		}
 
 		public void Reload() {
@@ -302,10 +335,6 @@ namespace SpyroScope {
 			// Vertices
 			uint32[] packedVertices = scope .[FarLOD.vertexCount];
 			Emulator.active.ReadFromRAM(dataStart, packedVertices.CArray(), packedVertices.Count * 4);
-			nearVertices = scope .[packedVertices.Count];
-			for (let i < packedVertices.Count) {
-				nearVertices[i] = UnpackVertex(packedVertices[i]);
-			}
 
 			dataStart += packedVertices.Count * 4;
 
@@ -413,6 +442,7 @@ namespace SpyroScope {
 
 			List<uint8> activeNearMesh2GameIndices = ?;
 			List<int> activeNearFaceIndices = ?;
+			List<bool> activeNearFacePairs = ?;
 
 			List<uint32> indexList = scope .();
 			List<Vector3> vertexList = scope .();
@@ -429,7 +459,7 @@ namespace SpyroScope {
 			// Vertices
 			uint32[] packedVertices = scope .[NearLOD.vertexCount];
 			Emulator.active.ReadFromRAM(dataStart, packedVertices.CArray(), packedVertices.Count * 4);
-			nearVertices = scope .[packedVertices.Count];
+			nearVertices = new .[packedVertices.Count];
 			for (let i < packedVertices.Count) {
 				nearVertices[i] = UnpackVertex(packedVertices[i]);
 			}
@@ -475,6 +505,7 @@ namespace SpyroScope {
 					// Conversion Table
 					activeNearMesh2GameIndices = nearMesh2GameTransparentIndices;
 					activeNearFaceIndices = nearFaceTransparentIndices;
+					activeNearFacePairs = nearFaceTransparentPairs;
 				} else {
 					// Low LOD
 					activeIndexList = indexList;
@@ -487,6 +518,7 @@ namespace SpyroScope {
 					// Conversion Table
 					activeNearMesh2GameIndices = nearMesh2GameIndices;
 					activeNearFaceIndices = nearFaceIndices;
+					activeNearFacePairs = nearFacePairs;
 				}
 
 				if (regionFace.isTriangle) {
@@ -551,6 +583,7 @@ namespace SpyroScope {
 					vertices[11] = subQuadVertices[3][0];
 
 					activeNearFaceIndices.Add(i);
+					activeNearFacePairs.Add(false);
 				} else {
 					// Low quality textures
 					var baseIndex = (uint32)activeIndexList.Count;
@@ -616,6 +649,8 @@ namespace SpyroScope {
 
 					activeNearFaceIndices.Add(i);
 					activeNearFaceIndices.Add(i);
+					activeNearFacePairs.Add(false);
+					activeNearFacePairs.Add(true);
 				}
 			}
 
@@ -695,6 +730,7 @@ namespace SpyroScope {
 		// Derived from Spyro: Ripto's Rage
 		// Far [80028c2c]
 		// Near [80024664]
+		[Inline]
 		public static Vector3Int UnpackVertex(uint32 packedVertex) {
 			Vector3Int vertex = ?;
 	
@@ -703,6 +739,10 @@ namespace SpyroScope {
 			vertex.z = (.)((packedVertex & 0x3ff) << 1);
 	
 			return vertex;
+		}
+
+		public static uint32 PackVertex(Vector3Int packedVertex) {
+			return (.)packedVertex.x << 21 | (.)(packedVertex.y & 0x7ff) << 10 | (.)packedVertex.z >> 1 & 0x3ff;
 		}
 
 		// This should almost be a complete copy of the mesh generation of UVs
@@ -796,6 +836,90 @@ namespace SpyroScope {
 				
 				regionMesh.SetDirty(.UV);
 				regionMeshSubdivided.SetDirty(.UV);
+			}
+		}
+
+		public void UpdateSubdividedFace(int vertexIndex, bool transparent) {
+			Mesh mesh, meshSubdivided;
+			List<int> faceIndices;
+			List<bool> facePairs;
+
+			if (transparent) {
+				mesh = nearMeshTransparent;
+				meshSubdivided = nearMeshTransparentSubdivided;
+				faceIndices = nearFaceTransparentIndices;
+				facePairs = nearFaceTransparentPairs;
+			} else {
+				mesh = nearMesh;
+				meshSubdivided = nearMeshSubdivided;
+				faceIndices = nearFaceIndices;
+				facePairs = nearFacePairs;
+			}
+
+			var triangleIndex = vertexIndex / 3;
+			if (facePairs[triangleIndex]) {
+				triangleIndex--;
+			}
+			
+			Vector3* vertices = &mesh.vertices[triangleIndex * 3];
+
+			var regionFace = GetNearFace(faceIndices[triangleIndex]);
+			if (regionFace.isTriangle) {
+				Vector3[5] midpoints = ?;
+				midpoints[0] = (vertices[0] + vertices[1]) / 2; // Top
+				midpoints[1] = (vertices[1] + vertices[2]) / 2; // Diagonal
+				midpoints[2] = (vertices[2] + vertices[0]) / 2; // Left
+
+				Vector3[4][3] subQuadVertices = .(
+					(midpoints[2], midpoints[0], vertices[0]),
+					(midpoints[1], vertices[1], midpoints[0]),
+					(vertices[2], midpoints[1], midpoints[2]),
+					(midpoints[2], midpoints[1], midpoints[0])
+				);
+
+				// Corner triangles
+				vertices = &meshSubdivided.vertices[triangleIndex * 3 * 4];
+				for (let ti < 3) {
+					let offset = ti * 3;
+
+					vertices[0 + offset] = subQuadVertices[ti][2];
+					vertices[1 + offset] = subQuadVertices[ti][1];
+					vertices[2 + offset] = subQuadVertices[ti][0];
+				}
+				
+				// Center triangle
+				vertices[9] = subQuadVertices[3][2];
+				vertices[10] = subQuadVertices[3][1];
+				vertices[11] = subQuadVertices[3][0];
+			} else {
+				// High quality textures
+				Vector3[5] midpoints = ?;
+				midpoints[0] = (vertices[3] + vertices[4]) / 2; // Top
+				midpoints[1] = (vertices[0] + vertices[1]) / 2; // Bottom
+				midpoints[2] = (vertices[3] + vertices[5]) / 2; // Left
+				midpoints[3] = (vertices[0] + vertices[2]) / 2; // Right
+				midpoints[4] = (midpoints[0] + midpoints[1]) / 2;
+
+				Vector3[4][4] subQuadVertices = .(
+					.(midpoints[2], midpoints[4], midpoints[0], vertices[3]),
+					.(midpoints[4], midpoints[3], vertices[2], midpoints[0]),
+					.(vertices[5], midpoints[1], midpoints[4], midpoints[2]),
+					.(midpoints[1], vertices[0], midpoints[3], midpoints[4]),
+				);
+				
+				const uint8[2][2] swap = .(.(0,2), .(2,0));
+				const int8[2] oppositeIndex = .(1,3);
+
+				vertices = &meshSubdivided.vertices[triangleIndex * 3 * 4];
+				for (let qi < 4) {
+					for (let qti < 2) {
+						let offset = qi * 6 + qti * 3;
+
+						vertices[0 + offset] = subQuadVertices[qi][oppositeIndex[qti]];
+						vertices[1 + offset] = subQuadVertices[qi][swap[qti][0]];
+						vertices[2 + offset] = subQuadVertices[qi][swap[qti][1]];
+					}
+				}
 			}
 		}
 
