@@ -239,10 +239,7 @@ namespace SpyroScope {
 			let dataStart = address + 0x1c + (int)NearLOD.start * 4;
 			Emulator.active.ReadFromRAM(dataStart + (int)index * 4, &packedVertex, 4);
 
-			Vector3Int vertex = UnpackVertex(packedVertex);
-			Vector3 v = nearVertices[index];
-
-			return vertex;
+			return UnpackVertex(packedVertex);
 		}
 
 		/// Sets the position of the mesh's vertex with the index the game uses
