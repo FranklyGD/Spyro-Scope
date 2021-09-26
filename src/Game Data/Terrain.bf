@@ -22,6 +22,7 @@ namespace SpyroScope {
 		}
 
 		public static TerrainRegion[] regions;
+		public static uint8[] renderingFlags;
 
 		public static uint32 FarAnimatedCount {
 			[Inline]
@@ -126,6 +127,7 @@ namespace SpyroScope {
 			DeleteAndNullify!(collision);
 
 			DeleteContainerAndItems!(regions);
+			delete renderingFlags;
 			regions = null;
 			decoded = false;
 
@@ -197,9 +199,11 @@ namespace SpyroScope {
 
 			// Remove any existing parsed data
 			DeleteContainerAndItems!(regions);
+			delete renderingFlags;
 
 			// Parse all terrain regions
 			regions = new .[sceneRegionCount];
+			renderingFlags = new .[sceneRegionCount];
 
 			Emulator.Address[] sceneDataRegionAddresses = new .[sceneRegionCount];
 			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegionAddresses[0], sceneRegionCount);
@@ -435,6 +439,9 @@ namespace SpyroScope {
 				}
 			}
 
+			
+			Emulator.active.ReadFromRAM((.)0x8006b300, renderingFlags.CArray(), RegionCount);
+
 			// Derived from Spyro: Ripto's Rage [80023994]
 			uint32 clock = ?;
 			Emulator.active.ReadFromRAM((.)0x8006700c, &clock, 4);
@@ -457,9 +464,7 @@ namespace SpyroScope {
 				Emulator.Address vertexInfoScan = warpingRegionArrayPointer + (value >> 16) * 4;
 				Emulator.Address vertexInfoEnd = vertexInfoScan + (value >> 8 & 0xff) * 4;
 
-				bool update = ?;
-				Emulator.active.ReadFromRAM((.)0x8006b300 + (value & 0xff), &update, 1);
-				if (update) {
+				//if (renderingFlags[value & 0xff] & 1 > 0) { 
 					uint32 timeOffset = ?;
 
 					let region = Terrain.regions[value & 0xff];
@@ -475,7 +480,9 @@ namespace SpyroScope {
 						vertexInfoScan += 4;
 						i++;
 					}
-				}
+				//}
+				// Make it update regardless in program regardless if it is rendering in game or not
+				// Commented code is part of the derived code
 
 				warpingRegionArrayScan += 4;
 			}
@@ -495,9 +502,7 @@ namespace SpyroScope {
 				Emulator.Address vertexInfoScan = warpingRegionArrayPointer + (value >> 16) * 4;
 				Emulator.Address vertexInfoEnd = vertexInfoScan + (value >> 8 & 0xff) * 8;
 
-				bool update = ?;
-				Emulator.active.ReadFromRAM((.)0x8006b300 + (value & 0xff), &update, 1);
-				if (update) {
+				//if (renderingFlags[value & 0xff] & 1 > 0) { 
 					uint32 timeOffset = ?;
 
 					let region = Terrain.regions[value & 0xff];
@@ -515,7 +520,9 @@ namespace SpyroScope {
 						region.SetNearVertex((.)(timeOffset >> 16), vertex);
 						vertexInfoScan += 8;
 					}
-				}
+				//}
+				// Make it update regardless in program regardless if it is rendering in game or not
+				// Commented code is part of the derived code
 
 				warpingRegionArrayScan += 4;
 			}
