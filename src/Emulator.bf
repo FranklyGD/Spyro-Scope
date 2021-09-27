@@ -94,9 +94,10 @@ namespace SpyroScope {
 			}
 		}
 
-		public const String[8] pointerLabels = .(
+		public const String[9] pointerLabels = .(
 			"Terrain Mesh",
 			"Terrain Deform",
+			"Terrain Warp",
 			"Terrain Collision",
 			"Terrain Collision Flags",
 			"Terrain Collision Deform",
@@ -104,11 +105,12 @@ namespace SpyroScope {
 			"Texture Scrollers",
 			"Texture Swappers"
 		);
-		public Address[8] loadedPointers;
-		public bool[8] changedPointers;
-		public Address<Address>*[8] pointerSets = .(
+		public Address[9] loadedPointers;
+		public bool[9] changedPointers;
+		public Address<Address>*[9] pointerSets = .(
 			&sceneRegionsPointer,
 			&farRegionsDeformPointer,
+			&regionsWarpPointer,
 			&collisionDataPointer,
 			&collisionFlagsPointer,
 			&collisionDeformPointer,
@@ -158,10 +160,12 @@ namespace SpyroScope {
 		// World
 		public const Address<uint32>[11] currentWorldIdAddress = .(0, (.)0x80075964/*StD*/, 0, 0, (.)0x80066f54/*RR*/, 0, 0, (.)0x8006e58c, (.)0x8006c66c/*YotD-1.1*/, 0, 0); ////
 		public const Address<uint32>[4] currentSubWorldIdAddress = .((.)0x8006c5c8, (.)0x8006c6a8, (.)0, (.)0); // Exclusive to Spyro: Year of the Dragon. ////
-		
+
+		public Address<uint8> frameClockAddress;
 		public Address<Renderer.Color4> clearColorAddress;
 		public Address<Address> textureDataPointer, sceneRegionsPointer, collisionDataPointer, collisionFlagsPointer;
-		public Address<Address> textureSwappersPointer, textureScrollersPointer, farRegionsDeformPointer, nearRegionsDeformPointer, collisionDeformPointer;
+		public Address<Address> textureSwappersPointer, textureScrollersPointer, farRegionsDeformPointer, nearRegionsDeformPointer, collisionDeformPointer, regionsWarpPointer;
+		public Address<uint8> regionsRenderingArrayAddress;
 
 		// Exclusive to Spyro: Ripto's Rage
 		public const Address<uint8>[3] spriteWidthArrayAddress = .((.)0x800634b8, 0, 0);
@@ -565,7 +569,7 @@ namespace SpyroScope {
 		}
 
 		public void CheckSources() {
-			for (let i < 8) {
+			for (let i < 9) {
 				Address newLoadedPointer = ?;
 				let pointer = *pointerSets[i];
 
@@ -596,7 +600,7 @@ namespace SpyroScope {
 				) {
 					loadingStatus = .CutsceneDone;
 
-					for (let i < 8) {
+					for (let i < 9) {
 						changedPointers[i] = false;
 					}
 					VRAM.upToDate = false;
@@ -1613,6 +1617,30 @@ namespace SpyroScope {
 			} else {
 				ReadFromRAM(signatureLocation, &loadAddress, 8);
 				gameInputAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			}
+
+			// Visual Terrain Warp
+			// Spyro 2/3 Attempt
+			MemorySignature terrainWarpSignature = scope .();
+			terrainWarpSignature.AddInstruction(.lui);
+			terrainWarpSignature.AddInstruction(.addiu);
+			terrainWarpSignature.AddInstruction(.lw, 0x1c);
+			terrainWarpSignature.AddInstruction(.lw, 0x0);
+			terrainWarpSignature.AddInstruction(.lw);
+			terrainWarpSignature.AddInstruction(.lui);
+
+			signatureLocation = terrainWarpSignature.Find(this);
+			if (!signatureLocation.IsNull) {
+				ReadFromRAM(signatureLocation + 4*2, &loadAddress, 4);
+				regionsWarpPointer = (.)((int32)loadAddress[0] & 0x0000ffff);
+				ReadFromRAM(signatureLocation, &loadAddress, 8);
+				regionsWarpPointer += (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+				
+				ReadFromRAM(signatureLocation + 4*5, &loadAddress, 8);
+				regionsRenderingArrayAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+
+				ReadFromRAM(signatureLocation + 4*12, &loadAddress, 8);
+				frameClockAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 			}
 		}
 

@@ -127,7 +127,7 @@ namespace SpyroScope {
 			DeleteAndNullify!(collision);
 
 			DeleteContainerAndItems!(regions);
-			delete renderingFlags;
+			DeleteAndNullify!(renderingFlags);
 			regions = null;
 			decoded = false;
 
@@ -439,92 +439,101 @@ namespace SpyroScope {
 				}
 			}
 
-			
-			Emulator.active.ReadFromRAM((.)0x8006b300, renderingFlags.CArray(), RegionCount);
+			if (!Emulator.active.regionsWarpPointer.IsNull) {
+				Emulator.active.ReadFromRAM(Emulator.active.regionsRenderingArrayAddress, renderingFlags.CArray(), RegionCount);
+	
+				// Derived from Spyro: Ripto's Rage [80023994]
+				uint32 clock = ?;
+				Emulator.active.ReadFromRAM(Emulator.active.frameClockAddress, &clock, 4);
+				clock += clock >> 1;
+	
+				Emulator.Address warpingRegionsDataPointer = ?;
+				Emulator.active.ReadFromRAM(Emulator.active.regionsWarpPointer, &warpingRegionsDataPointer, 4);
 
-			// Derived from Spyro: Ripto's Rage [80023994]
-			uint32 clock = ?;
-			Emulator.active.ReadFromRAM((.)0x8006700c, &clock, 4);
-			clock += clock >> 1;
+				uint32 offset = ?;
+				Emulator.active.ReadFromRAM(warpingRegionsDataPointer, &offset, 4);
 
-			Emulator.Address warpingRegionArrayPointer = ?;
-			Emulator.active.ReadFromRAM((.)0x800673f0, &warpingRegionArrayPointer, 4);
-			uint32 offsets = ?;
-			Emulator.active.ReadFromRAM(warpingRegionArrayPointer, &offsets, 4);
-			warpingRegionArrayPointer += offsets;
-			uint32 size = ?;
-			Emulator.active.ReadFromRAM(warpingRegionArrayPointer, &size, 4);
-			Emulator.Address warpingRegionArrayScan = warpingRegionArrayPointer + 4;
-			Emulator.Address warpingRegionArrayEnd = warpingRegionArrayScan + size * 4;
-
-			while (warpingRegionArrayScan < warpingRegionArrayEnd) {
-				uint32 value = ?;
-				Emulator.active.ReadFromRAM(warpingRegionArrayScan, &value, 4);
-
-				Emulator.Address vertexInfoScan = warpingRegionArrayPointer + (value >> 16) * 4;
-				Emulator.Address vertexInfoEnd = vertexInfoScan + (value >> 8 & 0xff) * 4;
-
-				//if (renderingFlags[value & 0xff] & 1 > 0) { 
-					uint32 timeOffset = ?;
-
-					let region = Terrain.regions[value & 0xff];
-					uint8 i = 0;
-					while (vertexInfoScan < vertexInfoEnd) {
-						Emulator.active.ReadFromRAM(vertexInfoScan, &timeOffset, 4);
-
-						Vector3Int vertex = region.GetNearVertex(i);
-
-						vertex.z = (((int32)(Math.Cos((float)(clock + timeOffset) / 0x80 * Math.PI_f) * 0x1000) * 0x140 >> 0x10) + (int32)(timeOffset >> 16)) << 1;
-
-						region.SetNearVertex(i, vertex);
-						vertexInfoScan += 4;
-						i++;
+				uint32 size = ?;
+				Emulator.active.ReadFromRAM(warpingRegionsDataPointer + offset, &size, 4);
+				Emulator.Address warpingRegionArrayScan = warpingRegionsDataPointer + offset + 4;
+				Emulator.Address warpingRegionArrayEnd = warpingRegionArrayScan + size * 4;
+	
+				while (warpingRegionArrayScan < warpingRegionArrayEnd) {
+					uint32 value = ?;
+					Emulator.active.ReadFromRAM(warpingRegionArrayScan, &value, 4);
+					let regionIndex = value & 0xff;
+					if (regionIndex >= Terrain.RegionCount) {
+						break;
 					}
-				//}
-				// Make it update regardless in program regardless if it is rendering in game or not
-				// Commented code is part of the derived code
+	
+					Emulator.Address vertexInfoScan = warpingRegionsDataPointer + offset + (value >> 16) * 4;
+					Emulator.Address vertexInfoEnd = vertexInfoScan + (value >> 8 & 0xff) * 4;
+	
+					//if (renderingFlags[regionIndex] & 1 > 0) { 
+						uint32 timeOffset = ?;
+	
+						let region = Terrain.regions[regionIndex];
+						uint8 i = 0;
+						while (vertexInfoScan < vertexInfoEnd) {
+							Emulator.active.ReadFromRAM(vertexInfoScan, &timeOffset, 4);
+	
+							Vector3Int vertex = region.GetNearVertex(i);
+	
+							vertex.z = (((int32)(Math.Cos((float)(clock + timeOffset) / 0x80 * Math.PI_f) * 0x1000) * 0x140 >> 0x10) + (int32)(timeOffset >> 16)) << 1;
+	
+							region.SetNearVertex(i, vertex);
+							vertexInfoScan += 4;
+							i++;
+						}
+					//}
+					// Make it update regardless in program regardless if it is rendering in game or not
+					// Commented code is part of the derived code
+	
+					warpingRegionArrayScan += 4;
+				}
+	
+				// Derived from Spyro: Ripto's Rage [80023a9c]
+				Emulator.active.ReadFromRAM(warpingRegionsDataPointer + 4, &offset, 4);
 
-				warpingRegionArrayScan += 4;
-			}
-
-			// Derived from Spyro: Ripto's Rage [80023a9c]
-			Emulator.active.ReadFromRAM((.)0x800673f0, &warpingRegionArrayPointer, 4);
-			Emulator.active.ReadFromRAM(warpingRegionArrayPointer + 4, &offsets, 4);
-			warpingRegionArrayPointer += offsets;
-			Emulator.active.ReadFromRAM(warpingRegionArrayPointer, &size, 4);
-			warpingRegionArrayScan = warpingRegionArrayPointer + 4;
-			warpingRegionArrayEnd = warpingRegionArrayScan + size * 4;
-
-			while (warpingRegionArrayScan < warpingRegionArrayEnd) {
-				uint32 value = ?;
-				Emulator.active.ReadFromRAM(warpingRegionArrayScan, &value, 4);
-
-				Emulator.Address vertexInfoScan = warpingRegionArrayPointer + (value >> 16) * 4;
-				Emulator.Address vertexInfoEnd = vertexInfoScan + (value >> 8 & 0xff) * 8;
-
-				//if (renderingFlags[value & 0xff] & 1 > 0) { 
-					uint32 timeOffset = ?;
-
-					let region = Terrain.regions[value & 0xff];
-					while (vertexInfoScan < vertexInfoEnd) {
-						Emulator.active.ReadFromRAM(vertexInfoScan, &timeOffset, 4);
-						uint32 packedVertex = ?;
-						Emulator.active.ReadFromRAM(vertexInfoScan + 4, &packedVertex, 4);
-						Vector3Int vertex = TerrainRegion.UnpackVertex(packedVertex);
-
-						float t = (float)(clock + timeOffset) / 0x80 * Math.PI_f;
-						vertex.x += (int32)(Math.Sin(t + Math.PI_f / 4) * 0x1000) >> 8;
-						vertex.y += (int32)(Math.Sin(t) * 0x1000) >> 8;
-						vertex.z += (int32)(Math.Cos(t) * 0x1000) >> 10;
-
-						region.SetNearVertex((.)(timeOffset >> 16), vertex);
-						vertexInfoScan += 8;
+				Emulator.active.ReadFromRAM(warpingRegionsDataPointer + offset, &size, 4);
+				warpingRegionArrayScan = warpingRegionsDataPointer + offset + 4;
+				warpingRegionArrayEnd = warpingRegionArrayScan + size * 4;
+	
+				while (warpingRegionArrayScan < warpingRegionArrayEnd) {
+					uint32 value = ?;
+					Emulator.active.ReadFromRAM(warpingRegionArrayScan, &value, 4);
+					let regionIndex = value & 0xff;
+					if (regionIndex >= Terrain.RegionCount) {
+						break;
 					}
-				//}
-				// Make it update regardless in program regardless if it is rendering in game or not
-				// Commented code is part of the derived code
 
-				warpingRegionArrayScan += 4;
+					Emulator.Address vertexInfoScan = warpingRegionsDataPointer + offset + (value >> 16) * 4;
+					Emulator.Address vertexInfoEnd = vertexInfoScan + (value >> 8 & 0xff) * 8;
+	
+					//if (renderingFlags[regionIndex] & 1 > 0) { 
+						uint32 timeOffset = ?;
+	
+						let region = Terrain.regions[regionIndex];
+						while (vertexInfoScan < vertexInfoEnd) {
+							Emulator.active.ReadFromRAM(vertexInfoScan, &timeOffset, 4);
+							uint32 packedVertex = ?;
+							Emulator.active.ReadFromRAM(vertexInfoScan + 4, &packedVertex, 4);
+							Vector3Int vertex = TerrainRegion.UnpackVertex(packedVertex);
+	
+							float t = (float)(clock + timeOffset) / 0x80 * Math.PI_f;
+							vertex.x += (int32)(Math.Sin(t + Math.PI_f / 4) * 0x1000) >> 8;
+							vertex.y += (int32)(Math.Sin(t) * 0x1000) >> 8;
+							vertex.z += (int32)(Math.Cos(t) * 0x1000) >> 10;
+	
+							region.SetNearVertex((.)(timeOffset >> 16), vertex);
+							vertexInfoScan += 8;
+						}
+					//}
+					// Make it update regardless in program regardless if it is rendering in game or not
+					// Commented code is part of the derived code
+	
+					warpingRegionArrayScan += 4;
+				}
 			}
 
 			UpdateTextureInfo(true);
