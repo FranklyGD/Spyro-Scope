@@ -65,13 +65,15 @@ namespace SpyroScope {
 			Collision,
 			Far,
 			NearLQ,
-			NearHQ
+			NearHQ,
+			CulledLOD
 		}
 		public static RenderMode renderMode = .Collision;
 		
 		public static bool solid = true;
 		public static bool wireframe = true;
 		public static bool textured = true;
+		public static bool lodCulling = false;
 
 		static bool useFade = false;
 		public static bool UsingFade {
@@ -439,9 +441,11 @@ namespace SpyroScope {
 				}
 			}
 
-			if (!Emulator.active.regionsWarpPointer.IsNull) {
+			if (!Emulator.active.regionsRenderingArrayAddress.IsNull) {
 				Emulator.active.ReadFromRAM(Emulator.active.regionsRenderingArrayAddress, renderingFlags.CArray(), RegionCount);
-	
+			}
+
+			if (!Emulator.active.regionsWarpPointer.IsNull) {
 				// Derived from Spyro: Ripto's Rage [80023994]
 				uint32 clock = ?;
 				Emulator.active.ReadFromRAM(Emulator.active.frameClockAddress, &clock, 4);
@@ -463,7 +467,7 @@ namespace SpyroScope {
 					Emulator.active.ReadFromRAM(warpingRegionArrayScan, &value, 4);
 					let regionIndex = value & 0xff;
 					if (regionIndex >= Terrain.RegionCount) {
-						break;
+						break; // Prevent garbage values from breaking this
 					}
 	
 					Emulator.Address vertexInfoScan = warpingRegionsDataPointer + offset + (value >> 16) * 4;
@@ -504,7 +508,7 @@ namespace SpyroScope {
 					Emulator.active.ReadFromRAM(warpingRegionArrayScan, &value, 4);
 					let regionIndex = value & 0xff;
 					if (regionIndex >= Terrain.RegionCount) {
-						break;
+						break; // Prevent garbage values from breaking this
 					}
 
 					Emulator.Address vertexInfoScan = warpingRegionsDataPointer + offset + (value >> 16) * 4;
@@ -516,6 +520,11 @@ namespace SpyroScope {
 						let region = Terrain.regions[regionIndex];
 						while (vertexInfoScan < vertexInfoEnd) {
 							Emulator.active.ReadFromRAM(vertexInfoScan, &timeOffset, 4);
+							uint8 i = (.)(timeOffset >> 16);
+							if (i > region.NearLOD.vertexCount) {
+								break; // Prevent garbage values from breaking this
+							}
+
 							uint32 packedVertex = ?;
 							Emulator.active.ReadFromRAM(vertexInfoScan + 4, &packedVertex, 4);
 							Vector3Int vertex = TerrainRegion.UnpackVertex(packedVertex);
@@ -525,7 +534,7 @@ namespace SpyroScope {
 							vertex.y += (int32)(Math.Sin(t) * 0x1000) >> 8;
 							vertex.z += (int32)(Math.Cos(t) * 0x1000) >> 10;
 	
-							region.SetNearVertex((.)(timeOffset >> 16), vertex);
+							region.SetNearVertex(i, vertex);
 							vertexInfoScan += 8;
 						}
 					//}
@@ -573,46 +582,91 @@ namespace SpyroScope {
 				Renderer.BeginRetroShading();
 				Renderer.halfWhiteTexture.Bind();
 
-				if (renderMode == .Far) {
-					if (solid) {
-						for (let visualMesh in regions) {
-							visualMesh.DrawFar();
-						}
-					}
-
-					if (wireframe) {
+				switch (renderMode) {
+					case .Far: {
 						if (solid) {
-							Renderer.SetTint(.(192,192,192));
+							for (let i < RegionCount) {
+								let visualMesh = regions[i];
+								if (!lodCulling || renderingFlags[i] & 2 > 0) {
+									visualMesh.DrawFar();
+								}
+							}
 						}
 
-						Renderer.BeginWireframe();
-						for (let visualMesh in regions) {
-							visualMesh.DrawFar();
+						if (wireframe) {
+							if (solid) {
+								Renderer.SetTint(.(192,192,192));
+							}
+
+							Renderer.BeginWireframe();
+							for (let i < RegionCount) {
+								let visualMesh = regions[i];
+								if (!lodCulling || renderingFlags[i] & 2 > 0) {
+									visualMesh.DrawFar();
+								}
+							}
 						}
 					}
-					
-					Renderer.SetTint(.(255,255,255));
-				} else {
-					if (textured && !useFade && VRAM.decoded != null) {
-						VRAM.decoded.Bind();
-					}
 
-					if (solid) {
-						DrawNearLQ();
-					}
+					case .NearLQ, .NearHQ: {
+						if (textured && !useFade && VRAM.decoded != null) {
+							VRAM.decoded.Bind();
+						}
 
-					if (wireframe) {
 						if (solid) {
-							Renderer.SetTint(.(192,192,192));
+							DrawNear();
 						}
 
-						Renderer.BeginWireframe();
-						DrawNearLQ();
+						if (wireframe) {
+							if (solid) {
+								Renderer.SetTint(.(192,192,192));
+							}
+
+							Renderer.BeginWireframe();
+							DrawNear();
+						}
 					}
-					
-					Renderer.SetTint(.(255,255,255));
+
+					case .CulledLOD: {
+						if (solid) {
+							for (let i < RegionCount) {
+								let visualMesh = regions[i];
+								if (renderingFlags[i] == 2) {
+									visualMesh.DrawFar();
+								}
+							}
+
+							if (textured && !useFade && VRAM.decoded != null) {
+								VRAM.decoded.Bind();
+							}
+							DrawNear();
+							Renderer.halfWhiteTexture.Bind();
+						}
+
+						if (wireframe) {
+							if (solid) {
+								Renderer.SetTint(.(192,192,192));
+							}
+
+							Renderer.BeginWireframe();
+							for (let i < RegionCount) {
+								let visualMesh = regions[i];
+								if (renderingFlags[i] == 2) {
+									visualMesh.DrawFar();
+								}
+							}
+
+							if (textured && !useFade && VRAM.decoded != null) {
+								VRAM.decoded.Bind();
+							}
+							DrawNear();
+						}
+					}
+
+					default:
 				}
 				
+				Renderer.SetTint(.(255,255,255));
 				Renderer.BeginDefaultShading();
 				Renderer.whiteTexture.Bind();
 			}
@@ -621,14 +675,21 @@ namespace SpyroScope {
 			Renderer.BeginSolid();
 		}
 
-		static void DrawNearLQ() {
+		static void DrawNear() {
+			let alwaysRender = !(lodCulling || renderMode == .CulledLOD);
 			if (renderMode == .NearLQ) {
-				for (let visualMesh in regions) {
-					visualMesh.DrawNear();
+				for (let i < RegionCount) {
+					let visualMesh = regions[i];
+					if (alwaysRender || renderingFlags[i] & 1 > 0) {
+						visualMesh.DrawNear();
+					}
 				}
 			} else {
-				for (let visualMesh in regions) {
-					visualMesh.DrawNearSubdivided();
+				for (let i < RegionCount) {
+					let visualMesh = regions[i];
+					if (alwaysRender || renderingFlags[i] & 1 > 0) {
+						visualMesh.DrawNearSubdivided();
+					}
 				}
 			}
 				
@@ -636,12 +697,18 @@ namespace SpyroScope {
 			GL.glDepthMask(GL.GL_FALSE);  
 
 			if (renderMode == .NearLQ) {
-				for (let visualMesh in regions) {
-					visualMesh.DrawNearTransparent();
+				for (let i < RegionCount) {
+					let visualMesh = regions[i];
+					if (alwaysRender || renderingFlags[i] & 1 > 0) {
+						visualMesh.DrawNearTransparent();
+					}
 				}
 			} else {
-				for (let visualMesh in regions) {
-					visualMesh.DrawNearTransparentSubdivided();
+				for (let i < RegionCount) {
+					let visualMesh = regions[i];
+					if (alwaysRender || renderingFlags[i] & 1 > 0) {
+						visualMesh.DrawNearTransparentSubdivided();
+					}
 				}
 			}
 

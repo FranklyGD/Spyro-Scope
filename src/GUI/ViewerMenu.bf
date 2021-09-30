@@ -148,6 +148,7 @@ namespace SpyroScope {
 			dropdown.AddItem("Far");
 			dropdown.AddItem("Near LQ");
 			dropdown.AddItem("Near HQ");
+			dropdown.AddItem("Culled LOD");
 			dropdown.Value = 0;
 			dropdown.OnItemSelect
 				.. Add(new (option) => viewerState.ChangeRender((.)option))
@@ -333,7 +334,7 @@ namespace SpyroScope {
 					nearTerrainToggleGroup.visible = false;
 					collisionOptionGroup.visible = true;
 
-				case .Far:
+				case .Far, .CulledLOD:
 					nearTerrainToggleGroup.visible = false;
 					collisionOptionGroup.visible = false;
 

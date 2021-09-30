@@ -1641,6 +1641,21 @@ namespace SpyroScope {
 
 				ReadFromRAM(signatureLocation + 4*12, &loadAddress, 8);
 				frameClockAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			} else {
+				// Spyro 1 Attempt
+				MemorySignature regionRenderCullingSignature = scope .();
+				regionRenderCullingSignature.AddInstruction(.lw);
+				regionRenderCullingSignature.AddInstruction(.lw);
+				regionRenderCullingSignature.AddInstruction(.lw);
+				regionRenderCullingSignature.AddInstruction(.sra, .wild, .wild, 0x4);
+				regionRenderCullingSignature.AddInstruction(.sra, .wild, .wild, 0x4);
+				regionRenderCullingSignature.AddInstruction(.sra, .wild, .wild, 0x4);
+				regionRenderCullingSignature.AddInstruction(.lui);
+				regionRenderCullingSignature.AddInstruction(.addiu);
+
+				signatureLocation = regionRenderCullingSignature.Find(this);
+				ReadFromRAM(signatureLocation + 4*6, &loadAddress, 8);
+				regionsRenderingArrayAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 			}
 		}
 
