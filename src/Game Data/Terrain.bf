@@ -449,7 +449,7 @@ namespace SpyroScope {
 				// Derived from Spyro: Ripto's Rage [80023994]
 				uint32 clock = ?;
 				Emulator.active.ReadFromRAM(Emulator.active.frameClockAddress, &clock, 4);
-				clock += clock >> 1;
+				uint32 warpClock = clock + (clock >> 1);
 	
 				Emulator.Address warpingRegionsDataPointer = ?;
 				Emulator.active.ReadFromRAM(Emulator.active.regionsWarpPointer, &warpingRegionsDataPointer, 4);
@@ -483,12 +483,15 @@ namespace SpyroScope {
 	
 							Vector3Int vertex = region.GetNearVertex(i);
 	
-							vertex.z = (((int32)(Math.Cos((float)(clock + timeOffset) / 0x80 * Math.PI_f) * 0x1000) * 0x140 >> 0x10) + (int32)(timeOffset >> 16)) << 1;
+							vertex.z = (((int32)(Math.Cos((float)(warpClock + timeOffset) / 0x80 * Math.PI_f) * 0x1000) * 0x140 >> 0x10) + (int32)(timeOffset >> 16)) << 1;
 	
-							region.SetNearVertex(i, vertex);
+							region.SetNearVertex(i, vertex, false);
 							vertexInfoScan += 4;
 							i++;
 						}
+
+						region.UpdateSubdividedVertex(false);
+						region.UpdateSubdividedVertex(true);
 					//}
 					// Make it update regardless in program regardless if it is rendering in game or not
 					// Commented code is part of the derived code
@@ -529,19 +532,84 @@ namespace SpyroScope {
 							Emulator.active.ReadFromRAM(vertexInfoScan + 4, &packedVertex, 4);
 							Vector3Int vertex = TerrainRegion.UnpackVertex(packedVertex);
 	
-							float t = (float)(clock + timeOffset) / 0x80 * Math.PI_f;
+							float t = (float)(warpClock + timeOffset) / 0x80 * Math.PI_f;
 							vertex.x += (int32)(Math.Sin(t + Math.PI_f / 4) * 0x1000) >> 8;
 							vertex.y += (int32)(Math.Sin(t) * 0x1000) >> 8;
 							vertex.z += (int32)(Math.Cos(t) * 0x1000) >> 10;
-	
-							region.SetNearVertex(i, vertex);
+							
+							region.SetNearVertex(i, vertex, false);
 							vertexInfoScan += 8;
 						}
+
+						region.UpdateSubdividedVertex(false);
+						region.UpdateSubdividedVertex(true);
 					//}
 					// Make it update regardless in program regardless if it is rendering in game or not
 					// Commented code is part of the derived code
 	
 					warpingRegionArrayScan += 4;
+				}
+
+				if (!UsingFade) {
+					// Derived from Spyro: Ripto's Rage [80023a9c]
+					Renderer.Color4 targetColor = ?;
+					Emulator.active.ReadFromRAM(warpingRegionsDataPointer + 12, &targetColor, 4);
+					
+					Emulator.active.ReadFromRAM(warpingRegionsDataPointer + 8, &size, 4);
+					warpingRegionArrayScan = warpingRegionsDataPointer + 16;
+					warpingRegionArrayEnd = warpingRegionArrayScan + size * 4;
+	
+					while (warpingRegionArrayScan < warpingRegionArrayEnd) {
+						uint32 value = ?;
+						Emulator.active.ReadFromRAM(warpingRegionArrayScan, &value, 4);
+						
+						warpingRegionArrayScan += 4;
+						if (value & 0x80000000 > 0) { // Animate Colors?
+							continue;
+						}
+	
+						let regionIndex = value & 0xff;
+						if (regionIndex >= Terrain.RegionCount) {
+							break; // Prevent garbage values from breaking this
+						}
+	
+						Emulator.Address colorInfoScan = warpingRegionsDataPointer + (2 + (value >> 16)) * 4;
+						Emulator.Address colorInfoEnd = colorInfoScan + (value >> 8 & 0xff) * 4;
+	
+						//if (renderingFlags[regionIndex] & 1 > 0) { 
+							Renderer.Color4 colorTimeOffset = ?;
+	
+							let region = Terrain.regions[regionIndex];
+							uint8 i = 0;
+							while (colorInfoScan < colorInfoEnd) {
+								Emulator.active.ReadFromRAM(colorInfoScan, &colorTimeOffset, 4);
+								
+								Renderer.Color sourceColor = colorTimeOffset;
+								let timeOffset = colorTimeOffset.a;
+	
+								uint32 colorClock;
+								let o = timeOffset & 3;
+								if (o == 3) {
+									colorClock = clock * 3;
+								} else if (o > 0) {
+									colorClock = clock * 2;
+								} else {
+									colorClock = clock;
+								}
+	
+								let alpha = (Math.Cos((float)(timeOffset + colorClock) / 0x80 * Math.PI_f) + 1) / 4;
+	
+								region.SetNearColor(i, Renderer.Color.Lerp(sourceColor, targetColor, alpha), false);
+								colorInfoScan += 4;
+								i++;
+							}
+						
+							region.UpdateSubdividedColor(false);
+							region.UpdateSubdividedColor(true);
+						//}
+						// Make it update regardless in program regardless if it is rendering in game or not
+						// Commented code is part of the derived code
+					}
 				}
 			}
 

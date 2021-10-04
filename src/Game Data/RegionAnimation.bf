@@ -39,7 +39,7 @@ namespace SpyroScope {
 			delete animatedTriangles;
 		}
 
-		public void Reload(List<uint8> mesh2GameIndices, bool[] triOrQuad, List<int> faceIndices, Mesh mesh) mut {
+		public void Reload(List<(uint8 v, uint8 c)> mesh2GameIndices, bool[] triOrQuad, List<int> faceIndices, Mesh mesh) mut {
 			Emulator.active.ReadFromRAM(address + 6, &count, 2);
 
 			uint32 vertexDataOffset = ?;
@@ -67,32 +67,32 @@ namespace SpyroScope {
 			animatedTriangles = new .();
 			for (var i = 0; i < mesh2GameIndices.Count; i += 3) {
 				if (triOrQuad[faceIndices[i / 3]]) {
-					if (mesh2GameIndices[i] < vertexCount ||
-						mesh2GameIndices[i + 1] < vertexCount ||
-						mesh2GameIndices[i + 2] < vertexCount) {
+					if (mesh2GameIndices[i].v < vertexCount ||
+						mesh2GameIndices[i + 1].v < vertexCount ||
+						mesh2GameIndices[i + 2].v < vertexCount) {
 							
 						// Include affected triangles and its vertices
-						gameVertexIndices.Add(mesh2GameIndices[i]);
-						gameVertexIndices.Add(mesh2GameIndices[i + 1]);
-						gameVertexIndices.Add(mesh2GameIndices[i + 2]);
+						gameVertexIndices.Add(mesh2GameIndices[i].v);
+						gameVertexIndices.Add(mesh2GameIndices[i + 1].v);
+						gameVertexIndices.Add(mesh2GameIndices[i + 2].v);
 	
 						animatedTriangles.Add(i);
 					}
 				} else {
-					if (mesh2GameIndices[i] < vertexCount ||
-						mesh2GameIndices[i + 1] < vertexCount ||
-						mesh2GameIndices[i + 2] < vertexCount ||
-						mesh2GameIndices[i + 3] < vertexCount ||
-						mesh2GameIndices[i + 4] < vertexCount ||
-						mesh2GameIndices[i + 5] < vertexCount) {
+					if (mesh2GameIndices[i].v < vertexCount ||
+						mesh2GameIndices[i + 1].v < vertexCount ||
+						mesh2GameIndices[i + 2].v < vertexCount ||
+						mesh2GameIndices[i + 3].v < vertexCount ||
+						mesh2GameIndices[i + 4].v < vertexCount ||
+						mesh2GameIndices[i + 5].v < vertexCount) {
 
-						gameVertexIndices.Add(mesh2GameIndices[i]);
-						gameVertexIndices.Add(mesh2GameIndices[i + 1]);
-						gameVertexIndices.Add(mesh2GameIndices[i + 2]);
+						gameVertexIndices.Add(mesh2GameIndices[i].v);
+						gameVertexIndices.Add(mesh2GameIndices[i + 1].v);
+						gameVertexIndices.Add(mesh2GameIndices[i + 2].v);
 
-						gameVertexIndices.Add(mesh2GameIndices[i + 3]);
-						gameVertexIndices.Add(mesh2GameIndices[i + 4]);
-						gameVertexIndices.Add(mesh2GameIndices[i + 5]);
+						gameVertexIndices.Add(mesh2GameIndices[i + 3].v);
+						gameVertexIndices.Add(mesh2GameIndices[i + 4].v);
+						gameVertexIndices.Add(mesh2GameIndices[i + 5].v);
 
 						animatedTriangles.Add(i);
 						animatedTriangles.Add(i + 3);

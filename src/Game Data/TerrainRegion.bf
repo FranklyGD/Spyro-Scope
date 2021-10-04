@@ -123,7 +123,7 @@ namespace SpyroScope {
 		public FarFace[] farFaces ~ delete _;
 
 		public Mesh farMesh ~ delete _;
-		public List<uint8> farMesh2GameIndices = new .() ~ delete _;
+		public List<(uint8 v, uint8 c)> farMesh2GameIndices = new .() ~ delete _;
 		/// Used to convert mesh triangle index to face index
 		public List<int> farFaceIndices = new .() ~ delete _;
 
@@ -133,14 +133,14 @@ namespace SpyroScope {
 		
 		public Mesh nearMesh ~ delete _;
 		public Mesh nearMeshSubdivided ~ delete _;
-		public List<uint8> nearMesh2GameIndices = new .() ~ delete _;
+		public List<(uint8 v, uint8 c)> nearMesh2GameIndices = new .() ~ delete _;
 		/// Used to convert mesh triangle index to face index
 		public List<int> nearFaceIndices = new .() ~ delete _;
 		public List<bool> nearFacePairs = new .() ~ delete _;
 
 		public Mesh nearMeshTransparent ~ delete _;
 		public Mesh nearMeshTransparentSubdivided ~ delete _;
-		public List<uint8> nearMesh2GameTransparentIndices = new .() ~ delete _;
+		public List<(uint8 v, uint8 c)> nearMesh2GameTransparentIndices = new .() ~ delete _;
 		/// Used to convert mesh triangle index to face index (transparent)
 		public List<int> nearFaceTransparentIndices = new .() ~ delete _;
 		public List<bool> nearFaceTransparentPairs = new .() ~ delete _;
@@ -243,7 +243,7 @@ namespace SpyroScope {
 		}
 
 		/// Sets the position of the mesh's vertex with the index the game uses
-		public void SetNearVertex(uint8 index, Vector3Int position, bool updateGame = false) {
+		public void SetNearVertex(uint8 index, Vector3Int position, bool updateMesh = true, bool updateGame = false) {
 			nearVertices[index] = position;
 
 			if (updateGame) {
@@ -253,20 +253,24 @@ namespace SpyroScope {
 			}
 
 			for (let meshVertexIndex < nearMesh2GameIndices.Count) {
-				let vertexIndex = nearMesh2GameIndices[meshVertexIndex];
+				let vertexIndex = nearMesh2GameIndices[[Unchecked]meshVertexIndex].v;
 				if (vertexIndex == index) {
 					nearMesh.vertices[meshVertexIndex] = position;
 
-					UpdateSubdividedFace(meshVertexIndex, false);
+					if (updateMesh) {
+						UpdateSubdividedVertex(meshVertexIndex, false);
+					}
 				}
 			}
 
 			for (let meshVertexIndex < nearMesh2GameTransparentIndices.Count) {
-				let vertexIndex = nearMesh2GameTransparentIndices[meshVertexIndex];
+				let vertexIndex = nearMesh2GameTransparentIndices[[Unchecked]meshVertexIndex].v;
 				if (vertexIndex == index) {
 					nearMeshTransparent.vertices[meshVertexIndex] = position;
 
-					UpdateSubdividedFace(meshVertexIndex, true);
+					if (updateMesh) {
+						UpdateSubdividedVertex(meshVertexIndex, true);
+					}
 				}
 			}
 
@@ -274,6 +278,44 @@ namespace SpyroScope {
 			nearMeshSubdivided.SetDirty(.Vertex);
 			nearMeshTransparent.SetDirty(.Vertex);
 			nearMeshTransparentSubdivided.SetDirty(.Vertex);
+		}
+
+		/// Sets the color of the mesh's vertex color with the index the game uses
+		public void SetNearColor(uint8 index, Renderer.Color color, bool updateMesh = true, bool updateGame = false) {
+			nearColors[index] = color;
+
+			if (updateGame) {
+				var color;
+				let dataStart = address + 0x1c + ((int)NearLOD.start + NearLOD.vertexCount) * 4;
+				Emulator.active.WriteToRAM(dataStart + (int)index * 8, &color, 3);
+			}
+
+			for (let meshVertexIndex < nearMesh2GameIndices.Count) {
+				let vertexIndex = nearMesh2GameIndices[[Unchecked]meshVertexIndex].c;
+				if (vertexIndex == index) {
+					nearMesh.colors[meshVertexIndex] = color;
+
+					if (updateMesh) {
+						UpdateSubdividedColor(meshVertexIndex, false);
+					}
+				}
+			}
+
+			for (let meshVertexIndex < nearMesh2GameTransparentIndices.Count) {
+				let vertexIndex = nearMesh2GameTransparentIndices[[Unchecked]meshVertexIndex].c;
+				if (vertexIndex == index) {
+					nearMeshTransparent.colors[meshVertexIndex] = color;
+					
+					if (updateMesh) {
+						UpdateSubdividedColor(meshVertexIndex, true);
+					}
+				}
+			}
+
+			nearMesh.SetDirty(.Color);
+			nearMeshSubdivided.SetDirty(.Color);
+			nearMeshTransparent.SetDirty(.Color);
+			nearMeshTransparentSubdivided.SetDirty(.Color);
 		}
 
 		public void Reload() {
@@ -367,9 +409,9 @@ namespace SpyroScope {
 				triangleColors[2] = vertexColors[colorIndices[2]];
 
 				if (triangleIndices[0] == triangleIndices[3]) {
-					farMesh2GameIndices.Add(triangleIndices[0]);
-					farMesh2GameIndices.Add(triangleIndices[2]);
-					farMesh2GameIndices.Add(triangleIndices[1]);
+					farMesh2GameIndices.Add((triangleIndices[0], colorIndices[0]));
+					farMesh2GameIndices.Add((triangleIndices[2], colorIndices[2]));
+					farMesh2GameIndices.Add((triangleIndices[1], colorIndices[1]));
 
 					vertexList.Add(triangleVertices[0]);
 					vertexList.Add(triangleVertices[2]);
@@ -384,13 +426,13 @@ namespace SpyroScope {
 					triangleVertices[3] = UnpackVertex(packedVertices[triangleIndices[3] % packedVertices.Count]);
 					triangleColors[3] = vertexColors[colorIndices[3]];
 					
-					farMesh2GameIndices.Add(triangleIndices[0]);
-					farMesh2GameIndices.Add(triangleIndices[2]);
-					farMesh2GameIndices.Add(triangleIndices[1]);
+					farMesh2GameIndices.Add((triangleIndices[0], colorIndices[0]));
+					farMesh2GameIndices.Add((triangleIndices[2], colorIndices[2]));
+					farMesh2GameIndices.Add((triangleIndices[1], colorIndices[1]));
 					
-					farMesh2GameIndices.Add(triangleIndices[0]);
-					farMesh2GameIndices.Add(triangleIndices[1]);
-					farMesh2GameIndices.Add(triangleIndices[3]);
+					farMesh2GameIndices.Add((triangleIndices[0], colorIndices[0]));
+					farMesh2GameIndices.Add((triangleIndices[1], colorIndices[1]));
+					farMesh2GameIndices.Add((triangleIndices[3], colorIndices[3]));
 
 					vertexList.Add(triangleVertices[0]);
 					vertexList.Add(triangleVertices[2]);
@@ -437,7 +479,7 @@ namespace SpyroScope {
 			List<uint32> activeIndexSubList = ?;
 			List<Vector3> activeVertexSubList = ?;
 
-			List<uint8> activeNearMesh2GameIndices = ?;
+			List<(uint8 v, uint8 c)> activeNearMesh2GameIndices = ?;
 			List<int> activeNearFaceIndices = ?;
 			List<bool> activeNearFacePairs = ?;
 
@@ -480,7 +522,8 @@ namespace SpyroScope {
 			// Color Indexing [80024c84]
 			for (let i < nearFaces.Count) {
 				var regionFace = nearFaces[i];
-				var trianglesIndices = regionFace.trianglesIndices;
+				var triangleIndices = regionFace.trianglesIndices;
+				var colorIndices = regionFace.colorsIndices;
 				let textureIndex = regionFace.renderInfo.textureIndex;
 				let flipSide = regionFace.flipped;
 				
@@ -531,13 +574,13 @@ namespace SpyroScope {
 					indices[1] = baseIndex + indexSwap[0];
 					indices[2] = baseIndex + indexSwap[1];
 
-					M2Gindices[0] = trianglesIndices[3];
-					M2Gindices[1] = trianglesIndices[2];
-					M2Gindices[2] = trianglesIndices[1];
+					M2Gindices[0] = (triangleIndices[3], colorIndices[3]);
+					M2Gindices[1] = (triangleIndices[2], colorIndices[2]);
+					M2Gindices[2] = (triangleIndices[1], colorIndices[1]);
 
-					vertices[0] = nearVertices[M2Gindices[0]];
-					vertices[1] = nearVertices[M2Gindices[1]];
-					vertices[2] = nearVertices[M2Gindices[2]];
+					vertices[0] = nearVertices[M2Gindices[0].v];
+					vertices[1] = nearVertices[M2Gindices[1].v];
+					vertices[2] = nearVertices[M2Gindices[2].v];
 
 					// High quality textures
 					Vector3[5] midpoints = ?;
@@ -599,13 +642,13 @@ namespace SpyroScope {
 						indices[1 + offset] = baseIndex + (.)offset + indexSwap[0];
 						indices[2 + offset] = baseIndex + (.)offset + indexSwap[1];
 
-						M2Gindices[0 + offset] = trianglesIndices[oppositeIndex[qti]];
-						M2Gindices[1 + offset] = trianglesIndices[swap[qti][0]];
-						M2Gindices[2 + offset] = trianglesIndices[swap[qti][1]];
+						M2Gindices[0 + offset] = (triangleIndices[oppositeIndex[qti]], colorIndices[oppositeIndex[qti]]);
+						M2Gindices[1 + offset] = (triangleIndices[swap[qti][0]], colorIndices[swap[qti][0]]);
+						M2Gindices[2 + offset] = (triangleIndices[swap[qti][1]], colorIndices[swap[qti][1]]);
 
-						vertices[0 + offset] = nearVertices[M2Gindices[0 + offset]];
-						vertices[1 + offset] = nearVertices[M2Gindices[1 + offset]];
-						vertices[2 + offset] = nearVertices[M2Gindices[2 + offset]];
+						vertices[0 + offset] = nearVertices[M2Gindices[0 + offset].v];
+						vertices[1 + offset] = nearVertices[M2Gindices[1 + offset].v];
+						vertices[2 + offset] = nearVertices[M2Gindices[2 + offset].v];
 					}
 
 					// High quality textures
@@ -836,7 +879,7 @@ namespace SpyroScope {
 			}
 		}
 
-		public void UpdateSubdividedFace(int vertexIndex, bool transparent) {
+		public void UpdateSubdividedVertex(int vertexIndex, bool transparent) {
 			Mesh mesh, meshSubdivided;
 			List<int> faceIndices;
 			List<bool> facePairs;
@@ -916,6 +959,256 @@ namespace SpyroScope {
 						vertices[1 + offset] = subQuadVertices[qi][swap[qti][0]];
 						vertices[2 + offset] = subQuadVertices[qi][swap[qti][1]];
 					}
+				}
+			}
+		}
+
+		public void UpdateSubdividedVertex(bool transparent) {
+			Mesh mesh, meshSubdivided;
+			List<int> faceIndices;
+			List<bool> facePairs;
+
+			if (transparent) {
+				mesh = nearMeshTransparent;
+				meshSubdivided = nearMeshTransparentSubdivided;
+				faceIndices = nearFaceTransparentIndices;
+				facePairs = nearFaceTransparentPairs;
+			} else {
+				mesh = nearMesh;
+				meshSubdivided = nearMeshSubdivided;
+				faceIndices = nearFaceIndices;
+				facePairs = nearFacePairs;
+			}
+			
+			for (var triangleIndex < faceIndices.Count) {
+				Vector3* vertices = &mesh.vertices[triangleIndex * 3];
+	
+				var regionFace = GetNearFace(faceIndices[triangleIndex]);
+				if (regionFace.isTriangle) {
+					Vector3[5] midpoints = ?;
+					midpoints[0] = (vertices[0] + vertices[1]) / 2; // Top
+					midpoints[1] = (vertices[1] + vertices[2]) / 2; // Diagonal
+					midpoints[2] = (vertices[2] + vertices[0]) / 2; // Left
+	
+					Vector3[4][3] subQuadVertices = .(
+						(midpoints[2], midpoints[0], vertices[0]),
+						(midpoints[1], vertices[1], midpoints[0]),
+						(vertices[2], midpoints[1], midpoints[2]),
+						(midpoints[2], midpoints[1], midpoints[0])
+					);
+	
+					// Corner triangles
+					vertices = &meshSubdivided.vertices[triangleIndex * 3 * 4];
+					for (let ti < 3) {
+						let offset = ti * 3;
+	
+						vertices[0 + offset] = subQuadVertices[ti][2];
+						vertices[1 + offset] = subQuadVertices[ti][1];
+						vertices[2 + offset] = subQuadVertices[ti][0];
+					}
+					
+					// Center triangle
+					vertices[9] = subQuadVertices[3][2];
+					vertices[10] = subQuadVertices[3][1];
+					vertices[11] = subQuadVertices[3][0];
+				} else {
+					// High quality textures
+					Vector3[5] midpoints = ?;
+					midpoints[0] = (vertices[3] + vertices[4]) / 2; // Top
+					midpoints[1] = (vertices[0] + vertices[1]) / 2; // Bottom
+					midpoints[2] = (vertices[3] + vertices[5]) / 2; // Left
+					midpoints[3] = (vertices[0] + vertices[2]) / 2; // Right
+					midpoints[4] = (midpoints[0] + midpoints[1]) / 2;
+	
+					Vector3[4][4] subQuadVertices = .(
+						.(midpoints[2], midpoints[4], midpoints[0], vertices[3]),
+						.(midpoints[4], midpoints[3], vertices[2], midpoints[0]),
+						.(vertices[5], midpoints[1], midpoints[4], midpoints[2]),
+						.(midpoints[1], vertices[0], midpoints[3], midpoints[4]),
+					);
+					
+					const uint8[2][2] swap = .(.(0,2), .(2,0));
+					const int8[2] oppositeIndex = .(1,3);
+	
+					vertices = &meshSubdivided.vertices[triangleIndex * 3 * 4];
+					for (let qi < 4) {
+						for (let qti < 2) {
+							let offset = qi * 6 + qti * 3;
+	
+							vertices[0 + offset] = subQuadVertices[qi][oppositeIndex[qti]];
+							vertices[1 + offset] = subQuadVertices[qi][swap[qti][0]];
+							vertices[2 + offset] = subQuadVertices[qi][swap[qti][1]];
+						}
+					}
+
+					triangleIndex++;
+				}
+			}
+		}
+
+		public void UpdateSubdividedColor(int colorIndex, bool transparent) {
+			Mesh mesh, meshSubdivided;
+			List<int> faceIndices;
+			List<bool> facePairs;
+
+			if (transparent) {
+				mesh = nearMeshTransparent;
+				meshSubdivided = nearMeshTransparentSubdivided;
+				faceIndices = nearFaceTransparentIndices;
+				facePairs = nearFaceTransparentPairs;
+			} else {
+				mesh = nearMesh;
+				meshSubdivided = nearMeshSubdivided;
+				faceIndices = nearFaceIndices;
+				facePairs = nearFacePairs;
+			}
+
+			var triangleIndex = colorIndex / 3;
+			if (facePairs[triangleIndex]) {
+				triangleIndex--;
+			}
+			
+			Renderer.Color4* colors = &mesh.colors[triangleIndex * 3];
+
+			var regionFace = GetNearFace(faceIndices[triangleIndex]);
+			if (regionFace.isTriangle) {
+				Renderer.Color[5] midcolors = ?;
+				midcolors[0] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f); // Top
+				midcolors[1] = Renderer.Color.Lerp(colors[1], colors[2], 0.5f); // Diagonal
+				midcolors[2] = Renderer.Color.Lerp(colors[2], colors[0], 0.5f); // Left
+
+				Renderer.Color[4][3] subQuadColors = .(
+					(midcolors[2], midcolors[0], colors[0]),
+					(midcolors[1], colors[1], midcolors[0]),
+					(colors[2], midcolors[1], midcolors[2]),
+					(midcolors[2], midcolors[1], midcolors[0])
+				);
+
+				// Corner triangles
+				colors = &meshSubdivided.colors[triangleIndex * 3 * 4];
+				for (let ti < 3) {
+					let offset = ti * 3;
+
+					colors[0 + offset] = subQuadColors[ti][2];
+					colors[1 + offset] = subQuadColors[ti][1];
+					colors[2 + offset] = subQuadColors[ti][0];
+				}
+				
+				// Center triangle
+				colors[9] = subQuadColors[3][2];
+				colors[10] = subQuadColors[3][1];
+				colors[11] = subQuadColors[3][0];
+			} else {
+				// High quality textures
+				Renderer.Color[5] midcolors = ?;
+				midcolors[0] = Renderer.Color.Lerp(colors[3], colors[4], 0.5f); // Top
+				midcolors[1] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f); // Bottom
+				midcolors[2] = Renderer.Color.Lerp(colors[3], colors[5], 0.5f); // Left
+				midcolors[3] = Renderer.Color.Lerp(colors[0], colors[2], 0.5f); // Right
+				midcolors[4] = Renderer.Color.Lerp(colors[1], colors[4], 0.5f);
+
+				Renderer.Color[4][4] subQuadColors = .(
+					.(midcolors[2], midcolors[4], midcolors[0], colors[3]),
+					.(midcolors[4], midcolors[3], colors[2], midcolors[0]),
+					.(colors[5], midcolors[1], midcolors[4], midcolors[2]),
+					.(midcolors[1], colors[0], midcolors[3], midcolors[4]),
+				);
+				
+				const uint8[2][2] swap = .(.(0,2), .(2,0));
+				const int8[2] oppositeIndex = .(1,3);
+
+				colors = &meshSubdivided.colors[triangleIndex * 3 * 4];
+				for (let qi < 4) {
+					for (let qti < 2) {
+						let offset = qi * 6 + qti * 3;
+
+						colors[0 + offset] = subQuadColors[qi][oppositeIndex[qti]];
+						colors[1 + offset] = subQuadColors[qi][swap[qti][0]];
+						colors[2 + offset] = subQuadColors[qi][swap[qti][1]];
+					}
+				}
+			}
+		}
+
+		public void UpdateSubdividedColor(bool transparent) {
+			Mesh mesh, meshSubdivided;
+			List<int> faceIndices;
+			List<bool> facePairs;
+
+			if (transparent) {
+				mesh = nearMeshTransparent;
+				meshSubdivided = nearMeshTransparentSubdivided;
+				faceIndices = nearFaceTransparentIndices;
+				facePairs = nearFaceTransparentPairs;
+			} else {
+				mesh = nearMesh;
+				meshSubdivided = nearMeshSubdivided;
+				faceIndices = nearFaceIndices;
+				facePairs = nearFacePairs;
+			}
+
+			for (var triangleIndex < faceIndices.Count) {
+				Renderer.Color4* colors = &mesh.colors[triangleIndex * 3];
+
+				var regionFace = GetNearFace(faceIndices[triangleIndex]);
+				if (regionFace.isTriangle) {
+					Renderer.Color[5] midcolors = ?;
+					midcolors[0] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f); // Top
+					midcolors[1] = Renderer.Color.Lerp(colors[1], colors[2], 0.5f); // Diagonal
+					midcolors[2] = Renderer.Color.Lerp(colors[2], colors[0], 0.5f); // Left
+	
+					Renderer.Color[4][3] subQuadColors = .(
+						(midcolors[2], midcolors[0], colors[0]),
+						(midcolors[1], colors[1], midcolors[0]),
+						(colors[2], midcolors[1], midcolors[2]),
+						(midcolors[2], midcolors[1], midcolors[0])
+					);
+	
+					// Corner triangles
+					colors = &meshSubdivided.colors[triangleIndex * 3 * 4];
+					for (let ti < 3) {
+						let offset = ti * 3;
+	
+						colors[0 + offset] = subQuadColors[ti][2];
+						colors[1 + offset] = subQuadColors[ti][1];
+						colors[2 + offset] = subQuadColors[ti][0];
+					}
+					
+					// Center triangle
+					colors[9] = subQuadColors[3][2];
+					colors[10] = subQuadColors[3][1];
+					colors[11] = subQuadColors[3][0];
+				} else {
+					// High quality textures
+					Renderer.Color[5] midcolors = ?;
+					midcolors[0] = Renderer.Color.Lerp(colors[3], colors[4], 0.5f); // Top
+					midcolors[1] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f); // Bottom
+					midcolors[2] = Renderer.Color.Lerp(colors[3], colors[5], 0.5f); // Left
+					midcolors[3] = Renderer.Color.Lerp(colors[0], colors[2], 0.5f); // Right
+					midcolors[4] = Renderer.Color.Lerp(colors[1], colors[4], 0.5f);
+	
+					Renderer.Color[4][4] subQuadColors = .(
+						.(midcolors[2], midcolors[4], midcolors[0], colors[3]),
+						.(midcolors[4], midcolors[3], colors[2], midcolors[0]),
+						.(colors[5], midcolors[1], midcolors[4], midcolors[2]),
+						.(midcolors[1], colors[0], midcolors[3], midcolors[4]),
+					);
+					
+					const uint8[2][2] swap = .(.(0,2), .(2,0));
+					const int8[2] oppositeIndex = .(1,3);
+	
+					colors = &meshSubdivided.colors[triangleIndex * 3 * 4];
+					for (let qi < 4) {
+						for (let qti < 2) {
+							let offset = qi * 6 + qti * 3;
+	
+							colors[0 + offset] = subQuadColors[qi][oppositeIndex[qti]];
+							colors[1 + offset] = subQuadColors[qi][swap[qti][0]];
+							colors[2 + offset] = subQuadColors[qi][swap[qti][1]];
+						}
+					}
+
+					triangleIndex++;
 				}
 			}
 		}
