@@ -61,6 +61,10 @@ namespace SpyroScope {
 		public static TextureScroller[] textureScrollers;
 		public static TextureSwapper[] textureSwappers;
 
+		public static RegionWarper[] regionWarpers;
+		public static RegionVerticalWarper[] regionVerticalWarpers;
+		public static RegionColorWarper[] regionColorWarpers;
+
 		public enum RenderMode {
 			Collision,
 			Far,
@@ -172,6 +176,13 @@ namespace SpyroScope {
 			}
 
 			DeleteAndNullify!(textures);
+
+			DeleteContainerAndItems!(regionWarpers);
+			DeleteContainerAndItems!(regionVerticalWarpers);
+			DeleteContainerAndItems!(regionColorWarpers);
+			regionWarpers = null;
+			regionVerticalWarpers = null;
+			regionColorWarpers = null;
 		}
 
 		public static void Reload() {
@@ -361,6 +372,111 @@ namespace SpyroScope {
 				}
 				DeleteAndNullify!(nearAnimations);
 			}
+			
+			// Derived from Spyro: Ripto's Rage [80023994]
+			Emulator.Address warpingRegionsDataPointer = ?;
+			Emulator.active.ReadFromRAM(Emulator.active.regionsWarpPointer, &warpingRegionsDataPointer, 4);
+
+			uint32 offset = ?;
+			Emulator.active.ReadFromRAM(warpingRegionsDataPointer, &offset, 4);
+
+			uint32 size = ?;
+			Emulator.active.ReadFromRAM(warpingRegionsDataPointer + offset, &size, 4);
+			Emulator.Address warpingRegionArrayScan = warpingRegionsDataPointer + offset + 4;
+			Emulator.Address warpingRegionArrayEnd = warpingRegionArrayScan + size * 4;
+
+			regionVerticalWarpers = new .[(warpingRegionArrayEnd - warpingRegionArrayScan) / 4];
+			for (var vwarper in ref regionVerticalWarpers) {
+				uint32 value = ?;
+				Emulator.active.ReadFromRAM(warpingRegionArrayScan, &value, 4);
+				let regionIndex = value & 0xff;
+
+				Emulator.Address vertexInfoScan = warpingRegionsDataPointer + offset + (value >> 16) * 4;
+				Emulator.Address vertexInfoEnd = vertexInfoScan + (value >> 8 & 0xff) * 4;
+
+				uint32[] timeOffsets = new .[(vertexInfoEnd - vertexInfoScan) / 4];
+				vwarper = new .((.)regionIndex, timeOffsets);
+
+				uint8 i = 0;
+				while (vertexInfoScan < vertexInfoEnd) {
+					Emulator.active.ReadFromRAM(vertexInfoScan, &timeOffsets[i], 4);
+					vertexInfoScan += 4;
+					i++;
+				}
+
+				warpingRegionArrayScan += 4;
+			}
+
+			// Derived from Spyro: Ripto's Rage [80023a9c]
+			Emulator.active.ReadFromRAM(warpingRegionsDataPointer + 4, &offset, 4);
+
+			Emulator.active.ReadFromRAM(warpingRegionsDataPointer + offset, &size, 4);
+			warpingRegionArrayScan = warpingRegionsDataPointer + offset + 4;
+			warpingRegionArrayEnd = warpingRegionArrayScan + size * 4;
+
+			regionWarpers = new .[(warpingRegionArrayEnd - warpingRegionArrayScan) / 4];
+			for (var warper in ref regionWarpers) {
+				uint32 value = ?;
+				Emulator.active.ReadFromRAM(warpingRegionArrayScan, &value, 4);
+
+				Emulator.Address vertexInfoScan = warpingRegionsDataPointer + offset + (value >> 16) * 4;
+				Emulator.Address vertexInfoEnd = vertexInfoScan + (value >> 8 & 0xff) * 8;
+
+				Dictionary<uint8,uint32> timeOffsets = new .();
+				Vector3Int[] basePositions = new .[(vertexInfoEnd - vertexInfoScan) / 4];
+				warper = new .((.)value, timeOffsets, basePositions);
+
+				var i = 0;
+				while (vertexInfoScan < vertexInfoEnd) {
+					uint32 timeOffset = ?; 
+					Emulator.active.ReadFromRAM(vertexInfoScan, &timeOffset, 4);
+					timeOffsets[(uint8)(timeOffset >> 16)] = timeOffset;
+
+					uint32 packedVertex = ?;
+					Emulator.active.ReadFromRAM(vertexInfoScan + 4, &packedVertex, 4);
+					basePositions[i] = TerrainRegion.UnpackVertex(packedVertex);
+
+					vertexInfoScan += 4;
+					i++;
+				}
+
+				warpingRegionArrayScan += 4;
+			}
+
+			// Derived from Spyro: Ripto's Rage [80023a9c]
+			Emulator.active.ReadFromRAM(warpingRegionsDataPointer + 12, &RegionColorWarper.targetColor, 4);
+			
+			Emulator.active.ReadFromRAM(warpingRegionsDataPointer + 8, &size, 4);
+			warpingRegionArrayScan = warpingRegionsDataPointer + 16;
+			warpingRegionArrayEnd = warpingRegionArrayScan + size * 4;
+			
+			regionColorWarpers = new .[(warpingRegionArrayEnd - warpingRegionArrayScan) / 4];
+			for (var cwarper in ref regionColorWarpers) {
+				uint32 value = ?;
+				Emulator.active.ReadFromRAM(warpingRegionArrayScan, &value, 4);
+
+				Emulator.Address colorInfoScan = warpingRegionsDataPointer + (2 + (value >> 16)) * 4;
+				Emulator.Address colorInfoEnd = colorInfoScan + (value >> 8 & 0xff) * 4;
+
+				let count = (colorInfoEnd - colorInfoScan) / 4;
+				uint8[] timeOffsets = new .[count];
+				Renderer.Color4[] baseColors = new .[count];
+				cwarper = new .((.)value, timeOffsets, baseColors);
+
+				var i = 0;
+				while (colorInfoScan < colorInfoEnd) {
+					Renderer.Color4 colorTimeOffset = ?;
+					Emulator.active.ReadFromRAM(colorInfoScan, &colorTimeOffset, 4);
+					
+					baseColors[i] = colorTimeOffset;
+					timeOffsets[i] = colorTimeOffset.a;
+
+					i++;
+					colorInfoScan += 4;
+				}
+				
+				warpingRegionArrayScan += 4;
+			}
 		}
 
 		public static void Decode() {
@@ -446,170 +562,35 @@ namespace SpyroScope {
 			}
 
 			if (!Emulator.active.regionsWarpPointer.IsNull) {
-				// Derived from Spyro: Ripto's Rage [80023994]
 				uint32 clock = ?;
 				Emulator.active.ReadFromRAM(Emulator.active.frameClockAddress, &clock, 4);
 				uint32 warpClock = clock + (clock >> 1);
-	
+
+				for (let regionWarper in regionWarpers) {
+					regionWarper.Update(warpClock);
+				}
+
+				for (let regionWarper in regionVerticalWarpers) {
+					regionWarper.Update(warpClock);
+				}
+
 				Emulator.Address warpingRegionsDataPointer = ?;
 				Emulator.active.ReadFromRAM(Emulator.active.regionsWarpPointer, &warpingRegionsDataPointer, 4);
 
-				uint32 offset = ?;
-				Emulator.active.ReadFromRAM(warpingRegionsDataPointer, &offset, 4);
-
 				uint32 size = ?;
-				Emulator.active.ReadFromRAM(warpingRegionsDataPointer + offset, &size, 4);
-				Emulator.Address warpingRegionArrayScan = warpingRegionsDataPointer + offset + 4;
-				Emulator.Address warpingRegionArrayEnd = warpingRegionArrayScan + size * 4;
-	
-				while (warpingRegionArrayScan < warpingRegionArrayEnd) {
+				Emulator.active.ReadFromRAM(warpingRegionsDataPointer + 8, &size, 4);
+				var warpingRegionArrayScan = warpingRegionsDataPointer + 16;
+
+				for (let i < regionColorWarpers.Count) {
 					uint32 value = ?;
-					Emulator.active.ReadFromRAM(warpingRegionArrayScan, &value, 4);
-					let regionIndex = value & 0xff;
-					if (regionIndex >= Terrain.RegionCount) {
-						break; // Prevent garbage values from breaking this
-					}
-	
-					Emulator.Address vertexInfoScan = warpingRegionsDataPointer + offset + (value >> 16) * 4;
-					Emulator.Address vertexInfoEnd = vertexInfoScan + (value >> 8 & 0xff) * 4;
-	
-					//if (renderingFlags[regionIndex] & 1 > 0) { 
-						uint32 timeOffset = ?;
-	
-						let region = Terrain.regions[regionIndex];
-						uint8 i = 0;
-						while (vertexInfoScan < vertexInfoEnd) {
-							Emulator.active.ReadFromRAM(vertexInfoScan, &timeOffset, 4);
-	
-							Vector3Int vertex = region.GetNearVertex(i);
-	
-							vertex.z = (((int32)(Math.Cos((float)(warpClock + timeOffset) / 0x80 * Math.PI_f) * 0x1000) * 0x140 >> 0x10) + (int32)(timeOffset >> 16)) << 1;
-	
-							region.SetNearVertex(i, vertex, false);
-							vertexInfoScan += 4;
-							i++;
-						}
+					Emulator.active.ReadFromRAM(warpingRegionArrayScan + i * 4, &value, 4);
 
-						region.UpdateSubdividedVertex(false);
-						region.UpdateSubdividedVertex(true);
-					//}
-					// Make it update regardless in program regardless if it is rendering in game or not
-					// Commented code is part of the derived code
-	
-					warpingRegionArrayScan += 4;
-				}
-	
-				// Derived from Spyro: Ripto's Rage [80023a9c]
-				Emulator.active.ReadFromRAM(warpingRegionsDataPointer + 4, &offset, 4);
-
-				Emulator.active.ReadFromRAM(warpingRegionsDataPointer + offset, &size, 4);
-				warpingRegionArrayScan = warpingRegionsDataPointer + offset + 4;
-				warpingRegionArrayEnd = warpingRegionArrayScan + size * 4;
-	
-				while (warpingRegionArrayScan < warpingRegionArrayEnd) {
-					uint32 value = ?;
-					Emulator.active.ReadFromRAM(warpingRegionArrayScan, &value, 4);
-					let regionIndex = value & 0xff;
-					if (regionIndex >= Terrain.RegionCount) {
-						break; // Prevent garbage values from breaking this
+					if (value & 0x80000000 > 0) { // Animate Colors?
+					    continue;
 					}
 
-					Emulator.Address vertexInfoScan = warpingRegionsDataPointer + offset + (value >> 16) * 4;
-					Emulator.Address vertexInfoEnd = vertexInfoScan + (value >> 8 & 0xff) * 8;
-	
-					//if (renderingFlags[regionIndex] & 1 > 0) { 
-						uint32 timeOffset = ?;
-	
-						let region = Terrain.regions[regionIndex];
-						while (vertexInfoScan < vertexInfoEnd) {
-							Emulator.active.ReadFromRAM(vertexInfoScan, &timeOffset, 4);
-							uint8 i = (.)(timeOffset >> 16);
-							if (i > region.NearLOD.vertexCount) {
-								break; // Prevent garbage values from breaking this
-							}
-
-							uint32 packedVertex = ?;
-							Emulator.active.ReadFromRAM(vertexInfoScan + 4, &packedVertex, 4);
-							Vector3Int vertex = TerrainRegion.UnpackVertex(packedVertex);
-	
-							float t = (float)(warpClock + timeOffset) / 0x80 * Math.PI_f;
-							vertex.x += (int32)(Math.Sin(t + Math.PI_f / 4) * 0x1000) >> 8;
-							vertex.y += (int32)(Math.Sin(t) * 0x1000) >> 8;
-							vertex.z += (int32)(Math.Cos(t) * 0x1000) >> 10;
-							
-							region.SetNearVertex(i, vertex, false);
-							vertexInfoScan += 8;
-						}
-
-						region.UpdateSubdividedVertex(false);
-						region.UpdateSubdividedVertex(true);
-					//}
-					// Make it update regardless in program regardless if it is rendering in game or not
-					// Commented code is part of the derived code
-	
-					warpingRegionArrayScan += 4;
-				}
-
-				if (!UsingFade) {
-					// Derived from Spyro: Ripto's Rage [80023a9c]
-					Renderer.Color4 targetColor = ?;
-					Emulator.active.ReadFromRAM(warpingRegionsDataPointer + 12, &targetColor, 4);
-					
-					Emulator.active.ReadFromRAM(warpingRegionsDataPointer + 8, &size, 4);
-					warpingRegionArrayScan = warpingRegionsDataPointer + 16;
-					warpingRegionArrayEnd = warpingRegionArrayScan + size * 4;
-	
-					while (warpingRegionArrayScan < warpingRegionArrayEnd) {
-						uint32 value = ?;
-						Emulator.active.ReadFromRAM(warpingRegionArrayScan, &value, 4);
-						
-						warpingRegionArrayScan += 4;
-						if (value & 0x80000000 > 0) { // Animate Colors?
-							continue;
-						}
-	
-						let regionIndex = value & 0xff;
-						if (regionIndex >= Terrain.RegionCount) {
-							break; // Prevent garbage values from breaking this
-						}
-	
-						Emulator.Address colorInfoScan = warpingRegionsDataPointer + (2 + (value >> 16)) * 4;
-						Emulator.Address colorInfoEnd = colorInfoScan + (value >> 8 & 0xff) * 4;
-	
-						//if (renderingFlags[regionIndex] & 1 > 0) { 
-							Renderer.Color4 colorTimeOffset = ?;
-	
-							let region = Terrain.regions[regionIndex];
-							uint8 i = 0;
-							while (colorInfoScan < colorInfoEnd) {
-								Emulator.active.ReadFromRAM(colorInfoScan, &colorTimeOffset, 4);
-								
-								Renderer.Color sourceColor = colorTimeOffset;
-								let timeOffset = colorTimeOffset.a;
-	
-								uint32 colorClock;
-								let o = timeOffset & 3;
-								if (o == 3) {
-									colorClock = clock * 3;
-								} else if (o > 0) {
-									colorClock = clock * 2;
-								} else {
-									colorClock = clock;
-								}
-	
-								let alpha = (Math.Cos((float)(timeOffset + colorClock) / 0x80 * Math.PI_f) + 1) / 4;
-	
-								region.SetNearColor(i, Renderer.Color.Lerp(sourceColor, targetColor, alpha), false);
-								colorInfoScan += 4;
-								i++;
-							}
-						
-							region.UpdateSubdividedColor(false);
-							region.UpdateSubdividedColor(true);
-						//}
-						// Make it update regardless in program regardless if it is rendering in game or not
-						// Commented code is part of the derived code
-					}
+					let regionWarper = regionColorWarpers[i];
+					regionWarper.Update(clock);
 				}
 			}
 
