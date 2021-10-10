@@ -115,7 +115,13 @@ namespace SpyroScope {
 			GL.glGetIntegerv(GL.GL_MAJOR_VERSION, (.)&majorVersion);
 			GL.glGetIntegerv(GL.GL_MINOR_VERSION, (.)&minorVersion);
 
+			
+#if DEBUG
+			let versionString = scope String() .. AppendF("Spyro Scope (DEV)");
+#else
 			let versionString = scope String() .. AppendF("Spyro Scope {}", Program.versionInfo.FileVersion);
+#endif
+
 			let openglVersionString = scope String() .. AppendF("OpenGL {}.{}", majorVersion, minorVersion);
 
 			bitmapFont.Print(versionString, .(WindowApp.width - bitmapFont.characterWidth * versionString.Length, 0), .(255,255,255,8));
