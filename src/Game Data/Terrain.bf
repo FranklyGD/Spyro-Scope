@@ -437,7 +437,7 @@ namespace SpyroScope {
 						Emulator.active.ReadFromRAM(vertexInfoScan + 4, &packedVertex, 4);
 						basePositions[i] = TerrainRegion.UnpackVertex(packedVertex);
 	
-						vertexInfoScan += 4;
+						vertexInfoScan += 8;
 						i++;
 					}
 	
