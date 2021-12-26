@@ -465,7 +465,6 @@ namespace SpyroScope {
 					}
 					if (event.button.button == 1) {
 						if (viewerMenu.manipulatorToggle.value) {
-							Translator.MousePress(WindowApp.mousePosition);
 							if (Translator.hovered) {
 								Translator.OnDragBegin.Dispose();
 								Translator.OnDragged.Dispose();
@@ -512,6 +511,8 @@ namespace SpyroScope {
 									Translator.OnDragEnd.Add(new => Emulator.active.RestoreSpyroUpdate);
 								}
 							}
+
+							Translator.MousePress(WindowApp.mousePosition);
 						}
 
 						if (!(viewerMenu.manipulatorToggle.value && Translator.hovered)) {
