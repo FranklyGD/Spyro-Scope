@@ -187,7 +187,10 @@ namespace SpyroScope {
 			}
 
 			UpdateCameraMotion();
-			UpdateView();
+			
+			if (!Translator.dragged) {
+				UpdateView();
+			}
 
 			var objPointer = Emulator.active.objectArrayAddress;
 
