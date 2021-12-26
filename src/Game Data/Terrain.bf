@@ -463,33 +463,33 @@ namespace SpyroScope {
 		}
 
 		public static void Decode() {
-			// Convert any used VRAM textures for previewing
-			let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
-			let quadDecodeCount = Emulator.active.installment == .SpyroTheDragon ? 5 : 6;
-
-			// Temporarily remove affected textures
-			List<(uint8, Dictionary<uint32, List<int>>)> tempAnimated = scope .();
-
-			if (textureScrollers != null) {
-				for (let textureScroller in textureScrollers) {
-					if (Terrain.usedTextureIndices.GetAndRemove(textureScroller.textureIndex) case .Ok(var pair)) {
-						tempAnimated.Add(pair);
-					}
-				}
-			}
-			
-			if (textureSwappers != null) {
-				for (let textureSwapper in textureSwappers) {
-					if (Terrain.usedTextureIndices.GetAndRemove(textureSwapper.textureIndex) case .Ok(var pair)) {
-						tempAnimated.Add(pair);
-					}
-				}
-			}
-
 			if (usedTextureIndices != null) {
+				// Convert any used VRAM textures for previewing
+				let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
+				let quadDecodeCount = Emulator.active.installment == .SpyroTheDragon ? 5 : 6;
+
 				delete decodedTextureIds;
 				decodedTextureIds = new .[usedTextureIndices.Count * quadCount];
-
+	
+				// Temporarily remove affected textures
+				List<(uint8, Dictionary<uint32, List<int>>)> tempAnimated = scope .();
+	
+				if (textureScrollers != null) {
+					for (let textureScroller in textureScrollers) {
+						if (Terrain.usedTextureIndices.GetAndRemove(textureScroller.textureIndex) case .Ok(var pair)) {
+							tempAnimated.Add(pair);
+						}
+					}
+				}
+				
+				if (textureSwappers != null) {
+					for (let textureSwapper in textureSwappers) {
+						if (Terrain.usedTextureIndices.GetAndRemove(textureSwapper.textureIndex) case .Ok(var pair)) {
+							tempAnimated.Add(pair);
+						}
+					}
+				}
+	
 				// The loop is done in reverse to counteract strange used texture info indices
 				// in "Spyro the Dragon", by overwriting the incorrect decoded parts with correct ones
 				let textureIndices = scope List<uint8>(usedTextureIndices.Keys);
@@ -505,17 +505,17 @@ namespace SpyroScope {
 				for (let animated in tempAnimated) {
 					usedTextureIndices.Add(animated);
 				}
-			}
-
-			if (textureScrollers != null) {
-				for (let textureScroller in textureScrollers) {
-					textureScroller.Decode();
+	
+				if (textureScrollers != null) {
+					for (let textureScroller in textureScrollers) {
+						textureScroller.Decode();
+					}
 				}
-			}
-				
-			if (textureSwappers != null) {
-				for (let textureSwapper in textureSwappers) {
-					textureSwapper.Decode();
+					
+				if (textureSwappers != null) {
+					for (let textureSwapper in textureSwappers) {
+						textureSwapper.Decode();
+					}
 				}
 			}
 
