@@ -52,11 +52,25 @@ namespace SpyroScope {
 		int hoveredTexturePage = -1, hoveredCLUTIndex = -1, hoveredTextureIDIndex = -1;
 		int selectedTexturePage = -1, selectedCLUTIndex = -1, selectedTextureIDIndex = -1;
 		bool panning;
-		
+
+		List<GUIElement> guiElements = new .() ~ DeleteContainerAndItems!(_);
+
 		// Timestamps
 		DateTime lastUpdatedSceneChange;
 
 		public this() {
+			GUIElement.SetActiveGUI(guiElements);
+
+			Button button = new .();
+			button.Offset = .(0,128,0,16);
+			button.text = "Export VRAM";
+			button.OnActuated.Add(new => ExportVRAM);
+
+			button = new .();
+			button.Offset = .(128,256,0,16);
+			button.text = "Export Terrain Only";
+			button.OnActuated.Add(new => ExportTerrain);
+
 			VRAM.OnSnapshotTaken.Add(new => OnNewSnapshot);
 		}
 
@@ -71,6 +85,8 @@ namespace SpyroScope {
 		public override void Enter() {
 			Renderer.clearColor = .(0,0,0);
 			ResetView();
+			
+			GUIElement.SetActiveGUI(guiElements);
 		}
 
 		public override void Exit() {
@@ -166,6 +182,8 @@ namespace SpyroScope {
 					}
 				}
 			}
+			
+			let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
 
 			for (let decodedTextureID < VRAM.decodedTextures.Count) {
 				let decodedSprite = VRAM.decodedTextures[decodedTextureID];
@@ -179,8 +197,38 @@ namespace SpyroScope {
 				Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
 				Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
 
-				if (blinkerTime < 30 && selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].references.Contains(decodedTextureID)) {
-					DrawUtilities.Rect(quadRect, .(255,0,0,64));
+				if (blinkerTime < 30) {
+					if (selectedTextureIDIndex > -1 && selectedTextureIDIndex != decodedTextureID) {
+						int selectedTextureIndex = -1;
+						for (let i < Terrain.decodedTextureIds.Count) {
+							if (Terrain.decodedTextureIds[i] == selectedTextureIDIndex) {
+								selectedTextureIndex = i;
+								break;
+							}
+						}
+
+						if (selectedTextureIndex > -1) {
+							for (let textureIndex < Terrain.decodedTextureIds.Count) {
+								if (Terrain.decodedTextureIds[textureIndex] == decodedTextureID && selectedTextureIndex / quadCount == textureIndex / quadCount) {
+									DrawUtilities.Rect(quadRect, .(0,255,255,64));
+	
+									quadRect.left -= 2;
+									quadRect.top -= 2;
+									quadRect.right += 2;
+									quadRect.bottom += 2;
+	
+									Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(255,255,255), .(255,255,255));
+									Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(255,255,255), .(255,255,255));
+									Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(255,255,255), .(255,255,255));
+									Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(255,255,255), .(255,255,255));
+									break;
+								}
+							}
+						}
+					}
+					if (selectedCLUTIndex > -1 && cluts[selectedCLUTIndex].references.Contains(decodedTextureID)) {
+						DrawUtilities.Rect(quadRect, .(255,0,0,64));
+					}
 				}
 			}
 
@@ -296,8 +344,15 @@ namespace SpyroScope {
 				WindowApp.bitmapFont.Print(text, bgRect.start + .(0,3), .(255,255,255));
 			}
 
-			WindowApp.bitmapFont.Print(scope String() .. AppendF("<{},{}>", (int)testPosition.x, (int)testPosition.y), .Zero, .(255,255,255));
-			WindowApp.bitmapFont.Print(scope String() .. AppendF("T-page {}", hoveredTexturePage), .(0, WindowApp.bitmapFont.height), .(255,255,255));
+			WindowApp.bitmapFont.Print(scope String() .. AppendF("<{},{}>", (int)testPosition.x, (int)testPosition.y), .(0,16), .(255,255,255));
+			WindowApp.bitmapFont.Print(scope String() .. AppendF("T-page {}", hoveredTexturePage), .(0, WindowApp.bitmapFont.height + 16), .(255,255,255));
+
+			// Begin window relative position UI
+			for (let element in guiElements) {
+				if (element.visible) {
+					element.Draw();
+				}
+			}
 
 			if (!spritesDecoded) {
 				DrawLoadingOverlay();
@@ -454,7 +509,7 @@ namespace SpyroScope {
 		void ExportVRAM() {
 			let dialog = new SaveFileDialog();
 			dialog.FileName = "vram_decoded";
-			dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|Truevision TGA (*.tga)|*.tga|All files (*.*)|*.*");
+			dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|Truevision TGA (*.tga)|*.tga|Portable Network Graphic (*.png)|*.png|All files (*.*)|*.*");
 			dialog.OverwritePrompt = true;
 			dialog.CheckFileExists = true;
 			dialog.AddExtension = true;
@@ -464,6 +519,26 @@ namespace SpyroScope {
 				case .Ok(let val):
 					if (val == .OK) {
 						VRAM.Export(dialog.FileNames[0]);
+					}
+				case .Err:
+			}
+
+			delete dialog;
+		}
+
+		void ExportTerrain() {
+			let dialog = new SaveFileDialog();
+			dialog.FileName = "terrain";
+			dialog.SetFilter("Bitmap image (*.bmp)|*.bmp|Truevision TGA (*.tga)|*.tga|Portable Network Graphic (*.png)|*.png|All files (*.*)|*.*");
+			dialog.OverwritePrompt = true;
+			dialog.CheckFileExists = true;
+			dialog.AddExtension = true;
+			dialog.DefaultExt = "bmp";
+
+			switch (dialog.ShowDialog()) {
+				case .Ok(let val):
+					if (val == .OK) {
+						VRAM.ExportTerrain(dialog.FileNames[0]);
 					}
 				case .Err:
 			}

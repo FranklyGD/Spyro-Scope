@@ -1,8 +1,29 @@
+using SDL2;
 using System;
 using System.IO;
 
 namespace SpyroScope {
 	static class Image {
+		public static void Save(uint16* pixels, int width, int height, String path) {
+			if (path.EndsWith(".tga")) {
+				SaveTGA(pixels, (.)width, (.)height, path);
+			} else {
+				SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(pixels, (.)(width), (.)height, 16, 2 * (.)(width), 0x001f, 0x03e0, 0x7c00, 0x8000);
+				if (path.EndsWith(".png")) {
+					SavePNG(img, path);
+				} else { // Default to bitmap
+					SDL.SDL_SaveBMP(img, path);
+				}
+				SDL.FreeSurface(img);
+			}
+		}
+
+		[LinkName("IMG_SavePNG")]
+		private static extern int SavePNG(
+			SDL.Surface* surface,
+			char8* file
+		);
+
 		[Ordered, Packed]
 		struct TGAHeader {
 			public uint8 idLength, colorMapType, imageType;

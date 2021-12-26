@@ -201,13 +201,7 @@ namespace SpyroScope {
 				}
 			}
 
-			if (file.EndsWith(".tga")) {
-				SpyroScope.Image.SaveTGA(textureBuffer.CArray(), (.)width, (.)height, file);
-			} else { // Default to bitmap
-				SDL.Surface* img = SDL2.SDL.CreateRGBSurfaceFrom(&textureBuffer[0], (.)(width), (.)height, 16, 2 * (.)(width), 0x001f, 0x03e0, 0x7c00, 0x8000);
-				SDL.SDL_SaveBMP(img, file);
-				SDL.FreeSurface(img);
-			}
+			SpyroScope.Image.Save(textureBuffer.CArray(), width, height, file);
 
 			delete textureBuffer;
 		}
@@ -229,6 +223,71 @@ namespace SpyroScope {
 
 		public static void Export(String file) {
 			Export(file, 0, 0, 1024 * 4, 512, 4, 0);
+		}
+
+		public static void ExportTerrain(String file) {
+			if (Terrain.usedTextureIndices != null) {
+				let textureIndices = scope List<uint8>(Terrain.usedTextureIndices.Keys);
+
+				// Setup exported image size
+				const int imageWidth = 32 * 2 * 16;
+				let imageHeight = 32 * 2 * (textureIndices.Count / 16 + ((textureIndices.Count % 16) > 0 ? 1 : 0));
+				uint16[] textureBuffer = new .[imageWidth * imageHeight];
+				
+				// Get installment dependent values
+				let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
+				let quadStart = Emulator.active.installment == .SpyroTheDragon ? 1 : 2;
+
+				// Write out all
+				textureIndices.Sort();
+				for (let i < textureIndices.Count) {
+					let textureIndex = textureIndices[i];
+						
+					TextureQuad* quad = &Terrain.textures[textureIndex * quadCount + quadStart];
+					
+					for (let subquadIndex < 4) {
+						(int x, int y) bufferQuadPos = (i & 0xf, i >> 4);
+						(int x, int y) bufferSubQuadPos = (subquadIndex & 1, subquadIndex >> 1);
+
+						let tpageCell = quad.GetTPageCell();
+
+						for (let localx < 32) {
+							for (let localy < 32) {
+								int localxt = ?, localyt = ?;
+
+								switch (quad.GetQuadRotation()) {
+									case 0: localxt = localx; localyt = localy;
+									case 1: localxt = 31-localy; localyt = localx;
+									case 2: localxt = 31-localx; localyt = 31-localy;
+									case 3: localxt = localy; localyt = 31-localx;
+								}
+
+								if (quad.GetFlip()) {
+									let temp = localxt;
+									//Swap!(localxt,localyt);
+									localxt = 31-localyt;
+									localyt = 31-temp;
+								}
+
+								textureBuffer[
+									bufferQuadPos.x * 64 + bufferSubQuadPos.x * 32 + localxt + // X
+									(bufferQuadPos.y * 64 + bufferSubQuadPos.y * 32 + localyt) * imageWidth // Y
+								] = VRAM.snapshotDecoded[
+									(tpageCell.x * 64 + tpageCell.y * 256 * 1024) * 4 + // Texture Page
+									((int)quad.left + localx) * 2 /*pixelWidth*/ + // X
+									((int)quad.leftSkew + localy) * 1024 * 4 // Y
+								];
+							}
+						}
+
+						quad++;
+					}
+				}
+				
+				SpyroScope.Image.Save(textureBuffer.CArray(), imageWidth, imageHeight, file);
+
+				delete textureBuffer;
+			}
 		}
 	}
 }
