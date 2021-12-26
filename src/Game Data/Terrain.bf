@@ -380,48 +380,55 @@ namespace SpyroScope {
 		}
 
 		public static void Decode() {
-			// Convert any used VRAM textures for previewing
-			let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
-			let quadDecodeCount = Emulator.active.installment == .SpyroTheDragon ? 5 : 6;
-
-			// Temporarily remove affected textures
-			List<(uint8, Dictionary<uint32, List<int>>)> tempAnimated = scope .();
-
-			if (textureScrollers != null) {
-				for (let textureScroller in textureScrollers) {
-					tempAnimated.Add(Terrain.usedTextureIndices.GetAndRemove(textureScroller.textureIndex).Value);
+			if (usedTextureIndices != null) {
+				// Convert any used VRAM textures for previewing
+				let quadCount = Emulator.active.installment == .SpyroTheDragon ? 21 : 6;
+				let quadDecodeCount = Emulator.active.installment == .SpyroTheDragon ? 5 : 6;
+	
+				// Temporarily remove affected textures
+				List<(uint8, Dictionary<uint32, List<int>>)> tempAnimated = scope .();
+	
+				if (textureScrollers != null) {
+					for (let textureScroller in textureScrollers) {
+						if (Terrain.usedTextureIndices.GetAndRemove(textureScroller.textureIndex) case .Ok(var pair)) {
+							tempAnimated.Add(pair);
+						}
+					}
 				}
-			}
-			
-			if (textureSwappers != null) {
-				for (let textureSwapper in textureSwappers) {
-					tempAnimated.Add(Terrain.usedTextureIndices.GetAndRemove(textureSwapper.textureIndex).Value);
-				}
-			}
-
-			// The loop is done in reverse to counteract strange used texture info indices
-			// in "Spyro the Dragon", by overwriting the incorrect decoded parts with correct ones
-			let textureIndices = scope List<uint8>(usedTextureIndices.Keys);
-			for (var textureIndex = textureIndices.Count - 1; textureIndex >= 0; textureIndex--) {
-				for (let i < quadDecodeCount) {
-					Terrain.textures[textureIndices[textureIndex] * quadCount + i].Decode();
-				}
-			}
-
-			// Restore and decode the remaining textures with special functions
-			for (let animated in tempAnimated) {
-				Terrain.usedTextureIndices.Add(animated);
-			}
-
-			if (textureScrollers != null) {
-				for (let textureScroller in textureScrollers) {
-					textureScroller.Decode();
-				}
-			}
 				
-			if (textureSwappers != null) {
-				for (let textureSwapper in textureSwappers) {
-					textureSwapper.Decode();
+				if (textureSwappers != null) {
+					for (let textureSwapper in textureSwappers) {
+						if (Terrain.usedTextureIndices.GetAndRemove(textureSwapper.textureIndex) case .Ok(var pair)) {
+							tempAnimated.Add(pair);
+						}
+					}
+				}
+	
+				// The loop is done in reverse to counteract strange used texture info indices
+				// in "Spyro the Dragon", by overwriting the incorrect decoded parts with correct ones
+				let textureIndices = scope List<uint8>(usedTextureIndices.Keys);
+				for (var textureIndex = textureIndices.Count - 1; textureIndex >= 0; textureIndex--) {
+					for (let i < quadDecodeCount) {
+						let textureQuadIndex = textureIndices[textureIndex] * quadCount + i;
+						textures[textureQuadIndex].Decode();
+					}
+				}
+	
+				// Restore and decode the remaining textures with special functions
+				for (let animated in tempAnimated) {
+					usedTextureIndices.Add(animated);
+				}
+	
+				if (textureScrollers != null) {
+					for (let textureScroller in textureScrollers) {
+						textureScroller.Decode();
+					}
+				}
+					
+				if (textureSwappers != null) {
+					for (let textureSwapper in textureSwappers) {
+						textureSwapper.Decode();
+					}
 				}
 			}
 
