@@ -27,7 +27,7 @@ namespace SpyroScope {
 		uint8[3] k; // 74
 		public bool draw; // 77
 		public uint8 lodDistance; // 78
-		uint8 l; // 79
+		public uint8 size; // 79
 		public uint8 heldGemValue; // 80
 		uint8 m; // 81
 		uint8 n; // 82
@@ -45,11 +45,13 @@ namespace SpyroScope {
 
 		public static List<Moby> allocated = new .() ~ delete _;
 
+		public float scale { get { return size == 0 ? 1 : (float)0x20 / size; } }
+
 		public Matrix3 basis { get { return .Euler(
 			-(float)eulerRotation.x / 0x80 * Math.PI_f,
 			(float)eulerRotation.y / 0x80 * Math.PI_f,
 			-(float)eulerRotation.z / 0x80 * Math.PI_f
-		); } }
+		) * scale; } }
 
 		public void DrawOriginAxis() {
 			let basis = basis;

@@ -12,6 +12,7 @@ namespace SpyroScope {
 
 			AddProperty<int32>("Position", 0xc, "XYZ");
 			AddProperty<int8>("Rotation", 0x44, "XYZ");
+			AddProperty<int8>("Size", 0x4f);
 
 			AddProperty<uint8>("Type #ID", 0x36).ReadOnly = true;
 			AddProperty<Emulator.Address>("Data", 0x0).ReadOnly = true;

@@ -703,13 +703,7 @@ namespace SpyroScope {
 						}
 					}
 
-					let basis = Matrix3.Euler(
-						-(float)object.eulerRotation.x / 0x80 * Math.PI_f,
-						(float)object.eulerRotation.y / 0x80 * Math.PI_f,
-						-(float)object.eulerRotation.z / 0x80 * Math.PI_f
-					);
-
-					Renderer.SetModel(object.position, basis);
+					Renderer.SetModel(object.position, object.basis);
 					Renderer.SetTint(object.IsActive ? .(255,255,255) : .(32,32,32));
 					modelSets[object.objectTypeID].QueueInstance(object.modelID, Emulator.active.shinyColors[object.color.r % 10][1]);
 				} else {
