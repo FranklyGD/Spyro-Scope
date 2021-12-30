@@ -605,14 +605,15 @@ namespace SpyroScope {
 			
 			texturedModels[modelID].QueueInstance();
 			solidModels[modelID].QueueInstance();
-			translucentModels[modelID].QueueInstance();
+			
 			let tint = Renderer.tint;
+			Renderer.tint /= 2;
+			translucentModels[modelID].QueueInstance();
+
 			Renderer.SetTint(color);
+			Renderer.tint *= tint;
 			shinyModels[modelID].QueueInstance();
 			Renderer.tint = tint;
-
-			// Normally what to tint would be determined by a mode
-			// but for now it will only color the shiny-like materials
 		}
 
 		public void DrawInstances() {
