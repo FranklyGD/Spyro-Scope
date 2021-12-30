@@ -469,7 +469,15 @@ namespace SpyroScope {
 				let quadDecodeCount = Emulator.active.installment == .SpyroTheDragon ? 5 : 6;
 
 				delete decodedTextureIds;
-				decodedTextureIds = new .[usedTextureIndices.Count * quadCount];
+
+				// Get max amount of possible textures
+				var highestUsedIndex = -1;
+				for (let textureIndex in usedTextureIndices.Keys) {
+					if (textureIndex > highestUsedIndex) {
+						highestUsedIndex = textureIndex;
+					}
+				}
+				decodedTextureIds = new .[(highestUsedIndex + 1) * quadCount];
 	
 				// Temporarily remove affected textures
 				List<(uint8, Dictionary<uint32, List<int>>)> tempAnimated = scope .();
