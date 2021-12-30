@@ -1,3 +1,4 @@
+using OpenGL;
 using System;
 using System.Collections;
 
@@ -7,6 +8,7 @@ namespace SpyroScope {
 
 		public Mesh[] texturedModels ~ DeleteContainerAndItems!(_);
 		public Mesh[] solidModels ~ DeleteContainerAndItems!(_);
+		public Mesh[] translucentModels ~ DeleteContainerAndItems!(_);
 		public Mesh[] shinyModels ~ DeleteContainerAndItems!(_);
 
 		[Ordered]
@@ -66,6 +68,7 @@ namespace SpyroScope {
 			texturedModels = new .[modelCount];
 			solidModels = new .[modelCount];
 			shinyModels = new .[modelCount];
+			translucentModels = new .[modelCount];
 
 			Emulator.Address[] modelAddresses = scope .[modelCount];
 			Emulator.active.ReadFromRAM(modelSetAddress + 4 * 5, &modelAddresses[0], 4 * modelCount);
@@ -265,19 +268,32 @@ namespace SpyroScope {
 				}
 
 				shinyModels[modelIndex] = new .(v, n, c);
+
+				
+				v = new .[0];
+				n = new .[0];
+				c = new .[0];
+
+				translucentModels[modelIndex] = new .(v, n, c);
 			}
 		}
 
 		// Derived from Spyro: Ripto's Rage [80044dcc]
 		void GenerateModelFromAnimated(Emulator.Address modelSetAddress) {
 			List<Vector3> activeVertices;
+			List<Vector2> activeUVs;
 			List<Renderer.Color> activeColors;
 			
 			List<Vector3> solidVertices = scope .();
 			List<Renderer.Color> solidColors = scope .();
+
 			List<Vector3> texturedVertices = scope .();
 			List<Vector2> textureUVs = scope .();
 			List<Renderer.Color> textureColors = scope .();
+			
+			List<Vector3> translucentVertices = scope .();
+			List<Vector2> translucentUVs = scope .();
+			List<Renderer.Color> translucentColors = scope .();
 
 			Emulator.Address modelMetadataAddress = ?;
 			Emulator.active.ReadFromRAM(modelSetAddress + 4 * 15, &modelMetadataAddress, 4);
@@ -389,24 +405,14 @@ namespace SpyroScope {
 				Emulator.active.ReadFromRAM(scanningAddress + 4, &extraData, 4);
 
 				let hasTextureData = extraData & 0x80000000 > 0;
-
-				let materialMode = extraData & 0b110;
-
+				
+				activeUVs = textureUVs;
 				if (hasTextureData) {
 					activeVertices = texturedVertices;
 					activeColors = textureColors;
 				} else {
 					activeVertices = solidVertices;
 					activeColors = solidColors;
-					/*switch (materialMode) {
-						case 0:
-							activeVertices = solidVertices;
-							activeColors = solidColors;
-						
-						default:
-							activeVertices = shinyVertices;
-							activeColors = shinyColors;
-					}*/
 				}
 
 				uint32 vd = ?;
@@ -418,6 +424,38 @@ namespace SpyroScope {
 				colorIndices[0] = extraData >> 10 & 0x7f; //((packedColorIndex >> 8) & 0x1fc) >> 2;
 				colorIndices[1] = extraData >> 17 & 0x7f; //((packedColorIndex >> 15) & 0x1fc) >> 2;
 				colorIndices[2] = extraData >> 24 & 0x7f; //((packedColorIndex >> 22) & 0x1fc) >> 2;
+
+				if (hasTextureData) {
+					ExtendedTextureQuad textureQuad = ?;
+					Emulator.active.ReadFromRAM(scanningAddress + 8, &textureQuad, sizeof(ExtendedTextureQuad));
+
+					textureQuad.Decode();
+
+					if (textureQuad.texturePage & 0x20 > 0) {
+						// The following face translucent
+						activeVertices = translucentVertices;
+						activeColors = translucentColors;
+						activeUVs = translucentUVs;
+					}
+
+					if (triangleIndices[0] == triangleIndices[1]) {
+						activeUVs.Add(textureQuad.GetVramUV0());
+						activeUVs.Add(textureQuad.GetVramUV1());
+						activeUVs.Add(textureQuad.GetVramUV2());
+					} else {
+						activeUVs.Add(textureQuad.GetVramUV0());
+						activeUVs.Add(textureQuad.GetVramUV2());
+						activeUVs.Add(textureQuad.GetVramUV1());
+
+						activeUVs.Add(textureQuad.GetVramUV1());
+						activeUVs.Add(textureQuad.GetVramUV2());
+						activeUVs.Add(textureQuad.GetVramUV3());
+					}
+
+					scanningAddress += 4 * 5;
+				} else {
+					scanningAddress += 4 * 2;
+				}
 
 				if (triangleIndices[0] == triangleIndices[1]) {
 					activeVertices.Add(triangleVertices[2]);
@@ -461,34 +499,6 @@ namespace SpyroScope {
 					Emulator.active.ReadFromRAM(colorDataAddress + (uint32)colorIndices[3] * 4, &cd, 3);
 					activeColors.Add(cd);//activeColors.Add(colors[colorIndices[3]]);
 				}
-
-				if (hasTextureData) {
-					ExtendedTextureQuad textureQuad = ?;
-					Emulator.active.ReadFromRAM(scanningAddress + 8, &textureQuad, sizeof(ExtendedTextureQuad));
-
-					textureQuad.Decode();
-					
-					//if (materialMode == 0) {
-						if (triangleIndices[0] == triangleIndices[1]) {
-							textureUVs.Add(textureQuad.GetVramUV0());
-							textureUVs.Add(textureQuad.GetVramUV1());
-							textureUVs.Add(textureQuad.GetVramUV2());
-						} else {
-							textureUVs.Add(textureQuad.GetVramUV0());
-							textureUVs.Add(textureQuad.GetVramUV2());
-							textureUVs.Add(textureQuad.GetVramUV1());
-
-							textureUVs.Add(textureQuad.GetVramUV1());
-							textureUVs.Add(textureQuad.GetVramUV2());
-							textureUVs.Add(textureQuad.GetVramUV3());
-						}
-					//}
-
-					scanningAddress += 4 * 5;
-				} else {
-					
-					scanningAddress += 4 * 2;
-				}
 			}
 
 			Vector3[] v = new .[texturedVertices.Count];
@@ -525,21 +535,23 @@ namespace SpyroScope {
 			solidModels = new .[1];
 			solidModels[0] = new .(v, n, c);
 
-			/*v = new .[shinyVertices.Count];
-			n = new .[shinyVertices.Count];
-			c = new .[shinyVertices.Count];
+			v = new .[translucentVertices.Count];
+			n = new .[translucentVertices.Count];
+			c = new .[translucentVertices.Count];
+			u = new .[translucentVertices.Count];
 
-			for (let i < shinyVertices.Count) {
-				v[i] = shinyVertices[i];
-				c[i] = shinyColors[i];
+			for (let i < translucentVertices.Count) {
+				v[i] = translucentVertices[i];
+				c[i] = translucentColors[i];
+				u[i] = .(translucentUVs[i].x, translucentUVs[i].y);
 			}
 
-			for (var i = 0; i < shinyVertices.Count; i += 3) {
-				n[i] = n[i+1] = n[i+2] = Vector3.Cross(v[i+2] - v[i+0], v[i+1] - v[i+0]);
+			for (var i = 0; i < translucentVertices.Count; i += 3) {
+				n[i] = n[i+1] = n[i+2] = .(0,0,1);
 			}
-			
-			shinyModels = new .[1];
-			shinyModels[0] = new .(v, n, c);*/
+
+			translucentModels = new .[1];
+			translucentModels[0] = new .(v, u, n, c);
 
 			v = new .[0];
 			n = new .[0];
@@ -593,6 +605,7 @@ namespace SpyroScope {
 			
 			texturedModels[modelID].QueueInstance();
 			solidModels[modelID].QueueInstance();
+			translucentModels[modelID].QueueInstance();
 			let tint = Renderer.tint;
 			Renderer.SetTint(color);
 			shinyModels[modelID].QueueInstance();
@@ -609,7 +622,17 @@ namespace SpyroScope {
 			for (let i < texturedModels.Count) {
 				texturedModels[i].DrawInstances();
 			}
+
+			GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
+			GL.glDepthMask(GL.GL_FALSE);
+
+			for (let i < translucentModels.Count) {
+				translucentModels[i].DrawInstances();
+			}
 			
+			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+			GL.glDepthMask(GL.GL_TRUE);
+
 			Renderer.halfWhiteTexture.Bind();
 
 			for (let i < solidModels.Count) {
