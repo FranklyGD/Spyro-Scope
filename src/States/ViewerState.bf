@@ -264,6 +264,10 @@ namespace SpyroScope {
 			for (let modelSet in modelSets.Values) {
 				modelSet.DrawInstances();
 			}
+			
+			for (let modelSet in modelSets.Values) {
+				modelSet.DrawInstancesTranslucent();
+			}
 
 			// Draw world's origin
 			Renderer.DrawLine(.Zero, .(10000,0,0), .(255,255,255), .(255,0,0));

@@ -623,16 +623,6 @@ namespace SpyroScope {
 				texturedModels[i].DrawInstances();
 			}
 
-			GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
-			GL.glDepthMask(GL.GL_FALSE);
-
-			for (let i < translucentModels.Count) {
-				translucentModels[i].DrawInstances();
-			}
-			
-			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-			GL.glDepthMask(GL.GL_TRUE);
-
 			Renderer.halfWhiteTexture.Bind();
 
 			for (let i < solidModels.Count) {
@@ -646,9 +636,25 @@ namespace SpyroScope {
 			}
 			
 			Renderer.SetSpecular(0);
+			Renderer.BeginDefaultShading();
+		}
+
+		public void DrawInstancesTranslucent() {
+			Renderer.BeginRetroShading();
+
+			VRAM.decoded?.Bind();
+
+			GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
+			GL.glDepthMask(GL.GL_FALSE);
+
+			for (let i < translucentModels.Count) {
+				translucentModels[i].DrawInstances();
+			}
+
+			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+			GL.glDepthMask(GL.GL_TRUE);
 
 			Renderer.BeginDefaultShading();
-			Renderer.whiteTexture.Bind();
 		}
 	}
 }
