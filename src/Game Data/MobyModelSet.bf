@@ -638,6 +638,7 @@ namespace SpyroScope {
 			
 			Renderer.SetSpecular(0);
 			Renderer.BeginDefaultShading();
+			Renderer.whiteTexture.Bind();
 		}
 
 		public void DrawInstancesTranslucent() {
@@ -656,6 +657,7 @@ namespace SpyroScope {
 			GL.glDepthMask(GL.GL_TRUE);
 
 			Renderer.BeginDefaultShading();
+			Renderer.whiteTexture.Bind();
 		}
 	}
 }
