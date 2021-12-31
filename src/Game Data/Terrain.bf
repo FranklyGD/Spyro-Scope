@@ -5,6 +5,7 @@ using System.IO;
 
 namespace SpyroScope {
 	static class Terrain {
+		/// The overall collision shape of the terrain
 		public static TerrainCollision collision;
 
 		public static uint32 RegionCount {
@@ -21,7 +22,12 @@ namespace SpyroScope {
 			}
 		}
 
+		/// All the regions that make up the terrain
 		public static TerrainRegion[] regions;
+
+		/// Flags that determine whether to begin rendering the near or far variants of a region.
+		/// Used by game to easily switch drawing between high and low quality regions based on distance
+		/// and disallow regions to render when obstructed by closer ones
 		public static uint8[] renderingFlags;
 
 		public static uint32 FarAnimatedCount {
@@ -37,7 +43,8 @@ namespace SpyroScope {
 				Emulator.active.WriteToRAM(Emulator.active.farRegionsDeformPointer, &value, 4);
 			}
 		}
-
+		
+		/// Animations for regions as seen far away that modify their vertex positions over time
 		public static RegionAnimation[] farAnimations;
 
 		public static uint32 NearAnimatedCount {
@@ -54,17 +61,31 @@ namespace SpyroScope {
 			}
 		}
 
+		/// Animations for regions as seen near by that modify their vertex positions over time
 		public static RegionAnimation[] nearAnimations;
 
+		/// Contains list of faces using a texture by index per region index.
+		/// Used for directly jumping to faces that need to be updated by animated means
 		public static Dictionary<uint8, Dictionary<uint32, List<int>>> usedTextureIndices;
+
+		/// All texture quads that the terrain uses
 		public static TextureQuad[] textures;
+
+		/// Textures that scroll over time (e.g. rivers and waterfalls)
 		public static TextureScroller[] textureScrollers;
+		
+		/// Textures that swap over time like frames of animation (e.g. super charge arrows)
 		public static TextureSwapper[] textureSwappers;
 
 		public static int[] decodedTextureIds = new .() ~ delete _;
 
+		/// Regions that will have some of its vertices oscillate
 		public static RegionWarper[] regionWarpers;
+		
+		/// Regions that will have some of its vertices oscillate vertically
 		public static RegionVerticalWarper[] regionVerticalWarpers;
+		
+		/// Regions that will have some of its vertex colors oscillate
 		public static RegionColorWarper[] regionColorWarpers;
 
 		public enum RenderMode {
