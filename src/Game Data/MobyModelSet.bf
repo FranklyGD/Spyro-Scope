@@ -130,67 +130,66 @@ namespace SpyroScope {
 							}
 						}
 
-							// Derived from Spyro: Ripto's Rage [80047788]
-							triangleIndices[0] = packedTriangleIndex >> 7 & 0x7f; //((packedTriangleIndex >> 5) & 0x1fc) >> 2;
-							triangleIndices[1] = packedTriangleIndex >> 14 & 0x7f; //((packedTriangleIndex >> 12) & 0x1fc) >> 2;
-							triangleIndices[2] = packedTriangleIndex >> 21 & 0x7f; //((packedTriangleIndex >> 19) & 0x1fc) >> 2;
-							triangleIndices[3] = packedTriangleIndex & 0x7f; //packedTriangleIndex >> 2;
-		
-							triangleVertices[0] = UnpackVertex(packedVertices[triangleIndices[0]]);
-							triangleVertices[1] = UnpackVertex(packedVertices[triangleIndices[1]]);
-							triangleVertices[2] = UnpackVertex(packedVertices[triangleIndices[2]]);
+						// Derived from Spyro: Ripto's Rage [80047788]
+						triangleIndices[0] = packedTriangleIndex >> 7 & 0x7f; //((packedTriangleIndex >> 5) & 0x1fc) >> 2;
+						triangleIndices[1] = packedTriangleIndex >> 14 & 0x7f; //((packedTriangleIndex >> 12) & 0x1fc) >> 2;
+						triangleIndices[2] = packedTriangleIndex >> 21 & 0x7f; //((packedTriangleIndex >> 19) & 0x1fc) >> 2;
+						triangleIndices[3] = packedTriangleIndex & 0x7f; //packedTriangleIndex >> 2;
 	
-							// Derived from Spyro: Ripto's Rage [80047a98]
-							colorIndices[0] = extraData >> 10 & 0x7f; //((packedColorIndex >> 8) & 0x1fc) >> 2;
-							colorIndices[1] = extraData >> 17 & 0x7f; //((packedColorIndex >> 15) & 0x1fc) >> 2;
-							colorIndices[2] = extraData >> 24 & 0x7f; //((packedColorIndex >> 22) & 0x1fc) >> 2;
-		
-							if (triangleIndices[0] == triangleIndices[3]) {
-								activeVertices.Add(triangleVertices[2]);
-								activeVertices.Add(triangleVertices[1]);
-								activeVertices.Add(triangleVertices[0]);
+						triangleVertices[0] = UnpackVertex(packedVertices[triangleIndices[0]]);
+						triangleVertices[1] = UnpackVertex(packedVertices[triangleIndices[1]]);
+						triangleVertices[2] = UnpackVertex(packedVertices[triangleIndices[2]]);
 
-								if (materialMode == 0) {
-									activeColors.Add(colors[colorIndices[2]]);
-									activeColors.Add(colors[colorIndices[1]]);
-									activeColors.Add(colors[colorIndices[0]]);
-								} else {
-									activeColors.Add(.(255,255,255));
-									activeColors.Add(.(255,255,255));
-									activeColors.Add(.(255,255,255));
-								}
+						// Derived from Spyro: Ripto's Rage [80047a98]
+						colorIndices[0] = extraData >> 10 & 0x7f; //((packedColorIndex >> 8) & 0x1fc) >> 2;
+						colorIndices[1] = extraData >> 17 & 0x7f; //((packedColorIndex >> 15) & 0x1fc) >> 2;
+						colorIndices[2] = extraData >> 24 & 0x7f; //((packedColorIndex >> 22) & 0x1fc) >> 2;
+	
+						if (triangleIndices[0] == triangleIndices[3]) {
+							activeVertices.Add(triangleVertices[2]);
+							activeVertices.Add(triangleVertices[1]);
+							activeVertices.Add(triangleVertices[0]);
+
+							if (materialMode == 0) {
+								activeColors.Add(colors[colorIndices[2]]);
+								activeColors.Add(colors[colorIndices[1]]);
+								activeColors.Add(colors[colorIndices[0]]);
 							} else {
-								triangleVertices[3] = UnpackVertex(packedVertices[triangleIndices[3]]);
-								
-								activeVertices.Add(triangleVertices[2]);
-								activeVertices.Add(triangleVertices[0]);
-								activeVertices.Add(triangleVertices[1]);
-								
-								activeVertices.Add(triangleVertices[1]);
-								activeVertices.Add(triangleVertices[0]);
-								activeVertices.Add(triangleVertices[3]);
-
-								colorIndices[3] = extraData >> 3 & 0x7f; //((packedColorIndex >> 1) & 0x1fc) >> 2;
-								
-								if (materialMode == 0) {
-									activeColors.Add(colors[colorIndices[2]]);
-									activeColors.Add(colors[colorIndices[0]]);
-									activeColors.Add(colors[colorIndices[1]]);
-									
-									activeColors.Add(colors[colorIndices[1]]);
-									activeColors.Add(colors[colorIndices[0]]);
-									activeColors.Add(colors[colorIndices[3]]);
-								} else {
-									activeColors.Add(.(255,255,255));
-									activeColors.Add(.(255,255,255));
-									activeColors.Add(.(255,255,255));
-									
-									activeColors.Add(.(255,255,255));
-									activeColors.Add(.(255,255,255));
-									activeColors.Add(.(255,255,255));
-								}
+								activeColors.Add(.(255,255,255));
+								activeColors.Add(.(255,255,255));
+								activeColors.Add(.(255,255,255));
 							}
+						} else {
+							triangleVertices[3] = UnpackVertex(packedVertices[triangleIndices[3]]);
+							
+							activeVertices.Add(triangleVertices[2]);
+							activeVertices.Add(triangleVertices[0]);
+							activeVertices.Add(triangleVertices[1]);
+							
+							activeVertices.Add(triangleVertices[1]);
+							activeVertices.Add(triangleVertices[0]);
+							activeVertices.Add(triangleVertices[3]);
 
+							colorIndices[3] = extraData >> 3 & 0x7f; //((packedColorIndex >> 1) & 0x1fc) >> 2;
+							
+							if (materialMode == 0) {
+								activeColors.Add(colors[colorIndices[2]]);
+								activeColors.Add(colors[colorIndices[0]]);
+								activeColors.Add(colors[colorIndices[1]]);
+								
+								activeColors.Add(colors[colorIndices[1]]);
+								activeColors.Add(colors[colorIndices[0]]);
+								activeColors.Add(colors[colorIndices[3]]);
+							} else {
+								activeColors.Add(.(255,255,255));
+								activeColors.Add(.(255,255,255));
+								activeColors.Add(.(255,255,255));
+								
+								activeColors.Add(.(255,255,255));
+								activeColors.Add(.(255,255,255));
+								activeColors.Add(.(255,255,255));
+							}
+						}
 
 						if (hasTextureData) {
 							ExtendedTextureQuad textureQuad = ?;
