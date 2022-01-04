@@ -228,10 +228,12 @@ namespace SpyroScope {
 		public static void ExportTerrain(String file) {
 			if (Terrain.usedTextureIndices != null) {
 				let textureIndices = scope List<uint8>(Terrain.usedTextureIndices.Keys);
+				textureIndices.Sort();
+				let highestIndex = textureIndices[textureIndices.Count - 1];
 
 				// Setup exported image size
 				const int imageWidth = 32 * 2 * 16;
-				let imageHeight = 32 * 2 * (textureIndices.Count / 16 + ((textureIndices.Count % 16) > 0 ? 1 : 0));
+				let imageHeight = 32 * 2 * (highestIndex / 16 + ((highestIndex % 16) > 0 ? 1 : 0));
 				uint16[] textureBuffer = new .[imageWidth * imageHeight];
 				
 				// Get installment dependent values
@@ -239,14 +241,13 @@ namespace SpyroScope {
 				let quadStart = Emulator.active.installment == .SpyroTheDragon ? 1 : 2;
 
 				// Write out all
-				textureIndices.Sort();
 				for (let i < textureIndices.Count) {
 					let textureIndex = textureIndices[i];
 						
 					TextureQuad* quad = &Terrain.textures[textureIndex * quadCount + quadStart];
 					
 					for (let subquadIndex < 4) {
-						(int x, int y) bufferQuadPos = (i & 0xf, i >> 4);
+						(int x, int y) bufferQuadPos = (textureIndex & 0xf, textureIndex >> 4);
 						(int x, int y) bufferSubQuadPos = (subquadIndex & 1, subquadIndex >> 1);
 
 						let tpageCell = quad.GetTPageCell();
