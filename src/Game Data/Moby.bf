@@ -45,7 +45,7 @@ namespace SpyroScope {
 
 		public static List<Moby> allocated = new .() ~ delete _;
 
-		public float scale { get { return size == 0 ? 1 : (float)0x20 / size; } }
+		public float scale { get { return Emulator.active.installment == .SpyroTheDragon || size == 0 ? 1 : (float)0x20 / size; } }
 
 		public Matrix3 basis { get { return .Euler(
 			-(float)eulerRotation.x / 0x80 * Math.PI_f,
