@@ -402,10 +402,10 @@ namespace SpyroScope {
 
 			moduleHandle = GetModule(processHandle, EmulatorsConfig.emulators[emulator].processName);
 
-			let mainModuleSize = GetModuleSize(processHandle, moduleHandle);
-			Debug.WriteLine(scope String() .. AppendF("Main Module Size: {:x} bytes", mainModuleSize));
+			MainModuleSize = GetModuleSize(processHandle, moduleHandle);
+			Debug.WriteLine(scope String() .. AppendF("Main Module Size: {:x} bytes", MainModuleSize));
 
-			versionIndex = EmulatorsConfig.emulators[emulator].versions.FindIndex(scope (x) => x.moduleSize == mainModuleSize);
+			versionIndex = EmulatorsConfig.emulators[emulator].versions.FindIndex(scope (x) => x.moduleSize == MainModuleSize);
 			Debug.WriteLine(scope String() .. AppendF("Emulator Version: {}", versionIndex > -1 ? EmulatorsConfig.emulators[emulator].versions[versionIndex].label : "Unknown"));
 
 			emulatorIndex = emulator;
