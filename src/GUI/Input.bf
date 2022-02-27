@@ -223,7 +223,7 @@ namespace SpyroScope {
 							text.Remove(left, GetRight() - left);
 							cursor = left;
 						}
-						text.Insert(cursor, .((char8*)&event.text.text[0]));
+						text.Insert(cursor, (.)event.text.text[0]);
 						selectBegin = ++cursor;
 						CheckText();
 					}
