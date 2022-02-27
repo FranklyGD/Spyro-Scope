@@ -232,8 +232,10 @@ namespace SpyroScope {
 				let highestIndex = textureIndices[textureIndices.Count - 1];
 
 				// Setup exported image size
-				const int imageWidth = 32 * 2 * 16;
-				let imageHeight = 32 * 2 * (highestIndex / 16 + ((highestIndex % 16) > 0 ? 1 : 0));
+				const int tileSize = 32 * 2;
+				const int imageWidth = tileSize * 16;
+				let tileRowCount = highestIndex / 16 + 1;
+				let imageHeight = tileSize * tileRowCount;
 				uint16[] textureBuffer = new .[imageWidth * imageHeight];
 				
 				// Get installment dependent values
@@ -270,14 +272,14 @@ namespace SpyroScope {
 									localyt = 31-temp;
 								}
 
-								textureBuffer[
-									bufferQuadPos.x * 64 + bufferSubQuadPos.x * 32 + localxt + // X
-									(bufferQuadPos.y * 64 + bufferSubQuadPos.y * 32 + localyt) * imageWidth // Y
-								] = VRAM.snapshotDecoded[
-									(tpageCell.x * 64 + tpageCell.y * 256 * 1024) * 4 + // Texture Page
-									((int)quad.left + localx) * 2 /*pixelWidth*/ + // X
-									((int)quad.leftSkew + localy) * 1024 * 4 // Y
-								];
+								let tbX = bufferQuadPos.x * 64 + bufferSubQuadPos.x * 32 + localxt;
+								let tbY = bufferQuadPos.y * 64 + bufferSubQuadPos.y * 32 + localyt;
+
+								let ssTP = (tpageCell.x * 64 + tpageCell.y * 256 * 1024) * 4;
+								let ssX = ((int)quad.left + localx) * 2 /*pixelWidth*/;
+								let ssY = (int)quad.leftSkew + localy;
+
+								textureBuffer[tbX + tbY * imageWidth] = VRAM.snapshotDecoded[ssTP + ssX + ssY * 1024 * 4];
 							}
 						}
 
