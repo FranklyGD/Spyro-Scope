@@ -525,8 +525,7 @@ namespace SpyroScope {
 				for (var textureIndex = textureIndices.Count - 1; textureIndex >= 0; textureIndex--) {
 					for (let i < quadDecodeCount) {
 						let textureQuadIndex = textureIndices[textureIndex] * quadCount + i;
-						let decodedTextureId = textures[textureQuadIndex].Decode();
-						decodedTextureIds[textureQuadIndex] = decodedTextureId;
+						decodedTextureIds[textureQuadIndex] = textures[textureQuadIndex].Decode();
 					}
 				}
 	

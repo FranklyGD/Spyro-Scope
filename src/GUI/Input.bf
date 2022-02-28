@@ -110,7 +110,8 @@ namespace SpyroScope {
 							text.Remove(left, GetRight() - left);
 							cursor = left;
 						} else if (cursor > 0) {
-							text.Remove(cursor--, 1);
+							cursor -= 1;
+							text.Remove(cursor, 1);
 						}
 						selectBegin = cursor;
 						CheckText();
