@@ -260,16 +260,13 @@ namespace SpyroScope {
 
 								switch (quad.GetQuadRotation()) {
 									case 0: localxt = localx; localyt = localy;
-									case 1: localxt = 31-localy; localyt = localx;
+									case 1: localxt = localy; localyt = 31-localx;
 									case 2: localxt = 31-localx; localyt = 31-localy;
-									case 3: localxt = localy; localyt = 31-localx;
+									case 3: localxt = 31-localy; localyt = localx;
 								}
 
 								if (quad.GetFlip()) {
-									let temp = localxt;
-									//Swap!(localxt,localyt);
-									localxt = 31-localyt;
-									localyt = 31-temp;
+									Swap!(localxt,localyt);
 								}
 
 								let tbX = bufferQuadPos.x * 64 + bufferSubQuadPos.x * 32 + localxt;
