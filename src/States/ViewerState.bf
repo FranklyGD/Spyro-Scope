@@ -50,6 +50,7 @@ namespace SpyroScope {
 
 		// Objects
 		Dictionary<uint16, MobyModelSet> modelSets = new .();
+		bool exportMode = false;
 
 		// UI
 		public static Vector3 cursor3DPosition;
@@ -524,6 +525,10 @@ namespace SpyroScope {
 
 						if (!(viewerMenu.manipulatorToggle.value && Translator.hovered)) {
 							Selection.Select();
+
+							if (exportMode && ViewerSelection.currentObjIndex > -1) {
+								ExportObjectModel();
+							}
 						}
 					}
 				}
@@ -605,6 +610,7 @@ namespace SpyroScope {
 							}
 							case .LCtrl : {
 								cameraSpeed *= 8;
+								exportMode = true;
 							}
 							case .K : {
 								uint32 health = 0;
@@ -672,6 +678,7 @@ namespace SpyroScope {
 				case .KeyUp : {
 					if (event.key.keysym.scancode == .LCtrl) {
 						cameraSpeed /= 8;
+						exportMode = false;
 					}
 				}
 				case .JoyDeviceAdded : {
@@ -1374,6 +1381,32 @@ namespace SpyroScope {
 				case .Ok(let val):
 					if (val == .OK) {
 						Terrain.Export(dialog.FileNames[0]);
+					}
+				case .Err:
+			}
+
+			delete dialog;
+		}
+
+		void ExportObjectModel() {
+			let object = Moby.allocated[ViewerSelection.currentObjIndex];
+			if (!object.HasModel) return;
+
+			let modelSet = modelSets[object.objectTypeID];
+			if (modelSet.texturedModels.Count == 0) return;
+
+			let dialog = new SaveFileDialog();
+			dialog.FileName = "model";
+			dialog.SetFilter("Polygon (*.ply)|*.ply|All files (*.*)|*.*");
+			dialog.OverwritePrompt = true;
+			dialog.CheckFileExists = true;
+			dialog.AddExtension = true;
+			dialog.DefaultExt = "ply";
+
+			switch (dialog.ShowDialog()) {
+				case .Ok(let val):
+					if (val == .OK) {
+						modelSet.Export(dialog.FileNames[0], object.modelID, object.scale);
 					}
 				case .Err:
 			}

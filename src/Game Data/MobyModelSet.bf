@@ -1,6 +1,7 @@
 using OpenGL;
 using System;
 using System.Collections;
+using System.IO;
 
 namespace SpyroScope {
 	class MobyModelSet {
@@ -657,6 +658,77 @@ namespace SpyroScope {
 
 			Renderer.BeginDefaultShading();
 			Renderer.whiteTexture.Bind();
+		}
+
+		public void Export(String file, int modelIndex, float scale) {
+			let netScale = scale / 1000;
+			FileStream stream = new .();
+			stream.Create(file);
+			
+			let texturedModel = texturedModels[modelIndex];
+			let solidModel = solidModels[modelIndex];
+			let translucentModel = translucentModels[modelIndex];
+			let shinyModel = shinyModels[modelIndex];
+
+			stream.Write("ply\nformat ascii 1.0\n");
+			stream.Write(scope $"element vertex {texturedModel.vertices.Count + solidModel.vertices.Count + translucentModel.vertices.Count + shinyModel.vertices.Count}\n");
+			stream.Write("property float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nproperty float s\nproperty float t\n");
+			stream.Write(scope $"element face {(texturedModel.indices.Count + solidModel.indices.Count + translucentModel.indices.Count + shinyModel.indices.Count) / 3}\n");
+			stream.Write("property list uint8 uint32 vertex_index\n");
+			stream.Write("end_header\n");
+
+			for (let i < texturedModel.vertices.Count) {
+				let v = texturedModel.vertices[i] * netScale;
+				let c = texturedModel.colors[i];
+				let u = texturedModel.uvs[i];
+				stream.Write(scope $"{v.x} {v.y} {v.z} {c.r} {c.g} {c.b} {u.x} {1 - u.y}\n");
+			}
+
+			for (let i < solidModel.vertices.Count) {
+				let v = solidModel.vertices[i] * netScale;
+				let c = solidModel.colors[i];
+				let u = solidModel.uvs[i];
+				stream.Write(scope $"{v.x} {v.y} {v.z} {c.r} {c.g} {c.b} {u.x} {1 - u.y}\n");
+			}
+
+			for (let i < translucentModel.vertices.Count) {
+				let v = translucentModel.vertices[i] * netScale;
+				let c = translucentModel.colors[i];
+				let u = translucentModel.uvs[i];
+				stream.Write(scope $"{v.x} {v.y} {v.z} {c.r} {c.g} {c.b} {u.x} {1 - u.y}\n");
+			}
+
+			for (let i < shinyModel.vertices.Count) {
+				let v = shinyModel.vertices[i] * netScale;
+				let c = shinyModel.colors[i];
+				let u = shinyModel.uvs[i];
+				stream.Write(scope $"{v.x} {v.y} {v.z} {c.r} {c.g} {c.b} {u.x} {1 - u.y}\n");
+			}
+
+			for (var i = 0; i < texturedModel.indices.Count; i += 3) {
+				let idx = &texturedModel.indices[i];
+				stream.Write(scope $"3 {idx[0]} {idx[1]} {idx[2]}\n");
+			}
+			
+			int indexOffset = texturedModel.vertices.Count;
+			for (var i = 0; i < solidModel.indices.Count; i += 3) {
+				let idx = &solidModel.indices[i];
+				stream.Write(scope $"3 {idx[0] + indexOffset} {idx[1] + indexOffset} {idx[2] + indexOffset}\n");
+			}
+
+			indexOffset += solidModel.vertices.Count;
+			for (var i = 0; i < translucentModel.indices.Count; i += 3) {
+				let idx = &translucentModel.indices[i];
+				stream.Write(scope $"3 {idx[0] + indexOffset} {idx[1] + indexOffset} {idx[2] + indexOffset}\n");
+			}
+			
+			indexOffset += translucentModel.vertices.Count;
+			for (var i = 0; i < shinyModel.indices.Count; i += 3) {
+				let idx = &shinyModel.indices[i];
+				stream.Write(scope $"3 {idx[0] + indexOffset} {idx[1] + indexOffset} {idx[2] + indexOffset}\n");
+			}
+
+			delete stream;
 		}
 	}
 }
