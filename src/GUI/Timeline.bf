@@ -105,7 +105,7 @@ namespace SpyroScope {
 
 				let frame = Recording.GetFrame(i);
 
-				var speedColor = Renderer.Color(0,0,0);
+				var speedColor = Color(0,0,0);
 				let speed = frame.targetVelocity.Length();
 				if (speed > 0) {
 					let speedScale = speed / Recording.HighestSpeed;
@@ -151,13 +151,13 @@ namespace SpyroScope {
 
 				// Every second (30 frames)
 				if (i % 30 == 0) {
-					Renderer.DrawLine(.((int)hcenter + offset * 3,drawn.bottom,0), .((int)hcenter + offset * 3,drawn.bottom - 48,0), .(255,255,255), .(255,255,255));
+					Renderer.Line(.((int)hcenter + offset * 3,drawn.bottom,0), .((int)hcenter + offset * 3,drawn.bottom - 48,0), .(255,255,255), .(255,255,255));
 					WindowApp.fontSmall.Print(scope String() .. AppendF("{}s", i/30), .((int)hcenter + offset * 3, drawn.bottom - 48 - WindowApp.fontSmall.height), .(255,255,255));
 				}
 
 				// Draw line on currently previewed frame
 				if (i == Recording.CurrentFrame) {
-					Renderer.DrawLine(.((int)hcenter + offset * 3,drawn.bottom,0), .((int)hcenter + offset * 3,drawn.bottom - 64,0), .(255,255,255), .(255,255,255));
+					Renderer.Line(.((int)hcenter + offset * 3,drawn.bottom,0), .((int)hcenter + offset * 3,drawn.bottom - 64,0), .(255,255,255), .(255,255,255));
 				}
 
 				offset++;

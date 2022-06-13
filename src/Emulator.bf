@@ -162,7 +162,7 @@ namespace SpyroScope {
 		public const Address<uint32>[4] currentSubWorldIdAddress = .((.)0x8006c5c8, (.)0x8006c6a8, (.)0, (.)0); // Exclusive to Spyro: Year of the Dragon. ////
 
 		public Address<uint8> frameClockAddress;
-		public Address<Renderer.Color4> clearColorAddress;
+		public Address<Color4> clearColorAddress;
 		public Address<Address> textureDataPointer, sceneRegionsPointer, collisionDataPointer, collisionFlagsPointer;
 		public Address<Address> textureSwappersPointer, textureScrollersPointer, farRegionsDeformPointer, nearRegionsDeformPointer, collisionDeformPointer, regionsWarpPointer;
 		public Address<uint8> regionsRenderingArrayAddress;
@@ -262,14 +262,14 @@ namespace SpyroScope {
 		public MatrixInt spyroBasis;
 		public int32 collidingTriangle = -1;
 		
-		public Renderer.Color4[10][4] shinyColors;
+		public Color4[10][4] shinyColors;
 		public uint32[] deathPlaneHeights ~ delete _;
 		public uint32[] maxFreeflightHeights ~ delete _;
 
 		public Address<Moby> objectArrayAddress;
 
 		// Game Constants
-		public static (String label, Renderer.Color color)[11] collisionTypes = .(
+		public static (String label, Color color)[11] collisionTypes = .(
 			("Sink", 		.(255, 255, 64)),
 			("Hot", 		.(255, 64, 64)),
 			("Supercharge", .(64, 64, 64)),
@@ -705,7 +705,7 @@ namespace SpyroScope {
 
 			switch (installment) {
 				case .SpyroTheDragon: {
-					ReadFromRAM((.)0x8006e44c, &shinyColors, sizeof(Renderer.Color4[10][4]));
+					ReadFromRAM((.)0x8006e44c, &shinyColors, sizeof(Color4[10][4]));
 
 					// 35 worlds exist, but there is space for 36. (Probably due to short/int reasons.)
 					deathPlaneHeights = new .[36];
@@ -716,7 +716,7 @@ namespace SpyroScope {
 				}
 
 				case .RiptosRage: {
-					ReadFromRAM((.)0x80064440, &shinyColors, sizeof(Renderer.Color4[10][4]));
+					ReadFromRAM((.)0x80064440, &shinyColors, sizeof(Color4[10][4]));
 
 					// 28 worlds exists but there is space for 32 (probably a power of 2 related thing)
 					deathPlaneHeights = new .[32];
@@ -727,7 +727,7 @@ namespace SpyroScope {
 				}
 
 				case .YearOfTheDragon: {
-					ReadFromRAM((.)0x80066a70, &shinyColors, sizeof(Renderer.Color4[10][4]));
+					ReadFromRAM((.)0x80066a70, &shinyColors, sizeof(Color4[10][4]));
 
 					// 37 worlds exist, but theres space for 40. (Probably due to short/int reasons.)
 					// Also gets multipled by 4 due to sub worlds, there being a minimum of 4 in each homeworld.

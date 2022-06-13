@@ -241,7 +241,13 @@ namespace SpyroScope {
 				Renderer.clearColor.a = 255;
 			}
 
-			Terrain.Draw();
+			Terrain.Render();
+
+			Renderer.defaultProgram.Use();
+
+			if (Terrain.collision.visualizeGrid) {
+				Terrain.collision.DrawGrid();
+			}
 
 			if (viewMode != .Game) {
 				DrawGameCameraFrustrum();
@@ -262,31 +268,24 @@ namespace SpyroScope {
 
 			DrawSpyroInformation();
 
-			for (let modelSet in modelSets.Values) {
-				modelSet.DrawInstances();
-			}
-			
-			for (let modelSet in modelSets.Values) {
-				modelSet.DrawInstancesTranslucent();
-			}
+			Renderer.opaquePass.Render();
+			Renderer.retroDiffusePass.Render();
+			Renderer.retroSpecularPass.Render();
+
+			Renderer.tranparentPass.Render();
+			Renderer.retroTranparentPass.Render();
 
 			// Draw world's origin
-			Renderer.DrawLine(.Zero, .(10000,0,0), .(255,255,255), .(255,0,0));
-			Renderer.DrawLine(.Zero, .(0,10000,0), .(255,255,255), .(0,255,0));
-			Renderer.DrawLine(.Zero, .(0,0,10000), .(255,255,255), .(0,0,255));
+			Renderer.Line(.Zero, .(10000,0,0), .(255,255,255), .(255,0,0));
+			Renderer.Line(.Zero, .(0,10000,0), .(255,255,255), .(0,255,0));
+			Renderer.Line(.Zero, .(0,0,10000), .(255,255,255), .(0,0,255));
 
 			if (drawLimits) {
 				DrawLimits();
 			}
 
 			DrawRecording();
-			
-			// Draw all queued instances
-			PrimitiveShape.DrawInstances();
 
-			// Draw other primitives queued
-			Renderer.SetModel(.Zero, .Identity);
-			Renderer.SetTint(.(255,255,255));
 			Renderer.Draw();
 
 			Renderer.ClearDepth();
@@ -294,8 +293,8 @@ namespace SpyroScope {
 			if (viewerMenu.manipulatorToggle.value) {
 			    Translator.Draw();
 			}
-
-			PrimitiveShape.DrawInstances();
+			
+			Renderer.opaquePass.Render();
 
 			Renderer.SetModel(.Zero, .Identity);
 			Renderer.SetTint(.(255,255,255));
@@ -420,7 +419,7 @@ namespace SpyroScope {
 				}
 				for	(let i < ViewerSelection.hoveredObjects.Count) {
 					let hoveredObject = ViewerSelection.hoveredObjects[i];
-					Renderer.Color textColor = .(255,255,255);
+					Color textColor = .(255,255,255);
 					if (hoveredObject.index == ViewerSelection.currentObjIndex) {
 						textColor = .(0,0,0);
 						DrawUtilities.Rect(WindowApp.mousePosition.y + 16 + i * WindowApp.bitmapFont.height, WindowApp.mousePosition.y + 16 + (i + 1) * WindowApp.bitmapFont.height, WindowApp.mousePosition.x + 16, WindowApp.mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(255,255,255,192));
@@ -449,9 +448,9 @@ namespace SpyroScope {
 			// Draw view axis at the top right empty area
 			var axisBasis = Matrix3.Scale(20,-20,0.01f) * Camera.basis.Transpose();
 			let hudAxisOrigin = Vector3(sideInspector.drawn.left - 30, 30, 0);
-			Renderer.DrawLine(hudAxisOrigin, hudAxisOrigin + axisBasis.x, .(255,255,255), axisBasis.x.z > 0 ? .(255,0,0) : .(128,0,0));
-			Renderer.DrawLine(hudAxisOrigin, hudAxisOrigin + axisBasis.y, .(255,255,255), axisBasis.y.z > 0 ? .(0,255,0) : .(0,128,0));
-			Renderer.DrawLine(hudAxisOrigin, hudAxisOrigin + axisBasis.z, .(255,255,255), axisBasis.z.z > 0 ? .(0,0,255) : .(0,0,128));
+			Renderer.Line(hudAxisOrigin, hudAxisOrigin + axisBasis.x, .(255,255,255), axisBasis.x.z > 0 ? .(255,0,0) : .(128,0,0));
+			Renderer.Line(hudAxisOrigin, hudAxisOrigin + axisBasis.y, .(255,255,255), axisBasis.y.z > 0 ? .(0,255,0) : .(0,128,0));
+			Renderer.Line(hudAxisOrigin, hudAxisOrigin + axisBasis.z, .(255,255,255), axisBasis.z.z > 0 ? .(0,0,255) : .(0,0,128));
 			WindowApp.fontSmall.Print("X", .(sideInspector.drawn.left - 30 + axisBasis.x.x, 30 + axisBasis.x.y), axisBasis.x.z > 0 ? .(255,64,64) : .(128,64,64));
 			WindowApp.fontSmall.Print("Y", .(sideInspector.drawn.left - 30 + axisBasis.y.x, 30 + axisBasis.y.y), axisBasis.y.z > 0 ? .(64,255,64) : .(64,128,64));
 			WindowApp.fontSmall.Print("Z", .(sideInspector.drawn.left - 30 + axisBasis.z.x, 30 + axisBasis.z.y), axisBasis.z.z > 0 ? .(64,64,255) : .(64,64,128));
@@ -714,9 +713,7 @@ namespace SpyroScope {
 						}
 					}
 
-					Renderer.SetModel(object.position, object.basis);
-					Renderer.SetTint(object.IsActive ? .(255,255,255) : .(32,32,32));
-					modelSets[object.objectTypeID].QueueInstance(object.modelID, Emulator.active.shinyColors[object.color.r % 10][1]);
+					modelSets[object.objectTypeID].QueueInstance(object.modelID, .Transform(object.position, object.basis), object.IsActive ? .(1,1,1) : .(0.125f,0.125f,0.125f), Emulator.active.shinyColors[object.color.r % 10][1]);
 				} else {
 					Emulator.Address modelSetAddress = ?;
 					Emulator.active.mobyModelArrayPointer.GetAtIndex(&modelSetAddress, object.objectTypeID);
@@ -734,7 +731,7 @@ namespace SpyroScope {
 				case 0xcb:
 				default:
 					Texture containerIcon = null;
-					Renderer.Color iconTint = .(128,128,128);
+					Color iconTint = .(128,128,128);
 
 					if (Emulator.active.installment == .SpyroTheDragon) {
 						if (object.[Friend]o == 0xff && (object.objectTypeID < 0x53 || object.objectTypeID > 0x57) || object.[Friend]o != 0xff && (object.[Friend]o < 0x53 || object.[Friend]o > 0x57)) {
@@ -783,7 +780,7 @@ namespace SpyroScope {
 						halfHeight *= 0.75f;
 					}
 		
-					Renderer.Color color = .(255,255,255);
+					Color color = .(255,255,255);
 				
 					if (Emulator.active.installment == .SpyroTheDragon) {
 						var id = 0;
@@ -982,9 +979,9 @@ namespace SpyroScope {
 			let cameraBasisCorrected = Matrix3(cameraBasis.y, cameraBasis.z, -cameraBasis.x);
 
 			let cameraPosition = Emulator.active.CameraPosition;
-			Renderer.DrawLine(cameraPosition, cameraPosition + cameraBasis * Vector3(500,0,0), .(255,0,0), .(255,0,0));
-			Renderer.DrawLine(cameraPosition, cameraPosition + cameraBasis * Vector3(0,500,0), .(0,255,0), .(0,255,0));
-			Renderer.DrawLine(cameraPosition, cameraPosition + cameraBasis * Vector3(0,0,500), .(0,0,255), .(0,0,255));
+			Renderer.Line(cameraPosition, cameraPosition + cameraBasis * Vector3(500,0,0), .(255,0,0), .(255,0,0));
+			Renderer.Line(cameraPosition, cameraPosition + cameraBasis * Vector3(0,500,0), .(0,255,0), .(0,255,0));
+			Renderer.Line(cameraPosition, cameraPosition + cameraBasis * Vector3(0,0,500), .(0,0,255), .(0,0,255));
 
 			let projectionMatrixInv = WindowApp.gameProjection.Inverse();
 			let viewProjectionMatrixInv = cameraBasisCorrected * projectionMatrixInv;
@@ -999,20 +996,20 @@ namespace SpyroScope {
 			let nearBottomLeft = (Vector3)(viewProjectionMatrixInv * Vector4(-1,-1,-1,1)) + cameraPosition;
 			let nearBottomRight = (Vector3)(viewProjectionMatrixInv * Vector4(1,-1,-1,1)) + cameraPosition;
 
-			Renderer.DrawLine(nearTopLeft, farTopLeft , .(16,16,16), .(16,16,16));
-			Renderer.DrawLine(nearTopRight, farTopRight, .(16,16,16), .(16,16,16));
-			Renderer.DrawLine(nearBottomLeft, farBottomLeft, .(16,16,16), .(16,16,16));
-			Renderer.DrawLine(nearBottomRight, farBottomRight, .(16,16,16), .(16,16,16));
+			Renderer.Line(nearTopLeft, farTopLeft , .(16,16,16), .(16,16,16));
+			Renderer.Line(nearTopRight, farTopRight, .(16,16,16), .(16,16,16));
+			Renderer.Line(nearBottomLeft, farBottomLeft, .(16,16,16), .(16,16,16));
+			Renderer.Line(nearBottomRight, farBottomRight, .(16,16,16), .(16,16,16));
 			
-			Renderer.DrawLine(nearTopLeft, nearTopRight, .(16,16,16), .(16,16,16));
-			Renderer.DrawLine(nearBottomLeft, nearBottomRight, .(16,16,16), .(16,16,16));
-			Renderer.DrawLine(nearTopLeft, nearBottomLeft, .(16,16,16), .(16,16,16));
-			Renderer.DrawLine(nearTopRight, nearBottomRight, .(16,16,16), .(16,16,16));
+			Renderer.Line(nearTopLeft, nearTopRight, .(16,16,16), .(16,16,16));
+			Renderer.Line(nearBottomLeft, nearBottomRight, .(16,16,16), .(16,16,16));
+			Renderer.Line(nearTopLeft, nearBottomLeft, .(16,16,16), .(16,16,16));
+			Renderer.Line(nearTopRight, nearBottomRight, .(16,16,16), .(16,16,16));
 
-			Renderer.DrawLine(farTopLeft, farTopRight, .(16,16,16), .(16,16,16));
-			Renderer.DrawLine(farBottomLeft, farBottomRight, .(16,16,16), .(16,16,16));
-			Renderer.DrawLine(farTopLeft, farBottomLeft, .(16,16,16), .(16,16,16));
-			Renderer.DrawLine(farTopRight, farBottomRight, .(16,16,16), .(16,16,16));
+			Renderer.Line(farTopLeft, farTopRight, .(16,16,16), .(16,16,16));
+			Renderer.Line(farBottomLeft, farBottomRight, .(16,16,16), .(16,16,16));
+			Renderer.Line(farTopLeft, farBottomLeft, .(16,16,16), .(16,16,16));
+			Renderer.Line(farTopRight, farBottomRight, .(16,16,16), .(16,16,16));
 		}
 
 		void DrawObjects() {
@@ -1059,9 +1056,9 @@ namespace SpyroScope {
 			DrawUtilities.Arrow(position, (Vector3)Emulator.active.SpyroPhysicsVelocity / 10, 50, .(255,128,0));
 
 			let viewerSpyroBasis = Emulator.active.spyroBasis.ToMatrixCorrected();
-			Renderer.DrawLine(position, position + viewerSpyroBasis * Vector3(500,0,0), .(255,0,0), .(255,0,0));
-			Renderer.DrawLine(position, position + viewerSpyroBasis * Vector3(0,500,0), .(0,255,0), .(0,255,0));
-			Renderer.DrawLine(position, position + viewerSpyroBasis * Vector3(0,0,500), .(0,0,255), .(0,0,255));
+			Renderer.Line(position, position + viewerSpyroBasis * Vector3(500,0,0), .(255,0,0), .(255,0,0));
+			Renderer.Line(position, position + viewerSpyroBasis * Vector3(0,500,0), .(0,255,0), .(0,255,0));
+			Renderer.Line(position, position + viewerSpyroBasis * Vector3(0,0,500), .(0,0,255), .(0,0,255));
 
 			uint32 radius = ?;
 			/*if (Emulator.active.installment == .YearOfTheDragon) {
@@ -1105,7 +1102,7 @@ namespace SpyroScope {
 			for (let i < Terrain.collision.collisionTypes.Count) {
 				let flag = Terrain.collision.collisionTypes[i];
 				String label = scope String() .. AppendF("Unknown {}", flag);
-				Renderer.Color color = .(255, 0, 255);
+				Color color = .(255, 0, 255);
 				if (flag < 11 /*Emulator.collisionTypes.Count*/) {
 					(label, color) = Emulator.collisionTypes[flag];
 				}
@@ -1148,7 +1145,7 @@ namespace SpyroScope {
 				let frame = Recording.GetFrame(i);
 				let nextFrame = Recording.GetFrame(i + 1);
 
-				Renderer.DrawLine(frame.position, nextFrame.position, .(255,0,0), .(255,255,0));
+				Renderer.Line(frame.position, nextFrame.position, .(255,0,0), .(255,255,0));
 
 				// Every second
 				if (i % 30 == 0) {
@@ -1156,8 +1153,8 @@ namespace SpyroScope {
 					let pdir = Vector3.Cross(direction, Camera.basis.z).Normalized();
 
 					let size = Vector3.Dot(Camera.position - frame.position, Camera.basis.z) / 50;
-					Renderer.DrawLine(frame.position, frame.position + (pdir - direction) * size, .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(frame.position, frame.position - (pdir + direction) * size, .(255,255,255), .(255,255,255));
+					Renderer.Line(frame.position, frame.position + (pdir - direction) * size, .(255,255,255), .(255,255,255));
+					Renderer.Line(frame.position, frame.position - (pdir + direction) * size, .(255,255,255), .(255,255,255));
 				}
 
 				// Every state change
@@ -1166,8 +1163,8 @@ namespace SpyroScope {
 					let pdir = Vector3.Cross(direction, Camera.basis.z).Normalized();
 
 					let size = Vector3.Dot(Camera.position - frame.position, Camera.basis.z) / 100;
-					Renderer.DrawLine(nextFrame.position, nextFrame.position + pdir * size, .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(nextFrame.position, nextFrame.position - pdir * size, .(255,255,255), .(255,255,255));
+					Renderer.Line(nextFrame.position, nextFrame.position + pdir * size, .(255,255,255), .(255,255,255));
+					Renderer.Line(nextFrame.position, nextFrame.position - pdir * size, .(255,255,255), .(255,255,255));
 				}
 			}
 		}
@@ -1271,7 +1268,7 @@ namespace SpyroScope {
 			if (viewMode == .Map && mode != .Map) {
 				Camera.orthographic = false;
 				Camera.near = 100;
-				Camera.far = 500000;
+				Camera.far = 200000;
 
 				Camera.position = Emulator.active.CameraPosition;
 				int16* cameraEulerRotation = &Emulator.active.cameraEulerRotation;

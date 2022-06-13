@@ -141,44 +141,44 @@ namespace SpyroScope {
 							quadRect.right -= 4;
 							quadRect.bottom -= 4;
 
-							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(255,64,64), .(255,64,64));
-							Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(255,64,64), .(255,64,64));
-							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(255,64,64), .(255,64,64));
-							Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(255,64,64), .(255,64,64));
+							Renderer.Line(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(255,64,64), .(255,64,64));
+							Renderer.Line(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(255,64,64), .(255,64,64));
+							Renderer.Line(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(255,64,64), .(255,64,64));
+							Renderer.Line(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(255,64,64), .(255,64,64));
 						case 1:
 							quadRect.left += 2;
 							quadRect.top += 2;
 							quadRect.right -= 2;
 							quadRect.bottom -= 2;
 
-							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,255,64), .(64,255,64));
-							Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,255,64), .(64,255,64));
-							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,255,64), .(64,255,64));
-							Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,255,64), .(64,255,64));
+							Renderer.Line(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,255,64), .(64,255,64));
+							Renderer.Line(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,255,64), .(64,255,64));
+							Renderer.Line(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,255,64), .(64,255,64));
+							Renderer.Line(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,255,64), .(64,255,64));
 						case 2:
 							quadRect.left += 4;
 							quadRect.top += 4;
 
-							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,64,255), .(64,64,255));
-							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
+							Renderer.Line(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,64,255), .(64,64,255));
+							Renderer.Line(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
 						case 3:
 							quadRect.top += 4;
 							quadRect.right -= 4;
 
-							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,64,255), .(64,64,255));
-							Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
+							Renderer.Line(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,64,255), .(64,64,255));
+							Renderer.Line(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
 						case 4:
 							quadRect.left += 4;
 							quadRect.bottom -= 4;
 
-							Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
-							Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
+							Renderer.Line(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
+							Renderer.Line(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
 						case 5:
 							quadRect.right -= 4;
 							quadRect.bottom -= 4;
 
-							Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
-							Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
+							Renderer.Line(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
+							Renderer.Line(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,255), .(64,64,255));
 					}
 				}
 			}
@@ -192,10 +192,10 @@ namespace SpyroScope {
 				quadRect.start = PixelToScreen((float)decodedSprite.x / (16 / decodedSprite.bitmode), decodedSprite.y);
 				quadRect.end = PixelToScreen((float)(decodedSprite.x + decodedSprite.width) / (16 / decodedSprite.bitmode), decodedSprite.y + decodedSprite.height);
 
-				Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,64,64), .(64,64,64));
-				Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
-				Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
-				Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
+				Renderer.Line(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(64,64,64), .(64,64,64));
+				Renderer.Line(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
+				Renderer.Line(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
+				Renderer.Line(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(64,64,64), .(64,64,64));
 
 				if (blinkerTime < 30) {
 					if (selectedTextureIDIndex > -1 && selectedTextureIDIndex != decodedTextureID) {
@@ -217,10 +217,10 @@ namespace SpyroScope {
 									quadRect.right += 2;
 									quadRect.bottom += 2;
 	
-									Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(255,255,255), .(255,255,255));
-									Renderer.DrawLine(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(255,255,255), .(255,255,255));
-									Renderer.DrawLine(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(255,255,255), .(255,255,255));
-									Renderer.DrawLine(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(255,255,255), .(255,255,255));
+									Renderer.Line(.(quadRect.left, quadRect.top, 0), .(quadRect.right, quadRect.top, 0), .(255,255,255), .(255,255,255));
+									Renderer.Line(.(quadRect.left, quadRect.bottom, 0), .(quadRect.right, quadRect.bottom, 0), .(255,255,255), .(255,255,255));
+									Renderer.Line(.(quadRect.left, quadRect.top, 0), .(quadRect.left, quadRect.bottom, 0), .(255,255,255), .(255,255,255));
+									Renderer.Line(.(quadRect.right, quadRect.top, 0), .(quadRect.right, quadRect.bottom, 0), .(255,255,255), .(255,255,255));
 									break;
 								}
 							}
@@ -239,10 +239,10 @@ namespace SpyroScope {
 				let clutStart = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
 				let clutEnd = PixelToScreen(clutPosition.x + clutReference.width, (clutPosition.x >> 10) + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1));
 
-				Renderer.DrawLine(.(clutStart.x, clutStart.y, 0), .(clutEnd.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
-				Renderer.DrawLine(.(clutStart.x, clutEnd.y, 0), .(clutEnd.x, clutEnd.y, 0), .(64,64,64), .(64,64,64));
-				Renderer.DrawLine(.(clutStart.x, clutStart.y, 0), .(clutStart.x, clutEnd.y, 0), .(64,64,64), .(64,64,64));
-				Renderer.DrawLine(.(clutEnd.x, clutStart.y, 0), .(clutEnd.x, clutEnd.y, 0), .(64,64,64), .(64,64,64));
+				Renderer.Line(.(clutStart.x, clutStart.y, 0), .(clutEnd.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
+				Renderer.Line(.(clutStart.x, clutEnd.y, 0), .(clutEnd.x, clutEnd.y, 0), .(64,64,64), .(64,64,64));
+				Renderer.Line(.(clutStart.x, clutStart.y, 0), .(clutStart.x, clutEnd.y, 0), .(64,64,64), .(64,64,64));
+				Renderer.Line(.(clutEnd.x, clutStart.y, 0), .(clutEnd.x, clutEnd.y, 0), .(64,64,64), .(64,64,64));
 			}
 
 			// CLUTs can be small and packed very tightly in VRAM so the lines drawn could over draw the highlight,
@@ -264,10 +264,10 @@ namespace SpyroScope {
 					clutRect.right += 2;
 					clutRect.bottom += 2;
 
-					Renderer.DrawLine(.(clutRect.left, clutRect.top, 0), .(clutRect.right, clutRect.top, 0), .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(.(clutRect.left, clutRect.bottom, 0), .(clutRect.right, clutRect.bottom, 0), .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(.(clutRect.left, clutRect.top, 0), .(clutRect.left, clutRect.bottom, 0), .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(.(clutRect.right, clutRect.top, 0), .(clutRect.right, clutRect.bottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.Line(.(clutRect.left, clutRect.top, 0), .(clutRect.right, clutRect.top, 0), .(255,255,255), .(255,255,255));
+					Renderer.Line(.(clutRect.left, clutRect.bottom, 0), .(clutRect.right, clutRect.bottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.Line(.(clutRect.left, clutRect.top, 0), .(clutRect.left, clutRect.bottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.Line(.(clutRect.right, clutRect.top, 0), .(clutRect.right, clutRect.bottom, 0), .(255,255,255), .(255,255,255));
 				}
 			}
 
@@ -280,7 +280,7 @@ namespace SpyroScope {
 				let clutPosition = decodedTexture.GetCLUTCoordinates();
 				let clutStart = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
 
-				Renderer.DrawLine(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
+				Renderer.Line(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
 			}
 
 			if (hoveredCLUTIndex > -1) {
@@ -295,7 +295,7 @@ namespace SpyroScope {
 					let partialUVs = sprite.GetVramPartialUV();
 					let quadStart = UVToScreen(partialUVs.left, partialUVs.top);
 
-					Renderer.DrawLine(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
+					Renderer.Line(.(quadStart.x, quadStart.y, 0), .(clutStart.x, clutStart.y, 0), .(64,64,64), .(64,64,64));
 				}
 			}
 
@@ -327,10 +327,10 @@ namespace SpyroScope {
 					rect.right += 2;
 					rect.bottom += 2;
 
-					Renderer.DrawLine(.(rect.left, rect.top, 0), .(rect.right, rect.top, 0), .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(.(rect.left, rect.bottom, 0), .(rect.right, rect.bottom, 0), .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(.(rect.left, rect.top, 0), .(rect.left, rect.bottom, 0), .(255,255,255), .(255,255,255));
-					Renderer.DrawLine(.(rect.right, rect.top, 0), .(rect.right, rect.bottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.Line(.(rect.left, rect.top, 0), .(rect.right, rect.top, 0), .(255,255,255), .(255,255,255));
+					Renderer.Line(.(rect.left, rect.bottom, 0), .(rect.right, rect.bottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.Line(.(rect.left, rect.top, 0), .(rect.left, rect.bottom, 0), .(255,255,255), .(255,255,255));
+					Renderer.Line(.(rect.right, rect.top, 0), .(rect.right, rect.bottom, 0), .(255,255,255), .(255,255,255));
 				}
 			}
 

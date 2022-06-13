@@ -62,7 +62,7 @@ namespace SpyroScope {
 
 		void GenerateModelFromStatic(Emulator.Address modelSetAddress) {
 			List<Vector3> activeVertices;
-			List<Renderer.Color> activeColors;
+			List<Color> activeColors;
 
 			uint32 modelCount = ?;
 			Emulator.active.ReadFromRAM(modelSetAddress, &modelCount, 4);
@@ -81,18 +81,18 @@ namespace SpyroScope {
 				Emulator.active.ReadFromRAM(modelDataAddress, &modelMetadata, sizeof(ModelMetadata));
 	
 				List<Vector3> solidVertices = scope .();
-				List<Renderer.Color> solidColors = scope .();
+				List<Color> solidColors = scope .();
 				List<Vector3> shinyVertices = scope .();
-				List<Renderer.Color> shinyColors = scope .();
+				List<Color> shinyColors = scope .();
 				List<Vector3> texturedVertices = scope .();
 				List<Vector2> textureUVs = scope .();
-				List<Renderer.Color> textureColors = scope .();
+				List<Color> textureColors = scope .();
 				
 				if (modelMetadata.vertexCount > 0) {
 					uint32[] packedVertices = scope .[modelMetadata.vertexCount];
 					Emulator.active.ReadFromRAM(modelDataAddress + 0x10, &packedVertices[0], 4 * modelMetadata.vertexCount);
 
-					Renderer.Color4[] colors = scope .[modelMetadata.colorCount];
+					Color4[] colors = scope .[modelMetadata.colorCount];
 					Emulator.active.ReadFromRAM(modelDataAddress + modelMetadata.colorDataOffset, &colors[0], 4 * modelMetadata.colorCount);
 					
 					uint16 offsets = ?;
@@ -224,7 +224,7 @@ namespace SpyroScope {
 
 				Vector3[] v = new .[texturedVertices.Count];
 				Vector3[] n = new .[texturedVertices.Count];
-				Renderer.Color4[] c = new .[texturedVertices.Count];
+				Color4[] c = new .[texturedVertices.Count];
 				Vector2[] u = new .[texturedVertices.Count];
 
 				for (let i < texturedVertices.Count) {
@@ -237,7 +237,7 @@ namespace SpyroScope {
 					n[i] = n[i+1] = n[i+2] = .(0,0,1);
 				}
 
-				texturedModels[modelIndex] = new .(v, u, n, c);
+				texturedModels[modelIndex] = new .(v, u, n, c) .. MakeInstanced(64);
 
 				v = new .[solidVertices.Count];
 				n = new .[solidVertices.Count];
@@ -252,7 +252,7 @@ namespace SpyroScope {
 					n[i] = n[i+1] = n[i+2] = .(0,0,1);
 				}
 
-				solidModels[modelIndex] = new .(v, n, c);
+				solidModels[modelIndex] = new .(v, n, c) .. MakeInstanced(64);
 
 				v = new .[shinyVertices.Count];
 				n = new .[shinyVertices.Count];
@@ -267,14 +267,14 @@ namespace SpyroScope {
 					n[i] = n[i+1] = n[i+2] = Vector3.Cross(v[i+2] - v[i+0], v[i+1] - v[i+0]);
 				}
 
-				shinyModels[modelIndex] = new .(v, n, c);
+				shinyModels[modelIndex] = new .(v, n, c) .. MakeInstanced(64);
 
 				
 				v = new .[0];
 				n = new .[0];
 				c = new .[0];
 
-				translucentModels[modelIndex] = new .(v, n, c);
+				translucentModels[modelIndex] = new .(v, n, c) .. MakeInstanced(64);
 			}
 		}
 
@@ -282,18 +282,18 @@ namespace SpyroScope {
 		void GenerateModelFromAnimated(Emulator.Address modelSetAddress) {
 			List<Vector3> activeVertices;
 			List<Vector2> activeUVs;
-			List<Renderer.Color> activeColors;
+			List<Color> activeColors;
 			
 			List<Vector3> solidVertices = scope .();
-			List<Renderer.Color> solidColors = scope .();
+			List<Color> solidColors = scope .();
 
 			List<Vector3> texturedVertices = scope .();
 			List<Vector2> textureUVs = scope .();
-			List<Renderer.Color> textureColors = scope .();
+			List<Color> textureColors = scope .();
 			
 			List<Vector3> translucentVertices = scope .();
 			List<Vector2> translucentUVs = scope .();
-			List<Renderer.Color> translucentColors = scope .();
+			List<Color> translucentColors = scope .();
 
 			Emulator.Address modelMetadataAddress = ?;
 			Emulator.active.ReadFromRAM(modelSetAddress + 4 * 15, &modelMetadataAddress, 4);
@@ -462,7 +462,7 @@ namespace SpyroScope {
 					activeVertices.Add(triangleVertices[1]);
 					activeVertices.Add(triangleVertices[0]);
 
-					Renderer.Color cd = ?;
+					Color cd = ?;
 					Emulator.active.ReadFromRAM(colorDataAddress + (uint32)colorIndices[2] * 4, &cd, 3);
 					activeColors.Add(cd);//activeColors.Add(colors[colorIndices[2]]);
 					Emulator.active.ReadFromRAM(colorDataAddress + (uint32)colorIndices[1] * 4, &cd, 3);
@@ -483,7 +483,7 @@ namespace SpyroScope {
 
 					colorIndices[3] = extraData >> 3 & 0x7f; //((packedColorIndex >> 1) & 0x1fc) >> 2;
 					
-					Renderer.Color cd = ?;
+					Color cd = ?;
 					Emulator.active.ReadFromRAM(colorDataAddress + (uint32)colorIndices[2] * 4, &cd, 3);
 					activeColors.Add(cd);//activeColors.Add(colors[colorIndices[2]]);
 					Emulator.active.ReadFromRAM(colorDataAddress + (uint32)colorIndices[0] * 4, &cd, 3);
@@ -503,7 +503,7 @@ namespace SpyroScope {
 
 			Vector3[] v = new .[texturedVertices.Count];
 			Vector3[] n = new .[texturedVertices.Count];
-			Renderer.Color4[] c = new .[texturedVertices.Count];
+			Color4[] c = new .[texturedVertices.Count];
 			Vector2[] u = new .[texturedVertices.Count];
 
 			for (let i < texturedVertices.Count) {
@@ -517,7 +517,7 @@ namespace SpyroScope {
 			}
 			
 			texturedModels = new .[1];
-			texturedModels[0] = new .(v, u, n, c);
+			texturedModels[0] = new .(v, u, n, c) .. MakeInstanced(64);
 
 			v = new .[solidVertices.Count];
 			n = new .[solidVertices.Count];
@@ -533,7 +533,7 @@ namespace SpyroScope {
 			}
 			
 			solidModels = new .[1];
-			solidModels[0] = new .(v, n, c);
+			solidModels[0] = new .(v, n, c) .. MakeInstanced(64);
 
 			v = new .[translucentVertices.Count];
 			n = new .[translucentVertices.Count];
@@ -551,14 +551,14 @@ namespace SpyroScope {
 			}
 
 			translucentModels = new .[1];
-			translucentModels[0] = new .(v, u, n, c);
+			translucentModels[0] = new .(v, u, n, c) .. MakeInstanced(64);
 
 			v = new .[0];
 			n = new .[0];
 			c = new .[0];
 
 			shinyModels = new .[1];
-			shinyModels[0] = new .(v, n, c);
+			shinyModels[0] = new .(v, n, c) .. MakeInstanced(64);
 		}
 
 		// Derived from Spyro: Ripto's Rage [8004757c]
@@ -596,68 +596,32 @@ namespace SpyroScope {
 			return shift;
 		}
 
-		public void QueueInstance(int modelID, Renderer.Color4 color) {
+		public void QueueInstance(int modelID, Matrix4 matrix, Vector3 tint, Color4 gemMatColor) {
 			var modelID;
 
 			if (animated) {
 				modelID = 0;
 			}
-			
-			texturedModels[modelID].QueueInstance();
-			solidModels[modelID].QueueInstance();
-			
-			let tint = Renderer.tint;
-			Renderer.tint /= 2;
-			translucentModels[modelID].QueueInstance();
 
-			Renderer.SetTint(color);
-			Renderer.tint *= tint;
-			shinyModels[modelID].QueueInstance();
-			Renderer.tint = tint;
+			RenderJob job;
+			job = Renderer.retroDiffusePass.AddJob(texturedModels[modelID], VRAM.decoded);
+			job.AddInstance(matrix, tint);
+			
+			job = Renderer.retroDiffusePass.AddJob(solidModels[modelID], Renderer.halfWhiteTexture);
+			job.AddInstance(matrix, tint);
+			
+			job = Renderer.retroSpecularPass.AddJob(shinyModels[modelID], Renderer.halfWhiteTexture);
+			job.AddInstance(matrix, tint);
+			
+			job = Renderer.retroTranparentPass.AddJob(translucentModels[modelID], VRAM.decoded);
+			job.AddInstance(matrix, tint / 2);
 		}
 
-		public void DrawInstances() {
-			Renderer.BeginRetroShading();
-			VRAM.decoded?.Bind();
-
-			for (let i < texturedModels.Count) {
-				texturedModels[i].DrawInstances();
-			}
-
-			Renderer.halfWhiteTexture.Bind();
-
-			for (let i < solidModels.Count) {
-				solidModels[i].DrawInstances();
-			}
-			
-			Renderer.SetSpecular(1);
-
-			for (let i < shinyModels.Count) {
-				shinyModels[i].DrawInstances();
-			}
-			
-			Renderer.SetSpecular(0);
-			Renderer.BeginDefaultShading();
-			Renderer.whiteTexture.Bind();
-		}
-
-		public void DrawInstancesTranslucent() {
-			Renderer.BeginRetroShading();
-
-			VRAM.decoded?.Bind();
-
-			GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
-			GL.glDepthMask(GL.GL_FALSE);
-
-			for (let i < translucentModels.Count) {
-				translucentModels[i].DrawInstances();
-			}
-
-			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-			GL.glDepthMask(GL.GL_TRUE);
-
-			Renderer.BeginDefaultShading();
-			Renderer.whiteTexture.Bind();
+		public void AddRenderJob(int modelID) {
+			let pass = Renderer.opaquePass;
+			pass.AddJob(texturedModels[modelID], VRAM.decoded);
+			pass.AddJob(solidModels[modelID], Renderer.halfWhiteTexture);
+			pass.AddJob(shinyModels[modelID]);
 		}
 
 		public void Export(String file, int modelIndex, float scale) {

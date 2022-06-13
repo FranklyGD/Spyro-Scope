@@ -30,8 +30,8 @@ namespace SpyroScope {
 			let tangentRadius = Math.Sin(tanAngle) * radius;
 			let tangentPoint = Vector3(lateralDifference.y / lateralDistance, -lateralDifference.x / lateralDistance, 0) * tangentRadius;
 
-			Renderer.DrawLine(offsetedCenter + tangentPoint, offsetedCenter + tangentPoint + glidePoint, .(0,255,255), .(0,255,255));
-			Renderer.DrawLine(offsetedCenter - tangentPoint, offsetedCenter - tangentPoint + glidePoint, .(0,255,255), .(0,255,255));
+			Renderer.Line(offsetedCenter + tangentPoint, offsetedCenter + tangentPoint + glidePoint, .(0,255,255), .(0,255,255));
+			Renderer.Line(offsetedCenter - tangentPoint, offsetedCenter - tangentPoint + glidePoint, .(0,255,255), .(0,255,255));
 		}
 	}
 }

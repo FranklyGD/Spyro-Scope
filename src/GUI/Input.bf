@@ -6,7 +6,7 @@ namespace SpyroScope {
 		public static int cursor, selectBegin;
 		public static bool dragging, underlyingChanged;
 		
-		public Renderer.Color activeColor = .(255, 255, 128);
+		public Color activeColor = .(255, 255, 128);
 
 		public Texture activeTexture = activeInputTexture;
 
@@ -30,7 +30,7 @@ namespace SpyroScope {
 		public override void Draw() {
 			base.Draw();
 
-			Renderer.Color color;
+			Color color;
 			Texture texture;
 
 			if (Selected) {
@@ -87,7 +87,7 @@ namespace SpyroScope {
 
 			if (Selected) {
 				cursorPos += textStart.x;
-				Renderer.DrawLine(.(cursorPos, vcenter - halfHeight, 0), .(cursorPos, vcenter + halfHeight, 0), .(0,0,0), .(0,0,0));
+				Renderer.Line(.(cursorPos, vcenter - halfHeight, 0), .(cursorPos, vcenter + halfHeight, 0), .(0,0,0), .(0,0,0));
 
 				if (text != null && !text.IsEmpty && displayUnderlying && underlyingChanged && lastValidText != null && !lastValidText.IsEmpty) {
 					let validDisplayText = scope String() .. AppendF("= {}", lastValidText);

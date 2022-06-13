@@ -67,7 +67,8 @@ namespace SpyroScope {
 			GL.glDeleteTextures(1, &textureObjectID);
 		}
 
-		public void Bind() {
+		public void Bind(uint index = 0) {
+			GL.glActiveTexture(GL.GL_TEXTURE0 + index);
 			GL.glBindTexture(GL.GL_TEXTURE_2D, textureObjectID);
 		}
 

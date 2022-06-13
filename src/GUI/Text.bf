@@ -8,7 +8,7 @@ namespace SpyroScope {
 			set => text.Set(value);
 		}
 		public Font font = WindowApp.fontSmall;
-		public Renderer.Color4 color = .(255,255,255);
+		public Color4 color = .(255,255,255);
 
 		public override void Draw() {
 			font.Print(text, drawn.start, color);

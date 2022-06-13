@@ -1,6 +1,6 @@
 namespace SpyroScope {
 	class Panel : GUIElement {
-		public Renderer.Color4 tint = .(255,255,255);
+		public Color4 tint = .(255,255,255);
 		public Texture texture = Renderer.whiteTexture;
 
 		public override void Draw() {

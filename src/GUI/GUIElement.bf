@@ -222,30 +222,30 @@ namespace SpyroScope {
 				return;
 			}
 
-			Renderer.Color debugColor = Hovered ? .(128,128,16) : .(16,16,16);
+			Color debugColor = Hovered ? .(128,128,16) : .(16,16,16);
 
-			Renderer.DrawLine(
+			Renderer.Line(
 				.(drawn.left, drawn.bottom, 0),
 				.(drawn.right, drawn.bottom,0),
 				debugColor,
 				debugColor
 			);
 
-			Renderer.DrawLine(
+			Renderer.Line(
 				.(drawn.left, drawn.top, 0),
 				.(drawn.right, drawn.top,0),
 				debugColor,
 				debugColor
 			);
 
-			Renderer.DrawLine(
+			Renderer.Line(
 				.(drawn.left, drawn.top, 0),
 				.(drawn.left, drawn.bottom,0),
 				debugColor,
 				debugColor
 			);
 
-			Renderer.DrawLine(
+			Renderer.Line(
 				.(drawn.right, drawn.top, 0),
 				.(drawn.right, drawn.bottom,0),
 				debugColor,

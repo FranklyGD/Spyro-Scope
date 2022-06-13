@@ -301,7 +301,7 @@ namespace SpyroScope {
 
 				// While in this overlay, color the terrain mesh to show the interpolation amount between states
 				if (overlay == .Deform) {
-					Renderer.Color transitionColor = keyframeData.fromState == keyframeData.toState ? .(255,128,0) : .((.)((1 - interpolation) * 255), (.)(interpolation * 255), 0);
+					Color transitionColor = keyframeData.fromState == keyframeData.toState ? .(255,128,0) : .((.)((1 - interpolation) * 255), (.)(interpolation * 255), 0);
 					for (let i < animationGroup.count * 3) {
 						let vertexIndex = animationGroup.start * 3 + i;
 						mesh.colors[vertexIndex] = transitionColor;
@@ -315,13 +315,12 @@ namespace SpyroScope {
 			mesh.Update();
 		}
 
-		public void Draw() {
+		public void Draw(Vector3 tint) {
 			if (mesh == null) {
 				return;
 			}
 
-			Renderer.SetModel(.Zero, .Identity);
-			mesh.Draw();
+			Renderer.opaquePass.AddJob(mesh) .. AddInstance(.Transform(.Zero, .Identity), tint);
 		}
 
 		public void DrawDeformFrames() {
@@ -330,39 +329,32 @@ namespace SpyroScope {
 			}
 
 			if (overlay == .Deform) {
-				Renderer.SetTint(.(255,255,0));
 				for	(let animationGroup in animationGroups) {
 					for (let mesh in animationGroup.mesh) {
-						mesh.Draw();
+						Renderer.opaquePass.AddJob(mesh) .. AddInstance(.Transform(.Zero, .Identity), .(1,1,0));
 					}
 				}
 			}
 		}
 
 		public void DrawGrid() {
-			if (mesh == null) {
-				return;
-			}
+			for (let x < dimensions.x) {
+				for (let y < dimensions.y) {
+					for (let z < dimensions.z) {
+						if (grid[x,y,z] != -1) {
+							Vector3 cellStart = .(x << 0xc, y << 0xc, z << 0xc);
 
-			if (visualizeGrid) {
-				for (let x < dimensions.x) {
-					for (let y < dimensions.y) {
-						for (let z < dimensions.z) {
-							if (grid[x,y,z] != -1) {
-								Vector3 cellStart = .(x << 0xc, y << 0xc, z << 0xc);
+							Renderer.Line(cellStart, cellStart + .(cellSize,0,0), .(255,0,0), .(255,0,0));
+							Renderer.Line(cellStart, cellStart + .(0,cellSize,0), .(0,255,0), .(0,255,0));
+							Renderer.Line(cellStart, cellStart + .(0,0,cellSize), .(0,0,255), .(0,0,255));
 
-								Renderer.DrawLine(cellStart, cellStart + .(cellSize,0,0), .(255,0,0), .(255,0,0));
-								Renderer.DrawLine(cellStart, cellStart + .(0,cellSize,0), .(0,255,0), .(0,255,0));
-								Renderer.DrawLine(cellStart, cellStart + .(0,0,cellSize), .(0,0,255), .(0,0,255));
+							for (let cellEntry in GetCell(x,y,z)) {
+								let triangleIndex = cellEntry & 0x7fff;
+								let triangle = Terrain.collision.mesh.vertices.CArray() + (int)triangleIndex * 3;
 
-								for (let cellEntry in GetCell(x,y,z)) {
-									let triangleIndex = cellEntry & 0x7fff;
-									let triangle = Terrain.collision.mesh.vertices.CArray() + (int)triangleIndex * 3;
+								let triangleCenter = (triangle[0] + triangle[1] + triangle[2]) / 3;
 
-									let triangleCenter = (triangle[0] + triangle[1] + triangle[2]) / 3;
-
-									Renderer.DrawLine(cellStart + .(1 << 0xb, 1 << 0xb, 1 << 0xb), triangleCenter, .(255,255,0), .(255,255,0));
-								}
+								Renderer.Line(cellStart + .(1 << 0xb, 1 << 0xb, 1 << 0xb), triangleCenter, .(255,255,0), .(128,64,0));
 							}
 						}
 					}
@@ -412,7 +404,7 @@ namespace SpyroScope {
 				for (let stateIndex < stateCount) {
 					Vector3[] vertices = new .[groupVertexCount];
 					Vector3[] normals = new .[groupVertexCount];
-					Renderer.Color4[] colors = new .[groupVertexCount];
+					Color4[] colors = new .[groupVertexCount];
 
 					let startTrianglesState = stateIndex * animationGroup.count;
 					for (let triangleIndex < animationGroup.count) {
@@ -421,7 +413,7 @@ namespace SpyroScope {
 						let unpackedTriangle = packedTriangle.UnpackAnimated();
 
 						let normal = Vector3.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
-						Renderer.Color color = .(255,255,255);
+						Color color = .(255,255,255);
 
 						for (let vi < 3) {
 							let i = triangleIndex * 3 + vi;
@@ -497,7 +489,7 @@ namespace SpyroScope {
 		/// Apply colors based on the flag applied on the triangles
 		void ColorCollisionFlags() {
 			for (int triangleIndex < SpecialTriangleCount) {
-				Renderer.Color color = .(255,255,255);
+				Color color = .(255,255,255);
 				let flagInfo = flagIndices[triangleIndex];
 
 				let flagIndex = flagInfo & 0x3f;
@@ -530,7 +522,7 @@ namespace SpyroScope {
 
 		void ColorCollisionSounds() {
 			for (int triangleIndex < SpecialTriangleCount) {
-				Renderer.Color color = .(255,255,255);
+				Color color = .(255,255,255);
 				let flagInfo = flagIndices[triangleIndex];
 
 				// Terrain Collision Sound
@@ -590,7 +582,7 @@ namespace SpyroScope {
 			let vertexCount = triangles.Count * 3;
 			Vector3[] vertices = new .[vertexCount];
 			Vector3[] normals = new .[vertexCount];
-			Renderer.Color4[] colors = new .[vertexCount];
+			Color4[] colors = new .[vertexCount];
 
 			collisionTypes.Clear();
 			waterSurfaceTriangles.Clear();
@@ -603,7 +595,7 @@ namespace SpyroScope {
 				let unpackedTriangle = triangle.Unpack();
 
 				let normal = Vector3.Cross(unpackedTriangle[2] - unpackedTriangle[0], unpackedTriangle[1] - unpackedTriangle[0]);
-				Renderer.Color color = .(255,255,255);
+				Color color = .(255,255,255);
 
 				// Terrain as Water
 				// Derived from Spyro: Ripto's Rage [8003e694]
@@ -651,7 +643,7 @@ namespace SpyroScope {
 			}
 
 			delete mesh;
-			mesh = new .(vertices, normals, colors);
+			mesh = new .(vertices, normals, colors) .. MakeInstanced(1);
 
 			ClearColor();
 			ApplyColor();

@@ -2,14 +2,14 @@ using System;
 
 namespace SpyroScope {
 	class RegionColorWarper {
-		public static Renderer.Color4 targetColor;
+		public static Color4 targetColor;
 
 		Emulator.Address address;
 		bool firstRun = true;
 		
 		uint8 regionIndex;
 		uint8[] timeOffsets ~ delete _;
-		Renderer.Color4[] baseColors ~ delete _;
+		Color4[] baseColors ~ delete _;
 
 		public this(Emulator.Address address) {
 			this.address = address;
@@ -38,7 +38,7 @@ namespace SpyroScope {
 
 				let alpha = (Math.Cos((float)((uint32)timeOffset + colorClock) / 0x80 * Math.PI_f) + 1) / 4;
 
-				region.SetNearColor((.)i, Renderer.Color.Lerp(baseColors[i], targetColor, alpha), false);
+				region.SetNearColor((.)i, Color.Lerp(baseColors[i], targetColor, alpha), false);
 				i++;
 			}
 
@@ -72,7 +72,7 @@ namespace SpyroScope {
 
 			var i = 0;
 			while (colorInfoScan < colorInfoEnd) {
-				Renderer.Color4 colorTimeOffset = ?;
+				Color4 colorTimeOffset = ?;
 				Emulator.active.ReadFromRAM(colorInfoScan, &colorTimeOffset, 4);
 				
 				baseColors[i] = colorTimeOffset;

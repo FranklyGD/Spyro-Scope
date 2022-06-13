@@ -8,10 +8,10 @@ namespace SpyroScope {
 		}
 		public State state;
 
-		public Renderer.Color normalColor = .(255, 255, 255);
-		public Renderer.Color hoveredColor = .(255, 255, 128);
-		public Renderer.Color pressedColor = .(255, 255, 255);
-		public Renderer.Color disabledColor = .(128, 128, 128);
+		public Color normalColor = .(255, 255, 255);
+		public Color hoveredColor = .(255, 255, 128);
+		public Color pressedColor = .(255, 255, 255);
+		public Color disabledColor = .(128, 128, 128);
 
 		public Texture normalTexture;
 		public Texture pressedTexture;

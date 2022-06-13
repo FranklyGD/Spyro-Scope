@@ -93,7 +93,8 @@ namespace SpyroScope {
 			Far,
 			NearLQ,
 			NearHQ,
-			CulledLOD
+			CulledLOD,
+			Compare
 		}
 		public static RenderMode renderMode = .Collision;
 		
@@ -143,6 +144,9 @@ namespace SpyroScope {
 		}
 
 		public static bool decoded;
+
+		public static Frame collisionFrame;
+		public static Frame visualFrame;
 
 		public static void Load() {
 			Reload();
@@ -555,9 +559,12 @@ namespace SpyroScope {
 				return;
 			}
 
-			if (renderMode == .Collision) {
+
+			if (renderMode == .Collision || renderMode == .Compare) {
 				collision.Update();
-			} else {
+			}
+
+			if (renderMode != .Collision) {
 				if (farAnimations != null) {
 					for (let animation in farAnimations) {
 						animation.Update(regions[animation.regionIndex].farMesh);
@@ -621,164 +628,149 @@ namespace SpyroScope {
 			}
 		}
 
-		public static void Draw() {
-			Renderer.SetTint(.(255,255,255));
-			Renderer.BeginSolid();
+		static void Draw(bool darken) {
+			Vector3 tint = darken ? .(0.75f,0.75f,0.75f) : .(1,1,1);
 
 			if (renderMode == .Collision && collision != null) {
-				if (solid) {
-					collision.Draw();
-				}
-				if (wireframe) {
-					if (solid) {
-						Renderer.SetTint(.(192,192,192));
-					}
+				collision.Draw(tint);
 
-					Renderer.BeginWireframe();
-					collision.Draw();
-				}
-				
-				Renderer.BeginWireframe();
-				collision.DrawDeformFrames();
-				Renderer.BeginSolid();
-
-				collision.DrawGrid();
 			} else if (regions != null) {
-				Renderer.BeginRetroShading();
-				Renderer.halfWhiteTexture.Bind();
-
 				switch (renderMode) {
-					case .Far: {
-						if (solid) {
-							for (let i < RegionCount) {
-								let visualMesh = regions[i];
-								if (!lodCulling || renderingFlags[i] & 2 > 0) {
-									visualMesh.DrawFar();
-								}
-							}
-						}
-
-						if (wireframe) {
-							if (solid) {
-								Renderer.SetTint(.(192,192,192));
-							}
-
-							Renderer.BeginWireframe();
-							for (let i < RegionCount) {
-								let visualMesh = regions[i];
-								if (!lodCulling || renderingFlags[i] & 2 > 0) {
-									visualMesh.DrawFar();
-								}
-							}
-						}
-					}
-
-					case .NearLQ, .NearHQ: {
-						if (textured && !useFade && VRAM.decoded != null) {
-							VRAM.decoded.Bind();
-						}
-
-						if (solid) {
-							DrawNear();
-						}
-
-						if (wireframe) {
-							if (solid) {
-								Renderer.SetTint(.(192,192,192));
-							}
-
-							Renderer.BeginWireframe();
-							DrawNear();
-						}
-					}
-
-					case .CulledLOD: {
-						if (solid) {
-							for (let i < RegionCount) {
-								let visualMesh = regions[i];
-								if (renderingFlags[i] == 2) {
-									visualMesh.DrawFar();
-								}
-							}
-
-							if (textured && !useFade && VRAM.decoded != null) {
-								VRAM.decoded.Bind();
-							}
-							DrawNear();
-							Renderer.halfWhiteTexture.Bind();
-						}
-
-						if (wireframe) {
-							if (solid) {
-								Renderer.SetTint(.(192,192,192));
-							}
-
-							Renderer.BeginWireframe();
-							for (let i < RegionCount) {
-								let visualMesh = regions[i];
-								if (renderingFlags[i] == 2) {
-									visualMesh.DrawFar();
-								}
-							}
-
-							if (textured && !useFade && VRAM.decoded != null) {
-								VRAM.decoded.Bind();
-							}
-							DrawNear();
-						}
-					}
+					case .Far: DrawFar(tint);
+					case .NearLQ: DrawNearLQ(tint);
+					case .NearHQ: DrawNearHQ(tint);
+					case .CulledLOD: DrawCulled(tint);
 
 					default:
 				}
-				
-				Renderer.SetTint(.(255,255,255));
-				Renderer.BeginDefaultShading();
-				Renderer.whiteTexture.Bind();
 			}
-				
-			// Restore polygon mode to default
-			Renderer.BeginSolid();
 		}
 
-		static void DrawNear() {
-			let alwaysRender = !(lodCulling || renderMode == .CulledLOD);
-			if (renderMode == .NearLQ) {
-				for (let i < RegionCount) {
-					let visualMesh = regions[i];
-					if (alwaysRender || renderingFlags[i] & 1 > 0) {
-						visualMesh.DrawNear();
-					}
+		static void DrawFar(Vector3 tint) {
+			for (let i < RegionCount) {
+				let visualMesh = regions[i];
+				let matrix = Matrix4.Transform(visualMesh.Offset, .Scale(visualMesh.Scale));
+
+				Renderer.opaquePass.AddJob(visualMesh.farMesh, Renderer.whiteTexture) .. AddInstance(matrix, tint);
+			}
+		}
+
+		static void DrawNearLQ(Vector3 tint) {
+			let texture = textured && !useFade && VRAM.decoded != null ? VRAM.decoded : Renderer.halfWhiteTexture;
+
+			for (let i < RegionCount) {
+				let visualMesh = regions[i];
+				let matrix = Matrix4.Transform(visualMesh.Offset, .Scale(visualMesh.Scale));
+
+				Renderer.retroDiffusePass.AddJob(visualMesh.nearMesh, texture) .. AddInstance(matrix, tint);
+				Renderer.retroTranparentPass.AddJob(visualMesh.nearMeshTransparent, texture) .. AddInstance(matrix, tint);
+			}
+		}
+
+		static void DrawNearHQ(Vector3 tint) {
+			let texture = textured && !useFade && VRAM.decoded != null ? VRAM.decoded : Renderer.halfWhiteTexture;
+
+			for (let i < RegionCount) {
+				let visualMesh = regions[i];
+				let matrix = Matrix4.Transform(visualMesh.Offset, .Scale(visualMesh.Scale));
+
+				Renderer.retroDiffusePass.AddJob(visualMesh.nearMeshSubdivided, texture) .. AddInstance(matrix, tint);
+				Renderer.retroTranparentPass.AddJob(visualMesh.nearMeshTransparentSubdivided, texture) .. AddInstance(matrix, tint);
+			}
+		}
+
+		static void DrawCulled(Vector3 tint) {
+			let texture = textured && !useFade && VRAM.decoded != null ? VRAM.decoded : Renderer.halfWhiteTexture;
+
+			for (let i < RegionCount) {
+				let visualMesh = regions[i];
+				let matrix = Matrix4.Transform(visualMesh.Offset, .Scale(visualMesh.Scale));
+
+				if (renderingFlags[i] & 2 > 0) {
+					Renderer.opaquePass.AddJob(visualMesh.farMesh, Renderer.whiteTexture) .. AddInstance(matrix, tint);
 				}
-			} else {
-				for (let i < RegionCount) {
-					let visualMesh = regions[i];
-					if (alwaysRender || renderingFlags[i] & 1 > 0) {
-						visualMesh.DrawNearSubdivided();
+
+				if (renderingFlags[i] & 1 > 0) {
+					if (renderMode == .NearLQ) {
+						Renderer.retroDiffusePass.AddJob(visualMesh.nearMesh, texture) .. AddInstance(matrix, tint);
+						Renderer.retroTranparentPass.AddJob(visualMesh.nearMeshTransparent, texture) .. AddInstance(matrix, tint);
+					} else {
+						Renderer.retroDiffusePass.AddJob(visualMesh.nearMeshSubdivided, texture) .. AddInstance(matrix, tint);
+						Renderer.retroTranparentPass.AddJob(visualMesh.nearMeshTransparentSubdivided, texture) .. AddInstance(matrix, tint);
 					}
 				}
 			}
+		}
+ 
+		public static void Render() {
+			if (renderMode == .Compare) {
+				collisionFrame.Bind();
+				Renderer.Clear();
+
+				if (collision != null) {
+					collision.Draw(.(1,1,1));
+					Renderer.opaquePass.Render();
+				}
 				
-			GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
-			GL.glDepthMask(GL.GL_FALSE);  
+				visualFrame.Bind();
+				Renderer.Clear();
 
-			if (renderMode == .NearLQ) {
-				for (let i < RegionCount) {
-					let visualMesh = regions[i];
-					if (alwaysRender || renderingFlags[i] & 1 > 0) {
-						visualMesh.DrawNearTransparent();
+				if (regions != null) {
+					DrawNearLQ(.(1,1,1));
+					Renderer.retroDiffusePass.Render();
+					Renderer.retroTranparentPass.Render();
+				}
+
+				Frame.BindMainFrame();
+				Renderer.Clear();
+
+				if (regions != null) {
+					if (solid) {
+						DrawNearHQ(.(1,1,1));
+						Renderer.retroDiffusePass.Render();
+						Renderer.retroTranparentPass.Render();
+					}
+					
+					if (wireframe) {
+						Renderer.BeginWireframe();
+						DrawNearLQ(.(0.75f,0.75f,0.75f));
+						Renderer.retroDiffusePass.Render();
+						Renderer.retroTranparentPass.Render();
+						Renderer.BeginSolid();
 					}
 				}
+
+				Renderer.compareProgram.Use();
+
+				collisionFrame.targetColorTexture.Bind(0);
+				visualFrame.targetColorTexture.Bind(1);
+				collisionFrame.targetDepthTexture.Bind(2);
+				visualFrame.targetDepthTexture.Bind(3);
+				
+				GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+				Frame.RenderFullQuad();
+
 			} else {
-				for (let i < RegionCount) {
-					let visualMesh = regions[i];
-					if (alwaysRender || renderingFlags[i] & 1 > 0) {
-						visualMesh.DrawNearTransparentSubdivided();
-					}
+				Terrain.Draw(false);
+	
+				if (solid) {
+					Renderer.opaquePass.Render();
+					Renderer.retroDiffusePass.Render();
+					Renderer.retroTranparentPass.Render();
+				}
+	
+				Terrain.Draw(true);
+	
+				if (wireframe) {
+					Renderer.BeginWireframe();
+	
+					Renderer.opaquePass.Render();
+					Renderer.retroDiffusePass.Render();
+					Renderer.retroTranparentPass.Render();
+	
+					Renderer.BeginSolid();
 				}
 			}
-
-			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-			GL.glDepthMask(GL.GL_TRUE);
 		}
 
 		public static void ReloadAnimations() {
@@ -879,9 +871,9 @@ namespace SpyroScope {
 				stream.Write(Span<uint32>(packedVertices));
 				address += packedVertices.Count * 4;
 				
-				Renderer.Color4[] colors = scope .[region.FarLOD.colorCount];
+				Color4[] colors = scope .[region.FarLOD.colorCount];
 				Emulator.active.ReadFromRAM(address, colors.CArray(), colors.Count * 4);
-				stream.Write(Span<Renderer.Color4>(colors));
+				stream.Write(Span<Color4>(colors));
 				address += colors.Count * 4;
 
 				TerrainRegion.FarFace[] fface = scope .[region.FarLOD.faceCount];
@@ -897,7 +889,7 @@ namespace SpyroScope {
 
 				colors = scope .[(int)region.NearLOD.colorCount * 2];
 				Emulator.active.ReadFromRAM(address, colors.CArray(), colors.Count * 4);
-				stream.Write(Span<Renderer.Color4>(colors));
+				stream.Write(Span<Color4>(colors));
 				address += colors.Count * 4;
 
 				TerrainRegion.NearFace[] nfaces = scope .[region.NearLOD.faceCount];

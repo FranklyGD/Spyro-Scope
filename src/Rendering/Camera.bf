@@ -7,8 +7,8 @@ namespace SpyroScope {
 		public static bool orthographic;
 		public static float size;
 		public static float fov;
-		public static float near = 100;
-		public static float far = 500000;
+		public static float near = 200;
+		public static float far = 200000;
 
 		public static Matrix4 projection {
 			get {

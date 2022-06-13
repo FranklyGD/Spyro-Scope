@@ -128,7 +128,7 @@ namespace SpyroScope {
 		public List<int> farFaceIndices = new .() ~ delete _;
 
 		Vector3[] nearVertices ~ delete _;
-		Renderer.Color4[] nearColors ~ delete _;
+		Color4[] nearColors ~ delete _;
 		NearFace[] nearFaces ~ delete _;
 		
 		public Mesh nearMesh ~ delete _;
@@ -281,7 +281,7 @@ namespace SpyroScope {
 		}
 
 		/// Sets the color of the mesh's vertex color with the index the game uses
-		public void SetNearColor(uint8 index, Renderer.Color color, bool updateMesh = true, bool updateGame = false) {
+		public void SetNearColor(uint8 index, Color color, bool updateMesh = true, bool updateGame = false) {
 			nearColors[index] = color;
 
 			if (updateGame) {
@@ -363,11 +363,11 @@ namespace SpyroScope {
 			var dataStart = address + 0x1c;
 
 			List<Vector3> vertexList = scope .();
-			List<Renderer.Color> colorList = scope .();
+			List<Color> colorList = scope .();
 
 			// Used for swapping around values
 			Vector3[4] triangleVertices = ?;
-			Renderer.Color[4] triangleColors = ?;
+			Color[4] triangleColors = ?;
 
 			uint8[4] triangleIndices, colorIndices;
 
@@ -378,7 +378,7 @@ namespace SpyroScope {
 			dataStart += packedVertices.Count * 4;
 
 			// Colors
-			Renderer.Color4[] vertexColors = scope .[FarLOD.colorCount];
+			Color4[] vertexColors = scope .[FarLOD.colorCount];
 			Emulator.active.ReadFromRAM(dataStart, vertexColors.CArray(), vertexColors.Count * 4);
 			
 			dataStart += vertexColors.Count * 4;
@@ -457,7 +457,7 @@ namespace SpyroScope {
 
 			Vector3[] v = new .[vertexList.Count];
 			Vector3[] n = new .[vertexList.Count];
-			Renderer.Color4[] c = new .[vertexList.Count];
+			Color4[] c = new .[vertexList.Count];
 			Vector2[] u = new .[vertexList.Count];
 
 			for (let i < vertexList.Count) {
@@ -467,7 +467,7 @@ namespace SpyroScope {
 				u[i] = .Zero;
 			}
 
-			farMesh = new .(v, u, n, c);
+			farMesh = new .(v, u, n, c) .. MakeInstanced(1);
 		}
 
 		void GenerateNearMesh() {
@@ -702,7 +702,7 @@ namespace SpyroScope {
 
 			Vector3[] v = new .[vertexList.Count];
 			Vector3[] n = new .[vertexList.Count];
-			Renderer.Color4[] c = new .[vertexList.Count];
+			Color4[] c = new .[vertexList.Count];
 			Vector2[] u = new .[vertexList.Count];
 
 			for (let i < vertexList.Count) {
@@ -710,7 +710,7 @@ namespace SpyroScope {
 				n[i] = .(0,0,1);
 			}
 
-			nearMesh = new .(v, u, n, c, indx);
+			nearMesh = new .(v, u, n, c, indx) .. MakeInstanced(1);
 
 			indx = new .[indexSubList.Count];
 
@@ -728,7 +728,7 @@ namespace SpyroScope {
 				n[i] = .(0,0,1);
 			}
 			
-			nearMeshSubdivided = new .(v, u, n, c, indx);
+			nearMeshSubdivided = new .(v, u, n, c, indx) .. MakeInstanced(1);
 			
 			indx = new .[indexTransparentList.Count];
 
@@ -746,7 +746,7 @@ namespace SpyroScope {
 				n[i] = .(0,0,1);
 			}
 
-			nearMeshTransparent = new .(v, u, n, c, indx);
+			nearMeshTransparent = new .(v, u, n, c, indx) .. MakeInstanced(1);
 
 			indx = new .[indexTransparentSubList.Count];
 
@@ -764,7 +764,7 @@ namespace SpyroScope {
 				n[i] = .(0,0,1);
 			}
 
-			nearMeshTransparentSubdivided = new .(v, u, n, c, indx);
+			nearMeshTransparentSubdivided = new .(v, u, n, c, indx) .. MakeInstanced(1);
 		}
 
 		// Derived from Spyro: Ripto's Rage
@@ -1068,16 +1068,16 @@ namespace SpyroScope {
 				triangleIndex--;
 			}
 			
-			Renderer.Color4* colors = &mesh.colors[triangleIndex * 3];
+			Color4* colors = &mesh.colors[triangleIndex * 3];
 
 			var regionFace = GetNearFace(faceIndices[triangleIndex]);
 			if (regionFace.isTriangle) {
-				Renderer.Color[5] midcolors = ?;
-				midcolors[0] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f); // Top
-				midcolors[1] = Renderer.Color.Lerp(colors[1], colors[2], 0.5f); // Diagonal
-				midcolors[2] = Renderer.Color.Lerp(colors[2], colors[0], 0.5f); // Left
+				Color[5] midcolors = ?;
+				midcolors[0] = Color.Lerp(colors[0], colors[1], 0.5f); // Top
+				midcolors[1] = Color.Lerp(colors[1], colors[2], 0.5f); // Diagonal
+				midcolors[2] = Color.Lerp(colors[2], colors[0], 0.5f); // Left
 
-				Renderer.Color[4][3] subQuadColors = .(
+				Color[4][3] subQuadColors = .(
 					(midcolors[2], midcolors[0], colors[0]),
 					(midcolors[1], colors[1], midcolors[0]),
 					(colors[2], midcolors[1], midcolors[2]),
@@ -1100,14 +1100,14 @@ namespace SpyroScope {
 				colors[11] = subQuadColors[3][0];
 			} else {
 				// High quality textures
-				Renderer.Color[5] midcolors = ?;
-				midcolors[0] = Renderer.Color.Lerp(colors[3], colors[4], 0.5f); // Top
-				midcolors[1] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f); // Bottom
-				midcolors[2] = Renderer.Color.Lerp(colors[3], colors[5], 0.5f); // Left
-				midcolors[3] = Renderer.Color.Lerp(colors[0], colors[2], 0.5f); // Right
-				midcolors[4] = Renderer.Color.Lerp(colors[1], colors[4], 0.5f);
+				Color[5] midcolors = ?;
+				midcolors[0] = Color.Lerp(colors[3], colors[4], 0.5f); // Top
+				midcolors[1] = Color.Lerp(colors[0], colors[1], 0.5f); // Bottom
+				midcolors[2] = Color.Lerp(colors[3], colors[5], 0.5f); // Left
+				midcolors[3] = Color.Lerp(colors[0], colors[2], 0.5f); // Right
+				midcolors[4] = Color.Lerp(colors[1], colors[4], 0.5f);
 
-				Renderer.Color[4][4] subQuadColors = .(
+				Color[4][4] subQuadColors = .(
 					.(midcolors[2], midcolors[4], midcolors[0], colors[3]),
 					.(midcolors[4], midcolors[3], colors[2], midcolors[0]),
 					.(colors[5], midcolors[1], midcolors[4], midcolors[2]),
@@ -1148,16 +1148,16 @@ namespace SpyroScope {
 			}
 
 			for (var triangleIndex < faceIndices.Count) {
-				Renderer.Color4* colors = &mesh.colors[triangleIndex * 3];
+				Color4* colors = &mesh.colors[triangleIndex * 3];
 
 				var regionFace = GetNearFace(faceIndices[triangleIndex]);
 				if (regionFace.isTriangle) {
-					Renderer.Color[5] midcolors = ?;
-					midcolors[0] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f); // Top
-					midcolors[1] = Renderer.Color.Lerp(colors[1], colors[2], 0.5f); // Diagonal
-					midcolors[2] = Renderer.Color.Lerp(colors[2], colors[0], 0.5f); // Left
+					Color[5] midcolors = ?;
+					midcolors[0] = Color.Lerp(colors[0], colors[1], 0.5f); // Top
+					midcolors[1] = Color.Lerp(colors[1], colors[2], 0.5f); // Diagonal
+					midcolors[2] = Color.Lerp(colors[2], colors[0], 0.5f); // Left
 	
-					Renderer.Color[4][3] subQuadColors = .(
+					Color[4][3] subQuadColors = .(
 						(midcolors[2], midcolors[0], colors[0]),
 						(midcolors[1], colors[1], midcolors[0]),
 						(colors[2], midcolors[1], midcolors[2]),
@@ -1180,14 +1180,14 @@ namespace SpyroScope {
 					colors[11] = subQuadColors[3][0];
 				} else {
 					// High quality textures
-					Renderer.Color[5] midcolors = ?;
-					midcolors[0] = Renderer.Color.Lerp(colors[3], colors[4], 0.5f); // Top
-					midcolors[1] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f); // Bottom
-					midcolors[2] = Renderer.Color.Lerp(colors[3], colors[5], 0.5f); // Left
-					midcolors[3] = Renderer.Color.Lerp(colors[0], colors[2], 0.5f); // Right
-					midcolors[4] = Renderer.Color.Lerp(colors[1], colors[4], 0.5f);
+					Color[5] midcolors = ?;
+					midcolors[0] = Color.Lerp(colors[3], colors[4], 0.5f); // Top
+					midcolors[1] = Color.Lerp(colors[0], colors[1], 0.5f); // Bottom
+					midcolors[2] = Color.Lerp(colors[3], colors[5], 0.5f); // Left
+					midcolors[3] = Color.Lerp(colors[0], colors[2], 0.5f); // Right
+					midcolors[4] = Color.Lerp(colors[1], colors[4], 0.5f);
 	
-					Renderer.Color[4][4] subQuadColors = .(
+					Color[4][4] subQuadColors = .(
 						.(midcolors[2], midcolors[4], midcolors[0], colors[3]),
 						.(midcolors[4], midcolors[3], colors[2], midcolors[0]),
 						.(colors[5], midcolors[1], midcolors[4], midcolors[2]),
@@ -1276,33 +1276,8 @@ namespace SpyroScope {
 			meshSet[1].Update();
 		}
 
-		public void DrawFar() {
-			Renderer.SetModel(Offset, .Scale(Scale));
-			farMesh.Draw();
-		}
-		
-		public void DrawNear() {
-			Renderer.SetModel(Offset, .Scale(Scale));
-			nearMesh.Draw();
-		}
-
-		public void DrawNearTransparent() {
-			Renderer.SetModel(Offset, .Scale(Scale));
-			nearMeshTransparent.Draw();
-		}
-
-		public void DrawNearSubdivided() {
-			Renderer.SetModel(Offset, .Scale(Scale));
-			nearMeshSubdivided.Draw();
-		}
-
-		public void DrawNearTransparentSubdivided() {
-			Renderer.SetModel(Offset, .Scale(Scale));
-			nearMeshTransparentSubdivided.Draw();
-		}
-
 		public void ClearNearColor() {
-			const Renderer.Color4 clearColor = .(128,128,128);
+			const Color4 clearColor = .(128,128,128);
 			for (let i < nearFaces.Count) {
 				for (var color in ref nearMesh.colors) {
 					color = clearColor;
@@ -1358,16 +1333,16 @@ namespace SpyroScope {
 				if (regionFace.isTriangle) {
 					var colors = activeMesh.colors.CArray() + *activeIndex;
 
-					colors[0] = (Renderer.Color)nearColorHalf[colorIndices[3]];
-					colors[1] = (Renderer.Color)nearColorHalf[colorIndices[2]];
-					colors[2] = (Renderer.Color)nearColorHalf[colorIndices[1]];
+					colors[0] = (Color)nearColorHalf[colorIndices[3]];
+					colors[1] = (Color)nearColorHalf[colorIndices[2]];
+					colors[2] = (Color)nearColorHalf[colorIndices[1]];
 
-					Renderer.Color[5] midcolors = ?;
-					midcolors[0] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f);
-					midcolors[1] = Renderer.Color.Lerp(colors[1], colors[2], 0.5f);
-					midcolors[2] = Renderer.Color.Lerp(colors[2], colors[0], 0.5f);
+					Color[5] midcolors = ?;
+					midcolors[0] = Color.Lerp(colors[0], colors[1], 0.5f);
+					midcolors[1] = Color.Lerp(colors[1], colors[2], 0.5f);
+					midcolors[2] = Color.Lerp(colors[2], colors[0], 0.5f);
 
-					Renderer.Color[4][3] subQuadColors = .(
+					Color[4][3] subQuadColors = .(
 						(midcolors[2], midcolors[0], colors[0]),
 						(midcolors[1], colors[1], midcolors[0]),
 						(colors[2], midcolors[1], midcolors[2]),
@@ -1397,19 +1372,19 @@ namespace SpyroScope {
 					const int8[2] oppositeIndex = .(1,3);
 					for (let qti < 2) {
 						let offset = qti * 3;
-						colors[0 + offset] = (Renderer.Color)nearColorHalf[colorIndices[oppositeIndex[qti]]];
-						colors[1 + offset] = (Renderer.Color)nearColorHalf[colorIndices[swap[qti][0]]];
-						colors[2 + offset] = (Renderer.Color)nearColorHalf[colorIndices[swap[qti][1]]];
+						colors[0 + offset] = (Color)nearColorHalf[colorIndices[oppositeIndex[qti]]];
+						colors[1 + offset] = (Color)nearColorHalf[colorIndices[swap[qti][0]]];
+						colors[2 + offset] = (Color)nearColorHalf[colorIndices[swap[qti][1]]];
 					}
 
-					Renderer.Color[5] midcolors = ?;
-					midcolors[0] = Renderer.Color.Lerp(colors[3], colors[4], 0.5f);
-					midcolors[1] = Renderer.Color.Lerp(colors[0], colors[1], 0.5f);
-					midcolors[2] = Renderer.Color.Lerp(colors[3], colors[5], 0.5f);
-					midcolors[3] = Renderer.Color.Lerp(colors[0], colors[2], 0.5f);
-					midcolors[4] = Renderer.Color.Lerp(colors[1], colors[4], 0.5f);
+					Color[5] midcolors = ?;
+					midcolors[0] = Color.Lerp(colors[3], colors[4], 0.5f);
+					midcolors[1] = Color.Lerp(colors[0], colors[1], 0.5f);
+					midcolors[2] = Color.Lerp(colors[3], colors[5], 0.5f);
+					midcolors[3] = Color.Lerp(colors[0], colors[2], 0.5f);
+					midcolors[4] = Color.Lerp(colors[1], colors[4], 0.5f);
 
-					Renderer.Color[4][4] subQuadColors = .(
+					Color[4][4] subQuadColors = .(
 						.(midcolors[2], midcolors[4], midcolors[0], colors[3]),
 						.(midcolors[4], midcolors[3], colors[2], midcolors[0]),
 						.(colors[5], midcolors[1], midcolors[4], midcolors[2]),

@@ -12,7 +12,7 @@ namespace SpyroScope {
 			texture = new .(font);
 		}
 
-		public float Print(StringView text, float width, float height, Vector2 position, Renderer.Color4 color) {
+		public float Print(StringView text, float width, float height, Vector2 position, Color4 color) {
 			for (let i < text.Length) {
 				if (text[i] == ' ') {
 					continue;
@@ -33,7 +33,7 @@ namespace SpyroScope {
 			return position.x + width * text.Length;
 		}
 
-		public override float Print(StringView text, Vector2 position, Renderer.Color4 color) {
+		public override float Print(StringView text, Vector2 position, Color4 color) {
 			return Print(text, characterWidth, height, position, color);
 		}
 	}

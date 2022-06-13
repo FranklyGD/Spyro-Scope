@@ -14,7 +14,7 @@ namespace SpyroScope {
 		public override void Draw() {
 			base.Draw();
 
-			Renderer.Color color;
+			Color color;
 			Texture texture;
 
 			switch (state) {

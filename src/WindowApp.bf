@@ -36,6 +36,7 @@ namespace SpyroScope {
 			window = SDL.CreateWindow("Scope", .Undefined, .Undefined, (.)width, (.)height,
 				.Shown | .Resizable | .InputFocus | .Utility | .OpenGL);
 			Renderer.Init(window);
+
 			bitmapFont = new .("images/ui/font.png", 12, 20);
 			font = new .("fonts/Roboto-Regular.ttf", 20);
 			fontSmall = new .("fonts/Roboto-Regular.ttf", 14);
@@ -98,17 +99,14 @@ namespace SpyroScope {
 				lastState = state;
 				return;
 			}
-
-			GL.glBindTexture(GL.GL_TEXTURE_2D, Renderer.whiteTexture.textureObjectID);
-			Renderer.SetView(Camera.position, Camera.basis);
-			Renderer.SetProjection(WindowApp.viewerProjection);
-			GL.glEnable(GL.GL_DEPTH_TEST);
+			
 			state.DrawView();
 
 			Renderer.SetView(.Zero, .Identity);
 			Renderer.SetProjection(WindowApp.uiProjection);
 			GL.glDisable(GL.GL_DEPTH_TEST);
 			state.DrawGUI();
+
 
 			int32 majorVersion = ?;
 			int32 minorVersion = ?;
@@ -159,10 +157,12 @@ namespace SpyroScope {
 		void Resize(int width, int height) {
 			WindowApp.width = width;
 			WindowApp.height = height;
-			GL.glViewport(0, 0, width, height);
 
 			viewerProjection = Camera.projection;
 			uiProjection = .Screen(width, height);
+			
+			GL.glViewport(0, 0, width, height);
+			Frame.ResizeAllToWindow();
 		}
 
 		public void OnEvent(SDL.Event event) {

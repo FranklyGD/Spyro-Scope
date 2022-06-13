@@ -12,59 +12,24 @@ namespace SpyroScope {
 		static bool useSync;
 		static bool enableDebug;
 
-		public struct Color {
-			public uint8 r,g,b;
-			public this(uint8 r, uint8 g, uint8 b) {
-				this.r = r;
-				this.g = g;
-				this.b = b;
-			}
-
-			public static implicit operator Color(Color4 color) {
-				return .(color.r, color.g, color.b);
-			}
-
-			public static Color Lerp(Color bg, Color fg, float alpha) {
-				return .((.)Math.Lerp(bg.r, fg.r, alpha), (.)Math.Lerp(bg.g, fg.g, alpha), (.)Math.Lerp(bg.b, fg.b, alpha));
-			}
-		}
-
-		public struct Color4 {
-			public uint8 r,g,b,a;
-			public this(uint8 r, uint8 g, uint8 b, uint8 a) {
-				this.r = r;
-				this.g = g;
-				this.b = b;
-				this.a = a;
-			}
-
-			public this(uint8 r, uint8 g, uint8 b) {
-				this.r = r;
-				this.g = g;
-				this.b = b;
-				this.a = 255;
-			}
-
-			public static implicit operator Color4(Color color) {
-				return .(color.r, color.g, color.b, 255);
-			}
-		}
-
-		const uint maxGenericBufferLength = 0x6000;
+		const int maxPointBufferLength = 0x6000;
 		static uint32 vertexArrayObject;
-		static uint32[6] bufferID = .(?);
-		static Vector3[maxGenericBufferLength] positions;
-		static Vector3[maxGenericBufferLength] normals;
-		static Color4[maxGenericBufferLength] colors;
-		static Vector2[maxGenericBufferLength] uvs;
-		static DrawQueue[maxGenericBufferLength] drawQueue;
-		static DrawQueue* startDrawQueue, lastDrawQueue;
-		
-		static uint32 vertexCount, vertexOffset;
+		static uint32 pointBufferID, instanceBufferID;
 
-		static uint vertexShader;
-		static uint fragmentShader;
-		static uint program;
+		[Ordered]
+		struct Point {
+			public Vector3 position;
+			public Vector3 normal;
+			public Color4 color;
+			public Vector2 uv;
+		}
+
+		static List<Point> points = new .() ~ delete _;
+		static List<DrawQueue> drawQueue = new .() ~ delete _;
+		static DrawQueue* lastDrawQueue;
+
+		public static ShaderProgram defaultProgram;
+		public static ShaderProgram compareProgram;
 
 		public static Color4 clearColor = .(0,0,0);
 
@@ -107,10 +72,14 @@ namespace SpyroScope {
 			}
 		}
 
+		public static OpaquePass opaquePass = new .() ~ delete _;
+		public static TransparentPass tranparentPass = new .() ~ delete _;
+		public static RetroDiffusePass retroDiffusePass = new .() ~ delete _;
+		public static RetroSpecularPass retroSpecularPass = new .() ~ delete _;
+		public static RetroTransparentPass retroTranparentPass = new .() ~ delete _;
+
 		public static void Init(SDL.Window* window) {
-			drawQueue[0].type = 0;
-			drawQueue[0].count = 0;
-			startDrawQueue = lastDrawQueue = &drawQueue[0];
+			lastDrawQueue = drawQueue.Ptr;
 
 			// Initialize OpenGL
 			SDL.GL_SetAttribute(.GL_CONTEXT_FLAGS, (uint32)SDL.SDL_GLContextFlags.GL_CONTEXT_DEBUG_FLAG);
@@ -129,62 +98,75 @@ namespace SpyroScope {
 			Clear();
 			SDL.GL_SwapWindow(window);
 
+			Frame.Init();
+			Terrain.collisionFrame = new Frame();
+			Terrain.visualFrame = new Frame();
+
 			// Create Default Texture
 			var solidTextureData = Color(255,255,255);
 			whiteTexture = new .(1, 1, GL.GL_SRGB, GL.GL_RGB, &solidTextureData);
 			solidTextureData = Color(128,128,128);
 			halfWhiteTexture = new .(1, 1, GL.GL_SRGB, GL.GL_RGB, &solidTextureData);
 
-			// Compile shaders during run-time
-			vertexShader = CompileShader("shaders/vertex.glsl", GL.GL_VERTEX_SHADER);
-			fragmentShader = CompileShader("shaders/fragment.glsl", GL.GL_FRAGMENT_SHADER);
+			// Create and use the shader program
+			defaultProgram = new ShaderProgram("shaders/vertex.glsl", "shaders/fragment.glsl");
+			compareProgram = new ShaderProgram("shaders/framePassVertex.glsl", "shaders/frameMergeFrag.glsl");
 
-			// Link and use the shader program
-			program = LinkProgram(vertexShader, fragmentShader);
-			GL.glUseProgram(program);
+			compareProgram.Use();
+			GL.glUniform1i(compareProgram.GetUniform("color0"), 0);
+			GL.glUniform1i(compareProgram.GetUniform("color1"), 1);
+			GL.glUniform1i(compareProgram.GetUniform("depth0"), 2);
+			GL.glUniform1i(compareProgram.GetUniform("depth1"), 3);
+
+			defaultProgram.Use();
+
+			opaquePass.shader = defaultProgram;
+			tranparentPass.shader = defaultProgram;
+			retroDiffusePass.shader = defaultProgram;
+			retroSpecularPass.shader = defaultProgram;
+			retroTranparentPass.shader = defaultProgram;
 
 			// Create Buffers/Arrays
 
 			vertexArrayObject = 0;
 			GL.glGenVertexArrays(1, &vertexArrayObject);
 			GL.glBindVertexArray(vertexArrayObject);
-
 			
-			GL.glGenBuffers(6, (.)&bufferID);
-
+			GL.glGenBuffers(1, &pointBufferID);
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, pointBufferID);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, maxPointBufferLength * sizeof(Point), null, GL.GL_STATIC_DRAW);
+			
 			// Position Buffer
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[0]);
-			positionAttributeIndex = FindProgramAttribute(program, "vertexPosition");
-			GL.glVertexAttribPointer(positionAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
+			positionAttributeIndex = defaultProgram.GetAttribute("vertexPosition");
+			GL.glVertexAttribPointer(positionAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Point), (void*)0);
 			GL.glEnableVertexAttribArray(positionAttributeIndex);
 
 			// Normals Buffer
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[1]);
-			normalAttributeIndex = FindProgramAttribute(program, "vertexNormal");
-			GL.glVertexAttribPointer(normalAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
+			normalAttributeIndex = defaultProgram.GetAttribute("vertexNormal");
+			GL.glVertexAttribPointer(normalAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Point), (void*)12);
 			GL.glEnableVertexAttribArray(normalAttributeIndex);
 
 			// Color Buffer
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[2]);
-			colorAttributeIndex = FindProgramAttribute(program, "vertexColor");
-			GL.glVertexAttribIPointer(colorAttributeIndex, 4, GL.GL_UNSIGNED_BYTE, 0, null);
+			colorAttributeIndex = defaultProgram.GetAttribute("vertexColor");
+			GL.glVertexAttribIPointer(colorAttributeIndex, 4, GL.GL_UNSIGNED_BYTE, sizeof(Point), (void*)(12+12));
 			GL.glEnableVertexAttribArray(colorAttributeIndex);
 
 			// UV Buffer
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[3]);
-			uvAttributeIndex = FindProgramAttribute(program, "vertexTextureMapping");
-			GL.glVertexAttribPointer(uvAttributeIndex, 2, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
+			uvAttributeIndex = defaultProgram.GetAttribute("vertexTextureMapping");
+			GL.glVertexAttribPointer(uvAttributeIndex, 2, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Point), (void*)(12+12+4));
 			GL.glEnableVertexAttribArray(uvAttributeIndex);
-
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[4]);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, sizeof(Matrix4), &model, GL.GL_STATIC_DRAW);
 			
-			instanceMatrixAttributeIndex = FindProgramAttribute(program, "instanceModel");
+			GL.glGenBuffers(1, &instanceBufferID);
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, instanceBufferID);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, sizeof(Matrix4) + sizeof(Vector3), null, GL.GL_STATIC_DRAW);
+			
+			// Model Instance Attribute
+			instanceMatrixAttributeIndex = defaultProgram.GetAttribute("instanceModel");
 
-			GL.glVertexAttribPointer(instanceMatrixAttributeIndex+0, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4), (void*)(4*0));
-			GL.glVertexAttribPointer(instanceMatrixAttributeIndex+1, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4), (void*)(4*4));
-			GL.glVertexAttribPointer(instanceMatrixAttributeIndex+2, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4), (void*)(4*8));
-			GL.glVertexAttribPointer(instanceMatrixAttributeIndex+3, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4), (void*)(4*12));
+			GL.glVertexAttribPointer(instanceMatrixAttributeIndex+0, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4) + sizeof(Vector3), (void*)(4*0));
+			GL.glVertexAttribPointer(instanceMatrixAttributeIndex+1, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4) + sizeof(Vector3), (void*)(4*4));
+			GL.glVertexAttribPointer(instanceMatrixAttributeIndex+2, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4) + sizeof(Vector3), (void*)(4*8));
+			GL.glVertexAttribPointer(instanceMatrixAttributeIndex+3, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4) + sizeof(Vector3), (void*)(4*12));
 
 			GL.glEnableVertexAttribArray(instanceMatrixAttributeIndex+0);
 			GL.glEnableVertexAttribArray(instanceMatrixAttributeIndex+1);
@@ -195,22 +177,23 @@ namespace SpyroScope {
 			GL.glVertexAttribDivisor(instanceMatrixAttributeIndex+1, 1);
 			GL.glVertexAttribDivisor(instanceMatrixAttributeIndex+2, 1);
 			GL.glVertexAttribDivisor(instanceMatrixAttributeIndex+3, 1);
+			
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, sizeof(Matrix4), &model);
 
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[5]);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, sizeof(Vector3), &tint, GL.GL_STATIC_DRAW);
-
-			instanceTintAttributeIndex = FindProgramAttribute(program, "instanceTint");
-			GL.glVertexAttribPointer(instanceTintAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, null);
+			// Tint Instance Attribute
+			instanceTintAttributeIndex = defaultProgram.GetAttribute("instanceTint");
+			GL.glVertexAttribPointer(instanceTintAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4) + sizeof(Vector3), (void*)(4*16));
 			GL.glEnableVertexAttribArray(instanceTintAttributeIndex);
 			GL.glVertexAttribDivisor(instanceTintAttributeIndex, 1);
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 4*4*4, sizeof(Vector3), &tint);
 
 			// Get Uniforms
-			uniformViewMatrixIndex = FindProgramUniform(program, "view");
-			uniformViewInvMatrixIndex = FindProgramUniform(program, "viewInv");
-			uniformProjectionMatrixIndex = FindProgramUniform(program, "projection");
-			uniformSpecularIndex = FindProgramUniform(program, "specularAmount");
-			uniformZdepthOffsetIndex = FindProgramUniform(program, "zdepthOffset");
-			uniformRetroShadingIndex = FindProgramUniform(program, "retroShading");
+			uniformViewMatrixIndex = defaultProgram.GetUniform("view");
+			uniformViewInvMatrixIndex = defaultProgram.GetUniform("viewInv");
+			uniformProjectionMatrixIndex = defaultProgram.GetUniform("projection");
+			uniformSpecularIndex = defaultProgram.GetUniform("specularAmount");
+			uniformZdepthOffsetIndex = defaultProgram.GetUniform("zdepthOffset");
+			uniformRetroShadingIndex = defaultProgram.GetUniform("retroShading");
 
 			Renderer.window = window;
 
@@ -230,114 +213,47 @@ namespace SpyroScope {
 
 		public static void Unload() {
 			GL.glDeleteVertexArrays(1, &vertexArrayObject);
-			GL.glDeleteBuffers(6, (.)&bufferID);
-			GL.glDeleteShader(vertexShader);
-			GL.glDeleteShader(fragmentShader);
-			GL.glDeleteProgram(program);
-		}
+			GL.glDeleteBuffers(1, &pointBufferID);
+			GL.glDeleteBuffers(1, &instanceBufferID);
 
-		static uint CompileShader(String sourcePath, uint shaderType) {
-			let shader = GL.glCreateShader(shaderType);
+			delete defaultProgram;
+			delete compareProgram;
 
-			String source = scope .();
-			System.IO.File.ReadAllText(sourcePath, source, true);
-			char8* sourceData = source.Ptr;
-
-			GL.glShaderSource(shader, 1, &sourceData, null);
-			GL.glCompileShader(shader);
-
-			int32 status = GL.GL_FALSE;
-			GL.glGetShaderiv(shader, GL.GL_COMPILE_STATUS, &status);
-			if (status == GL.GL_FALSE) {
-				int32 length = 0;
-				GL.glGetShaderiv(shader, GL.GL_INFO_LOG_LENGTH, &length);
-
-				String message = scope String();
-				let ptr = message.PrepareBuffer(length);
-				GL.glGetShaderInfoLog(shader, length, null, ptr);
-
-				Debug.Write(message);
-				Debug.FatalError("Shader compilation failed");
-			}
-
-			return shader;
-		}
-
-		static uint LinkProgram(uint vertex, uint fragment) {
-			let program = GL.glCreateProgram();
-
-			GL.glAttachShader(program, vertex);
-			GL.glAttachShader(program, fragment);
-
-			GL.glLinkProgram(program);
-
-			int32 status = GL.GL_FALSE;
-			GL.glGetProgramiv(program, GL.GL_LINK_STATUS, &status);
-			Debug.Assert(status == GL.GL_TRUE, "Program linking failed");
-
-			return program;
-		}
-
-		static uint FindProgramAttribute(uint program, String attribute) {
-			let index = GL.glGetAttribLocation(program, attribute.Ptr);
-
-			Debug.Assert(index >= 0, "Attribute not found");
-
-			return (uint)index;
-		}
-
-		static int FindProgramUniform(uint program, String attribute) {
-			let index = GL.glGetUniformLocation(program, attribute.Ptr);
-
-			Debug.Assert(index >= 0, "Uniform not found");
-
-			return index;
+			delete Terrain.collisionFrame;
+			delete Terrain.visualFrame;
 		}
 
 		public static void PushPoint(Vector3 position, Vector3 normal, Color4 color, Vector2 uv) {
-			if (vertexCount >= maxGenericBufferLength) {
-				return;
-			}
-
-			positions[vertexCount] = position;
-			normals[vertexCount] = normal;
-			colors[vertexCount] = color;
-			uvs[vertexCount] = uv;
-
-			vertexCount++;
+			points.Add(Point{
+				position = position,
+				normal = normal,
+				color = color,
+				uv = uv,
+			});
 		}
 
-		public static void DrawLine(Vector3 p0, Vector3 p1,
-			Color4 c0, Color4 c1) {
-			if (vertexCount + 2 > maxGenericBufferLength) {
-				Draw();
-				startDrawQueue = lastDrawQueue = &drawQueue[0];
-				vertexCount = vertexOffset = 0;
-			}
-				
+		public static void Line(Vector3 p0, Vector3 p1,
+			Color4 c0, Color4 c1) {	
 			let normal = Vector3(0,0,1);
 
 			PushPoint(p0, normal, c0, .Zero);
 			PushPoint(p1, normal, c1, .Zero);
 
-			if (lastDrawQueue.type == GL.GL_LINES) {
+			if (lastDrawQueue != null && lastDrawQueue.type == GL.GL_LINES) {
 				lastDrawQueue.count += 2;
 			} else {
-				lastDrawQueue++;
-				lastDrawQueue.type = GL.GL_LINES;
-				lastDrawQueue.count = 2;
-				lastDrawQueue.texture = (uint8)whiteTexture.textureObjectID;
+				drawQueue.Add(DrawQueue{
+					type = GL.GL_LINES,
+					count = 2,
+					texture = (.)whiteTexture.textureObjectID,
+				});
+				lastDrawQueue = &drawQueue[drawQueue.Count - 1];
 			}
 		}
 
-		public static void DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2,
+		public static void Triangle(Vector3 p0, Vector3 p1, Vector3 p2,
 			Color4 c0, Color4 c1, Color4 c2,
 			Vector2 uv0, Vector2 uv1, Vector2 uv2, uint textureObject) {
-			if (vertexCount + 3 > maxGenericBufferLength) {
-				Draw();
-				startDrawQueue = lastDrawQueue = &drawQueue[0];
-				vertexCount = vertexOffset = 0;
-			}
 
 			let normal = Vector3.Cross(p1 - p0, p2 - p0);
 
@@ -345,19 +261,21 @@ namespace SpyroScope {
 			PushPoint(p1, normal, c1, uv1);
 			PushPoint(p2, normal, c2, uv2);
 
-			if (lastDrawQueue.type == GL.GL_TRIANGLES && lastDrawQueue.texture == textureObject) {
+			if (lastDrawQueue != null && lastDrawQueue.type == GL.GL_TRIANGLES && lastDrawQueue.texture == textureObject) {
 				lastDrawQueue.count += 3;
 			} else {
-				lastDrawQueue++;
-				lastDrawQueue.type = GL.GL_TRIANGLES;
-				lastDrawQueue.count = 3;
-				lastDrawQueue.texture = (.)textureObject;
+				drawQueue.Add(DrawQueue{
+					type = GL.GL_TRIANGLES,
+					count = 3,
+					texture = (.)textureObject,
+				});
+				lastDrawQueue = &drawQueue[drawQueue.Count - 1];
 			}
 		}
 
-		public static void DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2,
+		public static void Triangle(Vector3 p0, Vector3 p1, Vector3 p2,
 			Color4 c0, Color4 c1, Color4 c2) {
-			DrawTriangle(p0, p1, p2, c0, c1, c2, .Zero, .Zero, .Zero, whiteTexture.textureObjectID);
+			Triangle(p0, p1, p2, c0, c1, c2, .Zero, .Zero, .Zero, whiteTexture.textureObjectID);
 		}
 
 		public static void SetModel(Vector3 position, Matrix3 basis) {
@@ -381,12 +299,7 @@ namespace SpyroScope {
 		}
 
 		public static void SetTint(Color tint) {
-			Renderer.tint = .((float)tint.r / 255, (float)tint.g / 255, (float)tint.b / 255);
-			//GL.glUniform3fv(uniformTintIndex, 1, &this.tint[0]);
-		}
-
-		public static void SetSpecular(float amount) {
-			GL.glUniform1f(uniformSpecularIndex, amount);
+			Renderer.tint = tint.ToVector();
 		}
 
 		public static void BeginWireframe() {
@@ -401,43 +314,50 @@ namespace SpyroScope {
 			GL.glLineWidth(1);
 		}
 
-		public static void BeginRetroShading() {
-			GL.glUniform1f(uniformRetroShadingIndex, 1);
-		}
-
-		public static void BeginDefaultShading() {
-			GL.glUniform1f(uniformRetroShadingIndex, 0);
-		}
-
 		public static void Draw() {
+			OpenGL.GL.glBlendFunc(OpenGL.GL.GL_SRC_ALPHA, OpenGL.GL.GL_ONE_MINUS_SRC_ALPHA);
+
 			GL.glBindVertexArray(vertexArrayObject);
 
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[0]);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector3), null, GL.GL_STATIC_DRAW);
-			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector3), &positions);
+			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, pointBufferID);
+			GL.glBufferData(GL.GL_ARRAY_BUFFER, maxPointBufferLength * sizeof(Point), null, GL.GL_STATIC_DRAW);
 
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[1]);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector3), null, GL.GL_STATIC_DRAW); 
-			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector3), &normals);
+			var pointCount = Math.Min(maxPointBufferLength, points.Count);
+			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, pointCount * sizeof(Point), points.Ptr);
 
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[2]);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Renderer.Color4), null, GL.GL_STATIC_DRAW);
-			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Renderer.Color4), &colors);
+			var dataStart = 0;
+			var dataOffset = 0;
+			for (let drawQueueItem in drawQueue) {
+				GL.glBindTexture(GL.GL_TEXTURE_2D, drawQueueItem.texture);
 
-			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferID[3]);
-			GL.glBufferData(GL.GL_ARRAY_BUFFER, vertexCount * sizeof(Vector2), &uvs[0], GL.GL_STATIC_DRAW); 
-			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vector2), &uvs);
+				int remainingCount = drawQueueItem.count;
+				while (remainingCount > maxPointBufferLength) {
+					let effectiveLength = maxPointBufferLength - (maxPointBufferLength % (drawQueueItem.type == GL.GL_LINES ? 2 : 3));
+					GL.glDrawArrays(drawQueueItem.type, 0, effectiveLength);
+					
+					dataOffset += effectiveLength;
 
-			startDrawQueue++;
-			while (startDrawQueue <= lastDrawQueue) {
-				GL.glBindTexture(GL.GL_TEXTURE_2D, startDrawQueue.texture);
-				GL.glDrawArrays(startDrawQueue.type, vertexOffset, startDrawQueue.count);
-				vertexOffset += startDrawQueue.count;
-				startDrawQueue++;
+					pointCount = Math.Min(effectiveLength, points.Count - dataOffset);
+					GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, pointCount * sizeof(Point), points.Ptr + dataOffset);
+					dataStart = dataOffset;
+
+					remainingCount -= effectiveLength;
+				}
+
+				if (drawQueueItem.count + dataOffset - dataStart > maxPointBufferLength) {
+					pointCount = Math.Min(maxPointBufferLength, points.Count - dataOffset);
+					GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, pointCount * sizeof(Point), points.Ptr + dataOffset);
+					dataStart = dataOffset;
+				}
+
+				GL.glDrawArrays(drawQueueItem.type, dataOffset - dataStart, drawQueueItem.count);
+
+				dataOffset += drawQueueItem.count;
 			}
-			
-			startDrawQueue.count = startDrawQueue.type = 0;
-			lastDrawQueue = startDrawQueue;
+
+			points.Clear();
+			drawQueue.Clear();
+			lastDrawQueue = null;
 		}
 
 		public static void Sync() {
@@ -462,8 +382,10 @@ namespace SpyroScope {
 		public static void Clear() {
 			GL.glClearColor((float)clearColor.r / 255, (float)clearColor.g / 255, (float)clearColor.b / 255, (float)clearColor.a / 255);
 			GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
-			startDrawQueue = lastDrawQueue = &drawQueue[0];
-			vertexCount = vertexOffset = 0;
+
+			points.Clear();
+			drawQueue.Clear();
+			lastDrawQueue = null;
 		}
 
 		public static void ClearDepth() {
@@ -487,10 +409,10 @@ namespace SpyroScope {
 			while (GL.glGetDebugMessageLog(1, 1024, &source, &mType, &id, &severity, &messageSize, &buffer[0]) > 0) {
 				if (severity == GL.GL_DEBUG_SEVERITY_HIGH) {
 					error = true;
+					
+					String string = scope .(buffer.Ptr);
+					Debug.WriteLine("OpenGL: {}", string);
 				}
-
-				String string = scope .(buffer, 0, 1024);
-				Debug.WriteLine("OpenGL: {}", string);
 			}
 
 			if (error) {

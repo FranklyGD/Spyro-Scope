@@ -74,7 +74,7 @@ namespace SpyroScope {
 					property.Offset = .(2, -2, 2, -2);
 
 					if (i < 3) {
-						const Renderer.Color[3] componentColors = .(.(255,192,192), .(192,255,192), .(192,192,255));
+						const Color[3] componentColors = .(.(255,192,192), .(192,255,192), .(192,192,255));
 						property.Color = componentColors[i];
 					}
 
@@ -224,7 +224,7 @@ namespace SpyroScope {
 				set => input.Enabled = !value;
 			}
 
-			public Renderer.Color4 Color {
+			public Color4 Color {
 				get => input.normalColor;
 				set => input.normalColor = value;
 			}

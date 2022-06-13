@@ -5,6 +5,6 @@ namespace SpyroScope {
 		public readonly int height;
 		public readonly Texture texture ~ delete _;
 
-		public abstract float Print(StringView text, Vector2 position, Renderer.Color4 color);
+		public abstract float Print(StringView text, Vector2 position, Color4 color);
 	}
 }

@@ -32,7 +32,7 @@ namespace SpyroScope {
 		uint8 m; // 81
 		uint8 n; // 82
 		uint8 o; // 83
-		public Renderer.Color4 color;
+		public Color4 color;
 
 		// Derived from Spyro: Ripto's Rage [8001d068]
 		public bool HasModel { [Inline] get => objectTypeID < 0x300; }
@@ -58,15 +58,20 @@ namespace SpyroScope {
 			DrawUtilities.Axis(position, basis * .Scale(200));
 
 			// Is object rendering in game?
+			Vector3 tint;
+			float scale;
+
 			if (draw) {
-				Renderer.SetModel(position, basis * .Scale(60,60,60));
-				Renderer.SetTint(.(255,0,255));
+				scale = 60;
+				tint = .(1,0,1);
 			} else {
-				Renderer.SetModel(position, basis * .Scale(50,50,50));
-				Renderer.SetTint(IsActive ? .(0,255,255) : .(32,32,32));
+				scale = 50;
+				tint = IsActive ? .(0,1,1) : .(0.125f,0.125f,0.125f);
 			}
 
-			PrimitiveShape.cube.QueueInstance();
+			Matrix4 matrix = .Transform(position, basis * .Scale(scale));
+
+			Renderer.opaquePass.AddJob(PrimitiveShape.cube) .. AddInstance(matrix, tint);
 		}
 
 		public void DrawData() {
@@ -118,7 +123,7 @@ namespace SpyroScope {
 						Emulator.active.mobyArrayPointer.Read(&objPointer);
 						Emulator.active.ReadFromRAM(objPointer + objectIndex * sizeof(Moby), &linkedMoby, sizeof(Moby));
 
-						Renderer.DrawLine(position, linkedMoby.position, .(255,255,255), .(255,255,255));
+						Renderer.Line(position, linkedMoby.position, .(255,255,255), .(255,255,255));
 					}
 					case 0x03ff: { // Whirlwind
 						WhirlwindData whirlwind = ?;
@@ -138,19 +143,17 @@ namespace SpyroScope {
 				return; // There shouldn't be this many waypoints
 			}
 			if (waypointCount > 0) {
+				let job = Renderer.opaquePass.AddJob(PrimitiveShape.cylinder);
+
 				uint8[] dataBytes = scope .[4 * 4 * waypointCount];
 				Emulator.active.ReadFromRAM(pathArrayPointer + 12, &dataBytes[0], 4 * 4 * waypointCount);
 				for (let i < waypointCount) {
 					let position = *(Vector3Int*)&dataBytes[4 * 4 * i];
 
-					Renderer.SetModel(position, .Scale(500,500,50));
-					Renderer.SetTint(.(255,128,0));
-					PrimitiveShape.cylinder.QueueInstance();
+					job.AddInstance(.Transform(position, .Scale(500,500,50)), Vector3(1,0.5f,0));
 					
 					if (i == 0) {
-						Renderer.SetModel(position, .Scale(400,400,100));
-						Renderer.SetTint(.(0,255,0));
-						PrimitiveShape.cylinder.QueueInstance();
+						job.AddInstance(.Transform(position, .Scale(400,400,100)), Vector3(0,1,0));
 					}
 
 					if (i < waypointCount - 1) {

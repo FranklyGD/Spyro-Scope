@@ -12,12 +12,6 @@ namespace SpyroScope {
 			GenerateCone(16);
 		}
 
-		public static void DrawInstances() {
-			cube.DrawInstances();
-			cylinder.DrawInstances();
-			cone.DrawInstances();
-		}
-
 		public static void GenerateCube() {
 			let vertices = new Vector3[24](
 				.(0.5f,0.5f,0.5f),
@@ -75,7 +69,7 @@ namespace SpyroScope {
 				.(0.0f,0.0f,-1.0f)
 			);
 
-			let colors = new Renderer.Color4[24];
+			let colors = new Color4[24];
 			for	(int i < 24) {
 				colors[i] = .(255,255,255);
 			}
@@ -90,6 +84,7 @@ namespace SpyroScope {
 			);
 
 			cube = new .(vertices, normals, colors, indices);
+			cube.MakeInstanced(128);
 		}
 
 		public static void GenerateCylinder(int subdivisions) {
@@ -114,7 +109,7 @@ namespace SpyroScope {
 				normals[i + subdivisions * 3] = .(0,0,-1);
 			}
 
-			let colors = new Renderer.Color4[subdivisions * 4];
+			let colors = new Color4[subdivisions * 4];
 			for	(int i < subdivisions * 4) {
 				colors[i] = .(255,255,255);
 			}
@@ -147,6 +142,7 @@ namespace SpyroScope {
 			}
 
 			cylinder = new .(vertices, normals, colors, indices);
+			cylinder.MakeInstanced(128);
 		}
 
 		public static void GenerateCone(int subdivisions) {
@@ -170,7 +166,7 @@ namespace SpyroScope {
 				normals[i + subdivisions * 2] = .(0,0,-1);
 			}
 
-			let colors = new Renderer.Color4[subdivisions * 3];
+			let colors = new Color4[subdivisions * 3];
 			for	(int i < subdivisions * 3) {
 				colors[i] = .(255,255,255);
 			}
@@ -198,6 +194,7 @@ namespace SpyroScope {
 			}
 
 			cone = new .(vertices, normals, colors, indices);
+			cone.MakeInstanced(128);
 		}
 	}
 }

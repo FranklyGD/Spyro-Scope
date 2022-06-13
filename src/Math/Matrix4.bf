@@ -43,6 +43,11 @@ namespace SpyroScope {
 				.(translation.x,translation.y,translation.z,1)
 			);
 		}
+
+		[Inline]
+		public static Self Transform(Vector3 position, Matrix3 basis) {
+			return Translation(position) * basis;
+		}
 		
 		[Inline]
 		public static Self Perspective(float FoV, float aspect, float near, float far) {

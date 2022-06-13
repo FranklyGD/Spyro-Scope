@@ -60,49 +60,51 @@ namespace SpyroScope {
 			var axisLength = scale * 0.125f;
 			var axisDiameter = scale * 0.01f;
 			if (axisVisibleIndex & 1 > 0) {
-				Renderer.Color xColor = (axisIndex & 1) > 0 ? .(255,128,128) : .(255,0,0);
+				Color xColor = (axisIndex & 1) > 0 ? .(255,128,128) : .(255,0,0);
 				DrawUtilities.Arrow(position, basis.x * (axisLength + anim.x * 0.01f * scale), axisDiameter, xColor);
 			}
 			if (axisVisibleIndex & 2 > 0) {
-				Renderer.Color yColor = (axisIndex & 2) > 0 ? .(128,255,128) : .(0,255,0);
+				Color yColor = (axisIndex & 2) > 0 ? .(128,255,128) : .(0,255,0);
 				DrawUtilities.Arrow(position, basis.y * (axisLength + anim.y * 0.01f * scale), axisDiameter, yColor);
 			}
 			if (axisVisibleIndex & 4 > 0) {
-				Renderer.Color zColor = (axisIndex & 4) > 0 ? .(128,128,255) : .(0,0,255);
+				Color zColor = (axisIndex & 4) > 0 ? .(128,128,255) : .(0,0,255);
 				DrawUtilities.Arrow(position, basis.z * (axisLength + anim.z * 0.01f * scale), axisDiameter, zColor);
 			}
 
 			axisLength /= 3;
 			axisDiameter *= 2f/3;
-			
+
+			let job = Renderer.opaquePass.AddJob(PrimitiveShape.cylinder, Renderer.whiteTexture);
+
 			if (axisVisibleIndex & 8 > 0) {
-				Renderer.SetTint((axisIndex & 6) == 6 ? .(255,128,128) : .(255,64,64));
-				Renderer.SetModel(position + (basis.y / 2 + basis.z) * axisLength, basis * .Euler(squareAngle, 0, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
-				PrimitiveShape.cylinder.QueueInstance();
-				Renderer.SetModel(position + (basis.z / 2 + basis.y) * axisLength, basis * .Scale(axisDiameter, axisDiameter, axisLength));
-				PrimitiveShape.cylinder.QueueInstance();
+				Vector3 tint = (axisIndex & 6) == 6 ? .(1,0.5f,0.5f) : .(1,0.25f,0.25f);
+				Matrix4 matrix = .Transform(position + (basis.y / 2 + basis.z) * axisLength, basis * .Euler(squareAngle, 0, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
+				job.AddInstance(matrix, tint);
+				matrix = .Transform(position + (basis.z / 2 + basis.y) * axisLength, basis * .Scale(axisDiameter, axisDiameter, axisLength));
+				job.AddInstance(matrix, tint);
 			}
 			
 			if (axisVisibleIndex & 16 > 0) {
-				Renderer.SetTint((axisIndex & 5) == 5 ? .(128,255,128) : .(64,255,64));
-				Renderer.SetModel(position + (basis.x / 2 + basis.z) * axisLength, basis * .Euler(0, squareAngle, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
-				PrimitiveShape.cylinder.QueueInstance();
-				Renderer.SetModel(position + (basis.z / 2 + basis.x) * axisLength, basis * .Scale(axisDiameter, axisDiameter, axisLength));
-				PrimitiveShape.cylinder.QueueInstance();
+				Vector3 tint = (axisIndex & 5) == 5 ? .(0.5f,1,0.5f) : .(0.25f,1,0.25f);
+				Matrix4 matrix = .Transform(position + (basis.x / 2 + basis.z) * axisLength, basis * .Euler(0, squareAngle, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
+				job.AddInstance(matrix, tint);
+				matrix = .Transform(position + (basis.z / 2 + basis.x) * axisLength, basis * .Scale(axisDiameter, axisDiameter, axisLength));
+				job.AddInstance(matrix, tint);
 			}
 				
 			if (axisVisibleIndex & 32 > 0) {
-				Renderer.SetTint((axisIndex & 3) == 3 ? .(128,128,255) : .(64,64,255));
-				Renderer.SetModel(position + (basis.x / 2 + basis.y) * axisLength, basis * .Euler(0, squareAngle, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
-				PrimitiveShape.cylinder.QueueInstance();
-				Renderer.SetModel(position + (basis.y / 2 + basis.x) * axisLength, basis * .Euler(squareAngle, 0, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
-				PrimitiveShape.cylinder.QueueInstance();
+				Vector3 tint = (axisIndex & 3) == 3 ? .(0.5f,0.5f,1) : .(0.25f,0.25f,1);
+				Matrix4 matrix = .Transform(position + (basis.x / 2 + basis.y) * axisLength, basis * .Euler(0, squareAngle, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
+				job.AddInstance(matrix, tint);
+				matrix = .Transform(position + (basis.y / 2 + basis.x) * axisLength, basis * .Euler(squareAngle, 0, 0) * .Scale(axisDiameter, axisDiameter, axisLength));
+				job.AddInstance(matrix, tint);
 			}
 
 			if (dragged) {
 				if (axisIndex == 1 || axisIndex == 2 || axisIndex == 4) {
 					Vector3 axis = ?;
-					Renderer.Color4 color = ?;
+					Color4 color = ?;
 					switch (axisIndex) {
 						case 1: axis = referenceBasis.x; color = .(255,0,0);
 						case 2: axis = referenceBasis.y; color = .(0,255,0);
@@ -114,16 +116,16 @@ namespace SpyroScope {
 					let normalDirection = Vector3.Cross(tickDirection, axis);
 
 					let viewDistance = Math.Max(Math.Abs(Vector3.Dot(normalDirection, Camera.position - referencePosition)), 1000);
-					Renderer.DrawLine(referencePosition + axis * viewDistance * 4, referencePosition + axis * -viewDistance * 4, color, color);
+					Renderer.Line(referencePosition + axis * viewDistance * 4, referencePosition + axis * -viewDistance * 4, color, color);
 
 					for (int i = -100; i <= 100; i++) {
 						let tickPosition = referencePosition + axis * i * 100;
 						let tickSize = (i % 10) == 0 ? 100 : 50;
-						Renderer.DrawLine(tickPosition + tickDirection * tickSize, tickPosition - tickDirection * tickSize, color, color);
+						Renderer.Line(tickPosition + tickDirection * tickSize, tickPosition - tickDirection * tickSize, color, color);
 					}
 				} else {
 					Matrix3 planeBasis = ?;
-					Renderer.Color4 color = ?;
+					Color4 color = ?;
 					switch (axisIndex) {
 						case 6: color = .(255,32,32); planeBasis = .(referenceBasis.y, referenceBasis.z, referenceBasis.x);
 						case 5: color = .(32,255,32); planeBasis = .(referenceBasis.z, referenceBasis.x, referenceBasis.y);

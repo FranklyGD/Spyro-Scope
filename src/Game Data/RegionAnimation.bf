@@ -128,7 +128,7 @@ namespace SpyroScope {
 
 				Vector3[] v = new .[gameVertexIndices.Count];
 				Vector3[] n = new .[gameVertexIndices.Count];
-				Renderer.Color4[] c = new .[gameVertexIndices.Count];
+				Color4[] c = new .[gameVertexIndices.Count];
 
 				for (let i < gameVertexIndices.Count) {
 					let nearIndex = gameVertexIndices[i];
