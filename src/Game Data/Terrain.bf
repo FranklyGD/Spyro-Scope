@@ -762,12 +762,18 @@ namespace SpyroScope {
 				Terrain.Draw(true);
 	
 				if (wireframe) {
+					Renderer.defaultProgram.Use();
+					Renderer.BeginWireframe();
+					Renderer.retroProgram.Use();
 					Renderer.BeginWireframe();
 	
 					Renderer.opaquePass.Render();
 					Renderer.retroDiffusePass.Render();
 					Renderer.retroTranparentPass.Render();
-	
+					
+					Renderer.defaultProgram.Use();
+					Renderer.BeginSolid();
+					Renderer.retroProgram.Use();
 					Renderer.BeginSolid();
 				}
 			}

@@ -6,7 +6,7 @@ namespace SpyroScope {
 	class ShaderProgram {
 		public static Self current;
 
-		uint program ~ GL.glDeleteProgram(_);
+		public uint program { get; private set; } ~ GL.glDeleteProgram(_);
 
 		public this(StringView sourceVertexShader, StringView sourceFragmentShader) {
 			let vertexShader = CompileShader(sourceVertexShader, GL.GL_VERTEX_SHADER);

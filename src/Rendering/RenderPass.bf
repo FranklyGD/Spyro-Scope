@@ -50,7 +50,6 @@ namespace SpyroScope {
 		protected override void PreRender() {
 			Renderer.SetView(Camera.position, Camera.basis);
 			Renderer.SetProjection(WindowApp.viewerProjection);
-			GL.glUniform1f(Renderer.uniformRetroShadingIndex, 0);
 			
 			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
 
@@ -63,7 +62,6 @@ namespace SpyroScope {
 		protected override void PreRender() {
 			Renderer.SetView(Camera.position, Camera.basis);
 			Renderer.SetProjection(WindowApp.viewerProjection);
-			GL.glUniform1f(Renderer.uniformRetroShadingIndex, 0);
 			
 			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
 			
@@ -76,7 +74,6 @@ namespace SpyroScope {
 		protected override void PreRender() {
 			Renderer.SetView(Camera.position, Camera.basis);
 			Renderer.SetProjection(WindowApp.viewerProjection);
-			GL.glUniform1f(Renderer.uniformRetroShadingIndex, 1);
 			
 			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
 
@@ -89,7 +86,6 @@ namespace SpyroScope {
 		protected override void PreRender() {
 			Renderer.SetView(Camera.position, Camera.basis);
 			Renderer.SetProjection(WindowApp.viewerProjection);
-			GL.glUniform1f(Renderer.uniformRetroShadingIndex, 1);
 			GL.glUniform1f(Renderer.uniformSpecularIndex, 1);
 			
 			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
@@ -107,7 +103,6 @@ namespace SpyroScope {
 		protected override void PreRender() {
 			Renderer.SetView(Camera.position, Camera.basis);
 			Renderer.SetProjection(WindowApp.viewerProjection);
-			GL.glUniform1f(Renderer.uniformRetroShadingIndex, 1);
 			
 			GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
 			

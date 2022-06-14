@@ -29,6 +29,7 @@ namespace SpyroScope {
 		static DrawQueue* lastDrawQueue;
 
 		public static ShaderProgram defaultProgram;
+		public static ShaderProgram retroProgram;
 		public static ShaderProgram compareProgram;
 
 		public static Color4 clearColor = .(0,0,0);
@@ -43,6 +44,7 @@ namespace SpyroScope {
 		public static uint instanceTintAttributeIndex;
 
 		// Shader Uniforms
+		public static uint32 cameraUBO;
 		public static Matrix4 model = .Identity;
 		public static int uniformViewMatrixIndex; // Camera Transform
 		public static int uniformViewInvMatrixIndex; // Camera Inverse Transform
@@ -54,7 +56,6 @@ namespace SpyroScope {
 		public static int uniformSpecularIndex;
 
 		public static Vector3 tint = .(1,1,1);
-		public static int uniformZdepthOffsetIndex; // Z-depth Offset (mainly for pushing the wireframe forward to avoid Z-fighting)
 		public static int uniformRetroShadingIndex; // Change shading from modern to emulated
 
 		public static Texture whiteTexture ~ delete _; // Used with solid colors
@@ -109,7 +110,9 @@ namespace SpyroScope {
 			halfWhiteTexture = new .(1, 1, GL.GL_SRGB, GL.GL_RGB, &solidTextureData);
 
 			// Create and use the shader program
-			defaultProgram = new ShaderProgram("shaders/vertex.glsl", "shaders/fragment.glsl");
+			defaultProgram = new ShaderProgram("shaders/defaultVert.glsl", "shaders/defaultFrag.glsl");
+			retroProgram = new ShaderProgram("shaders/retroVert.glsl", "shaders/retroFrag.glsl");
+
 			compareProgram = new ShaderProgram("shaders/framePassVertex.glsl", "shaders/frameMergeFrag.glsl");
 
 			compareProgram.Use();
@@ -118,15 +121,18 @@ namespace SpyroScope {
 			GL.glUniform1i(compareProgram.GetUniform("depth0"), 2);
 			GL.glUniform1i(compareProgram.GetUniform("depth1"), 3);
 
-			defaultProgram.Use();
-
 			opaquePass.shader = defaultProgram;
 			tranparentPass.shader = defaultProgram;
-			retroDiffusePass.shader = defaultProgram;
-			retroSpecularPass.shader = defaultProgram;
-			retroTranparentPass.shader = defaultProgram;
+			retroDiffusePass.shader = retroProgram;
+			retroSpecularPass.shader = retroProgram;
+			retroTranparentPass.shader = retroProgram;
 
 			// Create Buffers/Arrays
+			GL.glGenBuffers(1, &cameraUBO);
+			GL.glBindBuffer(GL.GL_UNIFORM_BUFFER, cameraUBO);
+			GL.glBufferData(GL.GL_UNIFORM_BUFFER, 192, null, GL.GL_STATIC_DRAW);
+			GL.glBindBufferBase(GL.GL_UNIFORM_BUFFER, 0, cameraUBO);
+			CheckForErrors();
 
 			vertexArrayObject = 0;
 			GL.glGenVertexArrays(1, &vertexArrayObject);
@@ -188,12 +194,16 @@ namespace SpyroScope {
 			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 4*4*4, sizeof(Vector3), &tint);
 
 			// Get Uniforms
-			uniformViewMatrixIndex = defaultProgram.GetUniform("view");
-			uniformViewInvMatrixIndex = defaultProgram.GetUniform("viewInv");
-			uniformProjectionMatrixIndex = defaultProgram.GetUniform("projection");
-			uniformSpecularIndex = defaultProgram.GetUniform("specularAmount");
-			uniformZdepthOffsetIndex = defaultProgram.GetUniform("zdepthOffset");
-			uniformRetroShadingIndex = defaultProgram.GetUniform("retroShading");
+			uniformSpecularIndex = retroProgram.GetUniform("specularAmount");
+
+			uint uboIndex;
+			defaultProgram.Use();
+			uboIndex = GL.glGetUniformBlockIndex(defaultProgram.program, "camera");
+			GL.glUniformBlockBinding(defaultProgram.program, uboIndex, 0);
+			
+			retroProgram.Use();
+			uboIndex = GL.glGetUniformBlockIndex(retroProgram.program, "camera");
+			GL.glUniformBlockBinding(retroProgram.program, uboIndex, 0);
 
 			Renderer.window = window;
 
@@ -212,11 +222,13 @@ namespace SpyroScope {
 		}
 
 		public static void Unload() {
+			GL.glDeleteBuffers(1, &cameraUBO);
 			GL.glDeleteVertexArrays(1, &vertexArrayObject);
 			GL.glDeleteBuffers(1, &pointBufferID);
 			GL.glDeleteBuffers(1, &instanceBufferID);
 
 			delete defaultProgram;
+			delete retroProgram;
 			delete compareProgram;
 
 			delete Terrain.collisionFrame;
@@ -287,15 +299,18 @@ namespace SpyroScope {
 			viewBasis = basis;
 			
 			view = basis * Matrix4.Translation(position);
-			GL.glUniformMatrix4fv(uniformViewMatrixIndex, 1, GL.GL_FALSE, (float*)&view);
-
 			var viewInv = basis.Transpose() * Matrix4.Translation(-position);
-			GL.glUniformMatrix4fv(uniformViewInvMatrixIndex, 1, GL.GL_FALSE, (float*)&viewInv);
+			
+			GL.glBindBuffer(GL.GL_UNIFORM_BUFFER, cameraUBO);
+			GL.glBufferSubData(GL.GL_UNIFORM_BUFFER, 0, sizeof(Matrix4), &view);
+			GL.glBufferSubData(GL.GL_UNIFORM_BUFFER, sizeof(Matrix4), sizeof(Matrix4), &viewInv);
 		}
 
 		public static void SetProjection(Matrix4 projection) {
 			Renderer.projection = projection;
-			GL.glUniformMatrix4fv(uniformProjectionMatrixIndex, 1, GL.GL_FALSE, (float*)&Renderer.projection);
+
+			GL.glBindBuffer(GL.GL_UNIFORM_BUFFER, cameraUBO);
+			GL.glBufferSubData(GL.GL_UNIFORM_BUFFER, 2 * sizeof(Matrix4), sizeof(Matrix4), &Renderer.projection);
 		}
 
 		public static void SetTint(Color tint) {
@@ -304,12 +319,14 @@ namespace SpyroScope {
 
 		public static void BeginWireframe() {
 			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE);
+			let uniformZdepthOffsetIndex = ShaderProgram.current.GetUniform("zdepthOffset");
 			GL.glUniform1f(uniformZdepthOffsetIndex, -0.2f); // Push the lines a little forward
 			GL.glLineWidth(2);
 		}
 
 		public static void BeginSolid() {
 			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL);
+			let uniformZdepthOffsetIndex = ShaderProgram.current.GetUniform("zdepthOffset");
 			GL.glUniform1f(uniformZdepthOffsetIndex, 0); // Reset depth offset
 			GL.glLineWidth(1);
 		}

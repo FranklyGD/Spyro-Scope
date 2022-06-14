@@ -22,7 +22,7 @@ namespace SpyroScope {
 
 		public static uint32 quadVertexArray, quadVertexBuffer;
 
-		static ShaderProgram program ~ delete _;
+		static ShaderProgram immediateProgram ~ delete _;
 
 		public static void Init() {
 			GL.glGenVertexArrays(1, &quadVertexArray);
@@ -32,13 +32,13 @@ namespace SpyroScope {
 			GL.glBindBuffer(GL.GL_ARRAY_BUFFER, quadVertexBuffer);
     		GL.glBufferData(GL.GL_ARRAY_BUFFER, 24*4, &deviceQuad, GL.GL_STATIC_DRAW);
 
-			program = new ShaderProgram("shaders/framePassVertex.glsl", "shaders/framePassFrag.glsl");
+			immediateProgram = new ShaderProgram("shaders/framePassVertex.glsl", "shaders/framePassFrag.glsl");
 
-			let positionAttribute = program.GetAttribute("position");
+			let positionAttribute = immediateProgram.GetAttribute("position");
 			GL.glEnableVertexAttribArray(positionAttribute);
 			GL.glVertexAttribPointer(positionAttribute, 2, GL.GL_FLOAT, GL.GL_FALSE, 4*4, (void*)0);
 
-			let textureCoordsAttribute = program.GetAttribute("textureCoords");
+			let textureCoordsAttribute = immediateProgram.GetAttribute("textureCoords");
 			GL.glEnableVertexAttribArray(textureCoordsAttribute);
     		GL.glVertexAttribPointer(textureCoordsAttribute, 2, GL.GL_FLOAT, GL.GL_FALSE, 4*4, (void*)(2*4));
 			
@@ -106,7 +106,7 @@ namespace SpyroScope {
 
 		public void Render() {
 			let previous = ShaderProgram.current;
-			program.Use();
+			immediateProgram.Use();
 
 			targetColorTexture.Bind();
 			RenderFullQuad();
