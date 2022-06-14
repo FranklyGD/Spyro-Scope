@@ -8,7 +8,6 @@ namespace SpyroScope {
 
 		uint32 frameObjectId, renderObjectId;
 		public Texture targetColorTexture { get; private set; }
-		public Texture targetDepthTexture { get; private set; }
 
 		public static float[24] deviceQuad = .(
 		    -1.0f, -1.0f,  0.0f, 0.0f,
@@ -57,10 +56,9 @@ namespace SpyroScope {
 
 		public ~this () {
 			GL.glDeleteFramebuffers(1, &frameObjectId);
-			//GL.glDeleteRenderbuffers(1, &renderObjectId);
+			GL.glDeleteRenderbuffers(1, &renderObjectId);
 
 			delete targetColorTexture;
-			delete targetDepthTexture;
 			frames.Remove(this);
 		}
 
@@ -76,20 +74,17 @@ namespace SpyroScope {
 
 		void Generate(int width, int height) {
 			delete targetColorTexture;
-			delete targetDepthTexture;
 
-			targetColorTexture = new .(width, height, GL.GL_RGB, GL.GL_RGB, null);
-			targetDepthTexture = new .(width, height, GL.GL_DEPTH_COMPONENT24, GL.GL_DEPTH_COMPONENT, GL.GL_UNSIGNED_INT, null);
+			targetColorTexture = new .(width, height, GL.GL_RGB16F, GL.GL_RGB, null);
 
 			GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, frameObjectId);
 			GL.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, targetColorTexture.textureObjectID, 0);
-			GL.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_DEPTH_ATTACHMENT, GL.GL_TEXTURE_2D, targetDepthTexture.textureObjectID, 0);
 
-			/*GL.glGenRenderbuffers(1, &renderObjectId);
+			GL.glGenRenderbuffers(1, &renderObjectId);
 			GL.glBindRenderbuffer(GL.GL_RENDERBUFFER, renderObjectId);
 			GL.glRenderbufferStorage(GL.GL_RENDERBUFFER, GL.GL_DEPTH24_STENCIL8, width, height);
 
-			GL.glFramebufferRenderbuffer(GL.GL_FRAMEBUFFER, GL.GL_DEPTH_STENCIL_ATTACHMENT, GL.GL_RENDERBUFFER, renderObjectId);*/
+			GL.glFramebufferRenderbuffer(GL.GL_FRAMEBUFFER, GL.GL_DEPTH_STENCIL_ATTACHMENT, GL.GL_RENDERBUFFER, renderObjectId);
 
 			GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
 		}

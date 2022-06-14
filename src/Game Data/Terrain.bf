@@ -705,7 +705,12 @@ namespace SpyroScope {
 		public static void Render() {
 			if (renderMode == .Compare) {
 				collisionFrame.Bind();
+				GL.glClearColor(Camera.far, Camera.far, Camera.far, 1);
 				Renderer.Clear();
+				
+				Renderer.opaquePass.shader = Renderer.depthProgram;
+				Renderer.retroDiffusePass.shader = Renderer.depthProgram;
+				Renderer.retroTranparentPass.shader = Renderer.depthProgram;
 
 				if (collision != null) {
 					collision.Draw(.(1,1,1));
@@ -718,11 +723,14 @@ namespace SpyroScope {
 				if (regions != null) {
 					DrawNearLQ(.(1,1,1));
 					Renderer.retroDiffusePass.Render();
-					Renderer.retroTranparentPass.Render();
+					Renderer.retroTranparentPass.Render(true, false);
 				}
+				
+				Renderer.opaquePass.shader = Renderer.defaultProgram;
+				Renderer.retroDiffusePass.shader = Renderer.retroProgram;
+				Renderer.retroTranparentPass.shader = Renderer.retroProgram;
 
 				Frame.BindMainFrame();
-				Renderer.Clear();
 
 				if (regions != null) {
 					if (solid) {
@@ -744,8 +752,6 @@ namespace SpyroScope {
 
 				collisionFrame.targetColorTexture.Bind(0);
 				visualFrame.targetColorTexture.Bind(1);
-				collisionFrame.targetDepthTexture.Bind(2);
-				visualFrame.targetDepthTexture.Bind(3);
 				
 				GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
 				Frame.RenderFullQuad();

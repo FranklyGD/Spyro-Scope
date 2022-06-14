@@ -25,8 +25,8 @@ namespace SpyroScope {
 		protected virtual void PreRender() {};
 		protected virtual void PostRender() {};
 
-		public void Render(bool clear = true) {
-			PreRender();
+		public void Render(bool clear = true, bool prepare = true) {
+			if (prepare) PreRender();
 
 			shader.Use();
 
@@ -38,7 +38,7 @@ namespace SpyroScope {
 				Clear();
 			}
 
-			PostRender();
+			if (prepare) PostRender();
 		}
 
 		public void Clear() {

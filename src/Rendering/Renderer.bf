@@ -30,9 +30,19 @@ namespace SpyroScope {
 
 		public static ShaderProgram defaultProgram;
 		public static ShaderProgram retroProgram;
+		public static ShaderProgram depthProgram;
 		public static ShaderProgram compareProgram;
 
-		public static Color4 clearColor = .(0,0,0);
+		static Color4 _clearColor = .(0,0,0);
+		public static Color4 clearColor {
+			get {
+				return _clearColor;
+			}
+			set {
+				_clearColor = value;
+				GL.glClearColor((float)_clearColor.r / 255, (float)_clearColor.g / 255, (float)_clearColor.b / 255, (float)_clearColor.a / 255);
+			}
+		};
 
 		// Shader Inputs
 		public static uint positionAttributeIndex;
@@ -112,14 +122,13 @@ namespace SpyroScope {
 			// Create and use the shader program
 			defaultProgram = new ShaderProgram("shaders/defaultVert.glsl", "shaders/defaultFrag.glsl");
 			retroProgram = new ShaderProgram("shaders/retroVert.glsl", "shaders/retroFrag.glsl");
+			depthProgram = new ShaderProgram("shaders/defaultVert.glsl", "shaders/depthFrag.glsl");
 
 			compareProgram = new ShaderProgram("shaders/framePassVertex.glsl", "shaders/frameMergeFrag.glsl");
 
 			compareProgram.Use();
-			GL.glUniform1i(compareProgram.GetUniform("color0"), 0);
-			GL.glUniform1i(compareProgram.GetUniform("color1"), 1);
-			GL.glUniform1i(compareProgram.GetUniform("depth0"), 2);
-			GL.glUniform1i(compareProgram.GetUniform("depth1"), 3);
+			GL.glUniform1i(compareProgram.GetUniform("depth0"), 0);
+			GL.glUniform1i(compareProgram.GetUniform("depth1"), 1);
 
 			opaquePass.shader = defaultProgram;
 			tranparentPass.shader = defaultProgram;
@@ -197,13 +206,14 @@ namespace SpyroScope {
 			uniformSpecularIndex = retroProgram.GetUniform("specularAmount");
 
 			uint uboIndex;
-			defaultProgram.Use();
 			uboIndex = GL.glGetUniformBlockIndex(defaultProgram.program, "camera");
 			GL.glUniformBlockBinding(defaultProgram.program, uboIndex, 0);
 			
-			retroProgram.Use();
 			uboIndex = GL.glGetUniformBlockIndex(retroProgram.program, "camera");
 			GL.glUniformBlockBinding(retroProgram.program, uboIndex, 0);
+
+			uboIndex = GL.glGetUniformBlockIndex(depthProgram.program, "camera");
+			GL.glUniformBlockBinding(depthProgram.program, uboIndex, 0);
 
 			Renderer.window = window;
 
@@ -229,6 +239,7 @@ namespace SpyroScope {
 
 			delete defaultProgram;
 			delete retroProgram;
+			delete depthProgram;
 			delete compareProgram;
 
 			delete Terrain.collisionFrame;
@@ -397,7 +408,6 @@ namespace SpyroScope {
 		}
 
 		public static void Clear() {
-			GL.glClearColor((float)clearColor.r / 255, (float)clearColor.g / 255, (float)clearColor.b / 255, (float)clearColor.a / 255);
 			GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
 			points.Clear();

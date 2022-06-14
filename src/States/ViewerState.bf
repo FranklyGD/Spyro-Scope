@@ -239,12 +239,17 @@ namespace SpyroScope {
 			if (Terrain.renderMode == .Collision) {
 				Renderer.clearColor = .(0,0,0);
 			} else if (!Emulator.active.clearColorAddress.IsNull) {
-				Emulator.active.clearColorAddress.Read(&Renderer.clearColor);
-				Renderer.clearColor.r = (.)(Math.Pow((float)Renderer.clearColor.r / 255, 2.2f) * 255);
-				Renderer.clearColor.g = (.)(Math.Pow((float)Renderer.clearColor.g / 255, 2.2f) * 255);
-				Renderer.clearColor.b = (.)(Math.Pow((float)Renderer.clearColor.b / 255, 2.2f) * 255);
-				Renderer.clearColor.a = 255;
+				Color4 color = ?;
+				Emulator.active.clearColorAddress.Read(&color);
+
+				color.r = (.)(Math.Pow((float)Renderer.clearColor.r / 255, 2.2f) * 255);
+				color.g = (.)(Math.Pow((float)Renderer.clearColor.g / 255, 2.2f) * 255);
+				color.b = (.)(Math.Pow((float)Renderer.clearColor.b / 255, 2.2f) * 255);
+				color.a = 255;
+
+				Renderer.clearColor = color;
 			}
+			Renderer.Clear();
 
 			Terrain.Render();
 
