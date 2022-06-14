@@ -4,7 +4,7 @@ using System.Collections;
 
 namespace SpyroScope {
 	abstract class RenderPass {
-		public ShaderProgram shader;
+		public Shader shader;
 		List<RenderJob> renderQueue = new .() ~ delete _;
 
 		public RenderJob AddJob(Mesh mesh, Texture texture) {

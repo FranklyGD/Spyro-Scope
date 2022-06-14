@@ -726,7 +726,7 @@ namespace SpyroScope {
 					Renderer.retroTranparentPass.Render(true, false);
 				}
 				
-				Renderer.opaquePass.shader = Renderer.defaultProgram;
+				Renderer.opaquePass.shader = Renderer.defaultShader;
 				Renderer.retroDiffusePass.shader = Renderer.retroProgram;
 				Renderer.retroTranparentPass.shader = Renderer.retroProgram;
 
@@ -768,7 +768,7 @@ namespace SpyroScope {
 				Terrain.Draw(true);
 	
 				if (wireframe) {
-					Renderer.defaultProgram.Use();
+					Renderer.defaultShader.Use();
 					Renderer.BeginWireframe();
 					Renderer.retroProgram.Use();
 					Renderer.BeginWireframe();
@@ -777,7 +777,7 @@ namespace SpyroScope {
 					Renderer.retroDiffusePass.Render();
 					Renderer.retroTranparentPass.Render();
 					
-					Renderer.defaultProgram.Use();
+					Renderer.defaultShader.Use();
 					Renderer.BeginSolid();
 					Renderer.retroProgram.Use();
 					Renderer.BeginSolid();

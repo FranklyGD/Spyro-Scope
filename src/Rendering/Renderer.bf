@@ -28,10 +28,10 @@ namespace SpyroScope {
 		static List<DrawQueue> drawQueue = new .() ~ delete _;
 		static DrawQueue* lastDrawQueue;
 
-		public static ShaderProgram defaultProgram;
-		public static ShaderProgram retroProgram;
-		public static ShaderProgram depthProgram;
-		public static ShaderProgram compareProgram;
+		public static Shader defaultShader;
+		public static Shader retroProgram;
+		public static Shader depthProgram;
+		public static Shader compareProgram;
 
 		static Color4 _clearColor = .(0,0,0);
 		public static Color4 clearColor {
@@ -120,18 +120,18 @@ namespace SpyroScope {
 			halfWhiteTexture = new .(1, 1, GL.GL_SRGB, GL.GL_RGB, &solidTextureData);
 
 			// Create and use the shader program
-			defaultProgram = new ShaderProgram("shaders/defaultVert.glsl", "shaders/defaultFrag.glsl");
-			retroProgram = new ShaderProgram("shaders/retroVert.glsl", "shaders/retroFrag.glsl");
-			depthProgram = new ShaderProgram("shaders/defaultVert.glsl", "shaders/depthFrag.glsl");
+			defaultShader = new Shader("shaders/defaultVert.glsl", "shaders/defaultFrag.glsl");
+			retroProgram = new Shader("shaders/retroVert.glsl", "shaders/retroFrag.glsl");
+			depthProgram = new Shader("shaders/defaultVert.glsl", "shaders/depthFrag.glsl");
 
-			compareProgram = new ShaderProgram("shaders/framePassVertex.glsl", "shaders/frameMergeFrag.glsl");
+			compareProgram = new Shader("shaders/framePassVertex.glsl", "shaders/depthCompareFrag.glsl");
 
 			compareProgram.Use();
 			GL.glUniform1i(compareProgram.GetUniform("depth0"), 0);
 			GL.glUniform1i(compareProgram.GetUniform("depth1"), 1);
 
-			opaquePass.shader = defaultProgram;
-			tranparentPass.shader = defaultProgram;
+			opaquePass.shader = defaultShader;
+			tranparentPass.shader = defaultShader;
 			retroDiffusePass.shader = retroProgram;
 			retroSpecularPass.shader = retroProgram;
 			retroTranparentPass.shader = retroProgram;
@@ -152,22 +152,22 @@ namespace SpyroScope {
 			GL.glBufferData(GL.GL_ARRAY_BUFFER, maxPointBufferLength * sizeof(Point), null, GL.GL_STATIC_DRAW);
 			
 			// Position Buffer
-			positionAttributeIndex = defaultProgram.GetAttribute("vertexPosition");
+			positionAttributeIndex = defaultShader.GetAttribute("vertexPosition");
 			GL.glVertexAttribPointer(positionAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Point), (void*)0);
 			GL.glEnableVertexAttribArray(positionAttributeIndex);
 
 			// Normals Buffer
-			normalAttributeIndex = defaultProgram.GetAttribute("vertexNormal");
+			normalAttributeIndex = defaultShader.GetAttribute("vertexNormal");
 			GL.glVertexAttribPointer(normalAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Point), (void*)12);
 			GL.glEnableVertexAttribArray(normalAttributeIndex);
 
 			// Color Buffer
-			colorAttributeIndex = defaultProgram.GetAttribute("vertexColor");
+			colorAttributeIndex = defaultShader.GetAttribute("vertexColor");
 			GL.glVertexAttribIPointer(colorAttributeIndex, 4, GL.GL_UNSIGNED_BYTE, sizeof(Point), (void*)(12+12));
 			GL.glEnableVertexAttribArray(colorAttributeIndex);
 
 			// UV Buffer
-			uvAttributeIndex = defaultProgram.GetAttribute("vertexTextureMapping");
+			uvAttributeIndex = defaultShader.GetAttribute("vertexTextureMapping");
 			GL.glVertexAttribPointer(uvAttributeIndex, 2, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Point), (void*)(12+12+4));
 			GL.glEnableVertexAttribArray(uvAttributeIndex);
 			
@@ -176,7 +176,7 @@ namespace SpyroScope {
 			GL.glBufferData(GL.GL_ARRAY_BUFFER, sizeof(Matrix4) + sizeof(Vector3), null, GL.GL_STATIC_DRAW);
 			
 			// Model Instance Attribute
-			instanceMatrixAttributeIndex = defaultProgram.GetAttribute("instanceModel");
+			instanceMatrixAttributeIndex = defaultShader.GetAttribute("instanceModel");
 
 			GL.glVertexAttribPointer(instanceMatrixAttributeIndex+0, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4) + sizeof(Vector3), (void*)(4*0));
 			GL.glVertexAttribPointer(instanceMatrixAttributeIndex+1, 4, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4) + sizeof(Vector3), (void*)(4*4));
@@ -196,7 +196,7 @@ namespace SpyroScope {
 			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, sizeof(Matrix4), &model);
 
 			// Tint Instance Attribute
-			instanceTintAttributeIndex = defaultProgram.GetAttribute("instanceTint");
+			instanceTintAttributeIndex = defaultShader.GetAttribute("instanceTint");
 			GL.glVertexAttribPointer(instanceTintAttributeIndex, 3, GL.GL_FLOAT, GL.GL_FALSE, sizeof(Matrix4) + sizeof(Vector3), (void*)(4*16));
 			GL.glEnableVertexAttribArray(instanceTintAttributeIndex);
 			GL.glVertexAttribDivisor(instanceTintAttributeIndex, 1);
@@ -206,14 +206,14 @@ namespace SpyroScope {
 			uniformSpecularIndex = retroProgram.GetUniform("specularAmount");
 
 			uint uboIndex;
-			uboIndex = GL.glGetUniformBlockIndex(defaultProgram.program, "camera");
-			GL.glUniformBlockBinding(defaultProgram.program, uboIndex, 0);
+			uboIndex = GL.glGetUniformBlockIndex(defaultShader.shaderProgramID, "camera");
+			GL.glUniformBlockBinding(defaultShader.shaderProgramID, uboIndex, 0);
 			
-			uboIndex = GL.glGetUniformBlockIndex(retroProgram.program, "camera");
-			GL.glUniformBlockBinding(retroProgram.program, uboIndex, 0);
+			uboIndex = GL.glGetUniformBlockIndex(retroProgram.shaderProgramID, "camera");
+			GL.glUniformBlockBinding(retroProgram.shaderProgramID, uboIndex, 0);
 
-			uboIndex = GL.glGetUniformBlockIndex(depthProgram.program, "camera");
-			GL.glUniformBlockBinding(depthProgram.program, uboIndex, 0);
+			uboIndex = GL.glGetUniformBlockIndex(depthProgram.shaderProgramID, "camera");
+			GL.glUniformBlockBinding(depthProgram.shaderProgramID, uboIndex, 0);
 
 			Renderer.window = window;
 
@@ -237,7 +237,7 @@ namespace SpyroScope {
 			GL.glDeleteBuffers(1, &pointBufferID);
 			GL.glDeleteBuffers(1, &instanceBufferID);
 
-			delete defaultProgram;
+			delete defaultShader;
 			delete retroProgram;
 			delete depthProgram;
 			delete compareProgram;
@@ -330,14 +330,14 @@ namespace SpyroScope {
 
 		public static void BeginWireframe() {
 			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE);
-			let uniformZdepthOffsetIndex = ShaderProgram.current.GetUniform("zdepthOffset");
+			let uniformZdepthOffsetIndex = Shader.current.GetUniform("zdepthOffset");
 			GL.glUniform1f(uniformZdepthOffsetIndex, -0.2f); // Push the lines a little forward
 			GL.glLineWidth(2);
 		}
 
 		public static void BeginSolid() {
 			GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL);
-			let uniformZdepthOffsetIndex = ShaderProgram.current.GetUniform("zdepthOffset");
+			let uniformZdepthOffsetIndex = Shader.current.GetUniform("zdepthOffset");
 			GL.glUniform1f(uniformZdepthOffsetIndex, 0); // Reset depth offset
 			GL.glLineWidth(1);
 		}

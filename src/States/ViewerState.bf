@@ -253,7 +253,7 @@ namespace SpyroScope {
 
 			Terrain.Render();
 
-			Renderer.defaultProgram.Use();
+			Renderer.defaultShader.Use();
 
 			if (Terrain.collision.visualizeGrid) {
 				Terrain.collision.DrawGrid();

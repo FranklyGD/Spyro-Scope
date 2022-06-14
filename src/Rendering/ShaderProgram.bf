@@ -3,27 +3,27 @@ using System;
 using System.Diagnostics;
 
 namespace SpyroScope {
-	class ShaderProgram {
+	class Shader {
 		public static Self current;
 
-		public uint program { get; private set; } ~ GL.glDeleteProgram(_);
+		public uint shaderProgramID { get; private set; } ~ GL.glDeleteProgram(_);
 
 		public this(StringView sourceVertexShader, StringView sourceFragmentShader) {
 			let vertexShader = CompileShader(sourceVertexShader, GL.GL_VERTEX_SHADER);
 			let fragmentShader = CompileShader(sourceFragmentShader, GL.GL_FRAGMENT_SHADER);
 
-			program = GL.glCreateProgram(); // New empty program
+			shaderProgramID = GL.glCreateProgram(); // New empty program
 
-			GL.glAttachShader(program, vertexShader);
-			GL.glAttachShader(program, fragmentShader);
+			GL.glAttachShader(shaderProgramID, vertexShader);
+			GL.glAttachShader(shaderProgramID, fragmentShader);
 
-			GL.glLinkProgram(program);
+			GL.glLinkProgram(shaderProgramID);
 			
 			GL.glDeleteShader(vertexShader);
 			GL.glDeleteShader(fragmentShader);
 
 			int32 status = GL.GL_FALSE;
-			GL.glGetProgramiv(program, GL.GL_LINK_STATUS, &status);
+			GL.glGetProgramiv(shaderProgramID, GL.GL_LINK_STATUS, &status);
 			Debug.Assert(status == GL.GL_TRUE, "Program link failed");
 		}
 
@@ -55,7 +55,7 @@ namespace SpyroScope {
 		}
 
 		public uint GetAttribute(String attributeName) {
-			let index = GL.glGetAttribLocation(program, attributeName.Ptr);
+			let index = GL.glGetAttribLocation(shaderProgramID, attributeName.Ptr);
 
 			Debug.Assert(index >= 0, "Attribute not found");
 
@@ -63,7 +63,7 @@ namespace SpyroScope {
 		}
 
 		public int GetUniform(String uniformName) {
-			let index = GL.glGetUniformLocation(program, uniformName.Ptr);
+			let index = GL.glGetUniformLocation(shaderProgramID, uniformName.Ptr);
 
 			Debug.Assert(index >= 0, "Uniform not found");
 
@@ -71,7 +71,7 @@ namespace SpyroScope {
 		}
 
 		public void Use() {
-			GL.glUseProgram(program);
+			GL.glUseProgram(shaderProgramID);
 			current = this;
 		}
 	}
