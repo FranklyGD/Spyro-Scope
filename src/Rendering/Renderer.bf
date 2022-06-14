@@ -406,6 +406,7 @@ namespace SpyroScope {
 		}
 
 		public static void ClearDepth() {
+			GL.glDepthMask(GL.GL_TRUE);
 		    GL.glClear(GL.GL_DEPTH_BUFFER_BIT);
 		}
 
