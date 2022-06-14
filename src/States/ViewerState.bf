@@ -225,6 +225,11 @@ namespace SpyroScope {
 
 			Terrain.Update();
 
+			if (ViewerSelection.hoveredObjIndex >= Moby.allocated.Count || ViewerSelection.currentObjIndex >= Moby.allocated.Count) {
+				Selection.Reset();
+				ViewerSelection.hoveredObjects.Clear();
+			}
+
 			if (viewerMenu.manipulatorToggle.value && (Emulator.active.loadingStatus == .Idle && Emulator.active.gameState <= 1)) {
 				UpdateManipulator();
 			}
@@ -259,11 +264,6 @@ namespace SpyroScope {
 				let region = Terrain.regions[ViewerSelection.currentRegionIndex];
 				DrawUtilities.Axis(region.Center, .Scale(1000));
 				DrawUtilities.WireframeSphere(region.Center, .Identity, region.Radius, .(0,0,0));
-			}
-
-			if (ViewerSelection.hoveredObjIndex >= Moby.allocated.Count || ViewerSelection.currentObjIndex >= Moby.allocated.Count) {
-				Selection.Reset();
-				ViewerSelection.hoveredObjects.Clear();
 			}
 
 			DrawSpyroInformation();
