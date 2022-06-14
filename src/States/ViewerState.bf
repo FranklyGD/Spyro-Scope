@@ -236,15 +236,15 @@ namespace SpyroScope {
 		}
 
 		public override void DrawView() {
-			if (Terrain.renderMode == .Collision) {
+			if (Terrain.renderMode == .Collision || Terrain.renderMode == .Compare) {
 				Renderer.clearColor = .(0,0,0);
 			} else if (!Emulator.active.clearColorAddress.IsNull) {
 				Color4 color = ?;
 				Emulator.active.clearColorAddress.Read(&color);
 
-				color.r = (.)(Math.Pow((float)Renderer.clearColor.r / 255, 2.2f) * 255);
-				color.g = (.)(Math.Pow((float)Renderer.clearColor.g / 255, 2.2f) * 255);
-				color.b = (.)(Math.Pow((float)Renderer.clearColor.b / 255, 2.2f) * 255);
+				color.r = (.)(Math.Pow((float)color.r / 255, 2.2f) * 255);
+				color.g = (.)(Math.Pow((float)color.g / 255, 2.2f) * 255);
+				color.b = (.)(Math.Pow((float)color.b / 255, 2.2f) * 255);
 				color.a = 255;
 
 				Renderer.clearColor = color;
