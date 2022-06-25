@@ -757,19 +757,18 @@ namespace SpyroScope {
 				Frame.RenderFullQuad();
 
 			} else {
-				Terrain.Draw(false);
-	
 				if (solid) {
+					Terrain.Draw(false);
+
 					Renderer.opaquePass.Render();
 					Renderer.retroDiffusePass.Render();
 					Renderer.retroTranparentPass.Render();
 				}
 	
-				Terrain.Draw(true);
-	
 				if (wireframe) {
+					Terrain.Draw(true);
+
 					Renderer.defaultShader.Use();
-					Renderer.BeginWireframe();
 					Renderer.retroProgram.Use();
 					Renderer.BeginWireframe();
 	
@@ -778,7 +777,6 @@ namespace SpyroScope {
 					Renderer.retroTranparentPass.Render();
 					
 					Renderer.defaultShader.Use();
-					Renderer.BeginSolid();
 					Renderer.retroProgram.Use();
 					Renderer.BeginSolid();
 				}
