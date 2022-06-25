@@ -135,6 +135,7 @@ namespace SpyroScope {
 
 		public ~this() {
 			Terrain.Dispose();
+			Skybox.Dispose();
 
 			for (let modelSet in modelSets.Values) {
 				delete modelSet;
@@ -251,6 +252,9 @@ namespace SpyroScope {
 			}
 			Renderer.Clear();
 
+			if (Terrain.renderMode != .Compare && Terrain.renderMode != .Collision) {
+				Skybox.Render();
+			}
 			Terrain.Render();
 
 			Renderer.defaultShader.Use();
@@ -923,6 +927,9 @@ namespace SpyroScope {
 		void OnSceneChanged() {
 			Terrain.Dispose();
 			Terrain.Load();
+			
+			Skybox.Dispose();
+			Skybox.Reload();
 
 			lastUpdatedSceneChange = .Now;
 		}
@@ -1368,6 +1375,7 @@ namespace SpyroScope {
 		void Reload() {
 			Terrain.Reload();
 			Terrain.ReloadAnimations();
+			Skybox.Reload();
 		}
 
 		void ExportTerrain() {

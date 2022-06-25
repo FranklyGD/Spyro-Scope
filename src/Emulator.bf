@@ -166,6 +166,7 @@ namespace SpyroScope {
 		public Address<Address> textureDataPointer, sceneRegionsPointer, collisionDataPointer, collisionFlagsPointer;
 		public Address<Address> textureSwappersPointer, textureScrollersPointer, farRegionsDeformPointer, nearRegionsDeformPointer, collisionDeformPointer, regionsWarpPointer;
 		public Address<uint8> regionsRenderingArrayAddress;
+		public Address<Address> skyboxRegionsPointer;
 
 		// Exclusive to Spyro: Ripto's Rage
 		public const Address<uint8>[3] spriteWidthArrayAddress = .((.)0x800634b8, 0, 0);
@@ -1656,6 +1657,23 @@ namespace SpyroScope {
 				signatureLocation = regionRenderCullingSignature.Find(this);
 				ReadFromRAM(signatureLocation + 4*6, &loadAddress, 8);
 				regionsRenderingArrayAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
+			}
+
+			// Skybox
+			// Spyro 2/3 Attempt
+			MemorySignature skyboxSignature = scope .();
+			skyboxSignature.AddInstruction(.lui);
+			skyboxSignature.AddInstruction(.addiu);
+			skyboxSignature.AddInstruction(.lw, .wild, .wild, 0x0);
+			skyboxSignature.AddInstruction(.lw, .wild, .wild, 0x4);
+			skyboxSignature.AddInstruction(.lui);
+			skyboxSignature.AddInstruction(.addi);
+
+			signatureLocation = skyboxSignature.Find(this);
+
+			if (!signatureLocation.IsNull) {
+				ReadFromRAM(signatureLocation, &loadAddress, 8);
+				skyboxRegionsPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]) + 4;
 			}
 		}
 
