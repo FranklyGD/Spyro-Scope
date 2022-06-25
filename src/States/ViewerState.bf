@@ -243,9 +243,9 @@ namespace SpyroScope {
 				Color4 color = ?;
 				Emulator.active.clearColorAddress.Read(&color);
 
-				color.r = (.)(Math.Pow((float)color.r / 255, 2.2f) * 255);
-				color.g = (.)(Math.Pow((float)color.g / 255, 2.2f) * 255);
-				color.b = (.)(Math.Pow((float)color.b / 255, 2.2f) * 255);
+				color.r = (.)Math.Round(Math.Pow((float)color.r / 255, 2.2f) * 255);
+				color.g = (.)Math.Round(Math.Pow((float)color.g / 255, 2.2f) * 255);
+				color.b = (.)Math.Round(Math.Pow((float)color.b / 255, 2.2f) * 255);
 				color.a = 255;
 
 				Renderer.clearColor = color;
