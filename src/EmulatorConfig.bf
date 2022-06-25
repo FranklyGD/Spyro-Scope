@@ -66,7 +66,7 @@ namespace SpyroScope {
 
 					var lastWord = wordChain[wordChain.Count - 1];
 					if (!(lastWord.EndsWith(".exe", .OrdinalIgnoreCase) || lastWord.EndsWith(".dll", .OrdinalIgnoreCase))) {
-						Debug.FatalError(scope String() .. AppendF("Invalid Emulator Config Format - Expected process name on line {}", linesRead));
+						Debug.FatalError(scope $"Invalid Emulator Config Format - Expected process name on line {linesRead}");
 					}
 
 					emulatorConfig.processName.Join(" ", wordChain.GetEnumerator());
@@ -105,7 +105,7 @@ namespace SpyroScope {
 						readLine.Clear();
 						linesRead++;
 						if ((fs.ReadLine(readLine) case .Err) || line .. Trim().Length == 0) {
-							Debug.FatalError(scope String() .. AppendF("Invalid Emulator Config Format - Expected RAM location for {} ({}) on line {}", emulatorConfig.label, emulatorVersion.label, linesRead));
+							Debug.FatalError(scope $"Invalid Emulator Config Format - Expected RAM location for {emulatorConfig.label} ({emulatorVersion.label}) on line {linesRead}");
 						}
 
 						line = readLine;
@@ -123,7 +123,7 @@ namespace SpyroScope {
 
 						lastWord = wordChain[wordChain.Count - 1];
 						if (!(lastWord.EndsWith(".exe", .OrdinalIgnoreCase) || lastWord.EndsWith(".dll", .OrdinalIgnoreCase))) {
-							Debug.FatalError(scope String() .. AppendF("Invalid Emulator Config Format - Expected module name for RAM location in {} ({}) on line {}", emulatorConfig.label, emulatorVersion.label, linesRead));
+							Debug.FatalError(scope $"Invalid Emulator Config Format - Expected module name for RAM location in {emulatorConfig.label} ({emulatorVersion.label}) on line {linesRead}");
 						}
 
 						emulatorVersion.ramModuleName.Join(" ", wordChain.GetEnumerator());
@@ -137,7 +137,7 @@ namespace SpyroScope {
 						readLine.Clear();
 						linesRead++;
 						if ((fs.ReadLine(readLine) case .Err) || line .. Trim().Length == 0) {
-							Debug.FatalError(scope String() .. AppendF("Invalid Emulator Config Format - Expected VRAM location for {} ({}) on line {}", emulatorConfig.label, emulatorVersion.label, linesRead));
+							Debug.FatalError(scope $"Invalid Emulator Config Format - Expected VRAM location for {emulatorConfig.label} ({emulatorVersion.label}) on line {linesRead}");
 						}
 						
 						line = readLine;
@@ -155,7 +155,7 @@ namespace SpyroScope {
 						
 						lastWord = wordChain[wordChain.Count - 1];
 						if (!(lastWord.EndsWith(".exe", .OrdinalIgnoreCase) || lastWord.EndsWith(".dll", .OrdinalIgnoreCase))) {
-							Debug.FatalError(scope String() .. AppendF("Invalid Emulator Config Format - Expected module name for VRAM location in {} ({}) on line {}", emulatorConfig.label, emulatorVersion.label, linesRead));
+							Debug.FatalError(scope $"Invalid Emulator Config Format - Expected module name for VRAM location in {emulatorConfig.label} ({emulatorVersion.label}) on line {linesRead}");
 						}
 
 						emulatorVersion.vramModuleName.Join(" ", wordChain.GetEnumerator());

@@ -18,7 +18,7 @@ namespace SpyroScope {
 		
 		[Inline]
 		public override void ToString(String strBuffer) {
-			strBuffer.AppendF("<{},{},{}>", x, y, z);
+			strBuffer.AppendF($"<{x},{y},{z}>");
 		}
 		
 		[Inline]

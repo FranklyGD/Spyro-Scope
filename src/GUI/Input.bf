@@ -90,7 +90,7 @@ namespace SpyroScope {
 				Renderer.Line(.(cursorPos, vcenter - halfHeight, 0), .(cursorPos, vcenter + halfHeight, 0), .(0,0,0), .(0,0,0));
 
 				if (text != null && !text.IsEmpty && displayUnderlying && underlyingChanged && lastValidText != null && !lastValidText.IsEmpty) {
-					let validDisplayText = scope String() .. AppendF("= {}", lastValidText);
+					let validDisplayText = scope $"= {lastValidText}";
 
 					let textWidth = WindowApp.fontSmall.CalculateWidth(validDisplayText);
 					DrawUtilities.Rect(drawn.top - WindowApp.fontSmall.height - 4, drawn.top, drawn.left, drawn.left + textWidth + 8, .(255,255,255));

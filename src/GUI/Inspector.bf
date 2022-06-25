@@ -134,7 +134,7 @@ namespace SpyroScope {
 			dataAddress = address;
 			dataReference = reference;
 
-			input.SetValidText(scope String() .. AppendF("{}", address));
+			input.SetValidText(scope $"{address}");
 			if (reference != null) {
 				OnDataSet(address, reference);
 			}
@@ -203,7 +203,7 @@ namespace SpyroScope {
 
 			protected bool ValidateNumber(String text) {
 				if (Float.Parse(text) case .Ok(let val)) {
-			        text .. Clear().AppendF("{}", BitEdit.Get!((int)val, mask));
+			        text .. Clear().AppendF($"{BitEdit.Get!((int)val, mask)}");
 					return true;
 				}
 				return false;
@@ -211,7 +211,7 @@ namespace SpyroScope {
 
 			protected void XcrementNumber(String text, int delta) {
 				if (Float.Parse(text) case .Ok(let val)) {
-					text .. Clear().AppendF("{}", BitEdit.Get!((int)val + delta, mask));
+					text .. Clear().AppendF($"{BitEdit.Get!((int)val + delta, mask)}");
 				}
 			}
 		}
@@ -266,7 +266,7 @@ namespace SpyroScope {
 
 				T value = ?;
 				Emulator.active.ReadFromRAM(inspector.dataAddress + dataOffset, &value, sizeof(T));
-				input.SetValidText(scope String() .. AppendF("{}", value));
+				input.SetValidText(scope $"{value}");
 			}
 
 			void ModifyData(T* val) {
@@ -361,7 +361,7 @@ namespace SpyroScope {
 					if (count <= 6) {
 						slider.Value = value;
 					}
-					((Input)interactable).SetValidText(scope String() .. AppendF("{}", value));
+					((Input)interactable).SetValidText(scope $"{value}");
 				}
 			}
 		}

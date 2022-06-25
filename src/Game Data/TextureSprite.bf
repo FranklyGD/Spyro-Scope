@@ -39,7 +39,7 @@ namespace SpyroScope {
 			for (let i < frames.Count) {
 				let frame = frames[i];
 
-				VRAM.Export(scope String() .. AppendF("S{}", start), frame.x, frame.y, width, height, 4, 0x18);
+				VRAM.Export(scope $"S{start}", frame.x, frame.y, width, height, 4, 0x18);
 			}
 		}
 	}

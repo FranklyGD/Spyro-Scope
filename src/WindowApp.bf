@@ -115,12 +115,12 @@ namespace SpyroScope {
 
 			
 #if DEBUG
-			let versionString = scope String() .. AppendF("Spyro Scope (DEV)");
+			let versionString = scope String("Spyro Scope (DEV)");
 #else
-			let versionString = scope String() .. AppendF("Spyro Scope {}", Program.versionInfo.FileVersion);
+			let versionString = scope $"Spyro Scope {Program.versionInfo.FileVersion}";
 #endif
 
-			let openglVersionString = scope String() .. AppendF("OpenGL {}.{}", majorVersion, minorVersion);
+			let openglVersionString = scope $"OpenGL {majorVersion}.{minorVersion}";
 
 			bitmapFont.Print(versionString, .(WindowApp.width - bitmapFont.characterWidth * versionString.Length, 0), .(255,255,255,8));
 			bitmapFont.Print(openglVersionString, .(WindowApp.width - bitmapFont.characterWidth * 10, bitmapFont.height), .(255,255,255,8));
@@ -143,7 +143,7 @@ namespace SpyroScope {
 			}
 			String typeName = scope .();
 			typeof(T).GetName(typeName);
-			Debug.FatalError(scope String() .. AppendF("Failed to go to state \"{}\"", typeName));
+			Debug.FatalError(scope $"Failed to go to state \"{typeName}\"");
 		} 
 
 		public void Close() {

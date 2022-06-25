@@ -399,12 +399,12 @@ namespace SpyroScope {
 		this(Windows.ProcessHandle process, int emulator) {
 			processHandle = process;
 
-			Debug.WriteLine(scope String() .. AppendF("Emulator Process: {}", EmulatorsConfig.emulators[emulator].processName));
+			Debug.WriteLine($"Emulator Process: {EmulatorsConfig.emulators[emulator].processName}");
 
 			moduleHandle = GetModule(processHandle, EmulatorsConfig.emulators[emulator].processName);
 
 			MainModuleSize = GetModuleSize(processHandle, moduleHandle);
-			Debug.WriteLine(scope String() .. AppendF("Main Module Size: {:x} bytes", MainModuleSize));
+			Debug.WriteLine($"Main Module Size: {MainModuleSize:x} bytes");
 
 			versionIndex = EmulatorsConfig.emulators[emulator].versions.FindIndex(scope (x) => x.moduleSize == MainModuleSize);
 			Debug.WriteLine(scope String() .. AppendF("Emulator Version: {}", versionIndex > -1 ? EmulatorsConfig.emulators[emulator].versions[versionIndex].label : "Unknown"));
@@ -504,7 +504,7 @@ namespace SpyroScope {
 			if (ROMsConfig.roms.TryGetValue(Emulator.active.romChecksum, out entry)) {
 				name.Append(entry);
 			} else {
-				name.AppendF("Unidentified Spyro [{:x}]", Emulator.active.romChecksum);
+				name.AppendF($"Unidentified Spyro [{Emulator.active.romChecksum:x}]");
 			}
 		}
 

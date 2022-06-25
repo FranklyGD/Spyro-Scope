@@ -152,7 +152,7 @@ namespace SpyroScope {
 				// Every second (30 frames)
 				if (i % 30 == 0) {
 					Renderer.Line(.((int)hcenter + offset * 3,drawn.bottom,0), .((int)hcenter + offset * 3,drawn.bottom - 48,0), .(255,255,255), .(255,255,255));
-					WindowApp.fontSmall.Print(scope String() .. AppendF("{}s", i/30), .((int)hcenter + offset * 3, drawn.bottom - 48 - WindowApp.fontSmall.height), .(255,255,255));
+					WindowApp.fontSmall.Print(scope $"{i/30}s", .((int)hcenter + offset * 3, drawn.bottom - 48 - WindowApp.fontSmall.height), .(255,255,255));
 				}
 
 				// Draw line on currently previewed frame

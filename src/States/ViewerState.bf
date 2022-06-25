@@ -148,7 +148,7 @@ namespace SpyroScope {
 		public override void Enter() {
 			String romName = scope String();
 			Emulator.active.GetGameName(romName);
-			windowApp.Rename(scope String() .. AppendF("Spyro Scope - {} (3D Viewer)", romName));
+			windowApp.Rename(scope $"Spyro Scope - {romName} (3D Viewer)");
 
 			GUIElement.SetActiveGUI(guiElements);
 			Selection.OnSelect.Add(new => OnSelect);
@@ -348,9 +348,9 @@ namespace SpyroScope {
 							.(0,0,0,192));
 
 						screenPosition.y += 2;
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]", Moby.GetAddress(ViewerSelection.currentObjIndex)),
+						WindowApp.bitmapFont.Print(scope $"[{Moby.GetAddress(ViewerSelection.currentObjIndex)}]",
 							(Vector2)screenPosition, .(255,255,255));
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("TYPE: {:X4}", currentObject.objectTypeID),
+						WindowApp.bitmapFont.Print(scope $"TYPE: {currentObject.objectTypeID:X4}",
 							(Vector2)screenPosition + .(0,WindowApp.bitmapFont.height), .(255,255,255));
 					}
 				}
@@ -401,13 +401,13 @@ namespace SpyroScope {
 
 						// Content
 						let currentKeyframe = animationGroup.CurrentKeyframe;
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("Group Index {}", ViewerSelection.currentAnimGroupIndex), .(8, WindowApp.height - (18 * 5 + 8 + 15)), .(255,255,255));
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("Keyframe {}", (uint)currentKeyframe), .(8, WindowApp.height - (18 * 4 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope $"Group Index {ViewerSelection.currentAnimGroupIndex}", .(8, WindowApp.height - (18 * 5 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope $"Keyframe {(uint)currentKeyframe}", .(8, WindowApp.height - (18 * 4 + 8 + 15)), .(255,255,255));
 						let keyframeData = animationGroup.GetKeyframeData(currentKeyframe);
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("Flag {}", (uint)keyframeData.flag), .(8, WindowApp.height - (18 * 3 + 8 + 15)), .(255,255,255));
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("Interp. {}", (uint)keyframeData.interpolation), .(8, WindowApp.height - (18 * 2 + 8 + 15)), .(255,255,255));
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("From State {}", (uint)keyframeData.fromState), .(8, WindowApp.height - (18 * 1 + 8 + 15)), .(255,255,255));
-						WindowApp.bitmapFont.Print(scope String() .. AppendF("To State {}", (uint)keyframeData.toState), .(8, WindowApp.height - (18 * 0 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope $"Flag {(uint)keyframeData.flag}", .(8, WindowApp.height - (18 * 3 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope $"Interp. {(uint)keyframeData.interpolation}", .(8, WindowApp.height - (18 * 2 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope $"From State {(uint)keyframeData.fromState}", .(8, WindowApp.height - (18 * 1 + 8 + 15)), .(255,255,255));
+						WindowApp.bitmapFont.Print(scope $"To State {(uint)keyframeData.toState}", .(8, WindowApp.height - (18 * 0 + 8 + 15)), .(255,255,255));
 					} else if (Terrain.collision.animationGroups != null) {
 						for (let animationGroup in Terrain.collision.animationGroups) {
 							var screenPosition = Camera.SceneToScreen(animationGroup.center);
@@ -434,7 +434,7 @@ namespace SpyroScope {
 						DrawUtilities.Rect(WindowApp.mousePosition.y + 16 + i * WindowApp.bitmapFont.height, WindowApp.mousePosition.y + 16 + (i + 1) * WindowApp.bitmapFont.height, WindowApp.mousePosition.x + 16, WindowApp.mousePosition.x + 16 + WindowApp.bitmapFont.characterWidth * 16, .(255,255,255,192));
 					}
 					DrawMobyIcon(Moby.allocated[hoveredObject.index], .(WindowApp.mousePosition.x + 28 + WindowApp.bitmapFont.characterWidth * 16, WindowApp.mousePosition.y + 16 + WindowApp.bitmapFont.height * (0.5f + i), 0), 0.75f);
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("[{}]: {:X4}", Moby.GetAddress(hoveredObject.index), Moby.allocated[hoveredObject.index].objectTypeID), .(WindowApp.mousePosition.x + 16,  WindowApp.mousePosition.y + 18 + i * WindowApp.bitmapFont.height), textColor);
+					WindowApp.bitmapFont.Print(scope $"[{Moby.GetAddress(hoveredObject.index)}]: {Moby.allocated[hoveredObject.index].objectTypeID:X4}", .(WindowApp.mousePosition.x + 16,  WindowApp.mousePosition.y + 18 + i * WindowApp.bitmapFont.height), textColor);
 				}
 			}
 
@@ -604,7 +604,7 @@ namespace SpyroScope {
 						}
 
 						if (newSpeed != cameraSpeed) {
-							messageFeed.PushMessage(new String() .. AppendF("Camera Speed ({}/f)", newSpeed));
+							messageFeed.PushMessage(new $"Camera Speed ({newSpeed}/f)");
 						}
 
 						cameraSpeed = newSpeed;
@@ -1096,7 +1096,7 @@ namespace SpyroScope {
 						.(0,0,0,192));
 		
 					screenPosition.y += 2;
-					WindowApp.bitmapFont.Print(scope String() .. AppendF("Param: {}", flagData.param),
+					WindowApp.bitmapFont.Print(scope $"Param: {flagData.param}",
 						screenPosition, .(255,255,255));
 				}
 			}
@@ -1113,7 +1113,7 @@ namespace SpyroScope {
 			// Content
 			for (let i < Terrain.collision.collisionTypes.Count) {
 				let flag = Terrain.collision.collisionTypes[i];
-				String label = scope String() .. AppendF("Unknown {}", flag);
+				String label = scope $"Unknown {flag}";
 				Color color = .(255, 0, 255);
 				if (flag < 11 /*Emulator.collisionTypes.Count*/) {
 					(label, color) = Emulator.collisionTypes[flag];
@@ -1379,9 +1379,11 @@ namespace SpyroScope {
 		}
 
 		void ExportTerrain() {
+			StringView ext = Emulator.active.installment == .SpyroTheDragon ? "s1terrain" : "sterrain";
+
 			let dialog = new SaveFileDialog();
 			dialog.FileName = "terrain";
-			dialog.SetFilter(scope String() .. AppendF("Spyro Terrain (*.{0})|*.{0}|All files (*.*)|*.*", Emulator.active.installment == .SpyroTheDragon ? "s1terrain" : "sterrain"));
+			dialog.SetFilter(scope $"Spyro Terrain (*.{ext})|*.{ext}|All files (*.*)|*.*");
 			dialog.OverwritePrompt = true;
 			dialog.CheckFileExists = true;
 			dialog.AddExtension = true;

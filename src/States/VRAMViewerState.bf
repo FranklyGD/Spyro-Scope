@@ -344,8 +344,8 @@ namespace SpyroScope {
 				WindowApp.bitmapFont.Print(text, bgRect.start + .(0,3), .(255,255,255));
 			}
 
-			WindowApp.bitmapFont.Print(scope String() .. AppendF("<{},{}>", (int)testPosition.x, (int)testPosition.y), .(0,16), .(255,255,255));
-			WindowApp.bitmapFont.Print(scope String() .. AppendF("T-page {}", hoveredTexturePage), .(0, WindowApp.bitmapFont.height + 16), .(255,255,255));
+			WindowApp.bitmapFont.Print(scope $"<{(int)testPosition.x},{(int)testPosition.y}>", .(0,16), .(255,255,255));
+			WindowApp.bitmapFont.Print(scope $"T-page {hoveredTexturePage}", .(0, WindowApp.bitmapFont.height + 16), .(255,255,255));
 
 			// Begin window relative position UI
 			for (let element in guiElements) {

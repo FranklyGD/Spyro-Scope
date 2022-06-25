@@ -54,7 +54,7 @@ namespace SpyroScope {
 							let process = processes[i];
 							let processButton = (Button)guiElements[i];
 
-							processButton.text.Set(scope String() .. AppendF("{} - PID: {}", process.ProcessName, process.Id));
+							processButton.text.Set(scope $"{process.ProcessName} - PID: {process.Id}");
 							processButton.OnActuated .. Dispose() .Add(new () => {
 								Emulator.BindEmulatorProcess(processes[i]);
 	
@@ -88,7 +88,7 @@ namespace SpyroScope {
 				message = "Waiting for Emulator";
 			} else {
 				if (!activeEmulator.Supported) {
-					message = scope:: String() .. AppendF("Unknown Module Size: (0x{:x})", activeEmulator.MainModuleSize);
+					message = scope:: $"Unknown Module Size: (0x{activeEmulator.MainModuleSize:x})";
 				} else if (activeEmulator.romChecksum == 0) {
 					message = "Waiting for Game";
 				} else {
@@ -97,7 +97,7 @@ namespace SpyroScope {
 				}
 
 				let baseline = WindowApp.height / 2 - WindowApp.font.height * 1.5f;
-				let emulatorName = scope String() .. AppendF("{} ({})", activeEmulator.Name, activeEmulator.Version);
+				let emulatorName = scope $"{activeEmulator.Name} ({activeEmulator.Version})";
 				let halfWidth = Math.Round(WindowApp.font.CalculateWidth(emulatorName) / 2);
 				WindowApp.font.Print(emulatorName, .(middleWindow - halfWidth, baseline), activeEmulator.Supported ? .(255,255,255) : .(255,255,0));
 			}
