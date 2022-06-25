@@ -118,7 +118,10 @@ namespace SpyroScope {
 					colorList.Add(vertexColors[colorIndices[1]]);
 					colorList.Add(vertexColors[colorIndices[2]]);
 
-					if (faceExtended >> 15 > 0) { // Start new fan? (rotate vertex index values)
+					// Rotate vertex index values
+					// Used once creates a new fan around a new vertex
+					// Used per iteration acts like a triangle strip
+					if (faceExtended >> 15 > 0) {
 						vertexIndices[1] = vertexIndices[0];
 						colorIndices[1] = colorIndices[0];
 					}
