@@ -12,8 +12,12 @@ namespace SpyroScope {
 		public struct SpyroFrame {
 			public Vector3Int position;
 			public Vector3Int eulerRotation;
+			public MatrixInt basis;
 			public uint32 state;
+			public AnimationState headAnimState;
+			public AnimationState bodyAnimState;
 			public Vector3Int targetVelocity;
+			public Vector3Int velocity;
 			public uint32 input;
 		}
 
@@ -41,13 +45,17 @@ namespace SpyroScope {
 		}
 
 		public static void AddRecordFrame() {
-			SpyroFrame newFrame;
-
-			newFrame.position = Emulator.active.SpyroPosition;
-			newFrame.eulerRotation = Emulator.active.SpyroEulerRotation;
-			newFrame.state = Emulator.active.SpyroState;
-			newFrame.targetVelocity = Emulator.active.SpyroIntendedVelocity;
-			newFrame.input = Emulator.active.Input;
+			SpyroFrame newFrame = .{
+				position = Emulator.active.SpyroPosition,
+				eulerRotation = Emulator.active.SpyroEulerRotation,
+				basis = Emulator.active.SpyroBasis,
+				state = Emulator.active.SpyroState,
+				headAnimState = Emulator.active.SpyroHeadAnimState,
+				bodyAnimState = Emulator.active.SpyroBodyAnimState,
+				targetVelocity = Emulator.active.SpyroIntendedVelocity,
+				velocity = Emulator.active.SpyroPhysicsVelocity,
+				input = Emulator.active.Input,
+			};
 
 			CurrentFrame = record.Count;
 			record.Add(newFrame);
@@ -103,8 +111,12 @@ namespace SpyroScope {
 
 			emulator.SpyroPosition = frame.position;
 			emulator.SpyroEulerRotation = frame.eulerRotation;
+			emulator.SpyroBasis = frame.basis;
 			emulator.SpyroState = frame.state;
+			emulator.SpyroHeadAnimState = frame.headAnimState;
+			emulator.SpyroBodyAnimState = frame.bodyAnimState;
 			emulator.SpyroIntendedVelocity = frame.targetVelocity;
+			emulator.SpyroPhysicsVelocity = frame.velocity;
 
 			CurrentFrame = frameIndex;
 		}

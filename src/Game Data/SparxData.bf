@@ -13,7 +13,7 @@ namespace SpyroScope {
 			}
 			lastTime = positionTimer;
 
-			let basis = Emulator.active.spyroBasis.ToMatrixCorrected();
+			let basis = Emulator.active.SpyroBasis.ToMatrixCorrected();
 
 			let targetLocation = basis * Vector3(localPosition[0], localPosition[1], localPosition[2]);
 			Renderer.Line(object.position, Emulator.active.SpyroPosition + targetLocation, .(255,255,0), .(255,255,0));

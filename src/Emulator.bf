@@ -145,6 +145,7 @@ namespace SpyroScope {
 		public Address<Vector3Int> spyroVelocityIntended, spyroVelocityPhysics;
 
 		public Address<uint32> spyroStateAddress;
+		public Address<AnimationState> spyroAnimStateAddress;
 		//public const Address<Vector3Int>[4] spyroIntendedAirVelocityAddress = .(0, (.)0x80078b40/*StD*/, 0, 0); // Exclusive to Spyro the Dragon
 		public const Address<uint32>[4] collisionRadius = .((.)0x8007036c, (.)0x8007044c, 0, 0); // Exclusive to Spyro: Year of the Dragon
 
@@ -229,6 +230,16 @@ namespace SpyroScope {
 			}
 		}
 
+		MatrixInt spyroBasis;
+		/// Current rotation of Spyro
+		public MatrixInt SpyroBasis {
+			get => spyroBasis;
+			set {
+				spyroBasis = value;
+				spyroBasisAddress.Write(&spyroBasis, this);
+			}
+		}
+
 		uint32 spyroState;
 		/// Current state of Spyro
 		public uint32 SpyroState {
@@ -236,6 +247,25 @@ namespace SpyroScope {
 			set {
 				spyroState = value;
 				spyroStateAddress.Write(&spyroState, this);
+			}
+		}
+
+		AnimationState[2] spyroAnimState;
+		/// Current animation state of Spyro's head
+		public AnimationState SpyroHeadAnimState {
+			get => spyroAnimState[0];
+			set {
+				spyroAnimState[0] = value;
+				spyroAnimStateAddress.SetAtIndex(&spyroAnimState[0], 0, this);
+			}
+		}
+
+		/// Current animation state of Spyro's body
+		public AnimationState SpyroBodyAnimState {
+			get => spyroAnimState[1];
+			set {
+				spyroAnimState[1] = value;
+				spyroAnimStateAddress.SetAtIndex(&spyroAnimState[1], 1, this);
 			}
 		}
 
@@ -260,7 +290,6 @@ namespace SpyroScope {
 		}
 
 		public int16[3] cameraEulerRotation;
-		public MatrixInt spyroBasis;
 		public int32 collidingTriangle = -1;
 		
 		public Color4[10][4] shinyColors;
@@ -753,6 +782,7 @@ namespace SpyroScope {
 			spyroEulerAddress.Read(&spyroEulerRotation, this);
 			spyroBasisAddress.Read(&spyroBasis, this);
 			spyroStateAddress.Read(&spyroState, this);
+			spyroAnimStateAddress.ReadArray(&spyroAnimState, 2, this);
 			spyroVelocityIntended.Read(&spyroIntendedVelocity, this);
 			spyroVelocityPhysics.Read(&spyroPhysicsVelocity, this);
 
@@ -1394,6 +1424,18 @@ namespace SpyroScope {
 				ReadFromRAM(spyroStateChangeAddress, &loadAddress, 8);
 				spyroStateAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 			}
+
+			// Spyro Animation State Signature
+			MemorySignature spyroAnimStateSignature = scope .();
+			spyroAnimStateSignature.AddInstruction(.lui);
+			spyroAnimStateSignature.AddInstruction(.sb);
+			spyroAnimStateSignature.AddInstruction(.sll);
+			spyroAnimStateSignature.AddInstruction(.lui);
+
+			signatureLocation = spyroAnimStateSignature.Find(this);
+			
+			ReadFromRAM(signatureLocation, &loadAddress, 8);
+			spyroAnimStateAddress = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 
 			// Background Clear Color Signature
 			MemorySignature clearColorSignature = scope .();

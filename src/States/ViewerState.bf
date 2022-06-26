@@ -902,7 +902,7 @@ namespace SpyroScope {
 			} else {
 				position = Emulator.active.SpyroPosition;
 				if (viewerMenu.objectSpaceToggle.value) {
-					basis = Emulator.active.spyroBasis.ToMatrixCorrected();
+					basis = Emulator.active.SpyroBasis.ToMatrixCorrected();
 				}
 			}
 
@@ -1067,7 +1067,7 @@ namespace SpyroScope {
 			DrawUtilities.Arrow(position, (Vector3)Emulator.active.SpyroIntendedVelocity / 10, 25, .(255,255,0));
 			DrawUtilities.Arrow(position, (Vector3)Emulator.active.SpyroPhysicsVelocity / 10, 50, .(255,128,0));
 
-			let viewerSpyroBasis = Emulator.active.spyroBasis.ToMatrixCorrected();
+			let viewerSpyroBasis = Emulator.active.SpyroBasis.ToMatrixCorrected();
 			Renderer.Line(position, position + viewerSpyroBasis * Vector3(500,0,0), .(255,0,0), .(255,0,0));
 			Renderer.Line(position, position + viewerSpyroBasis * Vector3(0,500,0), .(0,255,0), .(0,255,0));
 			Renderer.Line(position, position + viewerSpyroBasis * Vector3(0,0,500), .(0,0,255), .(0,0,255));
