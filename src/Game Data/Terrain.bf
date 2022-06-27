@@ -755,7 +755,6 @@ namespace SpyroScope {
 				
 				GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
 				Frame.RenderFullQuad();
-
 			} else {
 				if (solid) {
 					Terrain.Draw(false);
@@ -768,16 +767,12 @@ namespace SpyroScope {
 				if (wireframe) {
 					Terrain.Draw(true);
 
-					Renderer.defaultShader.Use();
-					Renderer.retroProgram.Use();
 					Renderer.BeginWireframe();
 	
 					Renderer.opaquePass.Render();
 					Renderer.retroDiffusePass.Render();
 					Renderer.retroTranparentPass.Render();
 					
-					Renderer.defaultShader.Use();
-					Renderer.retroProgram.Use();
 					Renderer.BeginSolid();
 				}
 			}
