@@ -17,13 +17,29 @@ namespace SpyroScope {
 			public uint16 faceDataSize, faceDataSize2;
 		}
 
+		[Ordered]
+		public struct RegionMetadata1 {
+			public uint8[8] a;
+			public int16 offsetY, offsetZ;
+			public uint16 vertexCount;
+			public int16 offsetX;
+			public uint16 faceCount, colorCount;
+		}
+
 		public RegionMetadata metadata;
+		public RegionMetadata1 metadata1;
 
 		/// The offset that is applied to the rendering mesh
 		public Vector3Int Offset {
 			[Inline]
 			get {
-				return .(
+				return Emulator.active.installment == .SpyroTheDragon ?
+				.(
+					metadata1.offsetX,
+					-metadata1.offsetY,
+					-metadata1.offsetZ
+				) : 
+				.(
 					metadata.offsetX,
 					-metadata.offsetY,
 					-metadata.offsetZ
@@ -31,11 +47,20 @@ namespace SpyroScope {
 			}
 			[Inline]
 			set {
-				metadata.offsetX = (int16)value.x;
-				metadata.offsetY = (int16)-value.y;
-				metadata.offsetZ = (int16)-value.z;
+				
+				if (Emulator.active.installment == .SpyroTheDragon) {
+					metadata1.offsetX = (int16)value.x;
+					metadata1.offsetY = (int16)-value.y;
+					metadata1.offsetZ = (int16)-value.z;
 
-				Emulator.active.WriteToRAM(address, &metadata, sizeof(RegionMetadata));
+					Emulator.active.WriteToRAM(address, &metadata1, sizeof(RegionMetadata1));
+				} else {
+					metadata.offsetX = (int16)value.x;
+					metadata.offsetY = (int16)-value.y;
+					metadata.offsetZ = (int16)-value.z;
+
+					Emulator.active.WriteToRAM(address, &metadata, sizeof(RegionMetadata));
+				}
 			}
 		}
 
@@ -44,11 +69,19 @@ namespace SpyroScope {
 		public this(Emulator.Address address) {
 			this.address = address;
 			
-			Emulator.active.ReadFromRAM(address, &metadata, sizeof(RegionMetadata));
+			if (Emulator.active.installment == .SpyroTheDragon) {
+				Emulator.active.ReadFromRAM(address, &metadata1, sizeof(RegionMetadata1));
+			} else {
+				Emulator.active.ReadFromRAM(address, &metadata, sizeof(RegionMetadata));
+			}
 		}
 
 		public void Reload() {
-			GenerateMesh();
+			if (Emulator.active.installment == .SpyroTheDragon) {
+				GenerateMesh1();
+			} else {
+				GenerateMesh();
+			}
 		}
 
 		void GenerateMesh() {
@@ -94,7 +127,7 @@ namespace SpyroScope {
 				colorIndices[0] = initialFace >> 3 & 0x7f;
 				colorIndices[1] = initialFace >> 10 & 0x7f;
 				colorIndices[2] = initialFace >> 17 & 0x7f;
-				
+
 				vertexList.Add(UnpackVertex(packedVertices[vertexIndices[0]]));
 				vertexList.Add(UnpackVertex(packedVertices[vertexIndices[1]]));
 				vertexList.Add(UnpackVertex(packedVertices[vertexIndices[2]]));
@@ -143,6 +176,66 @@ namespace SpyroScope {
 				c[i] = colorList[i];
 			}
 			
+			mesh = new .(v, n, c) .. MakeInstanced(1);
+		}
+
+		void GenerateMesh1() {
+			var dataStart = address + 0x18;
+
+			List<Vector3> vertexList = scope .();
+			List<Color> colorList = scope .();
+
+			// Used for swapping around values
+			uint32[3] vertexIndices = ?;
+			uint32[3] colorIndices = ?;
+
+			// Vertices
+			uint32[] packedVertices = scope .[metadata1.vertexCount];
+			Emulator.active.ReadFromRAM(dataStart, packedVertices.Ptr, packedVertices.Count * 4);
+
+			dataStart += packedVertices.Count * 4;
+
+			// Colors
+			Color4[] vertexColors = scope .[metadata1.colorCount];
+			Emulator.active.ReadFromRAM(dataStart, vertexColors.Ptr, vertexColors.Count * 4);
+
+			dataStart += vertexColors.Count * 4;
+			
+			let dataEnd = dataStart + metadata1.faceCount * 8;
+
+			while (dataStart < dataEnd) {
+				uint32[2] faceData = ?;
+				Emulator.active.ReadFromRAM(dataStart, &faceData, 8);
+
+				vertexIndices[0] = faceData[0] >> 2 & 0x3ff;
+				vertexIndices[1] = faceData[0] >> 12 & 0x3ff;
+				vertexIndices[2] = faceData[0] >> 22 & 0x3ff;
+
+				colorIndices[0] = faceData[1] >> 2 & 0x3ff;
+				colorIndices[1] = faceData[1] >> 12 & 0x3ff;
+				colorIndices[2] = faceData[1] >> 22 & 0x3ff;
+				
+				vertexList.Add(UnpackVertex(packedVertices[vertexIndices[0]]));
+				vertexList.Add(UnpackVertex(packedVertices[vertexIndices[1]]));
+				vertexList.Add(UnpackVertex(packedVertices[vertexIndices[2]]));
+				
+				colorList.Add(vertexColors[colorIndices[0]]);
+				colorList.Add(vertexColors[colorIndices[1]]);
+				colorList.Add(vertexColors[colorIndices[2]]);
+
+				dataStart += 8;
+			}
+
+			Vector3[] v = new .[vertexList.Count];
+			Vector3[] n = new .[vertexList.Count];
+			Color4[] c = new .[vertexList.Count];
+
+			for (let i < vertexList.Count) {
+				v[i] = vertexList[i];
+				n[i] = .(0,0,1);
+				c[i] = colorList[i];
+			}
+
 			mesh = new .(v, n, c) .. MakeInstanced(1);
 		}
 

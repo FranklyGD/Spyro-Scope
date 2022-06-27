@@ -1716,6 +1716,23 @@ namespace SpyroScope {
 			if (!signatureLocation.IsNull) {
 				ReadFromRAM(signatureLocation, &loadAddress, 8);
 				skyboxRegionsPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]) + 4;
+			} else {
+				// Spyro 1 Attempt
+				skyboxSignature.Clear();
+				skyboxSignature.AddInstruction(.lui);
+				skyboxSignature.AddInstruction(.sw);
+				skyboxSignature.AddInstruction(.lui);
+				skyboxSignature.AddInstruction(.sw);
+				skyboxSignature.AddInstruction(.blez);
+				skyboxSignature.AddInstruction(.addu);
+				skyboxSignature.AddInstruction(.addiu);
+				skyboxSignature.AddInstruction(.lw);
+				skyboxSignature.AddInstruction(.addiu);
+				skyboxSignature.AddInstruction(.addu);
+				
+				signatureLocation = skyboxSignature.Find(this);
+				ReadFromRAM(signatureLocation, &loadAddress, 8);
+				skyboxRegionsPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 			}
 		}
 
