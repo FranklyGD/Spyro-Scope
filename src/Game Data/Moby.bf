@@ -64,6 +64,10 @@ namespace SpyroScope {
 					Emulator.Address modelSetAddress = ?;
 					Emulator.active.mobyModelArrayPointer.GetAtIndex(&modelSetAddress, objectTypeID);
 
+					if ((uint32)modelSetAddress & 0x80000000 > 0) {
+					    return;
+					}
+
 					if (!modelSetAddress.IsNull) {
 						modelSets.Add(objectTypeID, new .(modelSetAddress));
 					}

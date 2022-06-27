@@ -22,6 +22,15 @@ namespace SpyroScope {
 		}
 
 		[Ordered]
+		struct ModelMetadata1 {
+			public uint8 vertexCount;
+			public uint8 faceCount;
+			public uint8 shadowSize;
+			uint8 b;
+			public Emulator.Address vertexDataAddress, colorDataAddress, faceDataAddress;
+		}
+
+		[Ordered]
 		struct AnimatedModelsMetadata {
 			uint32[15] _;
 			public Emulator.Address modelDataAddress;
@@ -52,10 +61,18 @@ namespace SpyroScope {
 
 		public this(Emulator.Address modelSetAddress) {
 			if ((int32)modelSetAddress > 0) {
-				GenerateModelFromStatic(modelSetAddress);
+				if (Emulator.active.installment == .SpyroTheDragon) {
+					GenerateModelFromStatic1(modelSetAddress);
+				} else {
+					GenerateModelFromStatic(modelSetAddress);
+				}
 				animated = false;
 			} else {
-				GenerateModelFromAnimated(modelSetAddress);
+				if (Emulator.active.installment == .SpyroTheDragon) {
+					GenerateModelFromStatic1(modelSetAddress);
+				} else {
+					GenerateModelFromAnimated(modelSetAddress);
+				}
 				animated = true;
 			}
 		}
@@ -276,6 +293,202 @@ namespace SpyroScope {
 
 				translucentModels[modelIndex] = new .(v, n, c) .. MakeInstanced(64);
 			}
+		}
+
+		void GenerateModelFromStatic1(Emulator.Address modelDataAddress) {
+			List<Vector3> activeVertices;
+			List<Color> activeColors;
+
+			texturedModels = new .[1];
+			solidModels = new .[1];
+			shinyModels = new .[1];
+			translucentModels = new .[1];
+
+			List<Vector3> solidVertices = scope .();
+			List<Color> solidColors = scope .();
+			List<Vector3> shinyVertices = scope .();
+			List<Color> shinyColors = scope .();
+			List<Vector3> texturedVertices = scope .();
+			List<Vector2> textureUVs = scope .();
+			List<Color> textureColors = scope .();
+
+			ModelMetadata1 modelMetadata = ?;
+			Emulator.active.ReadFromRAM(modelDataAddress, &modelMetadata, sizeof(ModelMetadata1));
+
+			if (modelMetadata.vertexCount > 0) {
+				int8[][3] packedVertices = scope .[modelMetadata.vertexCount];
+				Emulator.active.ReadFromRAM(modelMetadata.vertexDataAddress, &packedVertices[0], 3 * modelMetadata.vertexCount);
+
+				Color4[] colors = scope .[modelMetadata.faceDataAddress - modelMetadata.colorDataAddress];
+				Emulator.active.ReadFromRAM(modelMetadata.colorDataAddress, &colors[0], 4 * colors.Count);
+
+
+				uint32[4] triangleIndices = ?;
+				Vector3[4] triangleVertices = ?;
+				uint32[4] colorIndices = ?;
+
+				Emulator.Address scanningAddress = modelMetadata.faceDataAddress;
+				for (let i < modelMetadata.faceCount) {
+					uint32 packedTriangleIndex = ?;
+					Emulator.active.ReadFromRAM(scanningAddress, &packedTriangleIndex, 4);
+
+					let hasTextureData = false;//extraData & 0x80000000 > 0;
+
+					let materialMode = packedTriangleIndex & 0b011;
+
+					if (hasTextureData) {
+						activeVertices = texturedVertices;
+						activeColors = textureColors;
+					} else {
+						switch (materialMode) {
+							case 0:
+								activeVertices = solidVertices;
+								activeColors = solidColors;
+						
+							default:
+								activeVertices = shinyVertices;
+								activeColors = shinyColors;
+						}
+					}
+
+					triangleIndices[0] = packedTriangleIndex >> 9 & 0x7f;
+					triangleIndices[1] = packedTriangleIndex >> 16 & 0x7f;
+					triangleIndices[2] = packedTriangleIndex >> 23 & 0x7f;
+					triangleIndices[3] = packedTriangleIndex >> 2 & 0x7f;
+					
+					triangleVertices[0] = UnpackVertex1(packedVertices[triangleIndices[0]]);
+					triangleVertices[1] = UnpackVertex1(packedVertices[triangleIndices[1]]);
+					triangleVertices[2] = UnpackVertex1(packedVertices[triangleIndices[2]]);
+
+					if (triangleIndices[0] == triangleIndices[3]) {
+						activeVertices.Add(triangleVertices[2]);
+						activeVertices.Add(triangleVertices[1]);
+						activeVertices.Add(triangleVertices[0]);
+
+						if (materialMode == 0 && false) {
+							activeColors.Add(colors[colorIndices[2]]);
+							activeColors.Add(colors[colorIndices[1]]);
+							activeColors.Add(colors[colorIndices[0]]);
+						} else {
+							activeColors.Add(.(255,255,255));
+							activeColors.Add(.(255,255,255));
+							activeColors.Add(.(255,255,255));
+						}
+					} else {
+						triangleVertices[3] = UnpackVertex1(packedVertices[triangleIndices[3]]);
+					
+						activeVertices.Add(triangleVertices[2]);
+						activeVertices.Add(triangleVertices[1]);
+						activeVertices.Add(triangleVertices[0]);
+						
+						activeVertices.Add(triangleVertices[0]);
+						activeVertices.Add(triangleVertices[1]);
+						activeVertices.Add(triangleVertices[3]);
+					
+						if (materialMode == 0 && false) {
+							activeColors.Add(colors[colorIndices[2]]);
+							activeColors.Add(colors[colorIndices[0]]);
+							activeColors.Add(colors[colorIndices[1]]);
+						
+							activeColors.Add(colors[colorIndices[1]]);
+							activeColors.Add(colors[colorIndices[0]]);
+							activeColors.Add(colors[colorIndices[3]]);
+						} else {
+							activeColors.Add(.(255,255,255));
+							activeColors.Add(.(255,255,255));
+							activeColors.Add(.(255,255,255));
+							
+							activeColors.Add(.(255,255,255));
+							activeColors.Add(.(255,255,255));
+							activeColors.Add(.(255,255,255));
+						}
+					}
+
+					if (hasTextureData) {
+						ExtendedTextureQuad textureQuad = ?;
+						Emulator.active.ReadFromRAM(scanningAddress + 8, &textureQuad, sizeof(ExtendedTextureQuad));
+
+						textureQuad.Decode();
+					
+						//if (materialMode == 0) {
+							if (triangleIndices[0] == triangleIndices[3]) {
+								textureUVs.Add(textureQuad.GetVramUV0());
+								textureUVs.Add(textureQuad.GetVramUV1());
+								textureUVs.Add(textureQuad.GetVramUV2());
+							} else {
+								textureUVs.Add(textureQuad.GetVramUV0());
+								textureUVs.Add(textureQuad.GetVramUV2());
+								textureUVs.Add(textureQuad.GetVramUV1());
+
+								textureUVs.Add(textureQuad.GetVramUV1());
+								textureUVs.Add(textureQuad.GetVramUV2());
+								textureUVs.Add(textureQuad.GetVramUV3());
+							}
+						//}
+
+						scanningAddress += 4 * 5;
+					} else {
+					
+						scanningAddress += 4 * 2;
+					}
+				}
+			}
+
+			
+
+			Vector3[] v = new .[texturedVertices.Count];
+			Vector3[] n = new .[texturedVertices.Count];
+			Color4[] c = new .[texturedVertices.Count];
+			Vector2[] u = new .[texturedVertices.Count];
+
+			for (let i < texturedVertices.Count) {
+				v[i] = texturedVertices[i];
+				c[i] = textureColors[i];
+				u[i] = .(textureUVs[i].x, textureUVs[i].y);
+			}
+
+			for (var i = 0; i < texturedVertices.Count; i += 3) {
+				n[i] = n[i+1] = n[i+2] = .(0,0,1);
+			}
+
+			texturedModels[0] = new .(v, u, n, c) .. MakeInstanced(64);
+
+			v = new .[solidVertices.Count];
+			n = new .[solidVertices.Count];
+			c = new .[solidVertices.Count];
+
+			for (let i < solidVertices.Count) {
+				v[i] = solidVertices[i];
+				c[i] = solidColors[i];
+			}
+
+			for (var i = 0; i < solidVertices.Count; i += 3) {
+				n[i] = n[i+1] = n[i+2] = .(0,0,1);
+			}
+
+			solidModels[0] = new .(v, n, c) .. MakeInstanced(64);
+
+			v = new .[shinyVertices.Count];
+			n = new .[shinyVertices.Count];
+			c = new .[shinyVertices.Count];
+
+			for (let i < shinyVertices.Count) {
+				v[i] = shinyVertices[i];
+				c[i] = shinyColors[i];
+			}
+
+			for (var i = 0; i < shinyVertices.Count; i += 3) {
+				n[i] = n[i+1] = n[i+2] = Vector3.Cross(v[i+2] - v[i+0], v[i+1] - v[i+0]);
+			}
+
+			shinyModels[0] = new .(v, n, c) .. MakeInstanced(64);
+
+
+			v = new .[0];
+			n = new .[0];
+			c = new .[0];
+
+			translucentModels[0] = new .(v, n, c) .. MakeInstanced(64);
 		}
 
 		// Derived from Spyro: Ripto's Rage [80044dcc]
@@ -568,6 +781,16 @@ namespace SpyroScope {
 			vertex.x = (int32)packedVertex >> 0x15 << 1;
 			vertex.y = -(int32)(packedVertex << 10) >> 0x15 << 1;
 			vertex.z = -((int32)(packedVertex << 20) >> 20) << 1;
+
+			return vertex;
+		}
+
+		Vector3 UnpackVertex1(int8[3] packedVertex) {
+			Vector3 vertex = ?;
+
+			vertex.x = (int32)packedVertex[0] << 2;
+			vertex.y = -(int32)packedVertex[1] << 2;
+			vertex.z = -(int32)packedVertex[2] << 2;
 
 			return vertex;
 		}
