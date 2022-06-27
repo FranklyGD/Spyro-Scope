@@ -352,6 +352,8 @@ namespace SpyroScope {
 
 			var pointCount = Math.Min(maxPointBufferLength, points.Count);
 			GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, pointCount * sizeof(Point), points.Ptr);
+			
+			GL.glActiveTexture(GL.GL_TEXTURE0);
 
 			var dataStart = 0;
 			var dataOffset = 0;
