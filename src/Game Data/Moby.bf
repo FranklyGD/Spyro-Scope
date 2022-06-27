@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.IO;
 
 namespace SpyroScope {
 	[Ordered]
@@ -44,6 +45,8 @@ namespace SpyroScope {
 		public bool IsTerminator { [Inline] get => IsNull || updateState == -1; }
 
 		public static List<Moby> allocated = new .() ~ delete _;
+		
+		static Dictionary<uint16, MobyModelSet> modelSets = new .() ~ delete _;
 
 		public float scale { get { return Emulator.active.installment == .SpyroTheDragon || size == 0 ? 1 : (float)0x20 / size; } }
 
@@ -52,6 +55,21 @@ namespace SpyroScope {
 			(float)eulerRotation.y / 0x80 * Math.PI_f,
 			-(float)eulerRotation.z / 0x80 * Math.PI_f
 		) * scale; } }
+
+		public void Draw() {
+			if (HasModel) {
+				if (modelSets.ContainsKey(objectTypeID)) {
+					modelSets[objectTypeID].QueueInstance(modelID, .Transform(position, basis), IsActive ? .(1,1,1) : .(0.125f,0.125f,0.125f), Emulator.active.shinyColors[color.r % 10][1]);
+				} else {
+					Emulator.Address modelSetAddress = ?;
+					Emulator.active.mobyModelArrayPointer.GetAtIndex(&modelSetAddress, objectTypeID);
+
+					if (!modelSetAddress.IsNull) {
+						modelSets.Add(objectTypeID, new .(modelSetAddress));
+					}
+				}
+			}
+		}
 
 		public void DrawOriginAxis() {
 			let basis = basis;
@@ -170,6 +188,38 @@ namespace SpyroScope {
 		[Inline]
 		public static Emulator.Address<Moby> GetAddress(int index) {
 			return Emulator.active.objectArrayAddress + index * sizeof(Moby);
+		}
+
+		public static void ClearModels() {
+			for (let modelSet in modelSets.Values) {
+				delete modelSet;
+			}
+			modelSets.Clear();
+		}
+
+		public void ExportObjectModel() {
+			if (!HasModel) return;
+
+			let modelSet = Moby.modelSets[objectTypeID];
+			if (modelSet.texturedModels.Count == 0) return;
+
+			let dialog = new SaveFileDialog();
+			dialog.FileName = "model";
+			dialog.SetFilter("Polygon (*.ply)|*.ply|All files (*.*)|*.*");
+			dialog.OverwritePrompt = true;
+			dialog.CheckFileExists = true;
+			dialog.AddExtension = true;
+			dialog.DefaultExt = "ply";
+
+			switch (dialog.ShowDialog()) {
+				case .Ok(let val):
+					if (val == .OK) {
+						modelSet.Export(dialog.FileNames[0], modelID, scale);
+					}
+				case .Err:
+			}
+
+			delete dialog;
 		}
 	}
 }

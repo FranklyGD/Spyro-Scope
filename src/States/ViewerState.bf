@@ -49,7 +49,6 @@ namespace SpyroScope {
 		bool drawLimits;
 
 		// Objects
-		Dictionary<uint16, MobyModelSet> modelSets = new .();
 		bool exportMode = false;
 
 		// UI
@@ -137,10 +136,7 @@ namespace SpyroScope {
 			Terrain.Dispose();
 			Skybox.Dispose();
 
-			for (let modelSet in modelSets.Values) {
-				delete modelSet;
-			}
-			delete modelSets;
+			Moby.ClearModels();
 
 			Recording.ClearRecord();
 		}
@@ -535,7 +531,7 @@ namespace SpyroScope {
 							Selection.Select();
 
 							if (exportMode && ViewerSelection.currentObjIndex > -1) {
-								ExportObjectModel();
+								Moby.allocated[ViewerSelection.currentObjIndex].ExportObjectModel();
 							}
 						}
 					}
@@ -705,33 +701,6 @@ namespace SpyroScope {
 			}
 
 			return true;
-		}
-
-		void DrawMoby(Moby object) {
-			if (Emulator.active.installment == .SpyroTheDragon) {
-				return; // Ignore drawing models for Spyro 1 for now
-			}
-
-			if (object.HasModel) {
-				if (modelSets.ContainsKey(object.objectTypeID)) {
-					if (!drawObjectExperimentalModels) {
-						Emulator.Address modelSetAddress = ?;
-						Emulator.active.mobyModelArrayPointer.GetAtIndex(&modelSetAddress, object.objectTypeID);
-						if ((uint32)modelSetAddress & 0x80000000 > 0) {
-							return;
-						}
-					}
-
-					modelSets[object.objectTypeID].QueueInstance(object.modelID, .Transform(object.position, object.basis), object.IsActive ? .(1,1,1) : .(0.125f,0.125f,0.125f), Emulator.active.shinyColors[object.color.r % 10][1]);
-				} else {
-					Emulator.Address modelSetAddress = ?;
-					Emulator.active.mobyModelArrayPointer.GetAtIndex(&modelSetAddress, object.objectTypeID);
-
-					if (!modelSetAddress.IsNull) {
-						modelSets.Add(object.objectTypeID, new .(modelSetAddress));
-					}
-				}
-			}
 		}
 
 		void DrawMobyIcon(Moby object, Vector3 screenPosition, float scale) {
@@ -911,13 +880,10 @@ namespace SpyroScope {
 		
 		void OnSceneChanging() {
 			Selection.Reset();
-
+			
 			// Clear model data since the texture locations change in VRAM for every level
 			// Also since the object models have stopped drawing beyond this point
-			for (let modelSet in modelSets.Values) {
-				delete modelSet;
-			}
-			modelSets.Clear();
+			Moby.ClearModels();
 
 			lastUpdatedSceneChanging = .Now;
 
@@ -1036,7 +1002,7 @@ namespace SpyroScope {
 					}
 
 					if (drawObjectModels) {
-						DrawMoby(object);
+						object.Draw();
 					}
 				}
 			}
@@ -1393,32 +1359,6 @@ namespace SpyroScope {
 				case .Ok(let val):
 					if (val == .OK) {
 						Terrain.Export(dialog.FileNames[0]);
-					}
-				case .Err:
-			}
-
-			delete dialog;
-		}
-
-		void ExportObjectModel() {
-			let object = Moby.allocated[ViewerSelection.currentObjIndex];
-			if (!object.HasModel) return;
-
-			let modelSet = modelSets[object.objectTypeID];
-			if (modelSet.texturedModels.Count == 0) return;
-
-			let dialog = new SaveFileDialog();
-			dialog.FileName = "model";
-			dialog.SetFilter("Polygon (*.ply)|*.ply|All files (*.*)|*.*");
-			dialog.OverwritePrompt = true;
-			dialog.CheckFileExists = true;
-			dialog.AddExtension = true;
-			dialog.DefaultExt = "ply";
-
-			switch (dialog.ShowDialog()) {
-				case .Ok(let val):
-					if (val == .OK) {
-						modelSet.Export(dialog.FileNames[0], object.modelID, object.scale);
 					}
 				case .Err:
 			}
