@@ -75,11 +75,10 @@ namespace SpyroScope {
 		}
 
 		public ~this() {
-			Emulator.UnbindAllEmulators();
-
 			state.Exit();
-
 			DeleteContainerAndItems!(states);
+
+			Emulator.UnbindAllEmulators();
 
 			Renderer.Unload();
 			if (window != null)
