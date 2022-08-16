@@ -52,7 +52,7 @@ namespace SpyroScope {
 					let transformedOrigin = (origin - visualMesh.Offset) * transform;
 					let transformedRay = ray * transform;
 
-					if (Terrain.renderMode == .NearLQ || Terrain.renderMode == .NearHQ) {
+					if (Terrain.renderMode == .NearLQ || Terrain.renderMode == .NearHQ || Terrain.renderMode == .Compare) {
 						if (GMath.RayMeshIntersect(transformedOrigin, transformedRay, visualMesh.nearMesh, ref distance, ref hoveredTriangleIndex)) {
 							hoveredRegionIndex = i;
 							hoveredRegionTransparent = false;
