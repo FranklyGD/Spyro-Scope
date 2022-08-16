@@ -18,10 +18,9 @@ namespace SpyroScope {
 		Panel collisionOptionGroup, nearTerrainToggleGroup;
 
 		public this(ViewerState viewerState) : base() {
-			(String label, bool defaultValue, delegate void(bool) event)[6] toggleList = .(
+			(String label, bool defaultValue, delegate void(bool) event)[5] toggleList = .(
 				("Object Origin Axis", true, new => viewerState.ToggleOrigins),
 				("Object Models", true, new => viewerState.ToggleModels),
-				("Object Models (Exp.)", false, new => viewerState.ToggleModelsExperimental),
 				("Inactive Objects", false, new => viewerState.ToggleInactive),
 				("Display Icons", false, new => viewerState.ToggleIcons),
 				("All Visual Moby Data", false, new => viewerState.ToggleMobyData)

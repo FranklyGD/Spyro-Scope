@@ -39,7 +39,6 @@ namespace SpyroScope {
 
 		// Options
 		bool drawObjectModels = true;
-		bool drawObjectExperimentalModels = false;
 		bool drawObjectOrigins = true;
 		public static bool showInactive = false;
 		bool displayIcons = false;
@@ -1220,11 +1219,6 @@ namespace SpyroScope {
 		public void ToggleModels(bool toggle) {
 			drawObjectModels = toggle;
 			messageFeed.PushMessage("Toggled Object Models");
-		}
-
-		public void ToggleModelsExperimental(bool toggle) {
-			drawObjectExperimentalModels = toggle;
-			messageFeed.PushMessage("Toggled Object Models Experimental");
 		}
 
 		public void ToggleInactive(bool toggle) {
