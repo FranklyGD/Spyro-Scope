@@ -129,6 +129,8 @@ namespace SpyroScope {
 			compareProgram.Use();
 			GL.glUniform1i(compareProgram.GetUniform("depth0"), 0);
 			GL.glUniform1i(compareProgram.GetUniform("depth1"), 1);
+			
+			defaultShader.Use();
 
 			opaquePass.shader = defaultShader;
 			tranparentPass.shader = defaultShader;
