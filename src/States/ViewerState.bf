@@ -1133,15 +1133,15 @@ namespace SpyroScope {
 					Renderer.Line(frame.position, frame.position + (pdir - direction) * size, .(255,255,255), .(255,255,255));
 					Renderer.Line(frame.position, frame.position - (pdir + direction) * size, .(255,255,255), .(255,255,255));
 				}
+				
+				let direction = ((Vector3)nextFrame.position - frame.position).Normalized();
+				let pdir = Vector3.Cross(direction, Camera.basis.z).Normalized();
+
+				let size = Vector3.Dot(Camera.position - frame.position, Camera.basis.z) / 100;
 
 				// Every state change
 				if (frame.state != nextFrame.state) {
-					let direction = ((Vector3)nextFrame.position - frame.position).Normalized();
-					let pdir = Vector3.Cross(direction, Camera.basis.z).Normalized();
-
-					let size = Vector3.Dot(Camera.position - frame.position, Camera.basis.z) / 100;
-					Renderer.Line(nextFrame.position, nextFrame.position + pdir * size, .(255,255,255), .(255,255,255));
-					Renderer.Line(nextFrame.position, nextFrame.position - pdir * size, .(255,255,255), .(255,255,255));
+					Renderer.Line(nextFrame.position - pdir * size, nextFrame.position + pdir * size, .(255,255,255), .(255,255,255));
 				}
 			}
 		}

@@ -14,24 +14,30 @@ namespace SpyroScope {
 		Texture crossButtonTexture = new .("images/ui/icon_button_cross.png") ~ delete _; 
 		Texture circleButtonTexture = new .("images/ui/icon_button_circle.png") ~ delete _;
 
+		int hoveredFrame = -1;
 		int subDragged;
+		enum DisplayMode {
+			Minimal,
+			Graph,
+		}
+		DisplayMode displayMode = .Graph;
 
 		public this() {
 			PushParent(this);
 
 			replayButton = new .();
 			
-			replayButton.Anchor = .(0.5f, 0.5f, 0, 0);
+			replayButton.Anchor = .(0.5f, 0.5f, 1, 1);
 			replayButton.Offset = .(-16, 16, -8, 8);
-			replayButton.Offset.Shift(-16, 10);
+			replayButton.Offset.Shift(-16, -10);
 			replayButton.iconTexture = playTexture;
 			replayButton.OnActuated.Add(new => ToggleReplay);
 
 			stopReplayButton = new .();
 			
-			stopReplayButton.Anchor = .(0.5f, 0.5f, 0, 0);
+			stopReplayButton.Anchor = .(0.5f, 0.5f, 1, 1);
 			stopReplayButton.Offset = .(-16, 16, -8, 8);
-			stopReplayButton.Offset.Shift(16, 10);
+			stopReplayButton.Offset.Shift(16, -10);
 			stopReplayButton.text = "Stop";
 			stopReplayButton.OnActuated.Add(new () => {
 				stopReplayButton.Enabled = false;
@@ -41,9 +47,9 @@ namespace SpyroScope {
 
 			Button clearButton = new .();
 			
-			clearButton.Anchor = .(0.5f, 0.5f, 0, 0);
+			clearButton.Anchor = .(0.5f, 0.5f, 1, 1);
 			clearButton.Offset = .(-25, 25, -8, 8);
-			clearButton.Offset.Shift(0, 26);
+			clearButton.Offset.Shift(0, -26);
 			clearButton.text = "Clear";
 			clearButton.OnActuated.Add(new () => {
 				Recording.ClearRecord();
@@ -55,9 +61,9 @@ namespace SpyroScope {
 
 			clearButton = new .();
 
-			clearButton.Anchor = .(0.5f, 0.5f, 0, 0);
+			clearButton.Anchor = .(0.5f, 0.5f, 1, 1);
 			clearButton.Offset = .(-10, 10, -8, 8);
-			clearButton.Offset.Shift(-35, 26);
+			clearButton.Offset.Shift(-35, -26);
 			clearButton.text = "<";
 			clearButton.OnActuated.Add(new () => {
 				Recording.TrimRecordBefore(Recording.CurrentFrame);
@@ -65,9 +71,9 @@ namespace SpyroScope {
 
 			clearButton = new .();
 
-			clearButton.Anchor = .(0.5f, 0.5f, 0, 0);
+			clearButton.Anchor = .(0.5f, 0.5f, 1, 1);
 			clearButton.Offset = .(-10, 10, -8, 8);
-			clearButton.Offset.Shift(35, 26);
+			clearButton.Offset.Shift(35, -26);
 			clearButton.text = ">";
 			clearButton.OnActuated.Add(new () => {
 				Recording.TrimRecordAfter(Recording.CurrentFrame);
@@ -79,9 +85,15 @@ namespace SpyroScope {
 		protected override void Update() {
 			replayButton.Enabled = !Recording.Active;
 			replayButton.iconTexture = Recording.Playing ? pauseTexture : playTexture;
+
+			if (hoveredElement == this) {
+				let halfWidth = drawn.Width / 2;
+				hoveredFrame = (int)Math.Round((WindowApp.mousePosition.x - halfWidth) / 3) + Recording.CurrentFrame;
+			}
 		}
 
 		public override void Draw() {
+			let buttonsHeight = 16;
 			DrawUtilities.Rect(drawn.top, drawn.bottom, drawn.left, drawn.right, .(0,0,0,192));
 
 			let halfWidth = drawn.Width / 2;
@@ -93,7 +105,14 @@ namespace SpyroScope {
 
 			let hcenter = (drawn.left + drawn.right) / 2;
 
+			
+			let windowBottom = drawn.bottom - buttonsHeight * 2;
+			let windowHeight = windowBottom - drawn.top;
+
+			// For each frame in the viewed range
 			for (var i = start; i < end; i++) {
+				let frame = Recording.GetFrame(i);
+
 				let previousFrameIndex = i-1;
 				Recording.SpyroFrame prevFrame = ?;
 				if (previousFrameIndex > -1) {
@@ -101,66 +120,97 @@ namespace SpyroScope {
 				} else {
 					prevFrame.state = 0;
 					prevFrame.input = 0;
+					prevFrame.velocity = frame.velocity;
 				}
-
-				let frame = Recording.GetFrame(i);
-
-				var speedColor = Color(0,0,0);
-				let speed = frame.targetVelocity.Length();
-				if (speed > 0) {
-					let speedScale = speed / Recording.HighestSpeed;
-					speedColor = .((.)(255 * (1 - speedScale)), (.)(255 * speedScale), 0);
-				}
-
+				
 				let leftFrame = hcenter - 1.5f + offset * 3;
 				let rightFrame = hcenter + 1.5f + offset * 3;
 
-				// Draw frame with color of relative speed to max recorded speed
-				DrawUtilities.Rect(drawn.bottom - 8, drawn.bottom - 4, leftFrame, rightFrame, speedColor);
+				switch (displayMode) {
+					case .Minimal:
+						// Draw frame with color of relative speed to max recorded speed
+						var speedColor = Color(0,0,0);
+						let speed = frame.targetVelocity.Length();
+						if (speed > 0) {
+							let speedScale = speed / Recording.HighestSpeed;
+							speedColor = .((.)(255 * (1 - speedScale)), (.)(255 * speedScale), 0);
+						}
+	
+						DrawUtilities.Rect(drawn.top + 4, drawn.top + 8, leftFrame, rightFrame, speedColor);
+
+					case .Graph:
+						let previousLateralSpeed = Math.Sqrt(prevFrame.velocity.x * prevFrame.velocity.x + prevFrame.velocity.y * prevFrame.velocity.y);
+						let lateralSpeed = Math.Sqrt(frame.velocity.x * frame.velocity.x + frame.velocity.y * frame.velocity.y);
+						Renderer.Line(
+							.(leftFrame, drawn.top + windowHeight - previousLateralSpeed / Recording.HighestSpeed * windowHeight,0),
+							.(rightFrame, drawn.top + windowHeight - lateralSpeed / Recording.HighestSpeed * windowHeight,0),
+							.(255,0,0), .(255,0,0)
+						);
+						Renderer.Line(
+							.(leftFrame, drawn.top + windowHeight - (prevFrame.velocity.z / Recording.HighestSpeed * 0.5f + 0.5f) * windowHeight,0),
+							.(rightFrame, drawn.top + windowHeight - (frame.velocity.z / Recording.HighestSpeed * 0.5f + 0.5f) * windowHeight,0),
+							.(0,255,0), .(0,255,0)
+						);
+				}
+				
 
 				// Draw face button icon on pressed
 				// and line when it remains held
 				if (frame.input & 0x10 > 0) {
 					let justPressed = prevFrame.input & 0x10 == 0;
-					DrawUtilities.Rect(drawn.bottom - (justPressed ? 36 : 12), drawn.bottom - 8, leftFrame, rightFrame, .(73,218,124));
+					DrawUtilities.Rect(windowBottom - (justPressed ? 36 : 12), windowBottom - 8, leftFrame, rightFrame, .(73,218,124));
 					if (justPressed) {
-						DrawUtilities.Rect(drawn.bottom - 48, drawn.bottom - 24, leftFrame, leftFrame + 24, 0,1,0,1, triangleButtonTexture, .(255,255,255));
+						DrawUtilities.Rect(windowBottom - 48, windowBottom - 24, leftFrame, leftFrame + 24, 0,1,0,1, triangleButtonTexture, .(255,255,255));
 					}
 				}
 				if (frame.input & 0x20 > 0) {
 					let justPressed = prevFrame.input & 0x20 == 0;
-					DrawUtilities.Rect(drawn.bottom -  (justPressed ? 36 : 16), drawn.bottom - 12, leftFrame, rightFrame, .(226,55,55));
+					DrawUtilities.Rect(windowBottom -  (justPressed ? 36 : 16), windowBottom - 12, leftFrame, rightFrame, .(226,55,55));
 					if (prevFrame.input & 0x20 == 0) {
-						DrawUtilities.Rect(drawn.bottom - 48, drawn.bottom - 24, leftFrame, leftFrame + 24, 0,1,0,1, circleButtonTexture, .(255,255,255));
+						DrawUtilities.Rect(windowBottom - 48, windowBottom - 24, leftFrame, leftFrame + 24, 0,1,0,1, circleButtonTexture, .(255,255,255));
 					}
 				}
 				if (frame.input & 0x40 > 0) {
 					let justPressed = prevFrame.input & 0x40 == 0;
-					DrawUtilities.Rect(drawn.bottom -  (justPressed ? 36 : 20), drawn.bottom - 16, leftFrame, rightFrame, .(126,171,226));
+					DrawUtilities.Rect(windowBottom -  (justPressed ? 36 : 20), windowBottom - 16, leftFrame, rightFrame, .(126,171,226));
 					if (prevFrame.input & 0x40 == 0) {
-						DrawUtilities.Rect(drawn.bottom - 48, drawn.bottom - 24, leftFrame, leftFrame + 24, 0,1,0,1, crossButtonTexture, .(255,255,255));
+						DrawUtilities.Rect(windowBottom - 48, windowBottom - 24, leftFrame, leftFrame + 24, 0,1,0,1, crossButtonTexture, .(255,255,255));
 					}
 				}
 				if (frame.input & 0x80 > 0) {
 					let justPressed = prevFrame.input & 0x80 == 0;
-					DrawUtilities.Rect(drawn.bottom -  (justPressed ? 36 : 24), drawn.bottom - 20, leftFrame, rightFrame, .(208,142,210));
+					DrawUtilities.Rect(windowBottom -  (justPressed ? 36 : 24), windowBottom - 20, leftFrame, rightFrame, .(208,142,210));
 					if (prevFrame.input & 0x80 == 0) {
-						DrawUtilities.Rect(drawn.bottom - 48, drawn.bottom - 24, leftFrame, leftFrame + 24, 0,1,0,1, squareButtonTexture, .(255,255,255));
+						DrawUtilities.Rect(windowBottom - 48, windowBottom - 24, leftFrame, leftFrame + 24, 0,1,0,1, squareButtonTexture, .(255,255,255));
 					}
 				}
 
+
 				// Every second (30 frames)
 				if (i % 30 == 0) {
-					Renderer.Line(.((int)hcenter + offset * 3,drawn.bottom,0), .((int)hcenter + offset * 3,drawn.bottom - 48,0), .(255,255,255), .(255,255,255));
-					WindowApp.fontSmall.Print(scope $"{i/30}s", .((int)hcenter + offset * 3, drawn.bottom - 48 - WindowApp.fontSmall.height), .(255,255,255));
+					Renderer.Line(.((int)hcenter + offset * 3,windowBottom,0), .((int)hcenter + offset * 3,drawn.top,0), .(255,255,255), .(255,255,255));
+					WindowApp.fontSmall.Print(scope $"{i/30}s", .((int)hcenter + offset * 3 + 2, windowBottom - WindowApp.fontSmall.height), .(255,255,255));
 				}
 
 				// Draw line on currently previewed frame
 				if (i == Recording.CurrentFrame) {
-					Renderer.Line(.((int)hcenter + offset * 3,drawn.bottom,0), .((int)hcenter + offset * 3,drawn.bottom - 64,0), .(255,255,255), .(255,255,255));
+					Renderer.Line(.((int)hcenter + offset * 3,windowBottom,0), .((int)hcenter + offset * 3,drawn.top,0), .(255,255,255), .(255,255,255));
 				}
 
 				offset++;
+			}
+
+			if (hoveredFrame > -1 && hoveredFrame < Recording.FrameCount) {
+				offset = hoveredFrame - Recording.CurrentFrame;
+				Renderer.Line(.((int)hcenter + offset * 3,windowBottom,0), .((int)hcenter + offset * 3,drawn.top,0), .(255,255,0), .(255,255,0));
+
+				let frame = Recording.GetFrame(hoveredFrame);
+
+				let lateralSpeed = Math.Sqrt(frame.velocity.x * frame.velocity.x + frame.velocity.y * frame.velocity.y);
+
+				WindowApp.fontSmall.Print(scope $"{lateralSpeed / 1000:0.00} m/s",.((int)hcenter + offset * 3 + 2, drawn.top + (windowHeight - WindowApp.fontSmall.height) - lateralSpeed / Recording.HighestSpeed * (windowHeight - WindowApp.fontSmall.height)), .(255,0,0));
+				WindowApp.fontSmall.Print(scope $"{frame.velocity.z / 1000:0.00} m/s",.((int)hcenter + offset * 3 + 2, drawn.top + (windowHeight - WindowApp.fontSmall.height) - (frame.velocity.z / Recording.HighestSpeed * 0.5f + 0.5f) * (windowHeight - WindowApp.fontSmall.height)), .(0,255,0));
+
 			}
 
 			base.Draw();
@@ -191,6 +241,7 @@ namespace SpyroScope {
 
 		protected override void MouseExit() {
 			SDL.SetCursor(arrow);
+			hoveredFrame = -1;
 		}
 
 		void ToggleReplay() {
