@@ -82,5 +82,17 @@ namespace SpyroScope {
 				colorInfoScan += 4;
 			}
 		}
+
+		public void SetDefault() {
+			let region = Terrain.regions[regionIndex];
+			var i = 0;
+			for (let timeOffset in timeOffsets) {
+				region.SetNearColor((.)i, baseColors[i], false);
+				i++;
+			}
+
+			region.UpdateSubdividedColor(false);
+			region.UpdateSubdividedColor(true);
+		}
 	}
 }

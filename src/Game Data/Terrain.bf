@@ -143,6 +143,28 @@ namespace SpyroScope {
 			}
 		}
 
+		static bool useDefault = false;
+		public static bool UsingDefault {
+			get => useDefault;
+			set {
+				if (value) {
+					for (let warper in regionWarpers) {
+						warper.SetDefault();
+					}
+
+					for (let warper in regionVerticalWarpers) {
+						warper.SetDefault();
+					}
+
+					for (let warper in regionColorWarpers) {
+						warper.SetDefault();
+					}
+				}
+
+				useDefault = value;
+			}
+		}
+
 		public static bool decoded;
 
 		public static Frame collisionFrame;
@@ -584,7 +606,7 @@ namespace SpyroScope {
 				Emulator.active.ReadFromRAM(Emulator.active.regionsRenderingArrayAddress, renderingFlags.CArray(), RegionCount);
 			}
 
-			if (!Emulator.active.regionsWarpPointer.IsNull) {
+			if (!useDefault && !Emulator.active.regionsWarpPointer.IsNull) {
 				uint32 clock = ?;
 				Emulator.active.ReadFromRAM(Emulator.active.frameClockAddress, &clock, 4);
 				uint32 warpClock = clock + (clock >> 1);
@@ -863,6 +885,42 @@ namespace SpyroScope {
 			// Texture Quad Info
 			stream.Write((uint32)textures.Count);
 			stream.Write(Span<TextureQuad>(textures));
+
+			// Warpers (The values are transformed and reorganized, so the original structure is not used)
+			stream.Write((uint32)regionWarpers.Count);
+			for (let warper in regionWarpers) {
+				stream.Write(warper.[Friend]regionIndex);
+
+				let basePositions = warper.[Friend]basePositions;
+				stream.Write((uint32)basePositions.Count);
+				stream.Write(Span<Vector3Int>(basePositions));
+
+				let timeOffsets = warper.[Friend]timeOffsets;
+				stream.Write(timeOffsets.Count);
+				for (let key in timeOffsets.Keys) {
+					stream.Write(key);
+				}
+				for (let value in timeOffsets.Values) {
+					stream.Write(value);
+				}
+			}
+
+			stream.Write((uint32)regionVerticalWarpers.Count);
+			for (let warper in regionVerticalWarpers) {
+				stream.Write(warper.[Friend]regionIndex);
+				let timeOffsets = warper.[Friend]timeOffsets;
+				stream.Write((uint32)timeOffsets.Count);
+				stream.Write(Span<uint32>(timeOffsets));
+			}
+
+			stream.Write((uint32)regionColorWarpers.Count);
+			for (let warper in regionColorWarpers) {
+				stream.Write(warper.[Friend]regionIndex);
+				let timeOffsets = warper.[Friend]timeOffsets;
+				stream.Write((uint32)timeOffsets.Count);
+				stream.Write(Span<uint8>(timeOffsets));
+				stream.Write(Span<Color4>(warper.[Friend]baseColors));
+			}
 
 			// Visual
 			stream.Write((uint32)regions.Count);

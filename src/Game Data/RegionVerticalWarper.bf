@@ -31,5 +31,21 @@ namespace SpyroScope {
 			// Make it update regardless in program regardless if it is rendering in game or not
 			// Commented code is part of the derived code
 		}
+
+		public void SetDefault() {
+			let region = Terrain.regions[regionIndex];
+			for (let i < (uint8)timeOffsets.Count) {
+				let timeOffset = timeOffsets[i];
+				Vector3Int vertex = region.GetNearVertex(i);
+
+				let baseHeight = timeOffset >> 16;
+				vertex.z = (int32)baseHeight << 1;
+
+				region.SetNearVertex(i, vertex, false);
+			}
+
+			region.UpdateSubdividedVertex(false);
+			region.UpdateSubdividedVertex(true);
+		}
 	}
 }

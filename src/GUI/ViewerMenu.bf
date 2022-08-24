@@ -209,7 +209,7 @@ namespace SpyroScope {
 
 			nearTerrainToggleGroup = new .();
 			nearTerrainToggleGroup.Anchor = .(0,1,0,0);
-			nearTerrainToggleGroup.Offset = .(-2, 2, -2 + 2 * WindowApp.font.height, -2 + 4 * WindowApp.font.height);
+			nearTerrainToggleGroup.Offset = .(-2, 2, -2 + 2 * WindowApp.font.height, -2 + 5 * WindowApp.font.height);
 			nearTerrainToggleGroup.texture = GUIElement.bgOutlineTexture;
 			nearTerrainToggleGroup.tint = .(128,128,128);
 			nearTerrainToggleGroup.visible = false;
@@ -238,23 +238,33 @@ namespace SpyroScope {
 			button = new .();
 			button.Offset = .(2, 18, 2 + 1 * WindowApp.font.height, 18 + 1 * WindowApp.font.height);
 			button.OnToggled.Add(new (value) => {
+				Terrain.UsingDefault = value;
+			});
+
+			text = new Text();
+			text.Text = "Use Default";
+			text.Offset = .(26,0,2 + (text.font.height + 6),0);
+
+			button = new .();
+			button.Offset = .(2, 18, 2 + 2 * WindowApp.font.height, 18 + 2 * WindowApp.font.height);
+			button.OnToggled.Add(new (value) => {
 				viewerState.ToggleFadeColors(value);
 				colorsButton.Enabled = textureButton.Enabled = !value;
 			});
 
 			text = new Text();
 			text.Text = "Show Fade Color";
-			text.Offset = .(26,0,2 + (text.font.height + 6),0);
+			text.Offset = .(26,0,2 + 2 * (text.font.height + 6),0);
 
 			GUIElement.PopParent();
 
 			button = new .();
-			button.Offset = .(0, 16, 4 * WindowApp.font.height, 16 + 4 * WindowApp.font.height);
+			button.Offset = .(0, 16, 5 * WindowApp.font.height, 16 + 5 * WindowApp.font.height);
 			button.OnToggled.Add(new => viewerState.ToggleLimits);
 
 			text = new Text();
 			text.Text = "Show Height Limits";
-			text.Offset = .(24, 0, 1 + 4 * WindowApp.font.height, 0);
+			text.Offset = .(24, 0, 1 + 5 * WindowApp.font.height, 0);
 
 			GUIElement.PopParent();
 
