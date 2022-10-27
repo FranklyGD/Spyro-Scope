@@ -148,16 +148,18 @@ namespace SpyroScope {
 			get => useDefault;
 			set {
 				if (value) {
-					for (let warper in regionWarpers) {
-						warper.SetDefault();
-					}
-
-					for (let warper in regionVerticalWarpers) {
-						warper.SetDefault();
-					}
-
-					for (let warper in regionColorWarpers) {
-						warper.SetDefault();
+					if (Emulator.active.installment != .SpyroTheDragon) {
+						for (let warper in regionWarpers) {
+							warper.SetDefault();
+						}
+	
+						for (let warper in regionVerticalWarpers) {
+							warper.SetDefault();
+						}
+	
+						for (let warper in regionColorWarpers) {
+							warper.SetDefault();
+						}
 					}
 				}
 
@@ -886,40 +888,46 @@ namespace SpyroScope {
 			stream.Write((uint32)textures.Count);
 			stream.Write(Span<TextureQuad>(textures));
 
-			// Warpers (The values are transformed and reorganized, so the original structure is not used)
-			stream.Write((uint32)regionWarpers.Count);
-			for (let warper in regionWarpers) {
-				stream.Write(warper.[Friend]regionIndex);
-
-				let basePositions = warper.[Friend]basePositions;
-				stream.Write((uint32)basePositions.Count);
-				stream.Write(Span<Vector3Int>(basePositions));
-
-				let timeOffsets = warper.[Friend]timeOffsets;
-				stream.Write(timeOffsets.Count);
-				for (let key in timeOffsets.Keys) {
-					stream.Write(key);
+			if (Emulator.active.installment == .SpyroTheDragon) {
+				stream.Write((uint32)0);
+				stream.Write((uint32)0);
+				stream.Write((uint32)0);
+			} else {
+				// Warpers (The values are transformed and reorganized, so the original structure is not used)
+				stream.Write((uint32)regionWarpers.Count);
+				for (let warper in regionWarpers) {
+					stream.Write(warper.[Friend]regionIndex);
+	
+					let basePositions = warper.[Friend]basePositions;
+					stream.Write((uint32)basePositions.Count);
+					stream.Write(Span<Vector3Int>(basePositions));
+	
+					let timeOffsets = warper.[Friend]timeOffsets;
+					stream.Write(timeOffsets.Count);
+					for (let key in timeOffsets.Keys) {
+						stream.Write(key);
+					}
+					for (let value in timeOffsets.Values) {
+						stream.Write(value);
+					}
 				}
-				for (let value in timeOffsets.Values) {
-					stream.Write(value);
+	
+				stream.Write((uint32)regionVerticalWarpers.Count);
+				for (let warper in regionVerticalWarpers) {
+					stream.Write(warper.[Friend]regionIndex);
+					let timeOffsets = warper.[Friend]timeOffsets;
+					stream.Write((uint32)timeOffsets.Count);
+					stream.Write(Span<uint32>(timeOffsets));
 				}
-			}
-
-			stream.Write((uint32)regionVerticalWarpers.Count);
-			for (let warper in regionVerticalWarpers) {
-				stream.Write(warper.[Friend]regionIndex);
-				let timeOffsets = warper.[Friend]timeOffsets;
-				stream.Write((uint32)timeOffsets.Count);
-				stream.Write(Span<uint32>(timeOffsets));
-			}
-
-			stream.Write((uint32)regionColorWarpers.Count);
-			for (let warper in regionColorWarpers) {
-				stream.Write(warper.[Friend]regionIndex);
-				let timeOffsets = warper.[Friend]timeOffsets;
-				stream.Write((uint32)timeOffsets.Count);
-				stream.Write(Span<uint8>(timeOffsets));
-				stream.Write(Span<Color4>(warper.[Friend]baseColors));
+	
+				stream.Write((uint32)regionColorWarpers.Count);
+				for (let warper in regionColorWarpers) {
+					stream.Write(warper.[Friend]regionIndex);
+					let timeOffsets = warper.[Friend]timeOffsets;
+					stream.Write((uint32)timeOffsets.Count);
+					stream.Write(Span<uint8>(timeOffsets));
+					stream.Write(Span<Color4>(warper.[Friend]baseColors));
+				}
 			}
 
 			// Visual
