@@ -903,7 +903,7 @@ namespace SpyroScope {
 					stream.Write(Span<Vector3Int>(basePositions));
 	
 					let timeOffsets = warper.[Friend]timeOffsets;
-					stream.Write(timeOffsets.Count);
+					stream.Write((uint32)timeOffsets.Count);
 					for (let key in timeOffsets.Keys) {
 						stream.Write(key);
 					}
