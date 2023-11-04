@@ -186,6 +186,8 @@ namespace SpyroScope {
 		public const Address<uint32>[11] spyroStateChangeAddress = .(0, (.)0x8003fd5c/*StD*/, 0, 0, (.)0x80035d04/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
 		public const uint32[11] spyroStateChangeValue = .(0, 0xac358ad0/*StD*/, 0, 0, 0xac33a040/*RR*/, 0, 0, 0, 0/*YotD-1.1*/, 0, 0);
 
+		public const Address<Renderer.Color4[10][4]>[11] shinyColorsAddresses = .(0, (.)0x8006e44c/*StD*/, 0, 0, (.)0x80064440/*RR*/, 0, 0, 0, (.)0x80066a70/*YotD-1.1*/, 0, 0);
+
 		// Game Values
 		public int32 gameState, loadState;
 
@@ -691,7 +693,7 @@ namespace SpyroScope {
 			switch (installment) {
 
 				case .SpyroTheDragon: {
-					ReadFromRAM((.)0x8006e44c, &shinyColors, sizeof(Renderer.Color4[10][4]));
+					ReadFromRAM(shinyColorsAddresses[(int)rom], &shinyColors, sizeof(Renderer.Color4[10][4]));
 
 					// 35 worlds exist, but there is space for 36. (Probably due to short/int reasons.)
 					deathPlaneHeights = new .[36];
@@ -702,7 +704,7 @@ namespace SpyroScope {
 				}
 
 				case .RiptosRage: {
-					ReadFromRAM((.)0x80064440, &shinyColors, sizeof(Renderer.Color4[10][4]));
+					ReadFromRAM(shinyColorsAddresses[(int)rom], &shinyColors, sizeof(Renderer.Color4[10][4]));
 
 					// 28 worlds exists but there is space for 32 (probably a power of 2 related thing)
 					deathPlaneHeights = new .[32];
@@ -713,7 +715,7 @@ namespace SpyroScope {
 				}
 
 				case .YearOfTheDragon: {
-					ReadFromRAM((.)0x80066a70, &shinyColors, sizeof(Renderer.Color4[10][4]));
+					ReadFromRAM(shinyColorsAddresses[(int)rom], &shinyColors, sizeof(Renderer.Color4[10][4]));
 
 					// 37 worlds exist, but theres space for 40. (Probably due to short/int reasons.)
 					// Also gets multipled by 4 due to sub worlds, there being a minimum of 4 in each homeworld.
