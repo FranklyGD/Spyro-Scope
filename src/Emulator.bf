@@ -483,10 +483,12 @@ namespace SpyroScope {
 			}
 
 			if (newRom != .None && newRom != rom) {
+				rom = newRom;
 				FetchStaticData();
 			}
-
-			rom = newRom;
+			else {
+				rom = newRom;
+			}
 		}
 		
 		[Import("psapi.lib"),CLink, CallingConvention(.Stdcall)]
