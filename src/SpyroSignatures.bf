@@ -53,38 +53,38 @@ namespace SpyroScope {
 			romTesterAddresses[0] = (.)signatureLocation;
 
 			// Moby Models Signature
-			// Spyro 1 Attempt
+			// Spyro 2/3 Attempt
 			MemorySignature mobyModelArraySignature = scope .()
 			..AddOpcode(.lui)
-			..AddOpcode(.lw)
-			..AddOpcode(.sll)
-			..AddOpcode(.addu)
+			..AddOpcode(.sw)
 			..AddOpcode(.lui)
-			..AddOpcode(.lbu);
+			..AddOpcode(.lw)
+			..AddOpcode(.addiu)
+			..AddOpcode(.lui)
+			..AddOpcode(.sw)
+			..AddOpcode(.lw);
 
 			signatureLocation = mobyModelArraySignature.Find(this);
 			if (signatureLocation.IsNull) {
-				// Spyro 2/3 Attempt
+				// Spyro 1 Attempt
 				mobyModelArraySignature..Clear()
 				..AddOpcode(.lui)
-				..AddOpcode(.sw)
-				..AddOpcode(.lui)
 				..AddOpcode(.lw)
-				..AddOpcode(.addiu)
+				..AddOpcode(.sll)
+				..AddOpcode(.addu)
 				..AddOpcode(.lui)
-				..AddOpcode(.sw)
-				..AddOpcode(.lw);
+				..AddOpcode(.lbu);
 				
 				signatureLocation = mobyModelArraySignature.Find(this);
 				ReadFromRAM(signatureLocation, &loadAddress, 8);
 				mobyModelArrayPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
-
-				installment = .YearOfTheDragon; //TODO: Temporary representation for 2/3 - Find a distinguishing factor!
+				
+				installment = .SpyroTheDragon;
 			} else {
 				ReadFromRAM(signatureLocation, &loadAddress, 8);
 				mobyModelArrayPointer = (.)(((loadAddress[0] & 0x0000ffff) << 16) + (int32)(int16)loadAddress[1]);
 
-				installment = .SpyroTheDragon;
+				installment = .YearOfTheDragon; //TODO: Temporary representation for 2/3 - Find a distinguishing factor!
 			}
 
 			if (signatureLocation.IsNull) {
