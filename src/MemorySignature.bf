@@ -123,11 +123,11 @@ namespace SpyroScope {
 			wild = -1,
 		}
 
-		public void AddInstruction(Op operation) {
+		public void AddOpcode(Op operation) {
 			AddPart<int32>((.)operation << 26, (.)0xfc000000);
 		}
 
-		public void AddInstruction(Op operation, Reg source = .wild, Reg target = .wild, int immoff = -1) {
+		public void AddOpcode(Op operation, Reg source = .wild, Reg target = .wild, int immoff = -1) {
 			int32 value = (.)operation << 26;
 			int32 mask = (.)0xfc000000;
 
@@ -147,11 +147,11 @@ namespace SpyroScope {
 		}
 
 		[Inline]
-		public void AddInstruction(Op operation, int immoff) {
+		public void AddOpcode(Op operation, int immoff) {
 			AddPart(((int32)operation << 26) | (int32)immoff, (.)0xfc00ffff);
 		}
 
-		public void AddInstruction(Func func, Reg source = .wild, Reg target = .wild, Reg destination = .wild, int shift = -1) {
+		public void AddOpcode(Func func, Reg source = .wild, Reg target = .wild, Reg destination = .wild, int shift = -1) {
 			int32 value = (.)func;
 			int32 mask = (.)0xfc00003f;
 
@@ -176,11 +176,11 @@ namespace SpyroScope {
 		}
 
 		[Inline]
-		public void AddInstruction(Func func, Reg source = .wild, Reg target = .wild, int shift = -1) {
-			AddInstruction(func, source, target, .wild, shift);
+		public void AddOpcode(Func func, Reg source = .wild, Reg target = .wild, int shift = -1) {
+			AddOpcode(func, source, target, .wild, shift);
 		}
 
-		public void AddInstruction(Op operation, Reg source = .wild, Reg target = .wild, Reg destination = .wild) {
+		public void AddOpcode(Op operation, Reg source = .wild, Reg target = .wild, Reg destination = .wild) {
 			int32 value = (.)operation << 26;
 			int32 mask = (.)0xfc000000;
 
