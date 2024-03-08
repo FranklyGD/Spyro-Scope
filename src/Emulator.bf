@@ -130,7 +130,7 @@ namespace SpyroScope {
 
 		// Begin Spyro games information
 		
-		public const Address<char8>[10] testAddresses = .((.)0x800103e7/*StD*/, 0, 0, (.)0x80066ea8/*RR*/, 0, 0, (.)0x8006c3b0, (.)0x8006c490/*YotD-1.1*/, 0, 0);
+		public const Address<char8>[10] testAddresses = .((.)0x800103e7/*StD*/, 0, 0, (.)0x80066ea8/*RR*/, 0, (.)0x8006c500/*GtG*/, (.)0x8006c3b0, (.)0x8006c490/*YotD-1.1*/, 0, 0);
 		public const String[11] gameNames = .(String.Empty, "Spyro the Dragon (NTSC-U)", "Spyro the Dragon (NTSC-J)", "Spyro the Dragon (PAL)", "Spyro: Ripto's Rage (NTSC-U)", "Spyro and Sparx: Tondemo Tours (NTSC-J)", "Spyro: Gateway to Glimmer (PAL)", "Spyro: Year of the Dragon (v1.0 NTSC-U)", "Spyro: Year of the Dragon (v1.1 NTSC-U)", "Spyro: Year of the Dragon (v1.0 PAL)", "Spyro: Year of the Dragon (v1.1 PAL)");
 
 		public Address<int32> gameStateAddress, loadStateAddress;
@@ -170,21 +170,21 @@ namespace SpyroScope {
 		public Address<Address> skyboxRegionsPointer;
 
 		// Exclusive to Spyro: Ripto's Rage
-		public const Address<uint8>[3] spriteWidthArrayAddress = .((.)0x800634b8, 0, 0);
-		public const Address<uint8>[3] spriteHeightArrayAddress = .((.)0x800634d0, 0, 0);
-		public const Address<TextureSprite.SpriteFrame>[3] spriteFrameArrayAddress = .((.)0x8006351c, 0, 0);
+		public const Address<uint8>[3] spriteWidthArrayAddress = .((.)0x800634b8, 0, (.)0x80067ce0);
+		public const Address<uint8>[3] spriteHeightArrayAddress = .((.)0x800634d0, 0, (.)0x80067cf8);
+		public const Address<TextureSprite.SpriteFrame>[3] spriteFrameArrayAddress = .((.)0x8006351c, 0, (.)0x80067db8);
 
-		public const Address<uint16>[7] spyroFontAddress = .((.)0x800636a4/*RR*/, 0, 0, 0, (.)0x800667c8/*YotD-1.1*/, 0, 0); // Doesn't exist in Spyro the Dragon
+		public const Address<uint16>[7] spyroFontAddress = .((.)0x800636a4/*RR*/, 0, (.)0x80067f40/*GtG*/, 0, (.)0x800667c8/*YotD-1.1*/, 0, 0); // Doesn't exist in Spyro the Dragon
 		public const Address<Address<TextureQuad>>[4] spriteArrayPointer = .(0, (.)0x8006c868, 0, 0); // Exclusive to Spyro: Year of the Dragon
 
-		public const Address<uint32>[11] deathPlaneHeightsAddresses = .(0, (.)0x8006e9a4/*StD*/, 0, 0, (.)0x80060234/*RR*/, 0, 0, (.)0x800676e8, (.)0x800677c8/*YotD-1.1*/, 0, 0); ////
-		public const Address<uint32>[11] maxFreeflightHeightsAddresses = .(0, 0/*StD*/, 0, 0, (.)0x800601b4/*RR*/, 0, 0, (.)0x80067648, (.)0x80067728/*YotD-1.1*/, 0, 0); ////
+		public const Address<uint32>[11] deathPlaneHeightsAddresses = .(0, (.)0x8006e9a4/*StD*/, 0, 0, (.)0x80060234/*RR*/, 0, (.)0x80064680/*GtG*/, (.)0x800676e8, (.)0x800677c8/*YotD-1.1*/, 0, 0); ////
+		public const Address<uint32>[11] maxFreeflightHeightsAddresses = .(0, 0/*StD*/, 0, 0, (.)0x800601b4/*RR*/, 0, (.)0x80064600/*GtG*/, (.)0x80067648, (.)0x80067728/*YotD-1.1*/, 0, 0); ////
 
 		public Address<uint32> healthAddress;
 
 		public Address<uint32> gameInputAddress;
-		//public const Address<uint32>[11] gameInputSetAddress = .(0, 0/*StD*/, 0, 0, (.)0x8001291c/*RR*/, 0, 0, 0, (.)0x8003a7a0/*YotD-1.1*/, 0, 0);
-		//public const uint32[11] gameInputValue = .(0, 0/*StD*/, 0, 0, 0xac2283a0/*RR*/, 0, 0, 0, 0xae220030/*YotD-1.1*/, 0, 0);
+		//public const Address<uint32>[11] gameInputAddress = .(0, (.)0x800773c0/*StD*/, 0, 0, (.)0x800683a0/*RR*/, 0, (.)0x8006f568/*GtG*/, 0, (.)0x8006e618/*YotD-1.1*/, 0, 0);
+		//public const Address<uint32>[11] gameInputSetAddress = .(0, 0/*StD*/, 0, 0, (.)0x8001291c/*RR*/, 0, (.)0x80014998/*GtG*/, 0, (.)0x8003a7a0/*YotD-1.1*/, 0, 0);
 
 		public Address<uint32> spyroStateChangeAddress;
 		public uint32 spyroStateChangeValue;
@@ -524,6 +524,8 @@ namespace SpyroScope {
 			checksum &= 0x0fffffff;
 
 			if (checksum != romChecksum) {
+				// Clear the value so that the viewer state
+				// can handle this to go back to setup mode
 				romChecksum = 0;
 			}
 		}
@@ -735,7 +737,7 @@ namespace SpyroScope {
 
 			switch (installment) {
 				case .SpyroTheDragon: {
-					ReadFromRAM((.)0x8006e44c, &shinyColors, sizeof(Color4[10][4]));
+					ReadFromRAM(shinyColorsAddresses[(int)rom], &shinyColors, sizeof(Renderer.Color4[10][4]));
 
 					// 35 worlds exist, but there is space for 36. (Probably due to short/int reasons.)
 					deathPlaneHeights = new .[36];
@@ -746,7 +748,7 @@ namespace SpyroScope {
 				}
 
 				case .RiptosRage: {
-					ReadFromRAM((.)0x80064440, &shinyColors, sizeof(Color4[10][4]));
+					ReadFromRAM(shinyColorsAddresses[(int)rom], &shinyColors, sizeof(Renderer.Color4[10][4]));
 
 					// 28 worlds exists but there is space for 32 (probably a power of 2 related thing)
 					deathPlaneHeights = new .[32];
@@ -757,7 +759,7 @@ namespace SpyroScope {
 				}
 
 				case .YearOfTheDragon: {
-					ReadFromRAM((.)0x80066a70, &shinyColors, sizeof(Color4[10][4]));
+					ReadFromRAM(shinyColorsAddresses[(int)rom], &shinyColors, sizeof(Renderer.Color4[10][4]));
 
 					// 37 worlds exist, but theres space for 40. (Probably due to short/int reasons.)
 					// Also gets multipled by 4 due to sub worlds, there being a minimum of 4 in each homeworld.

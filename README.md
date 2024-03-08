@@ -18,6 +18,7 @@ It can only support the following as of now:
 |-|
 |Spyro the Dragon NTSC U|
 |Spyro: Ripto's Rage NTSC|
+|Spyro: Gateway to Glimmer PAL|
 |Spyro: Year of the Dragon NTSC v1.1|
 
 *Note: The versions shown are only what I have tested so far myself, you can try to use it for other versions,
