@@ -84,11 +84,15 @@ namespace SpyroScope {
 		}
 
 		public void SetDefault() {
+			if (firstRun) {
+				// Can not set default if we have not figured it out
+				// what the default is anyways
+				return;
+			}
+
 			let region = Terrain.regions[regionIndex];
-			var i = 0;
-			for (let timeOffset in timeOffsets) {
+			for (let i < timeOffsets.Count) {
 				region.SetNearColor((.)i, baseColors[i], false);
-				i++;
 			}
 
 			region.UpdateSubdividedColor(false);
