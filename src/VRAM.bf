@@ -5,7 +5,7 @@ using System.Collections;
 
 namespace SpyroScope {
 	static struct VRAM {
-		static public bool upToDate;
+		static public bool upToDate { get; private set; }
 		static public uint16[] snapshot ~ delete _;
 		static public uint16[] snapshotDecoded ~ delete _;
 		static public Texture raw ~ delete _;
@@ -32,8 +32,15 @@ namespace SpyroScope {
 			}
 		}
 		public static List<VRAMTexture> decodedTextures = new .() ~ delete _;
+		static List<int> queuedTextures = new .() ~ delete _;
 
 		static public Event<delegate void()> OnSnapshotTaken ~ _.Dispose();
+
+		public static void MakeOutdated() {
+			upToDate = false;
+			queuedTextures.Clear();
+			decodedTextures.Clear();
+		}
 
 		public static void TakeSnapshot() {
 			delete snapshot;
@@ -57,7 +64,6 @@ namespace SpyroScope {
 				GL.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, 0, 0, 1024 * 4, 512, GL.GL_RGBA, GL.GL_UNSIGNED_SHORT_1_5_5_5_REV, &snapshotDecoded[0]);
 			}
 
-			decodedTextures.Clear();
 			upToDate = true;
 
 			OnSnapshotTaken();
@@ -168,10 +174,15 @@ namespace SpyroScope {
 			if (foundIndex > -1) {
 				return foundIndex;
 			}
-
-			DecodeInternal(x, y, width, height, bitmode, clut);
 			
 			let nextIndex = decodedTextures.Count;
+
+			if (snapshot == null) {
+				queuedTextures.Add(nextIndex);
+			} else {
+				DecodeInternal(x, y, width, height, bitmode, clut);
+			}
+			
 			decodedTextures.Add(vtex);
 
 			return nextIndex;
@@ -188,6 +199,19 @@ namespace SpyroScope {
 			let decodedTexture = decodedTextures[decodedTextureID];
 
 			DecodeInternal(decodedTexture.x, decodedTexture.y, decodedTexture.width, decodedTexture.height, decodedTexture.bitmode, decodedTexture.clut);
+		}
+
+		public static void DecodeQueue() {
+			if (snapshot == null) {
+				return;
+			}
+
+			for (let queuedTexture in queuedTextures) {
+				let vtex = decodedTextures[queuedTexture];
+				DecodeInternal(vtex.x, vtex.y, vtex.width, vtex.height, vtex.bitmode, vtex.clut);
+			}
+
+			queuedTextures.Clear();
 		}
 
 		public static void Export(String file, int x, int y, int width, int height, int bitmode) {

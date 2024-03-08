@@ -625,7 +625,7 @@ namespace SpyroScope {
 					for (let i < 8) {
 						changedPointers[i] = false;
 					}
-					VRAM.upToDate = false;
+					VRAM.MakeOutdated();
 				} else if (
 					installment == .SpyroTheDragon && (gameState == 13 || gameState == 14) ||
 					installment != .SpyroTheDragon && (gameState == 6 || gameState == 11)
@@ -635,7 +635,7 @@ namespace SpyroScope {
 					for (let i < 9) {
 						changedPointers[i] = false;
 					}
-					VRAM.upToDate = false;
+					VRAM.MakeOutdated();
 				}
 			}
 		}

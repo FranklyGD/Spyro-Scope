@@ -232,6 +232,8 @@ namespace SpyroScope {
 		}
 
 		public override void DrawView() {
+			VRAM.DecodeQueue();
+
 			if (Terrain.renderMode == .Collision || Terrain.renderMode == .Compare) {
 				Renderer.clearColor = .(0,0,0);
 			} else if (!Emulator.active.clearColorAddress.IsNull) {

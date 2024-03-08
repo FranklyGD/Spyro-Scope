@@ -212,7 +212,7 @@ namespace SpyroScope {
 						if (hasTextureData) {
 							ExtendedTextureQuad textureQuad = ?;
 							Emulator.active.ReadFromRAM(scanningAddress + 8, &textureQuad, sizeof(ExtendedTextureQuad));
-
+							
 							textureQuad.Decode();
 							
 							//if (materialMode == 0) {
@@ -407,7 +407,7 @@ namespace SpyroScope {
 					if (hasTextureData) {
 						ExtendedTextureQuad textureQuad = ?;
 						Emulator.active.ReadFromRAM(scanningAddress + 8, &textureQuad, sizeof(ExtendedTextureQuad));
-
+						
 						textureQuad.Decode();
 					
 						//if (materialMode == 0) {
@@ -827,7 +827,7 @@ namespace SpyroScope {
 			}
 
 			RenderJob job;
-			job = Renderer.retroDiffusePass.AddJob(texturedModels[modelID], VRAM.decoded);
+			job = Renderer.retroDiffusePass.AddJob(texturedModels[modelID], VRAM.decoded ?? Renderer.halfWhiteTexture);
 			job.AddInstance(matrix, tint);
 			
 			job = Renderer.retroDiffusePass.AddJob(solidModels[modelID], Renderer.halfWhiteTexture);
@@ -836,13 +836,13 @@ namespace SpyroScope {
 			job = Renderer.retroSpecularPass.AddJob(shinyModels[modelID], Renderer.halfWhiteTexture);
 			job.AddInstance(matrix, tint);
 			
-			job = Renderer.retroTranparentPass.AddJob(translucentModels[modelID], VRAM.decoded);
+			job = Renderer.retroTranparentPass.AddJob(translucentModels[modelID], VRAM.decoded ?? Renderer.halfWhiteTexture);
 			job.AddInstance(matrix, tint / 2);
 		}
 
 		public void AddRenderJob(int modelID) {
 			let pass = Renderer.opaquePass;
-			pass.AddJob(texturedModels[modelID], VRAM.decoded);
+			pass.AddJob(texturedModels[modelID], VRAM.decoded ?? Renderer.halfWhiteTexture);
 			pass.AddJob(solidModels[modelID], Renderer.halfWhiteTexture);
 			pass.AddJob(shinyModels[modelID]);
 		}
