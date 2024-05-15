@@ -880,9 +880,15 @@ namespace SpyroScope {
 			stream.Create(file);
 
 			// Collision
-			let collisionTriangles = collision.[Friend]triangles;
-			stream.Write((int32)collisionTriangles.Count);
-			stream.Write(Span<CollisionTriangle>(collisionTriangles.Ptr, collisionTriangles.Count));
+			if (collision == null) {
+				stream.Write((int32)0);
+			} else
+			{
+				let collisionTriangles = collision.[Friend]triangles;
+				stream.Write((int32)collisionTriangles.Count);
+				stream.Write(Span<CollisionTriangle>(collisionTriangles.Ptr, collisionTriangles.Count));
+			}
+			
 			
 			// Texture Quad Info
 			stream.Write((uint32)textures.Count);
