@@ -930,9 +930,14 @@ namespace SpyroScope {
 				for (let warper in regionColorWarpers) {
 					stream.Write(warper.[Friend]regionIndex);
 					let timeOffsets = warper.[Friend]timeOffsets;
-					stream.Write((uint32)timeOffsets.Count);
-					stream.Write(Span<uint8>(timeOffsets));
-					stream.Write(Span<Color4>(warper.[Friend]baseColors));
+					if(timeOffsets == null) {
+						stream.Write((uint32)0);
+					} else
+					{
+						stream.Write((uint32)timeOffsets.Count);
+						stream.Write(Span<uint8>(timeOffsets));
+						stream.Write(Span<Color4>(warper.[Friend]baseColors));
+					}
 				}
 			}
 
