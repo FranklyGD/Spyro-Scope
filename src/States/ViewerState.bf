@@ -143,7 +143,7 @@ namespace SpyroScope {
 		public override void Enter() {
 			String romName = scope String();
 			Emulator.active.GetGameName(romName);
-			windowApp.Rename(scope $"Spyro Scope - {romName} (3D Viewer)");
+			windowApp.Rename(scope $"Unofficial Spyro Scope - {romName} (3D Viewer)");
 
 			GUIElement.SetActiveGUI(guiElements);
 			Selection.OnSelect.Add(new => OnSelect);

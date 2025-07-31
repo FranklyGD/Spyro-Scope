@@ -33,7 +33,7 @@ namespace SpyroScope {
 			width = 750;
 			height = 600;
 
-			window = SDL.CreateWindow("Scope", .Undefined, .Undefined, (.)width, (.)height,
+			window = SDL.CreateWindow("Unofficial Spyro Scope", .Undefined, .Undefined, (.)width, (.)height,
 				.Shown | .Resizable | .InputFocus | .Utility | .OpenGL);
 			Renderer.Init(window);
 
@@ -114,9 +114,9 @@ namespace SpyroScope {
 
 			
 #if DEBUG
-			let versionString = scope String("Spyro Scope (DEV)");
+			let versionString = scope String("Unofficial Spyro Scope (DEV)");
 #else
-			let versionString = scope $"Spyro Scope {Program.versionInfo.FileVersion}";
+			let versionString = scope $"Unofficial Spyro Scope {Program.versionInfo.FileVersion}";
 #endif
 
 			let openglVersionString = scope $"OpenGL {majorVersion}.{minorVersion}";

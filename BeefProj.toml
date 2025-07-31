@@ -2,7 +2,7 @@ FileVersion = 1
 Dependencies = {corlib = "*", FreeType = "*", SDL2 = "*"}
 
 [Project]
-Name = "Spyro Scope"
+Name = "Unofficial Spyro Scope"
 TargetType = "BeefGUIApplication"
 StartupObject = "SpyroScope.Program"
 

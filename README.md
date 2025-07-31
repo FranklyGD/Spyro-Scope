@@ -1,6 +1,6 @@
-# Spyro Scope
+# Unofficial Spyro Scope
 
-[![Latest Version](https://img.shields.io/github/v/release/FranklyGD/Spyro-Scope)](https://github.com/FranklyGD/Spyro-Scope/releases/latest) [![GitHub All Releases](https://img.shields.io/github/downloads/FranklyGD/Spyro-Scope/total)](https://github.com/FranklyGD/Spyro-Scope/releases) [![Discord](https://img.shields.io/discord/619694339777495056?color=7289DA&label=Mod%20the%20Dragon&logo=discord&logoColor=ffffff)](https://discord.gg/nVwGhN2)
+[![Latest Version](https://img.shields.io/github/v/release/FranklyGD/Spyro-Scope)](https://github.com/FranklyGD/Spyro-Scope/releases/latest) [![GitHub All Releases](https://img.shields.io/github/downloads/FranklyGD/Spyro-Scope/total)](https://github.com/FranklyGD/Spyro-Scope/releases)
 
 A project that sparked when looking back at the program created to see the data of the the original trilogy's games as it is being ran in an emulator.
 The program, called Spyro Scope, was only an in-house made program never released, so I thought it would be cool to recreate it.
@@ -23,8 +23,6 @@ It can only support the following as of now:
 
 *Note: The versions shown are only what I have tested so far myself, you can try to use it for other versions,
 however it may mess up the program or game. You have been warned!*
-
-For those new to Github or its new layout, here is the link to [Releases](https://github.com/FranklyGD/Spyro-Scope/releases).
 
 ## Features
 
@@ -74,24 +72,9 @@ Accessed by the `V` key. (Press again to return)
 
 ## Compiling
 
-Beef IDE is used to compile the project as the language used is *beeflang*. You must download it from the [official website](https://www.beeflang.org/) or from the repository mentioned above. 
+Beef IDE is used to compile the project as the language used is *beeflang*. You must download it from the [official website](https://www.beeflang.org/) or from the repository mentioned above.
 Get the latest "release" version possible. Make sure the "Add to path" option is checked when installing for the following to work, which is usually toggled on by default.
 
 The project cannot be immediately compiled once cloned/downloaded from the repo since there is missing files it uses.
 You must run `RUNME.ps1` file first with powershell (right click file then in the context menu, select `Run with PowerShell`).
 This will grab all the required files to download that is not provided by this repository and places them in the appropriate directories.
-
-## Contributing
-
-As for the source code, any changes/improvements is welcome with supported reasoning behind it.
-Create a pull request (but make sure it can compile first) and it will be reviewed/discussed further within the pull request. Code style is not such a huge deal for me in this project, I would eventually rearrange code after it has been accepted/implemented to my needs.
-
-There are files that may not require the IDE to submit changes. Currently...
-
-* The support for known emulators are not all implemented and can be expanded on if needed.
-* *More files will appear over time that will be edittable by plain text editors*
-
-## Issue Reporting
-
-This can be done within Github's issue tracker or directly into my Discord, preferably as DMs to `FranklyGD#2512`.
-If you have an account for one or the other but not both, you can use what is immediately available and do not have to create a new account just to report something on either platform.
