@@ -28,7 +28,7 @@ namespace SpyroScope {
 
 			
 			public (int x, int y) GetCLUTCoordinates() {
-				return ((clut & 0x3f) << 4, clut >> 6);
+				return ((clut & 0x3f) << 4, (clut >> 6));
 			}
 		}
 		public static List<VRAMTexture> decodedTextures = new .() ~ delete _;
@@ -273,8 +273,8 @@ namespace SpyroScope {
 					TextureQuad* quad = &Terrain.textures[textureIndex * quadCount + quadStart];
 					
 					for (let subquadIndex < 4) {
-						(int x, int y) bufferQuadPos = (textureIndex & 0xf, textureIndex >> 4);
-						(int x, int y) bufferSubQuadPos = (subquadIndex & 1, subquadIndex >> 1);
+						(int x, int y) bufferQuadPos = (textureIndex & 0xf, (textureIndex >> 4));
+						(int x, int y) bufferSubQuadPos = (subquadIndex & 1, (subquadIndex >> 1));
 
 						let tpageCell = quad.GetTPageCell();
 

@@ -61,35 +61,35 @@ namespace SpyroScope {
 				base.ToString(strBuffer);
 			}
 
-			public void Read(T* buffer, Emulator emulator = active) {
+			public void Read(T* buffer, Emulator emulator) {
 				emulator.ReadFromRAM(this, buffer, sizeof(T));
 			}
 
-			public void ReadArray(T* buffer, int count, Emulator emulator = active) {
+			public void ReadArray(T* buffer, int count, Emulator emulator) {
 				emulator.ReadFromRAM(this, buffer, sizeof(T) * count);
 			}
 
-			public void Write(T* buffer, Emulator emulator = active) {
+			public void Write(T* buffer, Emulator emulator) {
 				emulator.WriteToRAM(this, buffer, sizeof(T));
 			}
 
-			public void WriteArray(T* buffer, int count, Emulator emulator = active) {
+			public void WriteArray(T* buffer, int count, Emulator emulator) {
 			    emulator.WriteToRAM(this, buffer, sizeof(T) * count);
 			}
 
-			public void GetAtIndex(T* buffer, int index, Emulator emulator = active) {
+			public void GetAtIndex(T* buffer, int index, Emulator emulator) {
 			    emulator.ReadFromRAM(this + index * sizeof(T), buffer, sizeof(T));
 			}
 
-			public void SetAtIndex(T* buffer, int index, Emulator emulator = active) {
+			public void SetAtIndex(T* buffer, int index, Emulator emulator) {
 			    emulator.WriteToRAM(this + index * sizeof(T), buffer, sizeof(T));
 			}
 
-			public void ReadRange(T* buffer, int start, int count, Emulator emulator = active) {
+			public void ReadRange(T* buffer, int start, int count, Emulator emulator) {
 			    emulator.ReadFromRAM(this + start * sizeof(T), buffer, count * sizeof(T));
 			}
 
-			public void WriteRange(T* buffer, int start, int count, Emulator emulator = active) {
+			public void WriteRange(T* buffer, int start, int count, Emulator emulator) {
 			    emulator.WriteToRAM(this + start * sizeof(T), buffer, count * sizeof(T));
 			}
 		}

@@ -306,7 +306,7 @@ namespace SpyroScope {
 					toggle.Offset = .(inspector.labelWidth,inspector.labelWidth + 16,-8,8);
 
 					toggle.OnToggled.Add(new (tvalue) => {
-						Value = (int)tvalue;
+						Value = tvalue ? 1 : 0;
 					});
 				} else {
 					Input input = new .();

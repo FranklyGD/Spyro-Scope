@@ -258,7 +258,7 @@ namespace SpyroScope {
 
 			// Locate scene region data and amount that are present in RAM
 			Emulator.Address<Emulator.Address> sceneDataRegionArrayAddress = ?;
-			Emulator.active.sceneRegionsPointer.Read(&sceneDataRegionArrayAddress);
+			Emulator.active.sceneRegionsPointer.Read(&sceneDataRegionArrayAddress, Emulator.active);
 			let sceneRegionCount = RegionCount;
 
 			// Remove any existing parsed data
@@ -270,7 +270,7 @@ namespace SpyroScope {
 			renderingFlags = new .[sceneRegionCount];
 
 			Emulator.Address[] sceneDataRegionAddresses = new .[sceneRegionCount];
-			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegionAddresses[0], sceneRegionCount);
+			sceneDataRegionArrayAddress.ReadArray(&sceneDataRegionAddresses[0], sceneRegionCount, Emulator.active);
 			for (let regionIndex < sceneRegionCount) {
 				let region = new TerrainRegion(sceneDataRegionAddresses[regionIndex]);
 
@@ -315,10 +315,10 @@ namespace SpyroScope {
 			textureScrollers = new .[textureScrollerCount];
 			if (textureScrollerCount > 0) {
 				Emulator.Address<Emulator.Address> textureScrollerArrayAddress = ?;
-				textureScrollerPointer.Read(&textureScrollerArrayAddress);
+				textureScrollerPointer.Read(&textureScrollerArrayAddress, Emulator.active);
 	
 				Emulator.Address[] textureScrollerAddresses = new .[textureScrollerCount];
-				textureScrollerArrayAddress.ReadArray(&textureScrollerAddresses[0], textureScrollerCount);
+				textureScrollerArrayAddress.ReadArray(&textureScrollerAddresses[0], textureScrollerCount, Emulator.active);
 				for (let i < textureScrollerCount) {
 					let scroller = TextureScroller(textureScrollerAddresses[i]);
 					scroller.GetUsedTextures();
@@ -346,10 +346,10 @@ namespace SpyroScope {
 			textureSwappers = new .[textureSwapperCount];
 			if (textureSwapperCount > 0) {
 				Emulator.Address<Emulator.Address> textureScrollerArrayAddress = ?;
-				textureSwapperPointer.Read(&textureScrollerArrayAddress);
+				textureSwapperPointer.Read(&textureScrollerArrayAddress, Emulator.active);
 
 				Emulator.Address[] textureScrollerAddresses = new .[textureSwapperCount];
-				textureScrollerArrayAddress.ReadArray(&textureScrollerAddresses[0], textureSwapperCount);
+				textureScrollerArrayAddress.ReadArray(&textureScrollerAddresses[0], textureSwapperCount, Emulator.active);
 				for (let i < textureSwapperCount) {
 					let swapper = TextureSwapper(textureScrollerAddresses[i]);
 					swapper.GetUsedTextures();
@@ -373,9 +373,9 @@ namespace SpyroScope {
 
 			let totalQuadCount = (highestUsedIndex + 1) * quadCount;
 			Emulator.Address<TextureQuad> textureDataAddress = ?;
-			Emulator.active.textureDataPointer.Read(&textureDataAddress);
+			Emulator.active.textureDataPointer.Read(&textureDataAddress, Emulator.active);
 			textures = new .[totalQuadCount];
-			textureDataAddress.ReadArray(&textures[0], totalQuadCount);
+			textureDataAddress.ReadArray(&textures[0], totalQuadCount, Emulator.active);
 
 			for (let regionIndex < sceneRegionCount) {
 				regions[regionIndex].Reload();

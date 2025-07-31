@@ -32,6 +32,7 @@ namespace SpyroScope {
 
 			String source = scope .();
 			System.IO.File.ReadAllText(sourcePath, source, true);
+			source.EnsureNullTerminator();
 			char8* sourceData = source.Ptr;
 
 			GL.glShaderSource(shader, 1, &sourceData, null);

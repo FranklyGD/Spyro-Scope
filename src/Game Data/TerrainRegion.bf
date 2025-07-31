@@ -565,10 +565,10 @@ namespace SpyroScope {
 					// Low quality textures
 					var baseIndex = (uint32)activeIndexList.Count;
 					
-					var indices = activeIndexList.GrowUnitialized(3);
-					var vertices = activeVertexList.GrowUnitialized(3);
+					var indices = activeIndexList.GrowUninitialized(3);
+					var vertices = activeVertexList.GrowUninitialized(3);
 
-					var M2Gindices = activeNearMesh2GameIndices.GrowUnitialized(3);
+					var M2Gindices = activeNearMesh2GameIndices.GrowUninitialized(3);
 
 					indices[0] = baseIndex;
 					indices[1] = baseIndex + indexSwap[0];
@@ -598,8 +598,8 @@ namespace SpyroScope {
 					// Corner triangles
 					baseIndex = (uint32)activeIndexSubList.Count;
 					
-					indices = activeIndexSubList.GrowUnitialized(12);
-					vertices = activeVertexSubList.GrowUnitialized(12);
+					indices = activeIndexSubList.GrowUninitialized(12);
+					vertices = activeVertexSubList.GrowUninitialized(12);
 
 					for (let ti < 3) {
 						let offset = ti * 3;
@@ -628,10 +628,10 @@ namespace SpyroScope {
 					// Low quality textures
 					var baseIndex = (uint32)activeIndexList.Count;
 
-					var indices = activeIndexList.GrowUnitialized(6);
-					var vertices = activeVertexList.GrowUnitialized(6);
+					var indices = activeIndexList.GrowUninitialized(6);
+					var vertices = activeVertexList.GrowUninitialized(6);
 					
-					var M2Gindices = activeNearMesh2GameIndices.GrowUnitialized(6);
+					var M2Gindices = activeNearMesh2GameIndices.GrowUninitialized(6);
 
 					const uint8[2][2] swap = .(.(0,2), .(2,0));
 					const int8[2] oppositeIndex = .(1,3);
@@ -668,8 +668,8 @@ namespace SpyroScope {
 
 					baseIndex = (uint32)activeIndexSubList.Count;
 
-					indices = activeIndexSubList.GrowUnitialized(24);
-					vertices = activeVertexSubList.GrowUnitialized(24);
+					indices = activeIndexSubList.GrowUninitialized(24);
+					vertices = activeVertexSubList.GrowUninitialized(24);
 
 					for (let qi < 4) {
 						textureQuad++;
@@ -1250,8 +1250,8 @@ namespace SpyroScope {
 			// Flip normals by swapping index order
 			Mesh[2] meshSet = transparent ? .(nearMeshTransparent, nearMeshTransparentSubdivided) : .(nearMesh, nearMeshSubdivided);
 
-			var di0 = 1 + (uint8)face.flipped % 2;
-			var di1 = 1 + ((uint8)face.flipped + 1) % 2;
+			var di0 = 1 + (uint8)(face.flipped ? 1 : 0) % 2;
+			var di1 = 1 + ((uint8)(face.flipped ? 1 : 0) + 1) % 2;
 			for (let triangleIndex in affectedTriangles) {
 				let baseTriangleIndex = triangleIndex * 3;
 

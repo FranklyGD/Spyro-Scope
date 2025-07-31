@@ -192,7 +192,7 @@ namespace SpyroScope {
 			var objPointer = Emulator.active.objectArrayAddress;
 
 			// Read last known size amount of objects
-			objPointer.ReadArray(Moby.allocated.Ptr, Moby.allocated.Count);
+			objPointer.ReadArray(Moby.allocated.Ptr, Moby.allocated.Count, Emulator.active);
 
 			objPointer += Moby.allocated.Count * sizeof(Moby);
 
@@ -200,7 +200,7 @@ namespace SpyroScope {
 				// Get remaining objects not saved in the allocated cache
 				while (true) {
 					Moby object = ?;
-					objPointer.Read(&object);
+					objPointer.Read(&object, Emulator.active);
 	
 					if (object.IsTerminator) {
 						break;
@@ -238,7 +238,7 @@ namespace SpyroScope {
 				Renderer.clearColor = .(0,0,0);
 			} else if (!Emulator.active.clearColorAddress.IsNull) {
 				Color4 color = ?;
-				Emulator.active.clearColorAddress.Read(&color);
+				Emulator.active.clearColorAddress.Read(&color, Emulator.active);
 
 				color.r = (.)Math.Round(Math.Pow((float)color.r / 255, 2.2f) * 255);
 				color.g = (.)Math.Round(Math.Pow((float)color.g / 255, 2.2f) * 255);
@@ -487,7 +487,7 @@ namespace SpyroScope {
 									Translator.OnDragged.Add(new (position) => {
 										var moby = Moby.allocated[ViewerSelection.currentObjIndex];
 										moby.position = (.)position;
-										Moby.GetAddress(ViewerSelection.currentObjIndex).Write(&moby);
+										Moby.GetAddress(ViewerSelection.currentObjIndex).Write(&moby, Emulator.active);
 									});
 								} else if (Terrain.renderMode == .Collision && ViewerSelection.currentTriangleIndex > -1) {
 									Translator.OnDragBegin.Add(new () => grabbedTriangle = Terrain.collision.GetTriangle(ViewerSelection.currentTriangleIndex / 3));
@@ -552,7 +552,7 @@ namespace SpyroScope {
 								cameraEulerRotation[1] += (.)event.motion.yrel * 2;
 								cameraEulerRotation[1] = Math.Clamp(cameraEulerRotation[1], -0x400, 0x400);
 								
-								Emulator.active.cameraEulerAddress.Write((.)cameraEulerRotation);
+								Emulator.active.cameraEulerAddress.Write((.)cameraEulerRotation, Emulator.active);
 							}
 							case .Map: {
 								var translationX = -Camera.size * event.motion.xrel / WindowApp.height;
@@ -619,7 +619,7 @@ namespace SpyroScope {
 							}
 							case .K : {
 								uint32 health = 0;
-								Emulator.active.healthAddress.Write(&health);
+								Emulator.active.healthAddress.Write(&health, Emulator.active);
 							}
 							case .T : {
 								if (viewerMenu.teleportButton.Enabled) {

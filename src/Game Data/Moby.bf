@@ -62,7 +62,7 @@ namespace SpyroScope {
 					modelSets[objectTypeID].QueueInstance(modelID, .Transform(position, basis), IsActive ? .(1,1,1) : .(0.125f,0.125f,0.125f), Emulator.active.shinyColors[color.r % 10][1]);
 				} else {
 					Emulator.Address modelSetAddress = ?;
-					Emulator.active.mobyModelArrayPointer.GetAtIndex(&modelSetAddress, objectTypeID);
+					Emulator.active.mobyModelArrayPointer.GetAtIndex(&modelSetAddress, objectTypeID, Emulator.active);
 
 					if (Emulator.active.installment == .SpyroTheDragon && (uint32)modelSetAddress & 0x80000000 > 0) {
 					    return;
@@ -142,7 +142,7 @@ namespace SpyroScope {
 
 						Moby linkedMoby = ?;
 						Emulator.Address<Moby> objPointer = ?;
-						Emulator.active.mobyArrayPointer.Read(&objPointer);
+						Emulator.active.mobyArrayPointer.Read(&objPointer, Emulator.active);
 						Emulator.active.ReadFromRAM(objPointer + objectIndex * sizeof(Moby), &linkedMoby, sizeof(Moby));
 
 						Renderer.Line(position, linkedMoby.position, .(255,255,255), .(255,255,255));

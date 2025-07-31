@@ -234,7 +234,7 @@ namespace SpyroScope {
 
 			for (let CLUTIndex < cluts.Count) {
 				let clutReference = cluts[CLUTIndex];
-				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
+				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, (clutReference.location >> 6));
 
 				let clutStart = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
 				let clutEnd = PixelToScreen(clutPosition.x + clutReference.width, (clutPosition.x >> 10) + clutPosition.y + (clutReference.type == .Gradient ? 16 : 1));
@@ -249,7 +249,7 @@ namespace SpyroScope {
 			// instead do it in another loop draw pass
 			for (let CLUTIndex < cluts.Count) {
 				let clutReference = cluts[CLUTIndex];
-				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
+				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, (clutReference.location >> 6));
 
 				Rect clutRect;
 				clutRect.start = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
@@ -286,7 +286,7 @@ namespace SpyroScope {
 			if (hoveredCLUTIndex > -1) {
 				let clutReference = cluts[hoveredCLUTIndex];
 
-				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
+				(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, (clutReference.location >> 6));
 				let clutStart = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
 
 				for (let textureID in clutReference.references) {
@@ -314,7 +314,7 @@ namespace SpyroScope {
 
 				if (selectedCLUTIndex > -1) {
 					let clutReference = cluts[selectedCLUTIndex];
-					(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
+					(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, (clutReference.location >> 6));
 
 					Rect rect;
 					rect.start = PixelToScreen(clutPosition.x, (clutPosition.x >> 10) + clutPosition.y);
@@ -429,7 +429,7 @@ namespace SpyroScope {
 						hoveredCLUTIndex = -1;
 						for (let clutIndex < cluts.Count) {
 							let clutReference = cluts[clutIndex];
-							(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
+							(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, (clutReference.location >> 6));
 
 							let left = clutPosition.x & 0x3ff;
 							let right = left + clutReference.width;
@@ -615,7 +615,7 @@ namespace SpyroScope {
 
 							if (hoveredCLUTIndex > -1) {
 								let clutReference = cluts[hoveredCLUTIndex];
-								(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, clutReference.location >> 6);
+								(int x, int y) clutPosition = ((clutReference.location & 0x3f) << 4, (clutReference.location >> 6));
 
 								uint16[] clutTable = ?;
 								switch (clutReference.type) {

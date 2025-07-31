@@ -23,7 +23,7 @@ namespace SpyroScope {
 		const float gameFoV = 55;
 		public static readonly Matrix4 gameProjection = .Perspective(gameFoV * Math.PI_f / 180, 4f/3f, 300, 175000);
 
-		public static BitmapFont bitmapFont ~ delete _;
+		public static SpyroScope.BitmapFont bitmapFont ~ delete _;
 		public static FTFont font ~ delete _;
 		public static FTFont fontSmall  ~ delete _;
 

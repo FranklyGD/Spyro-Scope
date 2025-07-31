@@ -1,5 +1,4 @@
 using FreeType;
-using OpenGL;
 using SDL2;
 using System;
 using System.Diagnostics;
@@ -64,7 +63,7 @@ namespace SpyroScope {
 
 	static {
 		public static void* SdlGetProcAddress(StringView string) {
-			return SDL.SDL_GL_GetProcAddress(string.ToScopeCStr!());
+			return SDL.GL_GetProcAddress(string.ToScopeCStr!());
 		}
 	}
 }

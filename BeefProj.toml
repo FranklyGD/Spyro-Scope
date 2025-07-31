@@ -1,5 +1,5 @@
 FileVersion = 1
-Dependencies = {corlib = "*", SDL2 = "*", FreeType = "*"}
+Dependencies = {corlib = "*", FreeType = "*", SDL2 = "*"}
 
 [Project]
 Name = "Spyro Scope"

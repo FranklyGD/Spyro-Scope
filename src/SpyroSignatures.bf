@@ -749,7 +749,7 @@ namespace SpyroScope {
 				spyroUpdateCallAddress = (.)signatureLocation;
 			} else {
 				spyroUpdateCallAddress = (.)signatureLocation + 4*3;
-				spyroUpdateCallAddress.Read(&spyroUpdateCallValue);
+				spyroUpdateCallAddress.Read(&spyroUpdateCallValue, Emulator.active);
 			}
 
 			// Update Camera Call Signature
@@ -782,10 +782,10 @@ namespace SpyroScope {
 				
 				signatureLocation = cameraUpdateCallSignature.Find(this);
 				cameraUpdateCallAddress = (.)signatureLocation + 4*6;
-				cameraUpdateCallAddress.Read(&cameraUpdateCallValue);
+				cameraUpdateCallAddress.Read(&cameraUpdateCallValue, Emulator.active);
 			} else {
 				cameraUpdateCallAddress = (.)signatureLocation + 4*7;
-				cameraUpdateCallAddress.Read(&cameraUpdateCallValue);
+				cameraUpdateCallAddress.Read(&cameraUpdateCallValue, Emulator.active);
 			}
 
 			// Main Update Call Signature
@@ -811,10 +811,10 @@ namespace SpyroScope {
 				
 				signatureLocation = updateCallSignature.Find(this);
 				updateCallAddress = (.)signatureLocation;
-				updateCallAddress.Read(&updateCallValue);
+				updateCallAddress.Read(&updateCallValue, Emulator.active);
 			} else {
 				updateCallAddress = (.)signatureLocation + 4*1;
-				updateCallAddress.Read(&updateCallValue);
+				updateCallAddress.Read(&updateCallValue, Emulator.active);
 			}
 
 			// Game Input Signature

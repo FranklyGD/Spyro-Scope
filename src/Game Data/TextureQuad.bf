@@ -63,7 +63,7 @@ namespace SpyroScope {
 		}
 
 		public (int x, int y) GetCLUTCoordinates() {
-			return ((clut & 0x3f) << 4, clut >> 6);
+			return ((clut & 0x3f) << 4, (clut >> 6));
 		}
 
 		public uint8 GetQuadRotation() {

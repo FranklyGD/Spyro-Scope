@@ -31,7 +31,7 @@ namespace SpyroScope {
 			let mobyReference = (Moby*)reference;
 
 			Emulator.Address modelSetAddress = ?;
-			Emulator.active.mobyModelArrayPointer.GetAtIndex(&modelSetAddress, mobyReference.objectTypeID);
+			Emulator.active.mobyModelArrayPointer.GetAtIndex(&modelSetAddress, mobyReference.objectTypeID, Emulator.active);
 
 			let possiblyAnimated = mobyReference.HasModel && (int32)modelSetAddress < 0;
 			nextModelProperty.ReadOnly = !possiblyAnimated;

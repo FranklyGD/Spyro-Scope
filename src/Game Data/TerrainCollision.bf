@@ -160,29 +160,29 @@ namespace SpyroScope {
 			triangles = new .();
 			Emulator.Address collisionTriangleArray = ?;
 			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 16 : 20), &collisionTriangleArray, 4);
-			Emulator.active.ReadFromRAM(collisionTriangleArray, triangles.GrowUnitialized(TriangleCount), sizeof(CollisionTriangle) * triangles.Count);
+			Emulator.active.ReadFromRAM(collisionTriangleArray, triangles.GrowUninitialized(TriangleCount), sizeof(CollisionTriangle) * triangles.Count);
 
 			// Collision Grid
 			// Derived from Spyro: Ripto's Rage [8003f440]
 			Vector3Int dim;
 			List<int16> buffer = scope .();
-			var sizez = buffer.GrowUnitialized(1);
+			var sizez = buffer.GrowUninitialized(1);
 			
 			Emulator.Address collisionGridZ = ?;
 			Emulator.active.ReadFromRAM(address + (Emulator.active.installment == .SpyroTheDragon ? 8 : 12), &collisionGridZ, 4);
 
 			Emulator.active.ReadFromRAM(collisionGridZ, sizez, 2);
 			dim.z = dimensions.z = *sizez;
-			Emulator.active.ReadFromRAM(collisionGridZ + 2, buffer.GrowUnitialized(dim.z), 2 * dim.z);
+			Emulator.active.ReadFromRAM(collisionGridZ + 2, buffer.GrowUninitialized(dim.z), 2 * dim.z);
 			
 			for (let z < dim.z) {
 				if (buffer[1 + z] > -1) {
-					let sizey = buffer.GrowUnitialized(1);
+					let sizey = buffer.GrowUninitialized(1);
 					Emulator.Address collisionGridY = collisionGridZ + buffer[1 + z];
 
 					Emulator.active.ReadFromRAM(collisionGridY, sizey, 2);
 					dim.y = *sizey;
-					Emulator.active.ReadFromRAM(collisionGridY + 2, buffer.GrowUnitialized(dim.y), 2 * dim.y);
+					Emulator.active.ReadFromRAM(collisionGridY + 2, buffer.GrowUninitialized(dim.y), 2 * dim.y);
 					
 					if (dim.y > dimensions.y) {
 						dimensions.y = dim.y;
@@ -196,12 +196,12 @@ namespace SpyroScope {
 
 					for (let y < dim.y) {
 						if (buffer[buffer[1 + z] / 2 + 1 + y] > -1) {
-							let sizex = buffer.GrowUnitialized(1);
+							let sizex = buffer.GrowUninitialized(1);
 							Emulator.Address collisionGridX = collisionGridZ + buffer[buffer[1 + z] / 2 + 1 + y];
 
 							Emulator.active.ReadFromRAM(collisionGridX, sizex, 2);
 							dim.x = *sizex;
-							Emulator.active.ReadFromRAM(collisionGridX + 2, buffer.GrowUnitialized(dim.x), 2 * dim.x);
+							Emulator.active.ReadFromRAM(collisionGridX + 2, buffer.GrowUninitialized(dim.x), 2 * dim.x);
 
 							if (dim.x > dimensions.x) {
 								dimensions.x = dim.x;
@@ -259,7 +259,7 @@ namespace SpyroScope {
 
 			flagIndices = new .();
 			Emulator.active.ReadFromRAM(address + 24, &collisionFlagArray, 4);
-			Emulator.active.ReadFromRAM(collisionFlagArray, flagIndices.GrowUnitialized(SpecialTriangleCount), sizeof(uint8) * flagIndices.Count);
+			Emulator.active.ReadFromRAM(collisionFlagArray, flagIndices.GrowUninitialized(SpecialTriangleCount), sizeof(uint8) * flagIndices.Count);
 
 			Emulator.active.ReadFromRAM(Emulator.active.collisionFlagsPointer, &collisionFlagArray, 4);
 			Emulator.active.ReadFromRAM(collisionFlagArray, &collisionFlagPointerArray[0], 4 * 0x40);

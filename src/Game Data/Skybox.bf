@@ -25,7 +25,7 @@ namespace SpyroScope {
 		public static void Reload() {
 			// Locate scene region data and amount that are present in RAM
 			Emulator.Address<Emulator.Address> skyboxDataRegionArrayAddress = ?;
-			Emulator.active.skyboxRegionsPointer.Read(&skyboxDataRegionArrayAddress);
+			Emulator.active.skyboxRegionsPointer.Read(&skyboxDataRegionArrayAddress, Emulator.active);
 			let sceneRegionCount = RegionCount;
 
 			// Remove any existing parsed data
@@ -35,7 +35,7 @@ namespace SpyroScope {
 			regions = new .[sceneRegionCount];
 
 			Emulator.Address[] sceneDataRegionAddresses = new .[sceneRegionCount];
-			skyboxDataRegionArrayAddress.ReadArray(sceneDataRegionAddresses.Ptr, sceneRegionCount);
+			skyboxDataRegionArrayAddress.ReadArray(sceneDataRegionAddresses.Ptr, sceneRegionCount, Emulator.active);
 			for (let regionIndex < sceneRegionCount) {
 				regions[regionIndex] = new .(sceneDataRegionAddresses[regionIndex]) .. Reload();
 			}
