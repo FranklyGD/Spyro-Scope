@@ -19,8 +19,8 @@ namespace SpyroScope {
 		public bool ProcessFound { get => emulatorIndex > -1; }
 		public bool Supported { get => ProcessFound && versionIndex > -1; }
 
-		public int RAMBaseAddress;
-		public int VRAMBaseAddress;
+		public int64 RAMBaseAddress; // int64 to support 64-bit emulator addresses
+		public int64 VRAMBaseAddress; // int64 to support 64-bit emulator addresses
 
 		/// Uses the essential address locations to generate a unique value 
 		/// that will determine what ROM is currently loaded in emulator
@@ -435,8 +435,20 @@ namespace SpyroScope {
 			MainModuleSize = GetModuleSize(processHandle, moduleHandle);
 			Debug.WriteLine($"Main Module Size: {MainModuleSize:x} bytes");
 
+			// Try to find an exact module size match
 			versionIndex = EmulatorsConfig.emulators[emulator].versions.FindIndex(scope (x) => x.moduleSize == MainModuleSize);
-			Debug.WriteLine($"Emulator Version: {(versionIndex > -1 ? EmulatorsConfig.emulators[emulator].versions[versionIndex].label : "Unknown")}");
+
+			// If no exact match, check if there's a universal version, like for duckstation (moduleSize = 0)
+			if (versionIndex == -1) {
+				versionIndex = EmulatorsConfig.emulators[emulator].versions.FindIndex(scope (x) => x.moduleSize == 0);
+				if (versionIndex > -1) {
+					Debug.WriteLine($"Emulator Version: {EmulatorsConfig.emulators[emulator].versions[versionIndex].label} (Universal)");
+				} else {
+					Debug.WriteLine("Emulator Version: Unknown");
+				}
+			} else {
+				Debug.WriteLine($"Emulator Version: {EmulatorsConfig.emulators[emulator].versions[versionIndex].label}");
+			}
 
 			emulatorIndex = emulator;
 
@@ -681,7 +693,31 @@ namespace SpyroScope {
 				return;
 			}
 
-			RAMBaseAddress = PointerOffsetsToAddress((.)moduleHandle, version.offsetsToRAM);
+			// Check if we should use symbol lookup instead of the hard-coded offsets. (Currently only for duckstation)
+			if (!version.ramSymbolName.IsEmpty) {
+				bool is64Bit = false;
+				uint32 rva = PEParser.FindExportRVA(processHandle, moduleHandle, version.ramSymbolName, out is64Bit);
+				if (rva != 0) {
+					// The RVA + module base gives us the base address of main ram
+					// Read the pointer value at that address
+					if (is64Bit) {
+						int64 pointerValue64 = 0;
+						Windows.ReadProcessMemory(processHandle, (void*)((int)moduleHandle + (int)rva), &pointerValue64, 8, null);
+						RAMBaseAddress = pointerValue64;
+						Debug.WriteLine($"RAM base address from symbol '{version.ramSymbolName}': 0x{pointerValue64:X}");
+					} else {
+						int pointerValue = 0;
+						Windows.ReadProcessMemory(processHandle, (void*)((int)moduleHandle + (int)rva), &pointerValue, 4, null);
+						RAMBaseAddress = (int64)pointerValue;
+						Debug.WriteLine($"RAM base address from symbol '{version.ramSymbolName}': 0x{RAMBaseAddress:X}");
+					}
+				} else {
+					Debug.WriteLine($"Failed to find RAM symbol '{version.ramSymbolName}'");
+				}
+			} else {
+				// Use traditional offset-based lookup
+				RAMBaseAddress = PointerOffsetsToAddress((.)moduleHandle, version.offsetsToRAM);
+			}
 		}
 
 		public void FetchVRAMBaseAddress() {
@@ -696,7 +732,32 @@ namespace SpyroScope {
 				return;
 			}
 
-			VRAMBaseAddress = PointerOffsetsToAddress((.)moduleHandle, version.offsetsToVRAM);
+			// Check if we should use symbol lookup instead of the hard-coded offsets. (Duckstation doesn't support an exported VRAM symbol atm. Maybe in the future.)
+			if (!version.vramSymbolName.IsEmpty) {
+	
+				bool is64Bit = false;
+				uint32 rva = PEParser.FindExportRVA(processHandle, moduleHandle, version.vramSymbolName, out is64Bit);
+				if (rva != 0) {
+					// The RVA + module base gives us the base address of main ram
+					// Read the pointer value at that address
+					if (is64Bit) {
+						int64 pointerValue64 = 0;
+						Windows.ReadProcessMemory(processHandle, (void*)((int)moduleHandle + (int)rva), &pointerValue64, 8, null);
+						VRAMBaseAddress = pointerValue64;
+						Debug.WriteLine($"VRAM base address from symbol '{version.vramSymbolName}': 0x{pointerValue64:X}");
+					} else {
+						int pointerValue = 0;
+						Windows.ReadProcessMemory(processHandle, (void*)((int)moduleHandle + (int)rva), &pointerValue, 4, null);
+						VRAMBaseAddress = (int64)pointerValue;
+						Debug.WriteLine($"VRAM base address from symbol '{version.vramSymbolName}': 0x{VRAMBaseAddress:X}");
+					}
+				} else {
+					Debug.WriteLine($"Failed to find VRAM symbol '{version.vramSymbolName}'");
+				}
+			} else {
+				// Use the original hard-coded offset lookup for the other emu's
+				VRAMBaseAddress = PointerOffsetsToAddress((.)moduleHandle, version.offsetsToVRAM);
+			}
 		}
 
 		int PointerOffsetsToAddress(int baseAddress, List<int> offsets) {
@@ -714,7 +775,7 @@ namespace SpyroScope {
 
 		[Inline]
 		public void* RawAddressFromRAM(Address address) {
-			return ((uint8*)null + RAMBaseAddress + ((uint32)address & 0x003fffff));
+			return (void*)(int)(RAMBaseAddress + ((uint32)address & 0x003fffff));
 		}
 
 		public void ReadFromRAM(Address address, void* buffer, int size) {

@@ -15,8 +15,10 @@ namespace SpyroScope {
 			public uint moduleSize;
 
 			public String ramModuleName = new .() ~ delete _;
+			public String ramSymbolName = new .() ~ delete _; // If set, use symbol lookup instead of offsets
 			public List<int> offsetsToRAM = new .() ~ delete _;
 			public String vramModuleName = new .() ~ delete _;
+			public String vramSymbolName = new .() ~ delete _; // If set, use symbol lookup instead of offsets (currently doesn't work with duck)
 			public List<int> offsetsToVRAM = new .() ~ delete _;
 		}
 
@@ -129,8 +131,20 @@ namespace SpyroScope {
 						emulatorVersion.ramModuleName.Join(" ", wordChain.GetEnumerator());
 						wordChain.Clear();
 
-						while (words.HasMore) {
-							emulatorVersion.offsetsToRAM.Add(Int64.Parse(words.GetNext(), .HexNumber));
+						// Determine if hard-coded offset, or symbol name
+						if (words.HasMore) {
+							var firstWord = TrySilent!(words.GetNext());
+							// Try parsing as hex, if it fails, treat as symbol name
+							if (Int64.Parse(firstWord, .HexNumber) case .Ok(let offset)) {
+								emulatorVersion.offsetsToRAM.Add(offset);
+								// Parse remaining offsets
+								while (words.HasMore) {
+									emulatorVersion.offsetsToRAM.Add(Int64.Parse(words.GetNext(), .HexNumber));
+								}
+							} else {
+								// Not a hex number, its probably a symbol name
+								emulatorVersion.ramSymbolName.Set(firstWord);
+							}
 						}
 
 						// VRAM Location
@@ -161,8 +175,20 @@ namespace SpyroScope {
 						emulatorVersion.vramModuleName.Join(" ", wordChain.GetEnumerator());
 						wordChain.Clear();
 
-						while (words.HasMore) {
-							emulatorVersion.offsetsToVRAM.Add(Int64.Parse(words.GetNext(), .HexNumber));
+						// Determine if hard-coded offset, or symbol name
+						if (words.HasMore) {
+							var firstWord = TrySilent!(words.GetNext());
+							// Try parsing as hex, if it fails, treat as symbol name
+							if (Int64.Parse(firstWord, .HexNumber) case .Ok(let offset)) {
+								emulatorVersion.offsetsToVRAM.Add(offset);
+								// Continue parsing remaining offsets
+								while (words.HasMore) {
+									emulatorVersion.offsetsToVRAM.Add(Int64.Parse(words.GetNext(), .HexNumber));
+								}
+							} else {
+								// Not a hex number, its probably a symbol name
+								emulatorVersion.vramSymbolName.Set(firstWord);
+							}
 						}
 					}
 				}

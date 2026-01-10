@@ -15,14 +15,31 @@ ePSXe.exe 68b6a0
 gpuPeteOpenGL2.dll 51f80 0
 
 EmuHawk.exe Bizhawk
+2.11 518000
+octoshock.dll 124b30
+octoshock.dll 53ecc0
 2.6.1 456000
 octoshock.dll 310f80
 octoshock.dll 52b0c0
 
 mednafen.exe Mednafen
+1.32.1 5832000
+mednafen.exe 1c63380
+mednafen.exe 1e78038
 1.26.1 5e83000
 mednafen.exe 2553280
 mednafen.exe 2767eb8
 1.24.3 5eec000
 mednafen.exe 25bc280
 mednafen.exe 27d0eb8
+
+
+duckstation-qt-x64-Release-MSVC.exe DuckStation
+Universal 0
+duckstation-qt-x64-Release-MSVC.exe RAM
+duckstation-qt-x64-Release-MSVC.exe VRAM
+
+duckstation-qt-x64-ReleaseLTCG.exe DuckStation
+Universal 0
+duckstation-qt-x64-ReleaseLTCG.exe RAM
+duckstation-qt-x64-ReleaseLTCG.exe VRAM
